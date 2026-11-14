@@ -1,0 +1,4372 @@
+'use strict';
+// ============================================================================
+// Stepped-simulation tests (loaded only with #dev; see combat-arena-3d.html)
+// ============================================================================
+// Run from the console:  await __arena.tests.run()        (all tests)
+//                        await __arena.tests.run('heights') (only tests whose name contains "heights")
+// Each test drives the real game with a manual clock: the frame loop stops stepping, the gamepad is
+// ignored, the input buffer reads the simulated clock, and movement comes from the test (world-space
+// directions instead of camera-relative keys). Nothing here is part of the game itself.
+(function () {
+  const A = window.__arena, { Game, CONFIG, input, gamepad } = A;
+  const STEP = CONFIG.step;
+  let clock = 1000, mv = null;
+  const real = { now: input.now, poll: gamepad.poll, moveInput: Game.moveInput, random: Math.random };
+
+  // A deterministic Math.random while a test runs, so enemy choices repeat run to run.
+  const seededRandom = seed => () => { seed = (seed * 1664525 + 1013904223) >>> 0; return seed / 4294967296; };
+
+  const sim = {
+    begin() {
+      Game.manualClock = true;
+      input.now = () => clock;
+      gamepad.poll = () => {};
+      gamepad.move = { x: 0, y: 0 };
+      Game.moveInput = () => mv ? { x: mv.x, z: mv.z, has: true } : { x: 0, z: 0, has: false };
+      Math.random = seededRandom(12345);
+      input.clear(); mv = null;
+      Game.cam.pitch = 0; Game.zoomTarget = Game.cam.zoom = CONFIG.zoom.default; Game.mouseHold = 0;   // no camera state leaks between tests
+    },
+    end() {
+      input.now = real.now; gamepad.poll = real.poll; Game.moveInput = real.moveInput; Math.random = real.random;
+      input.clear(); mv = null;
+      Game.manualClock = false;
+    },
+    // Advance n fixed steps (render every `renderEvery` steps so drawing code runs too).
+    step(n = 1, renderEvery = 0) {
+      for (let i = 0; i < n; i++) {
+        clock += STEP;
+        Game.update(STEP);
+        if (renderEvery && i % renderEvery === 0) Game.render(1, STEP);
+      }
+    },
+    seconds(s, renderEvery = 0) { this.step(Math.round(s / STEP), renderEvery); },
+    // Step until fn() is true; returns the number of steps taken, or -1 if it never happened.
+    until(fn, maxSeconds = 10) {
+      const max = Math.round(maxSeconds / STEP);
+      for (let i = 0; i < max; i++) { if (fn()) return i; this.step(); }
+      return fn() ? max : -1;
+    },
+    // Walk in a world direction (x, z), normalised; null stops.
+    move(x, z) { if (x === null) { mv = null; return; } const l = Math.hypot(x, z) || 1; mv = { x: x / l, z: z / l }; },
+    // Walk toward a point until within `near` m (or time runs out). Returns true if reached.
+    walkTo(x, z, near = 0.3, maxSeconds = 20) {
+      const p = () => Game.player;
+      const ok = this.until(() => {
+        const dx = x - p().x, dz = z - p().z;
+        if (Math.hypot(dx, dz) < near) return true;
+        this.move(dx, dz); return false;
+      }, maxSeconds) >= 0;
+      this.move(null);
+      return ok;
+    },
+    press(action) { const code = ACTIONS[action][0]; input.down(code); input.up(code); },
+    hold(action) { input.down(ACTIONS[action][0]); },
+    release(action) { input.up(ACTIONS[action][0]); },
+    // Put the player somewhere (on the floor there: the top-most one, or the highest at or below y), at rest.
+    place(x, z, y) {
+      const p = Game.player;
+      p.x = p.px = x; p.z = p.pz = z;
+      p.y = p.py = world.floorY(x, z, y);
+      p.vx = p.vy = p.vz = p.kx = p.kz = 0;
+      p.grounded = true; p.peak = p.y; p.inPit = false;
+      p.setState(PS.IDLE);
+      Game.updateCamera(0, true);
+    },
+    // A fresh enemy (an id, or a whole definition) at (x, z) on the floor there (behaviour `gated`), added to the fight.
+    spawn(id, x, z, y, yaw) {
+      if (yaw === undefined) yaw = Game.player ? Math.atan2(Game.player.x - x, Game.player.z - z) : 0;   // facing the player: it sees in a cone
+      const e = new A.Enemy(typeof id === 'string' ? A.ENEMY_BY_ID[id] : id, { ...Game.spawnSpec({ spawn: { x, y, z, yaw } }, 'gated') });
+      Game.enemies.push(e);
+      return e;
+    },
+    // Remove every enemy (optionally keep those matching fn).
+    clearEnemies(keep = () => false) {
+      for (const e of Game.enemies) if (!keep(e)) e.rig.dispose();
+      Game.enemies = Game.enemies.filter(keep);
+      for (const z of Game.zones) z.actors = z.actors.filter(keep);
+    },
+  };
+
+  const tests = [];
+  const test = (name, fn) => tests.push({ name, fn });
+  class Fail extends Error {}
+  const expect = {
+    ok(v, msg) { if (!v) throw new Fail(msg || 'expected true'); },
+    near(a, b, tol, msg) { if (!(Math.abs(a - b) <= tol)) throw new Fail(`${msg || 'value'}: expected ${b} ± ${tol}, got ${typeof a === 'number' ? a.toFixed(3) : a}`); },
+    above(a, b, msg) { if (!(a > b)) throw new Fail(`${msg || 'value'}: expected > ${b}, got ${typeof a === 'number' ? a.toFixed(3) : a}`); },
+    below(a, b, msg) { if (!(a < b)) throw new Fail(`${msg || 'value'}: expected < ${b}, got ${typeof a === 'number' ? a.toFixed(3) : a}`); },
+  };
+
+  // ---- first, before any other test draws an effect: frame times around jump-attack landings -------------------
+  // A shader compiles the first time something is drawn with it, which stalls that frame, so this test comes first:
+  // its first landing is the first after the page loaded. Each frame is one step and one render, waiting for the GPU.
+  // The landing frame and the two after it (where the ground ring, crack, dust, burst and blood first show) are held
+  // against the frames before the jump: a stall stands out from them, while the odd slow frame of a busy browser
+  // (up to about 7 ms here) does not.
+  const frames = [];   // ms per frame
+  let landedAt = -1;   // the index of the frame whose step landed
+  A.events.on('land', () => { landedAt = frames.length; });
+  test('jump attack: no landing stalls a frame, the first after loading or later, with a hit or without', () => {
+    const gl = A.renderer.getContext(), px = new Uint8Array(4), margin = { ratio: 2, ms: 6 };
+    const frame = () => { const t0 = performance.now(); sim.step(1); Game.render(1, STEP); gl.readPixels(0, 0, 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, px); frames.push(performance.now() - t0); };
+    const median = xs => [...xs].sort((a, b) => a - b)[xs.length >> 1];
+    Game.startLevel('test-crowd'); sim.begin(); sim.clearEnemies();
+    const p = Game.player, report = [];
+    for (const [when, hit] of [['first', false], ['first', true], ['later', false], ['later', true]]) {
+      sim.place(12, 0); p.yaw = Math.PI / 2;
+      const target = hit ? sim.spawn('hollow', 13.6, 0, undefined, -Math.PI / 2) : null;
+      if (target) quiet(target);
+      frames.length = 0; landedAt = -1;
+      for (let i = 0; i < 30; i++) frame();
+      sim.press('jump'); frame(); frame(); frame(); sim.press('heavy');
+      while (landedAt < 0 && frames.length < 150) frame();
+      for (let i = 0; i < 10; i++) frame();
+      expect.ok(landedAt >= 0, `${when}: a jump attack landed`);
+      const base = median(frames.slice(0, 30)), worst = Math.max(...frames.slice(landedAt, landedAt + 3));
+      report.push(`${when}${hit ? ' hit' : ''}: landing ${worst.toFixed(1)} ms, before ${base.toFixed(1)} ms`);
+      if (target) { expect.below(target.hp, target.def.hp, `${when}: the jump attack hit`); sim.clearEnemies(); }
+      expect.below(worst, base * margin.ratio + margin.ms, `${when} landing${hit ? ' with a hit' : ''}: its slowest frame against ${base.toFixed(1)} ms before`);
+    }
+    metrics.jumpLanding = report;
+  });
+
+  // ---- regression: every level, duel and test room loads and runs ----------------------------------
+  const allLevels = () => [...A.LEVELS, ...A.TEST_LEVELS];
+  test('regression: every level loads and runs 10 s with rendering', () => {
+    for (const L of allLevels()) {
+      Game.startLevel(L.id); sim.begin();
+      const p = Game.player, y0 = p.y;
+      sim.seconds(10, 6);
+      expect.ok(p.alive() || L.id !== 'test-training', `${L.id}: player died standing still`);
+      expect.near(p.y, y0, 0.01, `${L.id}: player height at rest`);
+      expect.ok(Number.isFinite(Game.cam.pos.y), `${L.id}: camera position is finite`);
+    }
+  });
+  test('ability grounds: the duel arena and a mannequin; B opens the list, a click wears an ability, Fire sets one off', () => {
+    Game.startLevel('test-abilities'); sim.begin();
+    expect.ok(Game.level.layout === 'arena' && Game.enemies.some(e => e.def.id === 'greatDummy'), 'the battle arena, with a mannequin');
+    const press = () => abilityLab.key(new KeyboardEvent('keydown', { code: 'KeyB' })), row = id => `#abilityLab .lab-row[data-ability="${id}"]`;
+    expect.ok(press() && abilityLab.isOpen() && Game.mode === 'lab', 'B opens the list and stops the world');
+    const hp = Game.player.maxHp;
+    document.querySelector(`${row('iron-blood')} .lab-pick`).click();
+    expect.ok(abilityLab.held.get('iron-blood') === 1 && Game.player.maxHp > hp, 'a click wears Iron Blood: more health');
+    expect.ok(press() && !abilityLab.isOpen() && Game.mode === 'play', 'B again: back to the fight');
+    expect.ok(abilityLab.pad(['PadUp']) && abilityLab.isOpen(), 'a pad opens it with D-pad up');
+    expect.ok(abilityLab.key(new KeyboardEvent('keydown', { code: 'KeyR' })) && Game.mode === 'lab', 'no key reaches the game behind it');
+    expect.ok(abilityLab.pad(['PadB']) && !abilityLab.isOpen() && Game.mode === 'play', 'and B on the pad closes it');
+    press(); log.length = 0;
+    document.querySelector(`${row('storm-king')} .lab-fire`).click();
+    expect.ok(Game.mode === 'play' && Game.player.kit.powers.some(p => p.id === 'storm-king'), 'Fire wears Storm King and closes the list');
+    sim.step(2);
+    expect.ok(log.includes('abilityPower'), 'and its power goes off on the mannequin');
+    const dummy = Game.enemies.find(e => e.def.id === 'greatDummy');
+    expect.above(Math.hypot(dummy.x - Game.player.x, dummy.z - Game.player.z), 6, 'from the start point, far off');
+    let hit = null; A.events.on('abilityPower', d => { hit = d; });   // events has no unsubscribe: a stray handler after this test only sets `hit`
+    press(); document.querySelector(`${row('meteor-fall')} .lab-fire`).click(); sim.step(1);
+    expect.ok(hit && hit.power === 'meteor-fall' && Math.hypot(hit.x - dummy.x, hit.z - dummy.z) < 0.01, 'Meteor Fall lands on the mannequin, not at your feet');
+    press(); document.querySelector('#abilityLab .lab-tools button').click(); press();
+    expect.ok(abilityLab.held.size === 0 && Game.player.kit.powers.length === 0 && Game.player.maxHp === hp, 'All off: back to none');
+  });
+  test('ability grounds: boss-sized mannequins on the big bar, which fills again once emptied; every blow shows its damage', () => {
+    Game.startLevel('test-abilities'); sim.begin(); Game.render(1, STEP);
+    const big = Game.enemies.find(e => e.def.id === 'greatDummy'), R = big.def.refill, hud = A.hud, p = Game.player;
+    const blow = damage => ({ damage, knock: 0, attackId: 'light' });
+    const shown = () => [...document.querySelectorAll('#dmgNums .dmgNum')].filter(el => el.style.display === 'block').map(el => el.textContent);
+    expect.ok(Game.enemies.every(e => e.def.scale >= 2 && e.def.hp >= 2000), 'both mannequins are boss-sized, with a boss\'s health');
+    Game.lock = big; Game.render(1, STEP);
+    expect.ok(!hud.eBars.classList.contains('hidden') && hud.eName.textContent === big.def.name, 'its bar is the big one at the top');
+    big.takeHit(blow(250), p); Game.render(1, STEP);
+    expect.ok(shown().includes('250'), `the blow rises off it as a number (${shown()})`);
+    expect.near(parseFloat(hud.eHp.style.width), (1 - 250 / big.def.hp) * 100, 0.1, 'and the bar drops by it');
+    big.takeHit(blow(big.def.hp), p); sim.seconds(R.delay * 0.5);
+    expect.ok(big.alive() && big.hp === 0, 'emptied, it stands');
+    big.takeHit(blow(100), p);
+    expect.ok(big.hp === 0, 'and takes nothing while empty');
+    sim.seconds(R.delay * 0.5 + R.time * 0.5);
+    expect.ok(big.hp > 0 && big.hp < big.def.hp, `then it fills (${big.hp.toFixed(0)})`);
+    sim.seconds(R.time * 0.6);
+    expect.ok(big.hp === big.def.hp, 'all the way');
+    big.takeHit(blow(40), p);
+    expect.ok(big.hp === big.def.hp - 40, 'and takes blows again');
+    Game.lock = null;
+    trainingAt('dummy'); const d = Game.enemies[0];   // a plain training dummy, in a level without numbers
+    d.takeHit(blow(d.def.hp), Game.player); Game.render(1, STEP);
+    expect.ok(shown().length === 0 && d.hp >= 1, 'no numbers anywhere else, and a plain dummy still never empties');
+  });
+  test('summons: the Stone Guardian and the Lancer of Ash strike with moves of their own, in turn, wound up before the blow lands', () => {
+    Game.startLevel('test-abilities'); sim.begin(); sim.step(2);   // the level's first step resets every power
+    const p = Game.player, e = Game.enemies.find(o => o.def.id === 'greatDummy'), FX = CONFIG.VISUALS.abilityFx;
+    const enemyPoses = new Set(A.ENEMY_DEFS.flatMap(d => d.attacks.map(a => a.pose)));
+    for (const k of ['guardian', 'lancer']) {
+      const M = FX[k].moves;
+      expect.ok(M.length >= 2 && M.every(m => !enemyPoses.has(m.pose)) && new Set(M.map(m => m.pose)).size === M.length, `the ${k} has moves no enemy strikes with (${M.map(m => m.name).join(', ')})`);
+    }
+    p.grantAbilities(['stone-guardian', 'ash-lancer']); abilityPowers.reset();
+    p.x = e.x - 6.5; p.z = e.z + 2.5; Game.lock = e; p.hp = Math.floor(p.maxHp * 0.2);
+    const ctx = { x: e.x, y: e.y, z: e.z, enemy: e };
+    abilityPowers.trigger('self', p, p.kit, 'low', ctx); abilityPowers.trigger('second', p, p.kit, 'press', { ...ctx, key: 'summon' });   // two holders: one summon each
+    const seq = { guardian: [], lancer: [] }, early = { guardian: 0, lancer: 0 };
+    let hop = 0, hopOff = 0;
+    for (let i = 0; i < 6 * 60; i++) {
+      sim.step(1, 1);
+      for (const f of summonFigures.info()) {
+        const M = FX[f.kind].moves, s = seq[f.kind];
+        if (f.move && f.move !== s[s.length - 1]) s.push(f.move);
+        if (f.move && f.n >= 1 && f.move === M[f.n % M.length].pose) early[f.kind]++;   // the next blow's move, before the engine lands it
+        if (f.kind === 'lancer') { hop = Math.max(hop, f.hop); if (f.move !== 'lancerPike') hopOff = Math.max(hopOff, f.hop); }
+      }
+    }
+    for (const k of ['guardian', 'lancer']) {
+      const M = FX[k].moves, s = seq[k];
+      expect.above(s.length, 2, `the ${k} strikes again and again (${s.join(', ')})`);
+      expect.ok(s.every((pose, j) => pose === M[j % M.length].pose), `the ${k}'s blows take its moves in turn (${s.join(', ')})`);
+      expect.above(early[k], 6, `the ${k} winds up before its blow lands (${early[k]} frames ahead)`);
+    }
+    expect.above(hop, FX.lancer.moves.find(m => m.pose === 'lancerPike').hop * 0.8, `Falling Pike leaps (${hop.toFixed(2)} m)`);
+    expect.ok(hopOff === 0, 'and only Falling Pike leaves the floor');
+    Game.lock = null;
+  });
+  test('regression: every duel runs 20 s and the enemy engages', () => {
+    for (const d of [...A.ENEMY_DEFS, ...A.TEST_DEFS]) {
+      Game.startFight(d.id); sim.begin();
+      let engaged = false;   // the duel can kill the idle player and respawn, so watch it the whole time
+      for (let s = 0; s < 20 * 6; s++) { sim.step(10, 10); if (!Game.duel.in('unaware')) engaged = true; }
+      const e = Game.duel;
+      expect.ok(engaged, `${d.id}: never noticed the player`);
+      expect.ok(Number.isFinite(e.x) && Number.isFinite(e.y) && Number.isFinite(e.z), `${d.id}: position is finite`);
+    }
+  });
+  test('regression: walking, jumping and rolling on flat ground', () => {
+    Game.startLevel('test-training'); sim.begin();
+    const p = Game.player, x0 = p.x;
+    sim.move(1, 0); sim.seconds(1); sim.move(null);
+    expect.above(p.x - x0, 3, 'walked distance in 1 s');
+    sim.press('jump'); sim.step(3);
+    expect.ok(p.state === PS.JUMP, 'jumping'); expect.above(p.y, 0.05, 'off the ground');
+    expect.ok(sim.until(() => p.isFree(), 3) >= 0, 'landed'); expect.near(p.y, 0, 1e-9, 'back on the floor');
+    sim.seconds(1);
+    sim.press('roll'); sim.step(2);
+    expect.ok(p.state === PS.ROLL, 'rolling');
+    expect.ok(sim.until(() => p.isFree(), 2) >= 0, 'roll ended'); expect.near(p.y, 0, 1e-9, 'still on the floor');
+  });
+  test('regression: Level 1 walls and gates hold the player', () => {
+    Game.startLevel('long-hall'); sim.begin(); sim.clearEnemies();
+    const p = Game.player;
+    sim.move(0, 1); sim.seconds(4); sim.move(null);
+    expect.below(p.z, A.LEVEL_1.halfZ, 'side wall');
+    sim.place(30, 0); sim.move(1, 0); sim.seconds(4); sim.move(null);
+    expect.below(p.x, 34, 'closed gate');
+  });
+  test('regression: Level 2 room walls hold the player', () => {
+    Game.startLevel('sunken-keep'); sim.begin(); sim.clearEnemies();
+    const p = Game.player;
+    sim.move(-1, 0); sim.seconds(3); sim.move(0, -1); sim.seconds(3); sim.move(null);
+    expect.above(p.x, 0, 'west wall'); expect.above(p.z, -8, 'south wall');
+  });
+
+  // ---- v3.1 heights: ramps, stairs, rails, ledges, drops, pits, edge sense, 3D sight and camera ---------------
+  const log = [];   // every event type since the last clear (events has no unsubscribe, so record once)
+  A.events.onAny(type => log.push(type));
+  const F = CONFIG.fall, H = CONFIG.height;
+  const heights = () => { Game.startLevel('test-heights'); sim.begin(); sim.clearEnemies(); log.length = 0; return Game.player; };
+  test('heights: the ramp climbs to the terrace, stairs to the landing, never hurting', () => {
+    const p = heights();
+    sim.place(25, -17);
+    expect.ok(sim.walkTo(38, -17), 'reached mid-ramp'); expect.near(p.y, 2, 0.15, 'height half way up the ramp');
+    expect.ok(sim.walkTo(52, -17), 'reached the terrace'); expect.near(p.y, 4, 1e-6, 'terrace height');
+    expect.ok(sim.walkTo(78, -17), 'reached the landing'); expect.near(p.y, 10, 1e-6, 'landing height');
+    let airborne = 0;
+    sim.until(() => { if (!p.grounded) airborne++; const dx = 50 - p.x; if (Math.abs(dx) < 0.3) return true; sim.move(dx, 0); return false; }, 10);
+    sim.move(null);
+    expect.near(p.y, 4, 1e-6, 'back down on the terrace'); expect.ok(airborne === 0, `never airborne on stairs (${airborne} steps)`);
+    expect.near(p.hp, p.maxHp, 1e-9, 'no damage from ramps and stairs');
+  });
+  test('heights: rails and ledge faces stop walking', () => {
+    const p = heights();
+    sim.place(38, -16); sim.move(0, 1); sim.seconds(2); sim.move(null);
+    expect.below(p.z, -14 - H.railThickness - p.radius + 0.01, 'ramp rail (north side)'); expect.ok(p.grounded, 'still on the ramp');
+    sim.place(76, 0); sim.move(-1, 0); sim.seconds(2); sim.move(null);
+    expect.above(p.x, 73 + H.railThickness + p.radius - 0.01, 'landing rail'); expect.near(p.y, 10, 1e-6, 'still on the landing');
+    sim.place(27, -4.5); sim.move(1, 0); sim.seconds(2); sim.move(null);
+    expect.below(p.x, 30 - p.radius + 0.01, 'the 4 m ledge face under the walkway'); expect.near(p.y, 0, 1e-6, 'still in the yard');
+    sim.place(27, -10); sim.move(1, 0); sim.seconds(2); sim.move(null);
+    expect.below(p.x, 30 - p.radius + 0.01, 'yard wall against the trench');
+    sim.place(27, -10); sim.press('jump'); sim.move(1, 0); sim.seconds(2); sim.move(null);
+    expect.below(p.x, 30 - p.radius + 0.01, 'cannot jump over the yard wall');
+  });
+  test('heights: a 4 m drop is safe, 10 m hurts by the numbers, 15 m kills', () => {
+    const p = heights();
+    sim.place(32, -4.5); sim.move(-1, 0);
+    expect.ok(sim.until(() => !p.grounded, 3) >= 0, 'walked off the walkway end');
+    expect.ok(p.state === PS.FALL, 'falling state');
+    expect.ok(sim.until(() => p.grounded, 3) >= 0, 'landed'); sim.move(null);
+    expect.near(p.y, 0, 1e-6, 'in the yard'); expect.near(p.hp, p.maxHp, 1e-9, 'a 4 m drop is free');
+    sim.place(15, 15.5); sim.move(0, 1); sim.until(() => !p.grounded, 3); sim.move(null);
+    expect.ok(sim.until(() => p.grounded, 4) >= 0, 'landed from 10 m');
+    expect.near(p.hp, p.maxHp - (10 - F.safe) * F.perMetre, 0.6, 'fall damage from 10 m');
+    expect.ok(p.alive() && p.state === PS.HURT, 'stumbles but lives'); expect.ok(log.includes('fallDamage'), 'fallDamage event');
+    sim.seconds(2); p.hp = p.maxHp;
+    sim.place(15, 35.5); sim.move(0, -1); sim.until(() => !p.grounded, 3); sim.move(null);
+    expect.ok(sim.until(() => !p.alive(), 4) >= 0, 'a 15 m fall kills'); expect.near(p.y, 0, 1e-6, 'died on the yard floor');
+  });
+  test('heights: pits kill and the player returns to the bonfire', () => {
+    const p = heights();
+    sim.place(47, -10); sim.move(-1, 0);
+    expect.ok(sim.until(() => !p.alive(), 5) >= 0, 'fell into the trench and died'); sim.move(null);
+    expect.ok(log.includes('fell'), 'fell event'); expect.near(p.y, world.killY, 1e-6, 'stopped at the kill depth');
+    sim.seconds(CONFIG.death.respawnDelay + 0.2);
+    const q = Game.player;
+    expect.ok(q.alive(), 'respawned'); expect.near(q.y, 0, 1e-6, 'at the yard bonfire');
+    sim.place(21.5, 28); sim.move(0, 1);
+    expect.ok(sim.until(() => !Game.player.alive(), 5) >= 0, 'the hole in the yard floor is a pit too'); sim.move(null);
+  });
+  test('heights: resting on a raised bonfire respawns there', () => {
+    const p = heights();
+    sim.place(78, 15); sim.press('rest'); sim.step(2);
+    expect.ok(p.state === PS.REST, 'resting at the landing bonfire');
+    sim.seconds(2); p.hp = 0; p.setState(PS.DEAD); Game.onPlayerDeath();
+    sim.seconds(CONFIG.death.respawnDelay + 0.2);
+    expect.ok(Game.player.alive(), 'respawned'); expect.near(Game.player.y, 10, 1e-6, 'on the landing, 10 m up');
+  });
+  test('heights: enemies stop at edges, find the way round, and can be knocked off', () => {
+    const p = heights();
+    sim.place(35, -4.5);   // on the open walkway over the trench (4 m)
+    const e = sim.spawn('hollow', 50, -10);   // on the terrace; straight at the player is over the trench
+    e.setState(ES.CHASE);
+    let lowest = e.y;
+    sim.until(() => { lowest = Math.min(lowest, e.y); return Math.hypot(e.x - p.x, e.z - p.z) < 2.6; }, 10);
+    expect.ok(Math.hypot(e.x - p.x, e.z - p.z) < 2.6, `reached the player along the brink (at ${e.x.toFixed(1)}, ${e.z.toFixed(1)})`);
+    expect.near(lowest, 4, 1e-6, 'never left the 4 m floor'); expect.ok(e.alive(), 'alive');
+    e.notice = 0; e.setState(ES.IDLE);   // calm it, put it mid-walkway and shove it off the side
+    e.x = e.px = 40; e.z = e.pz = -4.5; e.kx = 0; e.kz = 20;
+    sim.until(() => !e.alive(), 4);
+    expect.ok(!e.alive(), 'knocked into the trench and died'); expect.ok(log.includes('fell'), 'fell event');
+  });
+  test('heights: an enemy above an unreachable player waits at the brink, then goes home', () => {
+    const p = heights();
+    sim.place(15, -4);   // in the yard, in plain view of the open walkway 10 m up
+    const e = sim.spawn('hollow', 15, 16);
+    e.setState(ES.CHASE);
+    sim.seconds(2);
+    expect.ok(e.alive() && Math.abs(e.y - 10) < 1e-6, 'still on the walkway');
+    expect.above(e.z, 14 - 0.01, 'stopped at the brink');
+    expect.below(e.z, 14 + e.radius + 0.2, 'walked up to the brink');
+    sim.seconds(H.giveUp + 1);
+    expect.ok(e.state === ES.RETURN || e.in('unaware'), `gave up (state ${e.state})`);
+  });
+  test('heights: floors block sight, open air does not', () => {
+    heights();
+    const at = (x, y, z, height = 1.8) => ({ x, y, z, height });
+    expect.ok(gateBetween(at(15, 0, 15.5), at(15, 10, 15.5)), 'straight up through the walkway');
+    expect.ok(!gateBetween(at(15, 0, -15), at(15, 10, 15.5)), 'across the open yard to the walkway');
+    expect.ok(!gateBetween(at(74, 10, 0, 1), at(60, 10, 15.5, 1)), 'rails never block sight, even below their top');
+    expect.ok(gateBetween(at(76, 10, 0), at(52, 4, -10)), "the terrace's east wall");
+    expect.ok(gateBetween(at(25, 0, -10), at(52, 4, -10)), 'through the yard wall');
+  });
+  test('heights: the camera stays under walkways and above floors', () => {
+    const p = heights();
+    sim.place(15, 15.5, 0);   // in the yard, under the open walkway
+    Game.cam.yaw = -Math.PI / 2; Game.cam.pitch = CONFIG.mouse.pitchMax; Game.zoomTarget = CONFIG.zoom.max;
+    Game.mouseHold = 99; sim.seconds(2);
+    const c = Game.cam.pos;
+    expect.ok(c.x > 6 && c.x < 30 && c.z > 14 && c.z < 17, `camera under the walkway (${c.x.toFixed(1)}, ${c.z.toFixed(1)})`);
+    expect.below(c.y, 10 - H.slab - CONFIG.camera.ceilingMargin + 0.01, 'camera height under the walkway');
+    sim.place(15, -10); Game.mouseHold = 99; sim.seconds(2);
+    expect.above(Game.cam.pos.y, 9.5, 'open sky: the camera rises freely');
+    sim.place(77, -5); Game.mouseHold = 99; sim.seconds(2);
+    expect.above(Game.cam.pos.y, 10 + CONFIG.camera.floor - 0.01, 'above the landing floor');
+    expect.ok(Number.isFinite(Game.cam.pos.y), 'finite');
+  });
+
+  // ---- v3.2 open rooms and culling ---------------------------------------------------------------------------
+  const metrics = {};   // numbers worth reading in the report (frame times)
+  test('open rooms: sky, grass and ruins over open rooms only', () => {
+    Game.startLevel('test-courtyard'); sim.begin();
+    const I = A.visuals.info(), yard = A.TEST_COURTYARD.rooms.find(r => r.id === 'courtyard').rect;
+    expect.ok(I.sky, 'sky'); expect.above(I.grassAt.length, 500, 'grass clumps'); expect.ok(I.grass > 0, 'grass drawn');
+    expect.ok(I.grassAt.every(([x, y, z]) => inRect(yard, x, z) && Math.abs(y + 0.05) < 1e-6), 'every clump on the courtyard floor');
+    expect.above(I.far, 200, 'draw distance reaches the ruins around the level');
+    Game.startLevel('test-heights'); sim.begin();
+    const J = A.visuals.info();
+    expect.ok(!J.sky && J.grass === 0, 'no sky or grass where the level sets none');
+    Game.startLevel('sunken-keep'); sim.begin();
+    const K = A.visuals.info();
+    expect.ok(!K.sky && K.grass === 0 && K.far === 200, 'Level 2 unchanged: no sky, no grass, normal draw distance');
+  });
+  test('culling: a fixed pool of lights follows the nearest light sources', () => {
+    Game.startLevel('test-courtyard'); sim.begin(); sim.clearEnemies();
+    const counts = new Set(), src = stage.lightSources;
+    expect.above(src.length, CONFIG.cull.maxLights, 'more light sources than pool lights');
+    for (const [x, z] of [[4, 0], [40, 0], [42, 48], [92, 0], [42, -48], [20, -20]]) {
+      sim.place(x, z); Game.render(1, STEP);
+      counts.add(A.visuals.info().pointLights);
+      const p = Game.player, dist = l => Math.hypot(l.position.x - p.x, l.position.y - p.y, l.position.z - p.z);
+      const nearest = src.reduce((a, b) => dist(a) <= dist(b) ? a : b);
+      const lit = stage.lightPool.filter(l => l.intensity > 0);
+      expect.ok(lit.some(l => l.position.distanceTo(nearest.position) < 1e-6), `the nearest source is lit at (${x}, ${z})`);
+    }
+    expect.ok(counts.size === 1 && counts.has(CONFIG.cull.maxLights), `the scene always holds exactly the pool (${[...counts]})`);
+  });
+  test('culling: far unaware enemies sleep; near or fighting ones run', () => {
+    Game.startLevel('test-courtyard'); sim.begin();
+    const p = Game.player;
+    sim.step(2);
+    const far = Game.enemies.filter(e => Math.hypot(e.x - p.x, e.z - p.z) > CONFIG.cull.enemyRange);
+    expect.ok(far.length >= 6 && far.every(e => e.asleep), `${far.length} far enemies, all asleep`);
+    const patrol = Game.enemies.find(e => e.behavior === 'patrol' && e.z > 40), x0 = patrol.x;
+    sim.seconds(2); Game.render(1, STEP);
+    expect.ok(patrol.x === x0, 'a sleeping patrol stays put'); expect.ok(!patrol.rig.root.visible, 'and is not drawn');
+    sim.place(42, 32); sim.seconds(2);
+    expect.ok(!patrol.asleep && patrol.x !== x0, 'woke and moved once the player came near');
+    const e = Game.zones[0].actors[0];
+    e.leash = e.homeLeash = Infinity; e.setState(ES.CHASE);
+    sim.place(4, 0); sim.seconds(1);
+    expect.above(Math.hypot(e.x - Game.player.x, e.z - Game.player.z), CONFIG.cull.enemyRange - 10, 'the chaser was far');
+    expect.ok(!e.asleep && e.state !== ES.IDLE, 'a fighting enemy keeps running');
+  });
+  test('culling: Level 1 and Level 2 keep every light and never sleep anyone', () => {
+    for (const id of ['long-hall', 'sunken-keep']) {
+      Game.startLevel(id); sim.begin(); sim.step(5);
+      expect.ok(!stage.lightPool && Game.enemies.every(e => !e.asleep), `${id}: no pool, nobody asleep`);
+    }
+  });
+  test('culling: frame time on Test: Courtyard, culled and not', () => {
+    const gl = A.renderer.getContext(), px = new Uint8Array(4);
+    const measure = def => {
+      Game.kind = 'level'; Game.level = def; Game.enterPlay(); Game.reset(); sim.begin();
+      sim.place(42, 0);
+      for (let i = 0; i < 20; i++) { sim.step(1); Game.render(1, STEP); }   // warm-up: shaders compile here
+      gl.readPixels(0, 0, 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, px);
+      const t0 = performance.now();
+      for (let i = 0; i < 90; i++) { sim.step(1); Game.render(1, STEP); }
+      gl.readPixels(0, 0, 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, px);   // wait for the GPU
+      return { ms: (performance.now() - t0) / 90, lights: A.visuals.info().pointLights, awake: Game.enemies.filter(e => !e.asleep).length };
+    };
+    const off = measure({ ...A.TEST_COURTYARD, id: 'test-courtyard-uncull', cull: false });
+    const on = measure(A.TEST_COURTYARD);
+    metrics.courtyardFrame = { culledMs: +on.ms.toFixed(2), unculledMs: +off.ms.toFixed(2), culledLights: on.lights, unculledLights: off.lights,
+                               culledAwake: on.awake, unculledAwake: off.awake };
+    expect.ok(on.lights < off.lights, `fewer real lights when culled (${on.lights} vs ${off.lights})`);
+    expect.below(on.ms, off.ms * 1.25 + 1, `culled frame (${on.ms.toFixed(1)} ms) no slower than unculled (${off.ms.toFixed(1)} ms)`);
+    Game.startLevel('test-courtyard');   // leave the real level loaded
+  });
+
+  // ---- v3.3 projectiles, shove, shortcut gates -----------------------------------------------------------------
+  const shots = [];   // every bolt loosed, and who fired it
+  A.events.on('shot', d => shots.push({ enemy: d.enemy }));
+  const bowShot = () => A.ENEMY_BY_ID.testBowman.attacks.find(a => a.projectile);
+  const quiet = e => { e.notice = 0; e.setState(ES.IDLE); };   // an enemy that stays put while we aim for it
+  const settleBolts = () => sim.until(() => !A.projectiles.live().length, 4);
+  test('projectiles: the Bowman shoots down from the walkway and the bolt hits', () => {
+    Game.startFight('testBowman'); sim.begin(); log.length = 0; shots.length = 0;
+    const p = Game.player, hp0 = p.hp;
+    expect.ok(sim.until(() => shots.length > 0, 8) >= 0, 'a bolt was loosed at a player 4 m below');
+    expect.ok(sim.until(() => p.hp < hp0, 3) >= 0, 'it hit the player standing still');
+    expect.near(hp0 - p.hp, bowShot().damage, 0.01, 'full damage, unblocked');
+    expect.near(Game.duel.y, 4, 1e-6, 'the archer stayed on its walkway');
+  });
+  test('projectiles: blocked from the front, rolled through, never parried', () => {
+    Game.startFight('testBowman'); sim.begin(); log.length = 0;
+    const p = Game.player, e = Game.duel, shot = bowShot();
+    quiet(e);
+    const fire = () => { e.yaw = Math.atan2(p.x - e.x, p.z - e.z); return A.projectiles.fire(e, shot, p); };
+    sim.hold('block'); sim.step(2);
+    let hp0 = p.hp; fire(); settleBolts(); sim.release('block');
+    expect.ok(log.includes('strike'), 'the bolt struck the guard');
+    expect.near(hp0 - p.hp, shot.damage * CONFIG.block.damageMul, 0.01, 'blocked damage');
+    sim.seconds(1.5); hp0 = p.hp;
+    const b = fire(), arrive = Math.hypot(p.x - b.x, p.z - b.z) / shot.projectile.speed;
+    sim.seconds(Math.max(0, arrive - CONFIG.player.rollIFrames * 0.5)); sim.press('roll');
+    settleBolts();
+    expect.near(p.hp, hp0, 1e-9, 'rolled through the bolt');
+    // Close up, in the last instant of the draw: a melee swing could be parried here, the shot never.
+    const kick = e.def.attacks.find(a => !a.projectile);
+    e.x = p.x + Math.sin(p.yaw) * 2; e.z = p.z + Math.cos(p.yaw) * 2; e.y = p.y;
+    const lateInDraw = a => { e.attack = a; e.hitIndex = 0; e.setState(ES.WINDUP); e.stateTime = a.hits[0].startup - 0.05; e.yaw = Math.atan2(p.x - e.x, p.z - e.z); };
+    lateInDraw(kick); expect.ok(parryTiming(p, e, CONFIG.parry.arm) !== null, 'the kick could be parried');
+    lateInDraw(shot); expect.ok(parryTiming(p, e, CONFIG.parry.arm) === null, 'the shot cannot');
+  });
+  test('projectiles: ledges, floors and closed gates stop bolts', () => {
+    Game.startFight('testBowman'); sim.begin(); log.length = 0;
+    const e = Game.duel, shot = bowShot();
+    quiet(e); sim.place(27, -4.5, 0);   // right under the walkway's 4 m ledge
+    const p = Game.player, hp0 = p.hp;
+    e.yaw = Math.atan2(p.x - e.x, p.z - e.z); A.projectiles.fire(e, shot, p); settleBolts();
+    expect.near(p.hp, hp0, 1e-9, 'the walkway stopped it'); expect.ok(log.includes('boltStopped'), 'boltStopped event');
+    Game.startLevel('test-courtyard'); sim.begin(); sim.clearEnemies(); log.length = 0;
+    sim.place(98, -24);   // in the corridor, behind the closed shortcut gate
+    const q = Game.player, archer = sim.spawn('testBowman', 98, -6, undefined, Math.PI);
+    quiet(archer); A.projectiles.fire(archer, shot, q); settleBolts();
+    expect.near(q.hp, q.maxHp, 1e-9, 'the closed gate stopped it'); expect.ok(log.includes('boltStopped'), 'stopped at the gate');
+  });
+  test('projectiles: an archer shoots in the middle of a crowd fight', () => {
+    Game.startLevel('test-crowd'); sim.begin(); shots.length = 0; starts.length = 0;
+    const bow = sim.spawn('testBowman', 20, 10, undefined, -Math.PI / 2);
+    sim.place(12, 0);
+    sim.until(() => shots.some(s => s.enemy === bow) && starts.some(s => s.enemy !== bow), 15);
+    expect.ok(shots.some(s => s.enemy === bow), 'the archer loosed a bolt');
+    expect.ok(starts.some(s => s.enemy !== bow), 'while the Hollows attacked');
+  });
+  test('shove: throws the player off the open edge; a block keeps them on; others stay capped', () => {
+    const setup = () => {
+      Game.startFight('testShover'); sim.begin(); log.length = 0;
+      const p = Game.player, e = Game.duel, shove = e.def.attacks.find(a => a.shove);
+      sim.place(49, -10); p.yaw = Math.PI / 2;   // facing east, the open edge 3 m behind
+      e.x = e.px = 50.9; e.z = e.pz = -10; e.yaw = -Math.PI / 2; e.attack = shove; e.hitIndex = 0; e.setState(ES.WINDUP);
+      return { p, e };
+    };
+    let { p } = setup();
+    expect.ok(sim.until(() => !p.alive(), 6) >= 0, 'shoved into the trench'); expect.ok(log.includes('fell'), 'fell event');
+    ({ p } = setup());
+    sim.hold('block'); sim.seconds(3); sim.release('block');
+    expect.ok(p.alive() && Math.abs(p.y - 4) < 1e-6, 'blocking kept the player on the terrace');
+    expect.above(p.x, 46, 'still short of the edge');
+    sim.step(3);
+    const from = { x: p.x - 1, z: p.z };   // from behind: no guard
+    p.kx = p.kz = 0; p.takeHit({ damage: 0, poise: 0, knock: 26, shove: false }, from);
+    expect.near(p.kx, CONFIG.player.knockCap, 1e-6, 'an ordinary hit is capped');
+    p.kx = p.kz = 0; p.takeHit({ damage: 0, poise: 0, knock: 26, shove: true }, from);
+    expect.near(p.kx, 26, 1e-6, 'a shove is not');
+  });
+  test('shortcut gates: shut from the near side, open for good from the far side', () => {
+    Game.startLevel('test-courtyard'); sim.begin(); sim.clearEnemies(); log.length = 0;
+    const g = world.gates.find(g => g.id === 'shortcut-east');
+    sim.place(98, -20); sim.move(0, 1); sim.seconds(3); sim.move(null);
+    expect.below(Game.player.z, -14, 'the closed gate holds from the corridor'); expect.ok(!g.open, 'still shut');
+    sim.place(98, -8); sim.step(2);
+    expect.ok(g.open && log.includes('gateOpened'), 'opened on reaching the east hall');
+    const p = Game.player; p.hp = 0; p.setState(PS.DEAD); Game.onPlayerDeath(); sim.seconds(CONFIG.death.respawnDelay + 0.2);
+    expect.ok(g.open, 'stays open after dying');
+    sim.clearEnemies(); sim.place(98, -20); sim.move(0, 1); sim.seconds(3); sim.move(null);
+    expect.above(Game.player.z, -14, 'now the corridor leads through'); expect.ok(!Game.complete, 'shortcuts do not complete the level');
+  });
+
+  // ---- v3.4 new enemies and the Bell Warden ------------------------------------------------------------------
+  const NEW = ['lancer', 'executioner', 'duelist', 'bowman', 'shover', 'bellWarden', 'pillagerCaptain'];
+  const strikeOf = id => makeStrike(A.PLAYER_DEF.moveset.attacks[id]);
+  const behind = e => ({ x: e.x - Math.sin(e.yaw) * 2, z: e.z - Math.cos(e.yaw) * 2 });
+  const inFrontOf = e => ({ x: e.x + Math.sin(e.yaw) * 2, z: e.z + Math.cos(e.yaw) * 2 });
+  const sturdy = p => { p.maxHp = p.hp = 1e9; };   // a player who outlasts any test
+  const faceOff = (e, p, d = 2) => {   // the enemy d m in front of the player, facing them
+    e.x = e.px = p.x + Math.sin(p.yaw) * d; e.z = e.pz = p.z + Math.cos(p.yaw) * d; e.y = p.y; e.yaw = Math.atan2(p.x - e.x, p.z - e.z);
+  };
+  // Pass 85: deflect every blow of attack `a` (a block tap just before each goes active). Returns how many were
+  // deflected; the last one deflected leaves the foe open (PARRIED).
+  const deflectString = (e, a) => {
+    let n = 0;
+    for (let i = e.attack === a ? e.hitIndex : 0; i < a.hits.length; i++) {
+      if (sim.until(() => e.attack === a && e.hitIndex === i && e.state === ES.WINDUP && e.stateTime >= a.hits[i].startup - 0.08, 3) < 0) break;
+      const before = log.length; sim.press('block');
+      if (sim.until(() => log.slice(before).includes('parry'), 0.4) >= 0) n++;
+    }
+    return n;
+  };
+  const holdAt = (e, r) => { if (e.state === ES.CHASE) faceOff(e, Game.player, r); };   // r m in front of the player while it chooses
+  const starts = [];   // every attack an enemy started: who, which, when (s) and how far from the player (m)
+  A.events.on('attackStart', d => starts.push({ enemy: d.enemy, attack: d.attack, t: clock,
+                                                dist: Math.hypot(d.enemy.x - Game.player.x, d.enemy.z - Game.player.z) }));
+  const attacksAt = (id, r, seconds = 30) => {   // a duel with the enemy held r m from the player: the attacks it started
+    Game.startFight(id); sim.begin(); sturdy(Game.player); starts.length = 0;
+    for (let i = 0; i < seconds / STEP; i++) { holdAt(Game.duel, r); sim.step(); }
+    return starts.map(s => s.attack.id);
+  };
+  test('four-phase attacks: the light attack has a hitbox only while its strike is active', () => {
+    const a = A.PLAYER_DEF.moveset.attacks.light, h = a.hits[0];
+    expect.ok(a.pose && h.follow > 0, 'the light attack is key-posed with a follow-through');
+    expect.ok(attackTimeline(a, h.startup + h.active + h.follow * 0.5).phase === PHASE.FOLLOW, 'follow-through sits between strike and recovery');
+    Game.startLevel('test-training'); sim.begin();
+    const p = Game.player, phases = [], marks = [];
+    A.events.on('attackPhase', d => { if (d.actor === p) phases.push(d.phase); });
+    A.events.on('attackMarker', d => { if (d.actor === p) marks.push(d.marker.event); });
+    p.startAttack(a, { x: 0, z: 0, has: false }, null, []);
+    let wrong = 0, on = 0;
+    while (p.state === PS.ATTACK) {
+      sim.step();
+      const ph = attackTimeline(a, p.stateTime).phase;
+      if (!!p.hitbox !== (ph === PHASE.ACTIVE)) wrong++;
+      if (p.hitbox) on++;
+    }
+    expect.ok(wrong === 0 && on > 0, `hitbox follows the active phase (${on} steps on, ${wrong} wrong)`);
+    expect.ok(phases.join() === [PHASE.STARTUP, PHASE.ACTIVE, PHASE.FOLLOW, PHASE.RECOVERY].join(), `phases in order: ${phases.join()}`);
+    expect.ok(marks.includes('sound'), 'the swing sound marker fired');
+  });
+  test('player string: four lights chain, then start over; costs nothing', () => {
+    Game.startLevel('test-training'); sim.begin();
+    const p = Game.player, seen = [];
+    for (let i = 0; i < 400 && seen.length < 5; i++) {
+      if (p.state === PS.ATTACK && seen[seen.length - 1] !== p.attack) seen.push(p.attack);
+      if (i % 6 === 0) sim.press('light');
+      sim.step();
+    }
+    expect.ok(seen.map(a => a.id).join() === 'light,light2,light3,light4,light', `string: ${seen.map(a => a.id).join()}`);
+    expect.ok(!('stamina' in p), 'swinging costs nothing: there is no stamina (pass 96)');
+  });
+  test('pass 85 finishers: a heavy at any point of the string is that point\'s finisher', () => {
+    const M = A.PLAYER_DEF.moveset.attacks;
+    for (let at = 1; at <= 4; at++) {
+      Game.startLevel('test-training'); sim.begin();
+      const p = Game.player, seen = [];
+      for (let i = 0; i < 400 && seen.length < at + 1; i++) {
+        if (p.state === PS.ATTACK && seen[seen.length - 1] !== p.attack) seen.push(p.attack);
+        if (i % 6 === 0) sim.press(seen.length < at ? 'light' : 'heavy');
+        sim.step();
+      }
+      const ids = seen.map(a => a.id);
+      expect.ok(ids[at] === `finisher${at}` && M[`finisher${at}`].damage > M.light.damage * 1.5, `after ${at} light: ${ids.join()}`);
+    }
+  });
+  test('pass 90 dash: three charges, back one at a time; no stamina', () => {
+    Game.startLevel('test-crowd'); sim.begin(); sim.clearEnemies(); sim.place(20, 0);
+    const p = Game.player, C = CONFIG.player;
+    expect.ok(C.dashCharges === 3, `three dash charges (${C.dashCharges})`);
+    for (let i = 1; i <= C.dashCharges; i++) {
+      sim.press('roll'); sim.step(2);
+      expect.ok(p.state === PS.ROLL && p.dashes > C.dashCharges - i - 0.05 && p.dashes < C.dashCharges - i + 0.75, `dash ${i} (${p.dashes.toFixed(2)} left)`);
+      sim.until(() => p.state !== PS.ROLL, 1);
+    }
+    sim.press('roll'); sim.step(2);
+    expect.ok(p.state !== PS.ROLL, 'no fourth dash until a charge is back');
+    p.dashes = 0; sim.seconds(C.dashRefill + 0.1);   // from empty, one charge comes back per dashRefill s, not all at once
+    expect.ok(p.dashes >= 1 && p.dashes < 1.2, `from empty, one charge back after ${C.dashRefill} s (${p.dashes.toFixed(2)})`);
+    sim.press('roll'); sim.step(2);
+    expect.ok(p.state === PS.ROLL, 'a charge came back');
+  });
+  test('pass 85 cancels: a dash or a deflect cuts an attack short once its blow is out, never in the wind-up', () => {
+    Game.startLevel('test-crowd'); sim.begin(); sim.clearEnemies(); sim.place(20, 0);
+    const p = Game.player, H = A.PLAYER_DEF.moveset.attacks.heavy;
+    sim.press('heavy'); sim.step(3); sim.press('roll'); sim.step(1);
+    expect.ok(p.state === PS.ATTACK, 'a dash pressed early in the wind-up is dropped');
+    sim.until(() => p.state === PS.ATTACK && attackTimeline(p.attack, p.attackT).phase === PHASE.FOLLOW, 2); sim.press('roll'); sim.step(1);
+    expect.ok(p.state === PS.ROLL, `a dash cancels the follow-through (${p.state})`);
+    sim.until(() => p.state === PS.IDLE || p.state === PS.WALK, 2); sim.step(2);
+    sim.press('light'); sim.until(() => p.state === PS.ATTACK && attackTimeline(p.attack, p.attackT).phase === PHASE.FOLLOW, 2);
+    sim.press('block'); sim.step(1);
+    expect.ok(p.state === PS.BLOCK && p.deflect > 0, `a deflect press cancels into the guard, armed (${p.state})`);
+    // A dash pressed late in a light's wind-up waits for the blow: its hitbox is live for at least one step first.
+    sim.until(() => p.state === PS.IDLE || p.state === PS.WALK, 2); sim.step(20);
+    sim.press('light'); sim.step(4); sim.press('roll');
+    let out = false;
+    for (let i = 0; i < 60 && p.state === PS.ATTACK; i++) { sim.step(1); out = out || !!p.hitbox; }
+    expect.ok(out && p.state === PS.ROLL, `the blow came out before the buffered dash (${p.state})`);
+  });
+  test('pass 85 dash attack and jump attacks: a light or heavy out of a dash; light and heavy from the air', () => {
+    const M = A.PLAYER_DEF.moveset;
+    for (const [action, id] of Object.entries(M.dash)) {
+      Game.startLevel('test-crowd'); sim.begin(); sim.clearEnemies(); sim.place(20, 0);
+      const p = Game.player; sim.press('roll'); sim.step(3); sim.press(action);
+      sim.until(() => p.state === PS.ATTACK, 1);
+      expect.ok(p.attack && p.attack.id === id, `${action} out of a dash: ${p.attack && p.attack.id}`);
+    }
+    for (const [action, id] of Object.entries(M.air)) {
+      Game.startLevel('test-crowd'); sim.begin(); sim.clearEnemies(); sim.place(20, 0);
+      const p = Game.player; sim.press('jump'); sim.step(8); sim.press(action);
+      sim.until(() => p.state === PS.JUMP_ATTACK || p.state === PS.LAND, 1);
+      expect.ok(p.attack && p.attack.id === id, `${action} from the air: ${p.attack && p.attack.id}`);
+    }
+  });
+  test('pass 85 drinking: on the move, slower; a hit cuts the drink short', () => {
+    Game.startLevel('test-crowd'); sim.begin(); sim.clearEnemies(); sim.place(20, 0);
+    const p = Game.player; p.hp = p.maxHp * 0.3; sim.move(1, 0);
+    sim.press('flask'); sim.step(10);
+    const x0 = p.x; sim.step(10);
+    expect.ok(p.state === PS.USE_ITEM && p.x - x0 > 0.2, `walks while drinking (${(p.x - x0).toFixed(2)} m in 1/6 s)`);
+    expect.ok(Math.hypot(p.vx, p.vz) <= CONFIG.player.walkSpeed * CONFIG.player.drinkSpeedMul + 0.01, 'and slower');
+    sim.move(null);
+    const e = sim.spawn('hollow', p.x + 1.5, p.z); quiet(e);
+    p.takeHit(makeStrike(e.def.attacks[0]), e);
+    expect.ok(p.state !== PS.USE_ITEM, `a hit cuts the drink short (${p.state})`);
+  });
+  test('pass 85 deflect: a block tap on the beat turns a blow; a mid-string one leaves the string going, the last opens it', () => {
+    Game.startFight('pillagerCaptain'); sim.begin(); sturdy(Game.player); log.length = 0;
+    const p = Game.player, e = Game.duel, combo = e.def.attacks.find(a => a.hits.length === 3), hp0 = p.hp;
+    faceOff(e, p, 2); e.beginAttack(combo);
+    sim.until(() => e.state === ES.WINDUP && e.stateTime >= combo.hits[0].startup - 0.08, 2); sim.press('block');
+    sim.until(() => log.includes('parry'), 0.4);
+    expect.ok(log.includes('parry') && e.state !== ES.PARRIED && e.attack === combo, 'the first cut turned, the string goes on');
+    sim.until(() => e.hitIndex === 1, 1);
+    expect.ok(p.hp === hp0, 'the turned cut never landed');
+    // The rest of the string, deflected: the last cut leaves it open, and a riposte follows.
+    log.length = 0; const n = deflectString(e, combo);
+    expect.ok(n >= 2 && e.state === ES.PARRIED && p.riposte > 0, `the last cut deflected opens it (${e.state}), a riposte is ready`);
+    sim.press('heavy'); sim.until(() => p.state === PS.ATTACK, 0.5);   // pass 88: the riposte is the counter's rising cut, never a charge
+    expect.ok(p.state === PS.ATTACK && p.attack.id === 'counterHeavy' && p.payload.riposte && p.charge === 2, `a heavy now is the heavy counter (${p.attack && p.attack.id})`);
+  });
+  test('pass 85 deflect: mashing the button deflects nothing (the spam lock)', () => {
+    Game.startFight('pillagerCaptain'); sim.begin(); sturdy(Game.player); log.length = 0;
+    const p = Game.player, e = Game.duel, combo = e.def.attacks.find(a => a.hits.length === 3);
+    faceOff(e, p, 2); e.beginAttack(combo);
+    sim.until(() => e.state === ES.WINDUP && e.stateTime >= combo.hits[0].startup - 0.45, 2);
+    for (let i = 0; i < 10; i++) { sim.press('block'); sim.step(6); }
+    expect.ok(!log.includes('parry'), 'a press every 0.1 s through the blow deflects nothing');
+  });
+  test('pass 85 perfect dodge: a blow inside the dash opens a counter (a riposte)', () => {
+    Game.startFight('pillagerCaptain'); sim.begin(); sturdy(Game.player); log.length = 0;
+    const p = Game.player, e = Game.duel, combo = e.def.attacks.find(a => a.hits.length === 3);
+    faceOff(e, p, 1.6); e.beginAttack(combo);
+    sim.until(() => e.state === ES.WINDUP && e.stateTime >= combo.hits[0].startup - 0.04, 2); sim.press('roll');
+    sim.until(() => log.includes('dodge'), 0.4);
+    expect.ok(log.includes('dodge') && p.riposte > 0, `dodged on the beat: a counter is open (${p.riposte.toFixed(2)} s)`);
+    sim.press('light'); sim.until(() => p.state === PS.ATTACK, 0.5);   // pass 88: out of that dash, the counter
+    expect.ok(p.attack && p.attack.id === 'counter' && p.payload.riposte, `a light in that dash is the counter, with its riposte (${p.attack && p.attack.id})`);
+    e.cooldown = 30; sim.until(() => p.state !== PS.ATTACK, 2); sim.until(() => p.dashes >= CONFIG.player.dashCharges && e.state === ES.CHASE, 4); e.cooldown = 30;
+    expect.ok(e.state === ES.CHASE && p.isFree(), `the boss back on its feet, the player free (${e.state}, ${p.state})`);
+    sim.press('roll'); sim.step(); sim.press('light'); sim.until(() => p.state === PS.ATTACK, 0.5);
+    expect.ok(p.attack && p.attack.id === 'dashLight', `an ordinary dash still gives the dash attack (${p.attack && p.attack.id})`);
+  });
+  const opens = [], hits = [];   // pass 95: every counter window opened and every strike (recorded once: events has no unsubscribe)
+  A.events.on('counterOpen', d => opens.push(d)); A.events.on('strike', d => hits.push(d));
+  test('pass 95 counter: a window opens with its cue on a dodge or a deflect; the light counter flash-steps through the foe and its cut opens', () => {
+    const H = CONFIG.hints, W = A.worldHints;
+    let kept = null; try { kept = localStorage.getItem(H.storageKey); } catch (e) { /* none */ }
+    const wasLessons = settings.lessons; opens.length = hits.length = 0;
+    try {
+      W.forget(); settings.lessons = true;
+      Game.startFight('pillagerCaptain'); Game.loading = 0; sim.begin(); sturdy(Game.player); log.length = 0; counterFx.clear();
+      const p = Game.player, e = Game.duel, combo = e.def.attacks.find(a => a.hits.length === 3), one = e.def.attacks.find(a => a.id === 'captainOverhead');
+      faceOff(e, p, 1.6); e.beginAttack(one);   // a single blow, so no second one cuts the counter short
+      sim.until(() => e.state === ES.WINDUP && !(e.holdLeft > 0) && e.stateTime >= one.hits[0].startup - 0.04, 4); sim.press('roll');
+      sim.until(() => log.includes('dodge'), 0.4);
+      const o = opens[opens.length - 1];
+      expect.ok(o && o.player === p && o.from === 'dodge' && o.foe === e && p.riposte > 0 && dodgeMoment.active,
+        `a perfect dodge opens the window, with its beat of slow motion (${o && o.from}, ${dodgeMoment.active})`);
+      Game.render(1, STEP);
+      const s = W.shown;
+      expect.ok(s && s.kind === 'counter' && s.word === 'Counter' && s.enemy === p, `the first window of the fight shows the counter's key by the blade (${s && s.kind})`);
+      expect.ok(counterFx.state.marks === 1 && counterFx.state.dim > 0, `the foe shows the open mark, the edges dim (${JSON.stringify(counterFx.state)})`);
+      // The light counter: a flash step through the foe to its far side, one cut that opens a beat later.
+      const fx = e.x - p.x, fz = e.z - p.z;
+      sim.press('light'); sim.until(() => p.state === PS.ATTACK, 0.5);
+      expect.ok(p.attack && p.attack.id === 'counter' && p.attack.flashStep, `the counter, a flash step (${p.attack && p.attack.id})`);
+      e.cooldown = 30; const n0 = log.length;
+      sim.until(() => p.attackPhase() === PHASE.RECOVERY || p.state !== PS.ATTACK, 1.5);
+      const along = ((p.x - e.x) * fx + (p.z - e.z) * fz) / Math.hypot(fx, fz);
+      const F = p.attack.flashStep, far = e.radius + p.radius + F.past;
+      expect.ok(along > e.radius && along < far + 1.5, `the flash step ends just past the foe's far side (${along.toFixed(2)} m beyond its centre, about ${far.toFixed(2)})`);
+      const sx = p.x, sz = p.z; sim.seconds(1);
+      expect.ok(Math.hypot(p.x - sx, p.z - sz) < 1.2, `and stops there, no slide on (${Math.hypot(p.x - sx, p.z - sz).toFixed(2)} m more)`);
+      expect.ok(!hits.some(d => d.target === p), 'never caught by the blow it slipped');
+      expect.ok(log.slice(n0).includes('strike'), 'the cut landed');
+      Game.render(1, STEP); let c = counterFx.state.cuts[0];
+      expect.ok(c && c.kind === 'line' && !c.open, `a thin cut line across the foe (${JSON.stringify(c)})`);
+      const thin = c.w; Game.hitstop = 0;
+      for (let i = 0; i < Math.ceil(A.PLAYER_DEF.moveset.attacks.counter.cut.open / STEP) + 4; i++) Game.render(1, STEP);
+      c = counterFx.state.cuts[0];
+      expect.ok(c && c.open && c.w > thin * 2, `a beat later it opens wide (${thin.toFixed(2)} to ${c && c.w.toFixed(2)})`);
+      // The second window of the fight, from a deflect: its slow beat too, and no hint this time.
+      sim.until(() => p.isFree(), 2); e.cooldown = 0; sim.until(() => e.state === ES.CHASE, 4);
+      faceOff(e, p, 2); e.beginAttack(combo); opens.length = 0;
+      deflectString(e, combo);
+      const d = opens[opens.length - 1];
+      expect.ok(d && d.from === 'deflect' && e.state === ES.PARRIED && dodgeMoment.active, `a deflected last blow opens it too, slowed (${d && d.from}, ${e.state})`);
+      Game.render(1, STEP);
+      expect.ok(!W.shown || W.shown.kind !== 'counter', 'its key shows on the first window of a fight only');
+    } finally {
+      settings.lessons = wasLessons;
+      try { if (kept == null) localStorage.removeItem(H.storageKey); else localStorage.setItem(H.storageKey, kept); } catch (e) { /* none */ }
+      W.reload();
+    }
+  });
+  test('pass 85 anti-mash: a boss under a run of blows breaks off with its own quick attack; ordinary hits never flinch it', () => {
+    Game.startFight('pillagerCaptain'); sim.begin(); sturdy(Game.player); log.length = 0;
+    const p = Game.player, e = Game.duel, M = CONFIG.enemy.mash; faceOff(e, p, 2); e.cooldown = 30;
+    sim.until(() => e.state === ES.CHASE, 3); e.cooldown = 30;
+    for (let i = 0; i < M.hits; i++) { e.takeHit({ ...strikeOf('light'), attackId: 'light' }, p); expect.ok(e.state !== ES.STAGGER, 'no flinch'); e.chainTime = 0.3; }
+    sim.until(() => log.includes('breakOff'), 0.5);
+    expect.ok(log.includes('breakOff') && e.state === ES.WINDUP, `after ${M.hits} quick blows it breaks off (${e.state})`);
+  });
+  test('pass 87 number keys: a full key fires its ability on the boss, an empty one does nothing; the HUD shows each key', () => {
+    Game.startFight('pillagerCaptain'); sim.begin(); sturdy(Game.player);
+    const p = Game.player, e = Game.duel; faceOff(e, p, 2); e.cooldown = 30;
+    p.grantAbilities(['fire-burst', 'mending']); abilityPowers.reset(); sim.step(1, 1); log.length = 0;
+    const row = document.getElementById('aBR'), slots = [...row.querySelectorAll('.akey')];
+    expect.ok(slots.length === 4 && !row.classList.contains('off'), 'four squares, shown');
+    expect.ok(!slots[0].classList.contains('empty') && !slots[1].classList.contains('empty') && slots[2].classList.contains('empty'), 'Strike and Guard held, Summon empty');
+    const bind = slots[0].querySelector('.akey-bind').textContent; expect.ok(bind === '1', `its key (${bind})`);
+    const hp = e.hp; sim.press('ability1'); sim.step(2);
+    expect.ok(e.hp === hp && log.includes('abilityNotReady') && !slots[0].classList.contains('ready'), 'empty: nothing');
+    abilityGain(p.kit, p.perk, 999); sim.step(1, 1);
+    expect.ok(slots[0].classList.contains('ready'), 'full: it lights');
+    e.cooldown = 30; sim.press('ability1'); sim.step(2);
+    expect.ok(e.hp < hp && p.perk.charge.strike === 0 && log.includes('abilityPress'), `Fire Burst burns the boss (${(hp - e.hp).toFixed(0)})`);
+    p.grantAbilities([]); sim.step(1, 1);
+    expect.ok(row.classList.contains('off'), 'no key held: hidden');
+  });
+  test('input buffer: early mashing is dropped; a late press is kept and fires at the cancel point', () => {
+    Game.startLevel('test-training'); sim.begin();
+    const p = Game.player, H = A.PLAYER_DEF.moveset.attacks.heavy, cancel = phaseSpan(H, 'recovery')[0];
+    sim.press('heavy'); sim.step(2); sim.press('roll'); sim.step(2);
+    expect.ok(!p.buffer && p.state === PS.ATTACK, 'a dash pressed at the start of a heavy is dropped');
+    sim.until(() => p.state === PS.ATTACK && cancel - p.attackT < CONFIG.player.bufferWindow * 0.8, 120);
+    sim.press('light'); sim.step();
+    expect.ok(p.buffer && p.buffer.action === 'light', 'an attack pressed near the end is remembered');
+    for (let i = 0; i < 90 && p.attack.id === 'heavy' && p.state === PS.ATTACK; i++) sim.step();
+    expect.ok(p.state === PS.ATTACK && p.attack.id === 'light' && p.attackT < 0.05, 'the attack came out at the start of recovery');
+    sim.until(() => attackTimeline(p.attack, p.attackT).phase === PHASE.FOLLOW, 60); sim.press('roll'); sim.step();
+    expect.ok(p.state === PS.ROLL, 'a dash from the follow-through cancels it at once (pass 85)');
+    // A dash is shorter than the buffer window (pass 85): a press anywhere in it is kept, and chains into the next.
+    sim.until(() => CONFIG.player.rollTime - p.stateTime < 0.2, 60); sim.press('roll');
+    sim.until(() => p.state !== PS.ROLL, 60); sim.step();
+    expect.ok(p.state === PS.ROLL, 'one pressed at the end of a dash chains into the next');
+  });
+  test('heavy charge: the feet stay planted while held', () => {
+    Game.startLevel('test-training'); sim.begin();
+    const p = Game.player;
+    sim.hold('heavy'); sim.until(() => p.charge === 1, 120);
+    const x = p.x, z = p.z; sim.seconds(0.5);
+    expect.ok(Math.hypot(p.x - x, p.z - z) < 0.03, `moved ${Math.hypot(p.x - x, p.z - z).toFixed(3)} m while charging`);
+    sim.release('heavy'); sim.seconds(2);
+  });
+  test('impact: heavy hits shake the camera, light ones do not; trails follow active swings', () => {
+    Game.startFight('hollow'); sim.begin(); sturdy(Game.player);
+    const e = Game.duel, hit = id => { Game.shake = 0; A.events.emit('strike', { strike: makeStrike(A.PLAYER_DEF.moveset.attacks[id]), attacker: Game.player, target: e, at: e, blocked: false }); return Game.shake; };
+    expect.ok(hit('light') === 0 && hit('heavy') > 0, 'light steady, heavy jolts');
+  });
+  test('Hollow Soldier: tracks you through the early wind-up, then commits; glint at the parry window; no hitbox in follow-through', () => {
+    Game.startFight('hollow'); sim.begin(); sturdy(Game.player);
+    const e = Game.duel, p = Game.player;
+    expect.ok(sim.until(() => e.state === ES.WINDUP, 600) >= 0, 'it attacks');
+    const a = e.attack, h = a.hits[0];
+    sim.until(() => !e.isTracking(), 120);
+    expect.near(e.stateTime, h.startup * a.tracking.commit, STEP * 1.5, 'commits at its commit point');
+    const yaw = e.yaw; p.x += Math.cos(e.yaw) * 2.5; p.z -= Math.sin(e.yaw) * 2.5; p.savePrev();   // sidestep
+    sim.until(() => e.state === ES.ACTIVE, 120);
+    expect.near(e.yaw, yaw, 1e-6, 'and no longer turns to follow a sidestep');
+    expect.near(markerTime(a, a.markers[0]), h.startup - CONFIG.parry.lead, 1e-9, 'the glint marks the parry window opening');
+    sim.until(() => e.stateTime >= h.active + STEP, 30);
+    expect.ok(e.state === ES.ACTIVE && !e.hitbox, 'follow-through: still swinging, no hitbox');
+  });
+  test('player heavy: holding charges (frozen wind-up, more damage), a tap does not', () => {
+    Game.startLevel('test-training'); sim.begin();
+    const p = Game.player, H = A.PLAYER_DEF.moveset.attacks.heavy;
+    sim.release('heavy'); sim.press('heavy'); sim.until(() => p.state === PS.ATTACK && attackTimeline(p.attack, p.attackT).phase === PHASE.ACTIVE, 120);
+    const tap = p.payload.damage, tapTime = p.stateTime;
+    sim.seconds(2.5);
+    sim.hold('heavy'); sim.step(2); sim.seconds(H.hits[0].startup * H.charge.at + H.charge.hold * 0.5);
+    expect.ok(p.charge === 1 && p.chargeT > 0, 'still held: coiling, the wind-up frozen');
+    sim.until(() => p.state === PS.ATTACK && attackTimeline(p.attack, p.attackT).phase === PHASE.ACTIVE, 120);   // full charge releases itself
+    sim.release('heavy');
+    expect.near(tap, H.damage, 0.01, 'a tap does normal damage');
+    expect.near(p.payload.damage, H.damage * H.charge.mul, 0.01, 'a full charge does charge.mul x damage');
+    expect.ok(p.stateTime > tapTime + H.charge.hold * 0.9, 'the hold lengthened the wind-up');
+  });
+  test('player: 1.2x health, ordinary hits a third weaker (pass 85); no guard bar, stamina or poise (pass 96)', () => {
+    const S = A.PLAYER_DEF.stats, M = A.PLAYER_DEF.moveset.attacks;
+    expect.ok(S.maxHp === 120 && Object.keys(S).join() === 'maxHp', `stats: ${JSON.stringify(S)}`);
+    expect.ok(M.heavy.damage === 36 && M.light.damage === 16, `heavy ${M.heavy.damage}, light ${M.light.damage} (53 and 24 before)`);
+    Game.startLevel('test-training'); sim.begin();
+    const p = Game.player;
+    expect.ok(p.hp === 120 && !('stamina' in p) && !('poise' in p) && !document.getElementById('pSt'), 'a fresh player starts full, with health and dashes the only meters');
+  });
+  test('pass 96 hits: only heavy attacks stagger; a block takes chip damage, never breaks, and lets an undeflectable blow through', () => {
+    Game.startFight('pillagerCaptain'); sim.begin();
+    const p = Game.player, e = Game.duel, B = CONFIG.block, C = CONFIG.player;
+    const light = e.def.attacks.find(a => !a.heavy && canParryAttack(a)), heavy = ENEMY_DEFS.flatMap(d => d.attacks).find(a => a.heavy && canParryAttack(a));
+    const reset = state => { p.hp = p.maxHp = 1000; p.hitbox = null; p.stunTime = 0; p.setState(state); p.yaw = Math.atan2(e.x - p.x, e.z - p.z); };
+    faceOff(e, p, 2); quiet(e);
+    reset(PS.IDLE); p.takeHit(makeStrike(light), e);
+    expect.ok(p.state === PS.HURT, `an ordinary hit flinches (${p.state})`);
+    reset(PS.IDLE); p.takeHit(makeStrike(heavy), e);
+    expect.ok(p.state === PS.STAGGER && Math.abs(p.stunTime - C.staggerTime) < 1e-9, `a heavy one staggers (${p.state})`);
+    reset(PS.ATTACK); p.takeHit(makeStrike(heavy), e);
+    expect.ok(p.state === PS.STAGGER, `a heavy one staggers mid-swing too (${p.state})`);
+    // The guard: chip damage, for any number of blows, never a break.
+    for (let i = 0; i < 12; i++) {
+      reset(PS.BLOCK); const r = p.takeHit(makeStrike(heavy), e);
+      expect.ok(r.blocked && p.state === PS.BLOCK && Math.abs(p.maxHp - p.hp - heavy.damage * B.damageMul) < 1e-6, `blow ${i + 1}: held, ${(p.maxHp - p.hp).toFixed(2)} chip`);
+    }
+    // A blow that cannot be deflected (it glows blue) is not held either.
+    const blue = ENEMY_DEFS.flatMap(d => d.attacks).find(a => a.noParry && !a.projectile && !a.rollOnly && !a.hits.some(h => h.echo || h.erupt || h.bolt || h.pull || h.seize));
+    e.attack = blue; e.hitIndex = 0; const hb = e.makeHitbox();
+    reset(PS.BLOCK); const r = p.takeHit(hb.payload, e);
+    expect.ok(!r.blocked && p.maxHp - p.hp > blue.damage * 0.9, `${blue.id} goes through the guard (${(p.maxHp - p.hp).toFixed(1)} of ${blue.damage})`);
+  });
+  test('new enemies: each duels in the arena, attacks, and can be beaten', () => {
+    for (const id of NEW) {
+      Game.startFight(id); sim.begin(); sturdy(Game.player);
+      const e = Game.duel;
+      expect.ok(sim.until(() => e.state === ES.WINDUP, 12) >= 0, `${id}: attacks`);
+      let n = 0;
+      while (e.alive() && n++ < 160) { e.takeHit(strikeOf('heavy'), behind(e)); sim.step(12); }   // 160: ordinary blows a third weaker (pass 85)
+      expect.ok(!e.alive(), `${id}: beaten (${n} heavy hits)`);
+    }
+  });
+  test('new enemies: every attack runs its whole course', () => {
+    for (const id of NEW) {
+      Game.startFight(id); sim.begin(); sturdy(Game.player); log.length = 0; shots.length = 0;
+      const e = Game.duel;
+      for (const a of e.def.attacks) {
+        log.length = 0;
+        sim.until(() => e.state === ES.CHASE || e.state === ES.IDLE, 4);
+        e.beginAttack(a);
+        expect.ok(sim.until(() => e.state === ES.RECOVER, 6) >= 0, `${id} ${a.id}: wound up, struck and recovered`);
+        if (a.projectile) expect.ok(shots.some(s => s.enemy === e), `${id} ${a.id}: loosed a bolt`);
+        if (a.rollOnly) expect.ok(log.includes('perilous'), `${id} ${a.id}: perilous warning`);
+        if (a.impact) expect.ok(log.includes('impact'), `${id} ${a.id}: ground impact`);
+      }
+    }
+  });
+  test('Executioner: three heavy hits break its stagger meter; its spin goes through a guard', () => {
+    Game.startFight('executioner'); sim.begin();
+    let e = Game.duel;
+    e.takeHit(strikeOf('heavy'), behind(e)); e.takeHit(strikeOf('heavy'), behind(e));
+    expect.ok(e.state !== ES.BROKEN, 'two heavies do not break it');
+    e.takeHit(strikeOf('heavy'), behind(e));
+    expect.ok(e.state === ES.BROKEN, 'the third does');
+    Game.startFight('executioner'); sim.begin();
+    const p = Game.player, spin = A.ENEMY_BY_ID.executioner.attacks.find(a => a.id === 'execSpin'), hp0 = p.hp;
+    e = Game.duel; faceOff(e, p, 2.2); sim.hold('block'); sim.step(2);
+    e.beginAttack(spin);
+    sim.until(() => p.hp < hp0, 4); sim.release('block');
+    expect.near(hp0 - p.hp, spin.damage, 0.01, 'full damage through the guard');
+  });
+  test('Pale Duelist: its combo can be parried, and it is fragile', () => {
+    Game.startFight('duelist'); sim.begin(); log.length = 0;
+    const p = Game.player, e = Game.duel, combo = e.def.attacks.find(a => a.hits.length > 1);
+    faceOff(e, p, 2); e.beginAttack(combo);
+    const turned = deflectString(e, combo);
+    expect.ok(turned === combo.hits.length && e.state === ES.PARRIED, `every blow deflected (${turned}/${combo.hits.length}), the last left it open`);
+    Game.startFight('duelist'); sim.begin();
+    const d = Game.duel; let n = 0;
+    while (d.alive() && n++ < 20) { d.takeHit(strikeOf('light'), behind(d)); sim.step(30); }
+    expect.ok(!d.alive() && n <= 7, `fragile: ${n} light hits`);   // pass 85: lights deal 16 (24 before, 5 hits)
+  });
+  test('Ashen Lancer: dashes again and again from mid range, never up close; its jab leaves an opening', () => {
+    const mid = attacksAt('lancer', 6), close = attacksAt('lancer', 2);
+    expect.above(mid.filter(id => id === 'lancerDash').length, 1, `dashes from 6 m (${mid.join(', ')})`);
+    expect.ok(close.length > 3 && !close.includes('lancerDash'), `never dashes from 2 m (${close.join(', ')})`);
+    const jab = A.ENEMY_BY_ID.lancer.attacks.find(a => a.id === 'lancerJab');
+    expect.above(jab.recovery, jab.hits[0].startup, 'the jab recovers slower than it strikes');
+  });
+  test('Shover: its shield blocks frontal hits; flanking does full damage', () => {
+    Game.startFight('shover'); sim.begin();
+    const e = Game.duel; e.notice = 0; e.setState(ES.IDLE);
+    let hp0 = e.hp; e.takeHit(strikeOf('light'), inFrontOf(e));
+    expect.near(hp0 - e.hp, strikeOf('light').damage * e.def.guard.damageMul, 0.01, 'blocked from the front');
+    hp0 = e.hp; e.takeHit(strikeOf('light'), behind(e));
+    expect.near(hp0 - e.hp, strikeOf('light').damage, 0.01, 'full damage from behind');
+  });
+  test('Bell Warden: a posture boss with a roll-only hammerfall, an uncapped push and a gap-closing charge', () => {
+    Game.startFight('bellWarden'); sim.begin(); Game.render(1, STEP);
+    const e = Game.duel, A2 = id => e.def.attacks.find(a => a.id === id);
+    expect.ok(!!e.def.posture && !A.hud.eBars.classList.contains('hidden'), 'posture bar at the top of the screen');
+    expect.ok(makeStrike(A2('wardenHammerfall')).rollOnly && !!A2('wardenHammerfall').hits[0].impact, 'hammerfall: roll-only, with a ground flash');
+    expect.ok(makeStrike(A2('wardenPush')).shove && A2('wardenPush').knock > CONFIG.player.knockCap, 'push: beyond the knockback cap');
+    expect.ok(A2('wardenSweep').tracking.rate > 0, 'sweep: tracks');
+    let n = 0;
+    while (e.state !== ES.BROKEN && n++ < 30) { e.takeHit(strikeOf('heavy'), behind(e)); sim.step(10); }
+    expect.ok(e.state === ES.BROKEN, `posture broke after ${n} chained heavy hits`);
+    const far = attacksAt('bellWarden', 8), near = attacksAt('bellWarden', 2.5);
+    expect.ok(far.includes('wardenCharge') && !near.includes('wardenCharge'), `charge: only from range (8 m: ${far.join(', ')}; 2.5 m: ${near.join(', ')})`);
+  });
+  // Pass 68: his own moves, and his bronze rings under your blows (`resonance`) until he answers it.
+  test('Bell Warden: blows fill his resonance, he answers it with a toll all round him, and a break empties it', () => {
+    Game.startFight('bellWarden'); sim.begin(); sturdy(Game.player); Game.render(1, STEP);
+    const e = Game.duel, R = e.def.resonance, p = Game.player;
+    expect.ok(R && R.max === 6 && e.rig.hum && e.rig.hum.opacity === 0, 'silent: his bronze takes six blows, and is dark at rest');
+    quiet(e); e.takeHit(strikeOf('light'), behind(e));
+    expect.near(e.resonance, R.light, 1e-6, 'a light blow fills it by one');
+    e.takeHit(strikeOf('heavy'), behind(e));
+    expect.near(e.resonance, R.light + R.heavy, 1e-6, 'a heavy blow by two');
+    Game.render(1, STEP);
+    expect.above(e.rig.hum.opacity, 0, 'and his bronze glows with it');
+    quiet(e); sim.seconds(R.delay - 0.5);
+    expect.near(e.resonance, R.light + R.heavy, 1e-6, 'it holds a while after the last blow');
+    quiet(e); sim.seconds(1.5);
+    expect.below(e.resonance, R.light + R.heavy - 0.5, 'then fades');
+    // full: the next attack he starts, close in, is his answer, and it gives the ringing back
+    quiet(e); for (let i = 0; i < 3; i++) { e.posture = 0; e.takeHit(strikeOf('heavy'), behind(e)); }   // (posture kept low: a break would empty it)
+    expect.near(e.resonance, R.max, 1e-6, 'three heavy blows fill it');
+    faceOff(e, p, 2.5); starts.length = 0; e.notice = 1; e.setState(ES.CHASE);
+    sim.until(() => starts.some(s => s.enemy === e), 6);
+    const first = starts.find(s => s.enemy === e);
+    expect.ok(first && first.attack.id === 'wardenAnswer', `he answers (${first && first.attack.id})`);
+    expect.ok(e.resonance === 0, 'the answer empties it');
+    const box = first.attack.hits[0].box || first.attack.box;
+    expect.ok(first.attack.rollOnly && box.fwd === 0 && box.w >= 7 && box.d >= 7 && box.h > 2, 'all round him, too tall to jump: rolled, never parried');
+    // a break: empties it, and blows on him while he lies open do not fill it
+    sim.until(() => e.state !== ES.WINDUP && e.state !== ES.ACTIVE && e.state !== ES.RECOVERY, 6);
+    quiet(e); e.takeHit(strikeOf('heavy'), behind(e));
+    let n = 0; while (e.state !== ES.BROKEN && n++ < 40) { e.takeHit(strikeOf('heavy'), behind(e)); if (e.state !== ES.BROKEN) quiet(e); }
+    expect.ok(e.state === ES.BROKEN, `broken after ${n} heavy blows`);
+    sim.step(); e.takeHit(strikeOf('light'), behind(e));
+    expect.ok(e.resonance === 0, `a break empties it, and blows on him broken do not fill it (${e.resonance})`);
+  });
+  test('Bell Warden: at half his strength he rings himself awake; the chains fall, the crack lights, his bronze fills sooner', () => {
+    Game.startFight('bellWarden'); sim.begin(); sturdy(Game.player); Game.render(1, STEP);
+    const e = Game.duel, W = e.rig.weaponSlotMeshes;
+    expect.ok(W.muffle.visible && !W.toll.visible, 'silent: chained, the crack dark');
+    expect.ok(!e.def.attacks.some(a => a.origin), 'every move his own (none borrowed)');
+    e.takeHit({ ...strikeOf('heavy'), damage: e.hp * 0.55 }, behind(e));
+    sim.until(() => e.def.name === 'The Bell Warden, Woken' && e.state === ES.ACTIVE && e.attack.id === 'wardenWaking', 12);
+    expect.ok(e.attack && e.attack.id === 'wardenWaking', `he wakes with the Waking (${e.attack && e.attack.id})`);
+    sim.until(() => e.state !== ES.ACTIVE, 2); sim.step(2); Game.render(1, STEP);
+    expect.ok(!W.muffle.visible && W.toll.visible, 'woken: the chains gone, the crack lit');
+    expect.ok(e.def.resonance.max < A.ENEMY_BY_ID.bellWarden.phases.silent.resonance.max, 'his bronze fills sooner');
+    expect.ok(e.def.attacks.some(a => a.id === 'wardenAnswerTwice') || A.ENEMY_BY_ID.bellWarden.phases.woken.attacks.includes('wardenAnswerTwice'), 'and answers twice');
+  });
+  // Pass 72: the Giant Skeleton's own fight. Its long hand takes you (a hit's `seize`, Player.seize).
+  const freed = [];   // every grip that ended: who, whether thrown
+  A.events.on('seizeEnd', d => freed.push(d));
+  const taken = (e, p, id = 'giantTaking') => {   // the giant's hand closing on a player before it
+    faceOff(e, p, 2.4); quiet(e); e.beginAttack(e.def.attacks.find(a => a.id === id));
+    sim.until(() => p.state === PS.HELD, 3);
+  };
+  test('Giant Skeleton: its hand takes you up to its skull and burns you; it throws you down when it lets go', () => {
+    Game.startFight('giant'); sim.begin(); Game.render(1, STEP);
+    const e = Game.duel, p = Game.player, S = e.def.attacks.find(a => a.id === 'giantTaking').hits[0].seize;
+    p.maxHp = p.hp = 400; freed.length = 0;
+    expect.ok(!e.def.attacks.some(a => a.origin), 'every move its own (none borrowed)');
+    taken(e, p);
+    expect.ok(p.state === PS.HELD, `the hand closes on you (${p.state})`);
+    sim.until(() => !(Game.hitstop > 0), 1);   // the catch's hit-pause freezes both sides: not the grip's time
+    const t0 = clock - p.stateTime, hp0 = p.hp + S.dps * p.stateTime;
+    sim.seconds(S.lift + 0.1);
+    expect.above(p.y - e.y, S.at[1] - 0.2, 'lifted up before its skull');
+    expect.near(Math.hypot(p.x - e.x, p.z - e.z), Math.hypot(S.at[0], S.at[2]), 0.3, 'held in its hand, not left where you stood');
+    sim.seconds(1);
+    expect.near(hp0 - p.hp, S.dps * (clock - t0), 3, 'its heat burns you while it holds you');
+    sim.until(() => p.state !== PS.HELD, 4);
+    expect.near(clock - t0, S.time, 0.1, `held its full ${S.time} s when you do not struggle`);
+    expect.ok(freed.length === 1 && freed[0].thrown && freed[0].body === p, 'and thrown when it lets go');
+    const d0 = Math.hypot(p.x - e.x, p.z - e.z); sim.step(20);
+    expect.above(Math.hypot(p.x - e.x, p.z - e.z) - d0, 1, 'flung away from it');
+    sim.until(() => p.grounded, 3); sim.step(30);
+    expect.ok(p.alive() && p.state !== PS.HELD, `you land and fight on (${p.state})`);
+  });
+  test('Giant Skeleton: struggling tears you loose sooner, and a posture break opens its hand', () => {
+    Game.startFight('giant'); sim.begin(); Game.render(1, STEP);
+    const e = Game.duel, p = Game.player, S = e.def.attacks.find(a => a.id === 'giantTaking').hits[0].seize;
+    p.maxHp = p.hp = 400; freed.length = 0;
+    taken(e, p); let t0 = clock;
+    for (let i = 0; i < 40 && p.state === PS.HELD; i++) { sim.press(i % 2 ? 'roll' : 'light'); sim.step(6); }
+    expect.ok(p.state !== PS.HELD, 'torn loose');
+    expect.below(clock - t0, S.time - 1, `struggling cuts the grip short (${(clock - t0).toFixed(2)} s of ${S.time})`);
+    // a fresh grip, then a blow that breaks its posture: the hand opens, and you drop, not thrown
+    Game.startFight('giant'); sim.begin(); freed.length = 0;
+    const e2 = Game.duel, p2 = Game.player; p2.maxHp = p2.hp = 400;
+    taken(e2, p2); sim.seconds(0.7);
+    expect.ok(p2.state === PS.HELD, 'held again');
+    e2.posture = e2.def.posture.max - 1; e2.takeHit(strikeOf('heavy'), behind(e2));
+    expect.ok(e2.state === ES.BROKEN, `its posture breaks (${e2.state})`);
+    sim.step(2);
+    expect.ok(p2.state !== PS.HELD && freed.length === 1 && !freed[0].thrown, 'and its hand opens: dropped, not thrown');
+  });
+  test('Giant Skeleton: a roll through the open hand is never caught, and a death in its hand is a death', () => {
+    Game.startFight('giant'); sim.begin();
+    const e = Game.duel, p = Game.player; sturdy(p);
+    faceOff(e, p, 2.4); quiet(e); e.beginAttack(e.def.attacks.find(a => a.id === 'giantTaking'));
+    sim.until(() => e.state === ES.WINDUP && e.stateTime > e.attack.hits[0].startup - 0.12, 3);
+    sim.press('roll'); sim.until(() => e.state !== ES.ACTIVE && e.state !== ES.WINDUP, 2);
+    expect.ok(p.state !== PS.HELD, `rolled through it (${p.state})`);
+    expect.ok(makeStrike(e.def.attacks.find(a => a.id === 'giantTaking')).rollOnly, 'no guard holds it');
+    Game.startFight('giant'); sim.begin();
+    const e2 = Game.duel, p2 = Game.player; p2.maxHp = 400; p2.hp = 20;
+    taken(e2, p2); sim.until(() => !p2.alive(), 3);
+    expect.ok(!p2.alive() && p2.state === PS.DEAD && !p2.held, `burned to death in its hand (${p2.state})`);
+  });
+  test('Giant Skeleton: its hand never carries you through a wall, and struggling free is not a plunge', () => {
+    Game.startFight('giant'); sim.begin();
+    const e = Game.duel, p = Game.player, W = world; p.maxHp = p.hp = 400;
+    expect.ok(!W.solids && Number.isFinite(W.maxX), 'the duel is an open arena with a wall at maxX');
+    p.yaw = Math.PI / 2; p.x = p.px = W.maxX - 0.6 - 2.4; taken(e, p);   // its back near the wall, you between: its hand reaches past the wall
+    e.x = e.px = W.maxX - 0.6; e.yaw = Math.PI / 2;   // it turns to face the wall with you in its hand
+    sim.step(30);
+    expect.ok(p.state === PS.HELD, `held (${p.state})`);
+    expect.below(p.x, W.maxX - p.radius + 1e-6, `held inside the wall, not past it (${(p.x - W.maxX).toFixed(2)} m)`);
+    let plunged = false;
+    for (let i = 0; i < 40 && p.state === PS.HELD; i++) { sim.press(i % 2 ? 'heavy' : 'light'); sim.step(6); }
+    for (let i = 0; i < 20 && !p.grounded; i++) { sim.press('light'); sim.step(2); plunged = plunged || p.state === PS.JUMP_ATTACK; }
+    expect.ok(!plunged, 'the presses that tore you loose do not become a plunging attack on the way down');
+  });
+  test('Giant Skeleton: at half its strength it gathers more of its dead; the heat fills its ribs, and it reaches for you from afar', () => {
+    Game.startFight('giant'); sim.begin(); sturdy(Game.player); Game.render(1, STEP);
+    const e = Game.duel, H = e.rig.slotMeshes.heat;
+    expect.ok(H && !H.visible, 'its ribs dark at first');
+    e.takeHit({ ...strikeOf('heavy'), damage: e.hp * 0.55 }, behind(e));
+    sim.until(() => e.def.name === 'The Giant Skeleton, Gathered' && e.state === ES.ACTIVE && e.attack.id === 'giantGathering', 12);
+    expect.ok(e.attack && e.attack.id === 'giantGathering', `it gathers (${e.attack && e.attack.id})`);
+    sim.until(() => e.state !== ES.ACTIVE, 2); sim.step(2); Game.render(1, STEP);
+    expect.ok(H.visible, 'the heat fills its ribs');
+    const reach = e.def.attacks.find(a => a.id === 'giantReach');
+    expect.ok(reach && reach.minRange >= 4 && reach.hits[0].leap && reach.hits[0].seize, 'and it leaps hand first on you from afar');
+    expect.ok(!A.ENEMY_BY_ID.giant.phases.gaol.attacks.includes('giantReach'), 'only once gathered');
+  });
+  test('mixed crowd: the gallery bowmen shoot down into the fight', () => {
+    Game.startLevel('test-mixed'); sim.begin(); shots.length = 0; starts.length = 0;
+    const p = Game.player; sturdy(p); sim.place(24, 0);
+    sim.seconds(20);
+    expect.above(new Set(starts.filter(s => s.enemy.def.id !== 'bowman').map(s => s.enemy)).size, 2, 'melee enemies that attacked');
+    sim.until(() => shots.some(s => s.enemy.def.id === 'bowman'), 40);   // the melee swings damp their chance: give them time
+    const bowmen = Game.enemies.filter(e => e.def.id === 'bowman');
+    expect.ok(shots.some(s => s.enemy.def.id === 'bowman'), 'the bowmen shot'); expect.ok(bowmen.every(b => Math.abs(b.y - 5) < 1e-6), 'from their gallery');
+  });
+
+  // ---- v3.5 The Tower (Level 4 since v4.0) ---------------------------------------------------------------------------------
+  // The way up, as waypoints [x, z, zone?]: arriving at a zone's waypoint kills its fighters and waits for its gate.
+  // The passage floor gives way under the player at (26, 0): the fight below, then up to the bait bonfire and round the bend.
+  const TOWER_ROUTE = [
+    [14, 0, 'zone-gatehouse'], [23, 0], [26, 0], [26, -2, 'zone-undercroft'], [26, -13], [32, -13], [32, -9], [32, -1], [32, 5],
+    [35, 5.5], [40, 5.5], [60, 0, 'zone-courtyard'], [42, 0], [38, 18], [38, 24], [48, 24], [60, 24], [68, 24],
+    [80, 24], [92, 24, 'zone-rampart'], [98, 24], [98, 16], [98, 4, 'zone-hall'], [100, -4], [111.5, -4], [112, 0], [112, 9],
+    [112, 11.5], [88, 11.5], [87.5, 8], [87.5, -8], [88, -11.5], [112.5, -11.5], [112.5, -8], [112.5, 8], [112, 14],
+    [100, 14, 'zone-walkway'], [88, 14], [88, 9], [88, -8], [87, -13], [95, -13], [96, -4, 'zone-bell'],
+  ];
+  const tower = () => { Game.startLevel('the-tower'); sim.begin(); log.length = 0; shots.length = 0; return Game.player; };
+  const dropFrom = (x, z, y, dx, dz) => {   // walk off an edge; returns [landing height, damage taken, alive]
+    const p = Game.player; sim.place(x, z, y); p.hp = p.maxHp;
+    sim.move(dx, dz); sim.until(() => !p.grounded, 3); sim.until(() => p.grounded || !p.alive(), 4); sim.move(null);
+    return [p.y, p.maxHp - p.hp, p.alive()];
+  };
+  test('the tower: follows Level 2, and its data, gates and culling are in place', () => {
+    expect.ok(A.LEVEL_3.next === 'the-tower' && A.LEVELS.indexOf(A.LEVEL_4) === A.LEVELS.indexOf(A.LEVEL_3) + 1, 'the town leads into the Tower');
+    tower();
+    expect.ok(Game.zones.length === 7 && Game.zones.every(z => !z.gate.open), 'seven zone gates, all shut');
+    expect.ok(world.gates.some(g => g.id === 'postern' && g.opensFrom && !g.open), 'the postern shortcut, shut');
+    expect.ok(world.gates.some(g => g.id === 'bonfire-portcullis' && !g.open), 'the portcullis before the bait bonfire, shut');
+    expect.ok(world.bonfires.length === 4, 'four bonfires');
+    sim.step(1); Game.render(1, STEP);
+    expect.ok(A.visuals.info().pointLights === CONFIG.cull.maxLights && A.visuals.info().sky && A.visuals.info().grass > 0, 'culled lights, sky and grass');
+    expect.above(Game.enemies.filter(e => e.asleep).length, 10, 'the far enemies sleep at the start');
+  });
+  test('the tower: a scripted run opens every gate in turn and completes the level', () => {
+    const p = tower(); sturdy(p);
+    const opened = [], next = A.LEVEL_4.next;
+    A.LEVEL_4.next = undefined;   // v4.3: the Tower carries on into Level 5; stay here to check the end of this one
+    try {
+    for (const [x, z, zone] of TOWER_ROUTE) {
+      const reached = sim.until(() => {
+        for (const e of Game.enemies) if (e.alive() && !e.in('unaware') && e.state !== ES.DORMANT) e.die();   // whatever engages falls
+        const dx = x - p.x, dz = z - p.z;
+        if (Math.hypot(dx, dz) < 0.5) return true;
+        sim.move(dx, dz); return false;
+      }, 30) >= 0;
+      sim.move(null);
+      expect.ok(reached && p.alive(), `reached (${x}, ${z}); stuck at (${p.x.toFixed(1)}, ${p.z.toFixed(1)}, y ${p.y.toFixed(1)})`);
+      if (!zone) continue;
+      const Z = Game.zones.find(q => q.id === zone);
+      for (const e of Z.actors) if (e.alive()) e.die();
+      expect.ok(sim.until(() => Z.gate.lift >= 1, 4) >= 0, `${zone}: its gate opened`);
+      opened.push(zone);
+    }
+    expect.near(p.y, 22, 1e-6, 'on top of the tower');
+    expect.ok(Game.complete && log.includes('levelComplete'), `LEVEL COMPLETE (${opened.length} gates)`);
+    } finally { A.LEVEL_4.next = next; }
+  });
+  test('the tower: the postern opens only from the stair side, back to the courtyard', () => {
+    const p = tower(); sim.clearEnemies();
+    const g = world.gates.find(q => q.id === 'postern');
+    sim.place(80, -13); sim.move(1, 0); sim.seconds(3); sim.move(null);
+    expect.below(p.x, 86, 'shut from the courtyard'); expect.ok(!g.open, 'still shut');
+    sim.place(100, -4, 6);
+    expect.ok(sim.walkTo(106, -12) && sim.walkTo(95, -13) && sim.walkTo(88.5, -13), 'from the hall down the postern stair');
+    sim.step(3); expect.ok(g.open, 'opened from the stair side');
+    sim.seconds(2); expect.ok(sim.walkTo(80, -13), 'through into the courtyard'); expect.near(p.y, 0, 1e-6, 'courtyard floor');
+  });
+  test('the tower: the rampart gap hurts a little, the walks over the courtyard a lot, the cliff kills', () => {
+    tower(); sim.clearEnemies();
+    const gap = dropFrom(68, 24, 6, 0, -1);
+    expect.ok(gap[0] === 0 && gap[2], 'from the rampart gap into the courtyard'); expect.near(gap[1], (6 - F.safe) * F.perMetre, 0.6, 'small damage');
+    const walk = dropFrom(87, 11.5, 10, -1, 0);
+    expect.ok(walk[0] === 0 && walk[2], 'off the north walk into the courtyard'); expect.near(walk[1], (10 - F.safe) * F.perMetre, 0.6, 'heavy damage');
+    const south = dropFrom(87, -11.5, 14, -1, 0);
+    expect.ok(!south[2], 'off the south walk (14 m) is lethal');
+    tower(); sim.clearEnemies();
+    const cliff = dropFrom(113, 11.5, 10, 1, 0);
+    expect.ok(!cliff[2] && log.includes('fell'), 'off the cliff side: a pit');
+  });
+  test('the tower: the rampart bowmen shoot down into the courtyard fight', () => {
+    const p = tower(); sturdy(p);
+    sim.place(62, 6);
+    sim.until(() => shots.some(s => s.enemy.def.id === 'bowman' && Math.abs(s.enemy.y - 6) < 1e-6), 30);   // their cooldowns run slower while the melee swings
+    expect.ok(shots.some(s => s.enemy.def.id === 'bowman' && Math.abs(s.enemy.y - 6) < 1e-6), 'a bolt from the rampart');
+  });
+
+  // ---- v3.6 attack chance, holding and crowds ------------------------------------------------------------------
+  const inWindow = s => s.dist >= (s.attack.minRange || 0) - 1e-6 && s.dist <= s.attack.range + 1e-6;
+  test('attack chance: attacks start only with the player inside their range window', () => {
+    for (const id of ['lancer', 'duelist', 'bowman', 'bellWarden', 'knight']) {
+      Game.startFight(id); sim.begin(); sturdy(Game.player); starts.length = 0;
+      const e = Game.duel;
+      for (let i = 0; i < 60 * 30; i++) { holdAt(e, 1.5 + 12 * ((i / 60 / 8) % 1) ** 2); sim.step(); }   // sweeps 1.5 to 13.5 m every 8 s, slower up close
+      const mine = starts.filter(s => s.enemy === e), bad = mine.find(s => !inWindow(s));
+      expect.above(mine.length, 1, `${id}: attacks started`);
+      expect.ok(!bad, `${id}: ${bad && bad.attack.id} started at ${bad && bad.dist.toFixed(2)} m`);
+    }
+    Game.startLevel('test-mixed'); sim.begin(); sturdy(Game.player); starts.length = 0;   // a crowd, nobody held in place
+    sim.place(24, 0);
+    for (let i = 0; i < 40; i++) { sim.move(Math.cos(i * 2.4), Math.sin(i * 2.4)); sim.seconds(0.6); }
+    sim.move(null);
+    const bad = starts.find(s => !inWindow(s));
+    expect.above(starts.length, 5, 'the crowd attacked');
+    expect.ok(!bad, `${bad && bad.enemy.def.id} ${bad && bad.attack.id} started at ${bad && bad.dist.toFixed(2)} m`);
+  });
+  // Seconds from the end of each attack to the start of the next, for a duel held r m from the player.
+  const waitsAt = (id, r, seconds = 40) => {
+    Game.startFight(id); sim.begin(); sturdy(Game.player);
+    const e = Game.duel, waits = [];
+    let free = null;
+    for (let i = 0; i < seconds / STEP; i++) {
+      const was = e.state;
+      holdAt(e, r); sim.step();
+      if (was === ES.RECOVER && e.state === ES.CHASE) free = 0;
+      else if (free !== null && e.state === ES.CHASE) free += STEP;
+      else if (free !== null && e.state === ES.WINDUP) { waits.push(free); free = null; }
+    }
+    return waits;
+  };
+  test('attack chance: close attacks strike as soon as the cooldown is over', () => {
+    for (const id of ['hollow', 'knight', 'shover']) {
+      const waits = waitsAt(id, 1.5), longest = A.ENEMY_BY_ID[id].cooldown[1];
+      expect.above(waits.length, 5, `${id}: attacks`);
+      expect.below(Math.max(...waits), longest + 0.1, `${id}: longest wait between attacks (cooldown up to ${longest} s)`);
+    }
+  });
+  test('attack chance: a player hovering just outside close reach gets struck, not stalked', () => {
+    Game.startLevel('test-crowd'); sim.begin(); sim.clearEnemies(); sturdy(Game.player); starts.length = 0;
+    const lancer = A.ENEMY_BY_ID.lancer, jab = lancer.attacks.find(a => a.id === 'lancerJab');
+    const e = sim.spawn({ ...lancer, approach: 0 }, 30, 0, undefined, -Math.PI / 2), p = Game.player;   // never steps in by chance
+    sim.until(() => {   // holding far out between attacks
+      sim.place(20, 0);
+      return e.state === ES.CHASE && !e.stepIn && Math.hypot(e.x - p.x, e.z - p.z) > 7;
+    }, 40);
+    e.cooldown = 0;   // and ready to strike
+    const a = Math.atan2(p.x - e.x, p.z - e.z), at = [e.x + Math.sin(a) * (jab.range + 0.6), e.z + Math.cos(a) * (jab.range + 0.6)];
+    const n = starts.length;
+    sim.until(() => { sim.place(at[0], at[1]); return starts.length > n; }, 1.5);   // the player stops just out of its jab's reach
+    const first = starts[n];
+    expect.ok(!!first, `it attacked within 1.5 s (still ${Math.hypot(e.x - p.x, e.z - p.z).toFixed(1)} m away)`);
+    expect.ok(!first.attack.dash, `with a close attack (${first.attack.id})`);
+  });
+  // An enemy held r m from the player, with `busy` other enemies kept mid-attack far off: the seconds between its
+  // attacks, and the shots it looses.
+  const withBusy = (id, r, busy, seconds) => {
+    Game.startLevel('test-crowd'); sim.begin(); sim.clearEnemies(); sturdy(Game.player); shots.length = 0;
+    sim.place(12, 0);
+    const e = sim.spawn(id, 14, 0, undefined, -Math.PI / 2), swing = A.ENEMY_BY_ID.hollow.attacks[0];
+    const others = Array.from({ length: busy }, (_, k) => sim.spawn('hollow', 38, k * 6 - 6));
+    const waits = [];
+    let free = null;
+    for (let i = 0; i < seconds / STEP; i++) {
+      for (const o of others) { o.attack = swing; o.hitIndex = 0; o.setState(ES.WINDUP); }   // forever winding up
+      const was = e.state;
+      sim.place(12, 0); holdAt(e, r); sim.step();
+      if (was === ES.RECOVER && e.state === ES.CHASE) free = 0;
+      else if (free !== null && e.state === ES.CHASE) free += STEP;
+      else if (free !== null && e.state === ES.WINDUP) { waits.push(free); free = null; }
+    }
+    return { waits, shots: shots.filter(s => s.enemy === e).length };
+  };
+  const mean = xs => xs.reduce((s, x) => s + x, 0) / xs.length;
+  test('crowds: cooldowns run slower while other enemies are mid-attack', () => {
+    const alone = withBusy('hollow', 1.5, 0, 60).waits, crowded = withBusy('hollow', 1.5, 2, 60).waits;
+    expect.above(crowded.length, 5, 'attacks with two others mid-attack');
+    expect.above(mean(crowded), 1.5 * mean(alone), `mean wait between attacks, against ${mean(alone).toFixed(2)} s alone`);
+  });
+  test('crowds: an archer keeps shooting while others are mid-attack', () => {
+    const alone = withBusy('bowman', 10, 0, 90).shots, crowded = withBusy('bowman', 10, 2, 90).shots;
+    expect.above(alone, 8, 'shots alone');
+    expect.above(crowded, 0.6 * alone, `shots with two others mid-attack (alone: ${alone})`);
+  });
+  test('crowds: an enemy that gives up the chase walks home instead of flickering back to it', () => {
+    Game.startLevel('test-mixed'); sim.begin(); sim.clearEnemies(); log.length = 0;
+    sim.place(22, 0);
+    const e = sim.spawn('hollow', 30, 0, undefined, -Math.PI / 2);
+    e.leash = 5;   // the player, 8 m off and in sight, is past its leash
+    sim.seconds(3);
+    expect.below(log.filter(t => t === 'alert').length, 2, 'alerts');
+    expect.ok(e.state !== ES.CHASE, `state ${e.state}`);
+  });
+  test('attack chance: gap closers still wait on their chance', () => {
+    const waits = waitsAt('lancer', 6, 60), longest = A.ENEMY_BY_ID.lancer.cooldown[1];
+    expect.above(waits.length, 2, 'dashes');
+    expect.above(Math.max(...waits), longest + 0.5, 'longest wait between dashes');
+  });
+  test('attack chance: stepping in, a boss uses all its close attacks, not only its longest', () => {
+    Game.startFight('bellWarden'); sim.begin(); sturdy(Game.player); starts.length = 0;
+    // v7.44.0: 120 -> 400 s (the rarest close attack needed the time). Pass 68: his own moves; the rarest is still the push.
+    sim.seconds(400);
+    const used = new Set(starts.map(s => s.attack.id));
+    expect.ok(['wardenSweep', 'wardenHammerfall', 'wardenPush'].every(id => used.has(id)), `close attacks used: ${[...used].join(', ')}`);
+  });
+  test('attack chance: an attack with a higher chance starts more often', () => {
+    const swing = A.ENEMY_BY_ID.hollow.attacks.find(a => a.id === 'swing');
+    const def = { ...A.ENEMY_BY_ID.hollow, id: 'testOdds', attacks: [{ ...swing, id: 'often', chance: 2 }, { ...swing, id: 'rarely', chance: 0.4 }] };
+    Game.startLevel('test-crowd'); sim.begin(); sim.clearEnemies(); sturdy(Game.player); starts.length = 0;
+    sim.place(18, 0);
+    const e = sim.spawn(def, 22, 0, undefined, -Math.PI / 2);
+    for (let i = 0; i < 90 / STEP; i++) { holdAt(e, 1.5); sim.step(); }
+    const n = id => starts.filter(s => s.attack.id === id).length;
+    expect.above(n('often') + n('rarely'), 20, 'attacks started');
+    expect.above(n('often'), 2.5 * n('rarely'), `the 2/s attack (${n('often')}) against the 0.4/s one (${n('rarely')})`);
+  });
+  test('crowds: every enemy may attack, but no two attacks start within 0.3 s', () => {
+    Game.startLevel('test-crowd'); sim.begin(); sturdy(Game.player); starts.length = 0;
+    sim.place(18, 0);
+    let most = 0;
+    for (let i = 0; i < 40 / STEP; i++) { sim.step(); most = Math.max(most, Game.enemies.filter(e => e.in('attacking')).length); }
+    const t = starts.map(s => s.t).sort((a, b) => a - b), gap = Math.min(...t.slice(1).map((v, i) => v - t[i]));
+    expect.above(starts.length, 10, 'attacks started');
+    expect.above(gap, 0.3 - 1e-6, 'shortest time between two attack starts');
+    expect.ok(new Set(starts.map(s => s.enemy)).size === 5, 'all five attacked');
+    expect.above(most, 2, 'most enemies mid-attack at once');
+  });
+  test('crowds: a crowd spreads evenly all round the player, in front too', () => {
+    Game.startLevel('test-crowd'); sim.begin(); sturdy(Game.player);
+    for (const e of Game.enemies) e.wake(Game.player);   // all in the fight from the start (some stand with their backs turned)
+    const TAU = Math.PI * 2, even = TAU / 5;
+    let widest = 0, front = 0, samples = 0;
+    for (let i = 0; i < 40 / STEP; i++) {
+      sim.place(18, 0); sim.step();   // the player pinned, facing the five Hollows' arc
+      if (i < 10 / STEP || i % 30) continue;   // every half second once they have closed in
+      const p = Game.player, at = Game.enemies.filter(e => e.alive()).map(e => Math.atan2(e.x - p.x, e.z - p.z)).sort((a, b) => a - b);
+      const gaps = at.map((a, k) => (k + 1 < at.length ? at[k + 1] : at[0] + TAU) - a);
+      widest += Math.max(...gaps); samples++;
+      if (at.some(a => Math.abs(angDiff(a, p.yaw)) < even / 2 + 0.2)) front++;
+    }
+    expect.below(widest / samples, even * 1.5, 'widest gap between neighbours, on average (rad)');
+    expect.above(front / samples, 0.8, 'share of the time someone stands in front');
+  });
+  test('data: attack tokens are gone; chance, approach and minRange are checked at load', () => {
+    expect.ok(!('tokens' in CONFIG) && !('tokens' in A), 'no token tuning or module');
+    expect.ok(A.ALL_LEVELS.every(L => !('attackTokens' in L)), 'no level sets attackTokens');
+    expect.ok(A.validateData().length === 0, 'the shipped data passes');
+    const lancer = A.ENEMY_BY_ID.lancer, jab = lancer.attacks.find(a => a.id === 'lancerJab'), dash = lancer.attacks.find(a => a.id === 'lancerDash');
+    const rejects = (obj, key, value) => {   // one bad value: the load-time check names the field
+      const had = key in obj, old = obj[key];
+      obj[key] = value;
+      const errors = A.validateData();
+      if (had) obj[key] = old; else delete obj[key];
+      expect.ok(errors.some(m => m.includes(key)), `${key} = ${JSON.stringify(value)}: ${errors.join(' | ') || 'no error'}`);
+    };
+    rejects(jab, 'chance', -1); rejects(jab, 'chance', 'often');
+    rejects(lancer, 'approach', -0.5); rejects(lancer, 'approach', null);
+    rejects(dash, 'minRange', 9); rejects(jab, 'minRange', 3);
+  });
+  test('holding: circling and stepping in never walk off an open walkway', () => {
+    const p = heights(); sturdy(p);   // the open walkway over the trench: 3 m wide, 4 m up, open both sides
+    const walkers = [[33, -4.5, 'hollow'], [43, -4.5, 'hollow'], [45, -5, 'lancer'], [31, -4, 'duelist']].map(([x, z, id]) => sim.spawn(id, x, z));
+    for (const e of walkers) e.wake(p);   // in the fight from the start, whichever way they face
+    let lowest = Infinity, moved = 0;
+    for (let i = 0; i < 40 / STEP; i++) {
+      sim.place(38, -4.5, 4); sim.step();   // the player pinned in the middle of the walkway
+      for (const e of walkers) { lowest = Math.min(lowest, e.y); moved += Math.hypot(e.x - e.px, e.z - e.pz); }
+    }
+    expect.near(lowest, 4, 1e-6, 'never left the walkway'); expect.ok(walkers.every(e => e.alive()), 'all alive');
+    expect.above(moved, 40, 'metres walked by the crowd');
+    expect.above(starts.filter(s => walkers.includes(s.enemy)).length, 5, 'attacks they started');
+  });
+  test('holding: enemies wait near their longest reach, and now and then step in to their shortest', () => {
+    Game.startLevel('test-crowd'); sim.begin(); sim.clearEnemies(); sturdy(Game.player);
+    const ranges = A.ENEMY_BY_ID.lancer.attacks.map(a => a.range), longest = Math.max(...ranges), shortest = Math.min(...ranges);
+    // The shared holding behaviour, on lancers with the default pacing (the real Ashen Lancer is tuned to lunge from range).
+    const L = A.ENEMY_BY_ID.lancer, plain = { ...L, approach: undefined, cooldown: [0.7, 1.54], crowd: undefined,
+      attacks: L.attacks.map(({ chance, ...a }) => a) };
+    const lancers = [-6, 0, 6].map(z => sim.spawn(plain, 32, z, undefined, -Math.PI / 2));
+    const settled = [], last = new Map(), held = new Set();   // distances where they stand; lancers seen waiting far out
+    let stepIns = 0;
+    for (let i = 0; i < 60 / STEP; i++) {
+      sim.place(20, 0); sim.step();   // the player pinned in the middle of the yard
+      for (const e of lancers) {
+        const d = Math.hypot(e.x - Game.player.x, e.z - Game.player.z), radial = Math.abs(d - (last.get(e) ?? Infinity)) / STEP;
+        last.set(e, d);
+        if (e.state !== ES.CHASE) { held.delete(e); continue; }   // attacking or reeling: not walking by itself
+        if (radial < 0.5) settled.push(d);   // standing its ground (or circling), not closing in or backing off
+        if (d >= longest - 1.5) held.add(e);
+        else if (d <= shortest && held.has(e)) { stepIns++; held.delete(e); }   // walked all the way in without attacking
+      }
+    }
+    const near = settled.filter(d => d >= longest - 1.5 && d <= longest + 0.5).length / settled.length;
+    expect.above(near, 0.5, `share of the time standing near the longest reach (${longest} m)`);
+    expect.above(stepIns, 0, 'stepped in to the shortest reach');
+  });
+  test('holding: an enemy stepping in goes back to its longer range when the player gets well away', () => {
+    Game.startLevel('test-crowd'); sim.begin(); sim.clearEnemies(); sturdy(Game.player); starts.length = 0;
+    const longest = Math.max(...A.ENEMY_BY_ID.lancer.attacks.map(a => a.range));
+    // Its dash (4-9 m) would cut any walk-in short with a lunge, so this one never dashes; it never steps in by chance
+    // either: the test steps it in once it holds at its longest reach (as the approach roll would).
+    const lancer = A.ENEMY_BY_ID.lancer;
+    const keen = { ...lancer, approach: 0, attacks: lancer.attacks.map(a => a.dash ? { ...a, chance: 0 } : a) };
+    const e = sim.spawn(keen, 32, 0, undefined, -Math.PI / 2), p0 = Game.player;
+    sim.until(() => { sim.place(20, 0); return e.state === ES.CHASE && e.cooldown <= 0 && Math.hypot(e.x - p0.x, e.z - p0.z) >= longest - 1.5; }, 10);
+    e.stepIn = true; e.stepInNearest = Math.hypot(e.x - p0.x, e.z - p0.z); e.strikeFrom = e.attackReach.short;
+    const caught = sim.until(() => {   // walked in from its longest reach to mid range, without attacking
+      sim.place(20, 0);
+      if (e.state !== ES.CHASE) return false;
+      return Math.hypot(e.x - Game.player.x, e.z - Game.player.z) <= 5;
+    }, 5);
+    expect.ok(caught >= 0 && e.stepIn, 'caught it stepping in');
+    // From here on it never chooses to step in again: watch it give up this one
+    const p = Game.player, a = Math.atan2(p.x - e.x, p.z - e.z), to = [e.x + Math.sin(a) * 10, e.z + Math.cos(a) * 10];
+    const n = starts.length;
+    let closest = Infinity;
+    for (let i = 0; i < 1.5 / STEP && starts.length === n; i++) {   // the player 10 m off (past its dash) until it attacks
+      sim.place(to[0], to[1]); sim.step();
+      if (i > 0.6 / STEP) closest = Math.min(closest, Math.hypot(e.x - p.x, e.z - p.z));
+    }
+    expect.ok(Number.isFinite(closest), 'watched it for a while before any attack');
+    expect.above(closest, longest - 1.5, `closest it came once the player had left (its longest reach is ${longest} m)`);
+  });
+
+  // ---- v3.7 training dummies and tower fixes (the Training Hall is the Test: Training Room since v7.19.0) ------------
+  // A training dummy set before the player in an empty level, as the old tutorial steps set them: 'dummy' (stands),
+  // 'sparring' (swings, parryable), 'dodge' (swings, roll-only), 'execution' (kneels to two heavies), 'pair' (two that
+  // stand). The ones that swing start locked on. They go first in Game.enemies.
+  const TRAINING = { dummy: 'dummy', sparring: 'sparringDummy', dodge: 'dodgeDummy', execution: 'executionDummy' };
+  const trainingAt = (kind, level = 'test-training') => {
+    Game.startLevel(level); Game.loading = 0; sim.begin(); log.length = 0;
+    const p = Game.player, add = (id, behavior, x, z) => Game.enemies.unshift(new A.Enemy(A.ENEMY_BY_ID[id],
+      { x, z, yaw: Math.atan2(p.x - x, p.z - z), behavior, notice: CONFIG.notice[behavior] }));
+    if (kind === 'pair') for (const side of [1, -1]) add(TRAINING.dummy, 'dummy', p.x + 6, p.z + side * 3);
+    else if (kind === 'sparring' || kind === 'dodge') { add(TRAINING[kind], 'sparring', p.x + 2.3, p.z); Game.setLock(Game.enemies[0]); }
+    else if (kind) add(TRAINING[kind], 'dummy', p.x + 4, p.z);
+    Game.render(1, STEP);
+    return p;
+  };
+  // A test that changes the learned lessons puts the player's own back afterwards.
+  const withLessons = fn => () => {
+    const key = CONFIG.lessons.storageKey; let kept = null;
+    try { kept = localStorage.getItem(key); } catch (e) { /* none */ }
+    A.lessons.forget();
+    try { return fn(); } finally {
+      try { if (kept === null) localStorage.removeItem(key); else localStorage.setItem(key, kept); } catch (e) { /* none */ }
+      A.lessons.load();
+    }
+  };
+  const shown = id => (document.getElementById(id) || {}).textContent || '';
+  test('block: L holds block; the side mouse buttons and Ctrl do not', () => {
+    input.use('keyboard');   // key labels in the prompt, whatever an earlier gamepad test left
+    const p = trainingAt('sparring');
+    for (const code of ['KeyL']) {
+      input.down(code); sim.step(2);
+      expect.ok(p.state === PS.BLOCK, `${code} blocks (state ${p.state})`);
+      input.up(code); sim.step(2);
+      expect.ok(p.state !== PS.BLOCK, `${code} let go`);
+    }
+    for (const code of ['ControlLeft', 'ControlRight', 'Mouse3', 'Mouse4']) {
+      input.down(code); sim.step(2);
+      expect.ok(p.state !== PS.BLOCK, `${code} does not block`);
+      input.up(code);
+    }
+    for (const button of [3, 4]) for (const type of ['mousedown', 'mouseup', 'auxclick']) {
+      const ev = new MouseEvent(type, { button, bubbles: true, cancelable: true });
+      document.body.dispatchEvent(ev);
+      expect.ok(ev.defaultPrevented, `side button ${button} ${type}: the browser does not go back or forward`);
+    }
+    withLessons(() => {
+      trainingAt(null, 'long-hall'); A.lessons.show('block'); Game.render(1, STEP);
+      const caps = [...document.querySelectorAll('#lessonKeys kbd')].map(k => k.textContent).join(' ');
+      expect.ok(caps === 'L', `the BLOCK card shows only L: "${caps}"`);
+    })();
+    const row = [...document.querySelectorAll('#helpTable tr')].find(r => r.cells[0].textContent.startsWith('Block'));
+    expect.ok(row && row.cells[1].textContent === '[ l ] hold', `help panel: "${row && row.cells[1].textContent}"`);
+  });
+  // ---- the player rework's controls (PLAN.md): the laptop layout, keys moved in Controls, the block key's deflect ----
+  const tap = (code, steps = 1) => { input.down(code); sim.step(steps); input.up(code); };
+  test('Controls: L tapped as a blow lands deflects it; tapped with nothing coming it only guards, never a whiffed parry', () => {
+    const p = trainingAt('sparring'), d = Game.enemies[0], swing = d.def.attacks[0];
+    sim.until(() => d.state === ES.RECOVER && (p.state === PS.IDLE || p.state === PS.WALK), 8); sim.step();
+    const seen = [];
+    input.down('KeyL'); for (let i = 0; i < 3; i++) { sim.step(); seen.push(p.state); }
+    input.up('KeyL'); for (let i = 0; i < 3; i++) { sim.step(); seen.push(p.state); }
+    expect.ok(seen.includes(PS.BLOCK) && !seen.includes(PS.PARRY), `a tap with nothing coming guards and lets go (${seen.join()})`);
+    log.length = 0;
+    sim.until(() => d.state === ES.WINDUP && d.stateTime >= swing.hits[0].startup - 0.1, 8); tap('KeyL');
+    sim.until(() => log.includes('parry'), 0.5);
+    expect.ok(log.includes('parry'), 'tapped as it landed: deflected');   // the pad's own parry button: every sim.press('parry')
+  });
+  test('Controls: the laptop layout, and a key moved in Controls (swaps, spares, refusals, saved)', () => {
+    const has = (a, c) => ACTIONS[a].includes(c);
+    expect.ok(has('roll', 'ShiftLeft') && has('jump', 'Space') && has('light', 'KeyJ') && has('heavy', 'KeyK') && has('block', 'KeyL')
+      && has('lock', 'KeyQ') && has('switchTarget', 'Tab') && has('flask', 'KeyE') && has('rest', 'KeyF') && has('talk', 'KeyF'), 'Shift, Space, J, K, L, Q, Tab, E, F');
+    expect.ok([1, 2, 3, 4].every(n => has(`ability${n}`, `Digit${n}`)), 'the number row holds the four ability keys');
+    expect.ok(!GAME_CODES.has('KeyC') && !GAME_CODES.has('KeyG'), 'the old block and flask keys are gone');
+    try {
+      expect.ok(bindKey('roll', 'KeyX') && has('roll', 'KeyX') && !has('roll', 'ShiftLeft') && GAME_CODES.has('KeyX'), `X dodges (${ACTIONS.roll})`);
+      const p = trainingAt(null); tap('KeyX'); sim.step();
+      expect.ok(p.state === PS.ROLL, `X pressed: a dodge (${p.state})`);
+      expect.ok(bindKey('jump', 'KeyX') && has('jump', 'KeyX') && has('roll', 'Space') && !has('roll', 'KeyX'), 'a held key swaps over');
+      expect.ok(bindKey('flask', 'ArrowUp') && has('flask', 'ArrowUp') && !has('up', 'ArrowUp') && has('up', 'KeyW'), 'a spare taken leaves its action');
+      expect.ok(bindKey('block', 'KeyI') && ACTIONS.block[0] === 'KeyI' && has('parry', 'KeyI') && !has('parry', 'KeyL'), 'the deflect follows the block key');
+      expect.ok(!bindKey('light', 'Escape') && !bindKey('light', 'KeyR') && !bindKey('light', 'F1') && !bindKey('light', 'ControlLeft'), 'Esc, R, F1 and Ctrl stay the game\'s');
+      const back = readSettings(JSON.parse(localStorage.getItem(SETTINGS_KEY)));
+      const sorted = k => JSON.stringify(Object.entries(k).sort());
+      expect.ok(sorted(back.keys) === sorted(settings.keys), `saved and read back (${JSON.stringify(back.keys)})`);
+      expect.ok(Object.keys(readSettings({ keys: { roll: 'KeyW' } }).keys).length === 0, 'a saved clash is dropped');
+    } finally { resetBindings(); }
+    expect.ok(Object.keys(DEFAULT_ACTIONS).every(a => JSON.stringify(ACTIONS[a]) === JSON.stringify(DEFAULT_ACTIONS[a])), 'Reset keys: the defaults again');
+  });
+  test('Controls: the screen lists every key that can change; choose a row, press a key; Escape keeps the old one', () => {
+    input.use('keyboard'); Game.controlsFrom = 'main'; Game.showMenu('controls');
+    const key = code => window.dispatchEvent(new KeyboardEvent('keydown', { code, bubbles: true, cancelable: true }));
+    try {
+      const rows = [...document.querySelectorAll('#menuSide .menu-binds .bind')];
+      expect.ok(rows.length === BIND_SLOTS.length, `${rows.length} rows`);
+      const row = rows.find(b => b.querySelector('.n').textContent === 'Dodge'), v = () => row.querySelector('.v').textContent;
+      expect.ok(v() === 'Shift', `Dodge: ${v()}`);
+      row.click(); expect.ok(v() === 'Press a key', `waiting: ${v()}`);
+      key('KeyR'); expect.ok(v() === 'Another key' && has_('roll', 'ShiftLeft'), `R refused: ${v()}`);
+      key('KeyX'); expect.ok(v() === 'X' && ACTIONS.roll.includes('KeyX'), `X: ${v()}`);
+      row.click(); key('Enter'); expect.ok(v() === 'X' && !Game.rebinding, `Enter again lets the row be (${v()})`);
+      row.click(); key('Escape');
+      expect.ok(v() === 'X' && Game.screen === 'controls' && !Game.rebinding, `Escape kept X, still on Controls (${v()})`);
+      expect.ok(document.querySelector('#menuSide dl.menu-controls') && /Camera/.test(document.querySelector('#menuSide dl.menu-controls').textContent), 'the fixed controls under them');
+    } finally { resetBindings(); Game.showMenu('main'); }
+  });
+  const has_ = (a, c) => ACTIONS[a].includes(c);
+  test('Controls: the Options screen\'s Reset to defaults saves the defaults and keeps the keys', () => {
+    const was = settings.sensitivity;
+    try {
+      bindKey('roll', 'KeyX'); settings.sensitivity = DEFAULT_SETTINGS.sensitivity === 9 ? 8 : 9; saveSettings();
+      Game.optionsFrom = 'main'; Game.showMenu('options');
+      Game.menuItems.find(i => i.name === 'Reset to defaults').go();
+      const saved = JSON.parse(localStorage.getItem(SETTINGS_KEY));
+      expect.ok(settings.sensitivity === DEFAULT_SETTINGS.sensitivity && saved.sensitivity === DEFAULT_SETTINGS.sensitivity, `reset and saved (${saved.sensitivity})`);
+      expect.ok(has_('roll', 'KeyX') && saved.keys.roll === 'KeyX', 'the keys stay');
+    } finally { resetBindings(); settings.sensitivity = was; saveSettings(); Game.showMenu('main'); }
+  });
+  test('Lock-on: a boss fight locks on by itself, once; Q lets it go for the rest of the fight', () => {
+    Game.startFight('pillagerCaptain'); sim.begin();
+    const e = Game.enemies.find(x => x.isBoss());
+    Game.setLock(null); Game.retarget = false; e.bossLocked = false; e.discovered = true;   // only the boss rule may lock it now
+    sim.until(() => Game.lock === e, 3);
+    expect.ok(Game.lock === e && Game.retarget, `the boss took the lock as its fight began (${Math.hypot(e.x - Game.player.x, e.z - Game.player.z).toFixed(1)} m, fighting ${e.fightingPlayer()}, awake ${e.awake()}, boss ${e.isBoss()}, flag ${e.bossLocked}, lock ${Game.lock && Game.lock.def.id}, kind ${Game.kind})`);
+    sim.press('lock'); sim.step(2);
+    expect.ok(!Game.lock, 'Q let it go');
+    sim.seconds(1.5);
+    expect.ok(!Game.lock, 'and it stays let go for this fight');
+    Game.startLevel('test-crowd'); sim.begin(); sim.clearEnemies();
+    sim.place(10, 0); Game.player.yaw = Math.PI / 2; Game.cam.yaw = Math.PI / 2; Game.updateCamera(0, true);
+    const h = sim.spawn('hollow', 16, 0, undefined, -Math.PI / 2); h.discovered = true; h.setState(ES.CHASE);
+    Game.setLock(null); Game.retarget = false; sim.step(3);
+    expect.ok(!Game.lock, 'an ordinary foe does not');
+  });
+  test('Lessons: the first fight is a forgiving one: the Long Hall\'s first Hollow waits longer and hits half as hard', () => {
+    Game.startLevel('long-hall'); sim.begin();
+    const z = Game.zones.find(z => z.id === 'zone-hollow'), e = z.actors[0], road = roadMight('long-hall', false);
+    const next = Game.zones.find(z => z.id === 'zone-knight').actors[0];
+    expect.near(e.damageMul, road.damage * 0.5, 1e-6, 'half the damage');
+    expect.near(e.pace, road.pace * 0.7, 1e-6, 'a slower pace');
+    expect.near(next.damageMul, road.damage, 1e-6, 'the next fight is the road\'s own');
+  });
+  // The states a training dummy goes through, step by step, for `seconds` with the player standing still.
+  const cadence = (kind, seconds) => {
+    trainingAt(kind); const e = Game.enemies[0], out = [];
+    for (let i = 0; i < seconds / STEP; i++) { sim.step(); out.push(e.state); }
+    return out.join();
+  };
+  test('training: the dodge dummy swings exactly like the sparring dummy, but roll-only; a block or a parry does not answer it', () => {
+    expect.ok(cadence('dodge', 12) === cadence('sparring', 12), 'the same rest, wind-up, strike and recovery, step for step');
+    let p = trainingAt('dodge');
+    const dummy = Game.enemies[0], swing = dummy.def.attacks[0];
+    expect.ok(sim.until(() => log.includes('perilous'), 4) >= 0, 'its wind-up flashes the blue ring (perilous)');
+    expect.ok(makeStrike(swing).rollOnly, 'its swing is roll-only');
+    sim.hold('block'); let hp0 = p.hp;
+    sim.until(() => dummy.state === ES.RECOVER, 4); sim.release('block');
+    expect.ok(p.hp < hp0 && log.includes('strike'), 'it went through the guard');
+    expect.ok(!log.includes('dodge'), 'blocking it is no dodge');
+    p = trainingAt('dodge');
+    const d = Game.enemies[0];
+    sim.until(() => d.state === ES.WINDUP && d.stateTime >= swing.hits[0].startup - 0.08, 6); sim.press('block');
+    sim.until(() => d.state === ES.RECOVER, 2);
+    expect.ok(!log.includes('parry'), 'it cannot be parried');
+  });
+  const dodges = [];
+  A.events.on('dodge', d => dodges.push(d));
+  // The DASH INTO IT card in Level 1, before the dodge dummy: roll `before` s before its swing lands (negative: after),
+  // toward it or `away` from it. What the card shows once that swing is over: done, or a hint.
+  const dodgeRoll = (before, away = false, fresh = true) => {
+    if (fresh) { trainingAt('dodge', 'long-hall'); A.lessons.forget(); A.lessons.show('dodge'); }   // each try starts unlearned
+    const p = Game.player, dummy = Game.enemies[0], swing = dummy.def.attacks[0];
+    dodges.length = 0;
+    sim.until(() => dummy.state === ES.WINDUP, 6); sim.seconds(swing.hits[0].startup - before);
+    if (away) sim.move(p.x - dummy.x, p.z - dummy.z);
+    sim.press('roll');
+    sim.until(() => dummy.state === ES.RECOVER, 3); sim.move(null); sim.step(2); Game.render(1, STEP);
+    const card = A.lessons.card;
+    return { done: !!card && card.id === 'dodge' && card.done, hint: card ? card.hint : '' };
+  };
+  test('Lessons: a roll through the swing finishes DASH INTO IT; early, late or clear of it shows a hint', withLessons(() => {
+    const timed = dodgeRoll(0.1);
+    expect.ok(timed.done, `rolled through the swing as it landed: done (hint "${timed.hint}")`);
+    expect.ok(dodges.length === 1 && dodges[0].attacker.def.id === TRAINING.dodge, `one dodge event (${dodges.length})`);
+    for (const [before, away, want] of [[0.45, false, 'Too early: dash as it lands'], [0.9, false, 'Too early: dash as it lands'], [-0.05, false, 'Too late: dash sooner'], [0.5, true, 'Dash into the blow']]) {
+      const r = dodgeRoll(before, away);
+      expect.ok(!r.done && r.hint === want, `rolled ${before} s before it landed${away ? ', away' : ''}: "${r.hint}" (want "${want}")`);
+    }
+    dodgeRoll(-0.05);
+    sim.seconds(CONFIG.lessons.hintTime + 0.1); Game.render(1, STEP);
+    expect.ok(A.lessons.card.hint === '' && shown('lessonHint') === '', `the hint goes after a while ("${shown('lessonHint')}")`);
+    dodgeRoll(0.45); const next = dodgeRoll(-0.05, false, false);
+    expect.ok(next.hint === 'Too late: dash sooner', `the next hint replaces it ("${next.hint}")`);
+  }));
+  test('events: dodge fires once for a swing rolled through, and for a bolt', withLessons(() => {
+    dodgeRoll(0.1);
+    expect.ok(dodges.length === 1 && !dodges[0].projectile, `one for the dummy's swing (${dodges.length})`);
+    Game.startFight('testBowman'); sim.begin(); dodges.length = 0;
+    const p = Game.player, e = Game.duel, shot = bowShot();
+    quiet(e); e.yaw = Math.atan2(p.x - e.x, p.z - e.z);
+    const b = A.projectiles.fire(e, shot, p), arrive = Math.hypot(p.x - b.x, p.z - b.z) / shot.projectile.speed;
+    sim.seconds(Math.max(0, arrive - CONFIG.player.rollIFrames * 0.5)); sim.press('roll'); settleBolts();
+    expect.ok(dodges.length === 1 && dodges[0].projectile && dodges[0].attacker === e, `one for the bolt (${dodges.length})`);
+  }));
+  // The player at (10, 0) facing east in Test: Crowd, with enemies that stay put at the given spots.
+  test('Arena tracking: distant off-screen survivors remain available to player lock-on', () => {
+    Game.startFight('hollow', ['hollow']); sim.begin();
+    const p = Game.player, first = Game.duel, far = Game.enemies.find(e => e !== first);
+    p.x = -16; p.z = -11; p.yaw = -Math.PI / 2;
+    first.x = p.x + 2; first.z = p.z; first.wake(p);
+    far.x = 16; far.z = 11; far.wake(p);
+    const view = Game.inView;
+    try {
+      Game.inView = () => null;
+      expect.ok(Math.hypot(far.x - p.x, far.z - p.z) > CONFIG.lock.breakRange, 'the survivor is beyond the old break range');
+      expect.ok(Game.lockCandidates().includes(far), 'the whole arena is targetable, including behind the player');
+      Game.setLock(first); first.deplete(); Game.updateLock(CONFIG.step);
+      expect.ok(Game.lock === far, 'a kill retargets the survivor across the arena');
+      for (let i = 0; i < 120; i++) Game.updateLock(CONFIG.step);
+      expect.ok(Game.lock === far, 'distance and being off screen do not drop arena tracking');
+      sim.press('lock'); Game.updateLock(CONFIG.step);
+      expect.ok(!Game.lock && !Game.retarget, 'explicitly releasing lock-on is still respected');
+    } finally { Game.inView = view; }
+  });
+
+  const lockRange = spots => {
+    Game.startLevel('test-crowd'); sim.begin(); sim.clearEnemies();
+    sim.place(10, 0); Game.player.yaw = Math.PI / 2; Game.cam.yaw = Math.PI / 2; Game.updateCamera(0, true);
+    const out = {};
+    for (const [name, x, z] of spots) { out[name] = sim.spawn('hollow', x, z, undefined, -Math.PI / 2); quiet(out[name]); }
+    sim.step(5, 1); Game.setLock(null);   // the near ones had their one-time auto lock-on: start unlocked
+    return out;
+  };
+  const tab = () => { sim.press('switchTarget'); sim.step(1, 1); return Game.lock; };
+  test('switch target: Tab steps out from the nearest enemy in front to the farthest, and wraps', () => {
+    const e = lockRange([['near', 14, 0], ['far', 24, 0.3], ['side', 16, 3], ['mid', 18, -4], ['behind', 2, 0]]);
+    Game.setLock(e.near); sim.step(1, 1);
+    const order = [tab(), tab(), tab(), tab()];
+    const names = order.map(t => Object.keys(e).find(k => e[k] === t));
+    expect.ok(names.join() === 'side,mid,far,near', `Tab from the nearest: ${names.join(', ')} (want side, mid, far, near)`);
+    Game.setLock(e.behind); sim.step(1, 1);
+    expect.ok(tab() === e.near, 'from a target that is not a candidate, Tab picks the nearest');
+    for (let i = 0; i < 8; i++) expect.ok(tab() !== e.behind, 'never the enemy behind the player');
+  });
+  test('switch target: lock-on still picks the middle of the screen, and a flick still picks by side', () => {
+    const e = lockRange([['centre', 20, 0], ['right', 13, 2.5], ['left', 14, -3]]);
+    sim.press('lock'); sim.step(1, 1);
+    expect.ok(Game.lock === e.centre, 'lock-on: the enemy in the middle of the screen, not the nearest');
+    input.down('PadFlickR'); input.up('PadFlickR'); sim.step(1, 1);
+    expect.ok(Game.lock === e.right, 'a flick right: the enemy to the right');
+    Game.setLock(e.centre); sim.step(1, 1);
+    input.down('PadFlickL'); input.up('PadFlickL'); sim.step(1, 1);
+    expect.ok(Game.lock === e.left, 'a flick left: the enemy to the left');
+  });
+
+  test('floors and roofs: no roof is drawn inside the floor above it, in any room level; holes show through', () => {
+    const ray = new THREE.Raycaster(), up = new THREE.Vector3(0, 1, 0);
+    ray.camera = A.camera;
+    let spots = 0;
+    for (const L of A.ALL_LEVELS.filter(l => l.layout === 'rooms')) {
+      Game.startLevel(L.id); sim.begin();
+      const rooms = L.rooms.map(R => ({ R, lo: R.y ?? 0, top: (R.y ?? 0) + (R.height ?? L.wallHeight) }));
+      for (const a of rooms) for (const b of rooms) {   // a roofed room right under b's floor slab
+        if (a === b || a.R.open || Math.abs(a.top - (b.lo - H.slab)) > 1e-6) continue;
+        const r = [Math.max(a.R.rect[0], b.R.rect[0]), Math.min(a.R.rect[1], b.R.rect[1]), Math.max(a.R.rect[2], b.R.rect[2]), Math.min(a.R.rect[3], b.R.rect[3])];
+        if (r[0] >= r[1] || r[2] >= r[3]) continue;
+        for (const fx of [0.2, 0.5, 0.8]) for (const fz of [0.2, 0.5, 0.8]) {
+          const x = lerp(r[0], r[1], fx), z = lerp(r[2], r[3], fz), hole = (b.R.pits || []).some(q => inRect(q, x, z));
+          ray.set(new THREE.Vector3(x, a.top - 0.2, z), up);
+          const near = ray.intersectObject(stage.group, true).filter(h => h.distance < 0.5);
+          const n = new Set(near.map(h => h.object.material.uuid + h.point.y.toFixed(3))).size;   // surfaces that would fight: two materials at one height
+          expect.ok(n === (hole ? 0 : 1), `${L.id}: "${a.R.id}" under "${b.R.id}" at (${x.toFixed(1)}, ${z.toFixed(1)}): ${n} surfaces at its ceiling${hole ? ' (a hole)' : ''}`);
+          spots++;
+        }
+      }
+    }
+    expect.above(spots, 8, 'places checked');
+    Game.startLevel('the-tower');
+    expect.ok(!A.LEVEL_4.rooms.find(R => R.id === 'courtyard').pits && world.floorY(45.5, -16.5) === 0, "the courtyard's grate is gone");
+  });
+  // The Tower's trap: every trapWarning and trapSprung, with when and where the player was.
+  const traps = [];
+  for (const type of ['trapWarning', 'trapSprung']) A.events.on(type, d => traps.push({ type, trap: d.trap.id, t: clock, x: Game.player.x }));
+  const zone = id => Game.zones.find(z => z.id === id);
+  const drawn = o => { for (; o; o = o.parent) if (!o.visible) return false; return true; };
+  const downTo = (x, z) => {   // the first surface drawn below (x, 5, z)
+    Game.render(1, STEP);
+    const ray = new THREE.Raycaster(new THREE.Vector3(x, 5, z), new THREE.Vector3(0, -1, 0)); ray.camera = A.camera;
+    // A slab of a sprung trap already falling (below where it was laid) is debris in the air, not the floor.
+    const falling = new Set((A.world.traps || []).flatMap(t => t.pieces.filter(c => c.mesh.position.y < c.y - 0.05).map(c => c.mesh)));
+    const h = ray.intersectObject(stage.group, true).find(q => drawn(q.object) && !falling.has(q.object));
+    return h ? h.point.y : -Infinity;
+  };
+  // Into the passage past the gatehouse gate, and on east until the floor gives way and the player lands below.
+  const springTrap = () => {
+    const p = tower(); sturdy(p); traps.length = 0;
+    for (const e of zone('zone-gatehouse').actors) e.die();
+    sim.until(() => zone('zone-gatehouse').gate.lift >= 1, 4);
+    sim.place(21, 0); sim.move(1, 0);
+    sim.until(() => !p.grounded, 6); sim.move(null);
+    sim.until(() => p.grounded, 3);
+    return p;
+  };
+  test('the tower: walking up the passage, the floor rumbles, cracks and gives way into the undercroft at no cost', () => {
+    const p = springTrap(), T = A.LEVEL_4.traps[0];
+    expect.ok(traps.map(t => t.type).join() === 'trapWarning,trapSprung', `warning, then collapse (${traps.map(t => t.type).join(', ')})`);
+    expect.ok(traps[0].x >= T.trigger[0] && traps[0].x < T.trigger[0] + 0.2, `the warning as the player stepped onto the trigger (x ${traps[0].x.toFixed(2)})`);
+    expect.near(traps[1].t - traps[0].t, T.warning, STEP * 1.01, 'the warning time');
+    expect.near(p.y, -4, 1e-6, 'landed in the undercroft'); expect.ok(p.alive() && p.hp === p.maxHp, `no damage (${p.maxHp - p.hp})`);
+    expect.ok(downTo(26, 0) < -3.9 && downTo(26, 0) > -4.1, `the floor dropped away: looking down, the undercroft floor (${downTo(26, 0).toFixed(2)})`);
+    expect.above(T.collapse[1] - T.collapse[0], 2.3 + 1, 'longer than any jump');
+    tower(); sim.clearEnemies(); traps.length = 0;
+    const e = sim.spawn('hollow', 27, 2, 0); quiet(e);
+    sim.place(24.5, -1.5); sim.seconds(1);
+    expect.ok(e.alive() && Math.abs(e.y + 4) < 1e-6, 'an enemy standing on it falls too');
+  });
+  test('the tower: the ambush below opens its gate only when all three are dead; the stairs lead up to the bait bonfire', () => {
+    const p = springTrap(), Z = zone('zone-undercroft'), ids = Z.actors.map(e => e.def.id).sort().join();
+    expect.ok(ids === 'executioner,hollow,hollow', `two Hollows and the Executioner (${ids})`);
+    sim.seconds(1.5);
+    const exec = Z.actors.find(e => e.def.id === 'executioner'), hollows = Z.actors.filter(e => e !== exec);
+    expect.ok(hollows.every(e => !e.in('unaware')), 'the Hollows noticed the player at once');
+    expect.ok(exec.state !== ES.DORMANT, `the Executioner rose (${exec.state})`);
+    expect.above(Math.hypot(exec.x - p.x, exec.z - p.z), 4, 'a few metres away');
+    for (const e of [exec, hollows[0]]) e.die();
+    sim.seconds(1); expect.ok(!Z.gate.open, 'shut while one is alive');
+    hollows[1].die(); expect.ok(sim.until(() => Z.gate.lift >= 1, 4) >= 0, 'open once all three are dead');
+    expect.ok(sim.walkTo(26, -13) && sim.walkTo(32, -13) && sim.walkTo(32, -9) && sim.walkTo(32, -1), 'up the exit stairs');
+    expect.near(p.y, 0, 1e-6, 'in the bait bonfire room');
+    sim.press('rest'); sim.step(2); expect.ok(p.state === PS.REST, 'rested at the bait bonfire');
+    sim.seconds(2); expect.ok(world.floorY(26, 0) === -4 && downTo(26, 0) < -3.9, 'after resting, the hole is still open');
+    p.hp = 0; p.setState(PS.DEAD); Game.onPlayerDeath(); sim.seconds(CONFIG.death.respawnDelay + 0.2);
+    const q = Game.player, fire = world.bonfires.find(b => b.id === 'tower-bait');
+    expect.ok(q.alive() && Math.hypot(q.x - fire.x, q.z - fire.z) < 3 && q.y === 0, `respawned at the bait bonfire (${q.x.toFixed(1)}, ${q.z.toFixed(1)})`);
+    expect.ok(world.floorY(26, 0) === -4 && downTo(26, 0) < -3.9, 'after dying, the hole is still open');
+  });
+  test('the tower: the portcullis before the bait bonfire never opens, and nothing in the courtyard sees the bonfire', () => {
+    const p = tower(); sturdy(p);
+    const g = world.gates.find(q => q.id === 'bonfire-portcullis'), fire = world.bonfires.find(b => b.id === 'tower-bait');
+    sim.place(fire.spawn.x, fire.spawn.z);
+    const watchers = [...zone('zone-courtyard').actors, ...Game.enemies.filter(e => e.behavior === 'sentry' && e.def.id === 'bowman' && e.y === 6)];
+    expect.ok(watchers.length === 7 && watchers.every(e => gateBetween(e, p)), 'no courtyard enemy or rampart bowman has a line to it');
+    sim.seconds(5);
+    expect.ok(watchers.every(e => e.in('unaware')) && !shots.length, 'nobody noticed or shot');
+    sim.press('rest'); sim.step(2); expect.ok(p.state === PS.REST, 'resting is not blocked');
+    sim.seconds(2); sim.place(30.5, 1.5); sim.move(-1, 0); sim.seconds(2); sim.move(null);
+    expect.above(p.x, 29, 'the portcullis holds');
+    for (const Z of Game.zones) for (const e of Z.actors) e.die();
+    sim.seconds(3);
+    expect.ok(Game.complete && !g.open, 'still shut once every zone is won, and the level completes without it');
+  });
+  test('data: traps, sealed gates, zone behaviours and the dodge dummy are checked at load', () => {
+    expect.ok(A.validateData().length === 0, 'the shipped data passes');
+    const L = A.LEVEL_4, trap = L.traps[0], exec = L.gated.find(z => z.id === 'zone-undercroft').enemies.find(m => m.enemy === 'executioner');
+    const rejects = (obj, key, value, words) => {   // one bad value: a readable error that names the thing and the problem
+      const old = obj[key];
+      obj[key] = value;
+      const errors = A.validateData();
+      obj[key] = old;
+      expect.ok(errors.some(m => words.every(w => m.includes(w))), `${key} = ${JSON.stringify(value)}: ${errors.join(' | ') || 'no error'}`);
+    };
+    rejects(trap, 'collapse', [200, 205, 0, 4], ['trap "passage-floor"', 'collapse']);
+    rejects(trap, 'collapse', [40, 45, 0, 4], ['trap "passage-floor"', 'below']);
+    rejects(trap, 'trigger', [200, 201, 0, 1], ['trap "passage-floor"', 'trigger']);
+    rejects(trap, 'warning', -1, ['trap "passage-floor"', 'warning']); rejects(trap, 'warning', 'soon', ['trap "passage-floor"', 'warning']);
+    rejects(exec, 'behavior', 'patrol', ['zone-undercroft', 'behaviour']);
+    rejects(L.sealed[0], 'gate', { x: 200, z: 0, along: 'z', width: 6 }, ['sealed gate "bonfire-portcullis"', 'floor']);
+    rejects(L.sealed[0], 'gate', { x: 29, z: 0, along: 'y' }, ['sealed gate "bonfire-portcullis"', 'along']);
+  });
+  const atLoad = { screen: Game.screen, notice: shown('menuNotice') };   // what the page showed as it finished loading
+  test('loading screen: no controller notice screen; every level and duel opens on a loading screen with the controller note', () => {
+    expect.ok(atLoad.screen === 'main' && !('start' in Game.screens()), `at load: ${atLoad.screen}`);
+    const el = document.getElementById('loading');
+    for (const go of [() => Game.startLevel('test-crowd'), () => Game.startFight('hollow')]) {
+      go();
+      expect.ok(el.classList.contains('show') && Game.loading > 0, 'the loading screen shows');
+      expect.ok(shown('loadPadText').includes('controller') && !!el.querySelector('svg') && shown('loadName') !== '', 'its name, and the controller note with its icon');
+      Game.tickLoading(CONFIG.loading.time + 0.01);
+      expect.ok(!el.classList.contains('show') && Game.loading === 0, 'then it lifts');
+    }
+  });
+  test('version: the footer shows the version on the title and in pause, and nothing shows it during play', () => {
+    const hint = document.getElementById('menuHint'), seen = () => hint.offsetParent !== null && hint.textContent.includes(A.VERSION);
+    expect.ok(/^v\d+\.\d+(\.\d+)?$/.test(A.VERSION), `one version constant (${A.VERSION})`);
+    Game.showMenu('main'); expect.ok(seen(), 'on the title');
+    Game.showMenu('practiceLevels'); expect.ok(!seen(), 'not on the lists under it');
+    Game.startLevel('test-crowd'); sim.begin(); sim.step(2, 1);
+    expect.ok(!seen(), 'hidden during play');
+    Game.pause(false); expect.ok(seen(), 'in the pause menu');
+    Game.resume(); expect.ok(!seen(), 'hidden again on resuming');
+  });
+
+  // ---- v4.2.4 fixes -----------------------------------------------------------------------------------------------
+  test('v4.2.4 checkpoints: resting keeps beaten enemies dead; ones beaten since the last rest come back on a death', () => {
+    Game.startLevel('long-hall'); sim.begin(); sturdy(Game.player);
+    const patrol = () => Game.enemies.find(e => e.behavior === 'patrol' && e.path[0] === 40), hz = () => Game.zones.find(z => z.id === 'zone-hollow');
+    patrol().die(); hz().actors[0].die(); sim.step(2);
+    sim.place(4.5, -3); sim.press('rest'); sim.seconds(CONFIG.rest.time + 0.5);
+    expect.ok(log.includes('rest') && !patrol() && hz().gate.open, 'rested: the patrolling Hollow and the zone Hollow stay dead');
+    const second = Game.enemies.find(e => e.behavior === 'patrol' && e.path[0] === 98); second.die(); sim.step(2);
+    Game.player.hp = 0; Game.player.setState(PS.DEAD); sim.seconds(CONFIG.death.respawnDelay + 0.2);
+    expect.ok(!patrol() && Game.enemies.some(e => e.behavior === 'patrol' && e.path[0] === 98 && e.alive() && e.hp === e.def.hp),
+      'after a death: the one beaten before the rest stays dead, the one beaten since is back at full health');
+    const fire = A.LEVEL_1.bonfires.find(b => b.id === 'after-rogue'), rogue = A.LEVEL_1.gated.find(z => z.id === 'zone-rogue');
+    expect.ok(fire.x > rogue.gateX, 'Level 1: the second bonfire is the reward past the Rogue\'s gate');
+  });
+  test('Lessons: the HEAVY ATTACK card wants a fully charged heavy; a lighter one shows a hint', withLessons(() => {
+    const p = trainingAt('dummy', 'long-hall'), d = Game.enemies[0]; A.lessons.show('heavy');
+    events.emit('strike', { attacker: p, target: d, strike: { attackId: 'heavy', charge: 0.4 }, at: { x: 0, y: 0, z: 0 }, blocked: false }); sim.step(1);
+    expect.ok(!A.lessons.card.done && /longer/i.test(A.lessons.card.hint), `a half charge: not done, a hint (${A.lessons.card.hint})`);
+    events.emit('strike', { attacker: p, target: d, strike: { attackId: 'heavy', charge: 1 }, at: { x: 0, y: 0, z: 0 }, blocked: false }); sim.step(1);
+    expect.ok(A.lessons.card.id === 'heavy' && A.lessons.card.done && A.lessons.learned('heavy'), 'a full charge: done, and learned');
+  }));
+  test('pass 85 dashes: a slim bar per dash charge under health; no guard bar (pass 96)', () => {
+    Game.startLevel('test-crowd'); sim.begin(); sim.clearEnemies(); sim.place(20, 0); sim.step(2); hud.updateVitals(Game, 0);
+    expect.ok(document.querySelectorAll('#pDash i').length === CONFIG.player.dashCharges, 'a slim bar per dash charge under health');
+    expect.ok(!document.getElementById('pSt'), 'no guard bar');
+  });
+  test('v4.2.4 vision: unaware enemies see in a cone only; a searching one walks to where it last saw the player', () => {
+    Game.startLevel('test-crowd'); sim.begin(); sim.clearEnemies(); sturdy(Game.player);
+    const p = Game.player, away = sim.spawn('hollow', p.x + 6, p.z, undefined, Math.atan2(6, 0));   // facing straight away
+    sim.seconds(1);
+    expect.ok(away.state === ES.IDLE, `back turned: never noticed (${away.state})`);
+    away.yaw = Math.atan2(-6, 0); sim.seconds(0.5);
+    expect.ok(away.in('fighting'), `turned round: it sees the player (${away.state})`);
+    const e = behindPillar(); e.notice = CONFIG.notice.gated; e.setState(ES.CHASE); e.lastSeen = { x: 30, z: -11 };
+    sim.step(1);
+    expect.ok(e.state === ES.SEARCH, `lost behind the pillar: searching (${e.state})`);
+    const d0 = Math.hypot(e.x - 30, e.z + 11); sim.seconds(1);
+    expect.ok(e.state === ES.CHASE || Math.hypot(e.x - 30, e.z + 11) < d0 - 0.5, 'walking to where it last saw the player, or back on it');
+  });
+  test('v4.2.4 alerts: one enemy noticing wakes its whole zone (the Tower courtyard)', () => {
+    Game.startLevel('the-tower'); sim.begin();
+    const Z = Game.zones.find(z => z.id === 'zone-courtyard'), was = new Set(Z.actors);
+    Z.actors[0].setState(ES.CHASE); Game.spreadAlert(was);
+    expect.ok(Z.actors.every(e => !e.in('unaware')), `all five awake: ${Z.actors.map(e => e.state).join(', ')}`);
+  });
+  test('v4.2.4 bosses: the wind-up glow lights the weapon only; boss strikes are short enough to roll through', () => {
+    for (const id of ['giant', 'pillagerCaptain', 'bellWarden', 'executioner']) {
+      const e = new A.Enemy(A.ENEMY_BY_ID[id], { x: 0, z: 0, yaw: 0, behavior: 'gated' }), r = e.rig;
+      const meshes = []; r.root.traverse(o => { if (o.isMesh) meshes.push(o); });
+      expect.ok(!r.bodyMats.includes(r.weaponMat) && meshes.filter(m => m.material === r.weaponMat).length >= 1
+        && meshes.some(m => r.bodyMats.includes(m.material)), `${id}: the weapon has its own material`);
+      r.dispose();
+      for (const a of A.ENEMY_BY_ID[id].attacks) for (const h of a.hits) if (!(h.box || a.box).ring)   // a ring spreads: jumped or rolled as it passes
+        expect.ok(h.active <= CONFIG.player.rollIFrames - 0.08, `${id} ${a.id}: active ${h.active} s leaves a roll's i-frames a margin`);
+    }
+  });
+
+  // ---- v4.0 lock-on: cover grace and always-retarget ------------------------------------------------------------
+  // Test: Courtyard's pillar at (30, -8) stands between the player at (24, -8) and an enemy at (36, -8).
+  const behindPillar = () => {
+    Game.startLevel('test-courtyard'); sim.begin(); sim.clearEnemies();
+    sim.place(24, -8); Game.player.yaw = Math.PI / 2; Game.cam.yaw = Math.PI / 2; Game.updateCamera(0, true);
+    const e = sim.spawn('hollow', 36, -8, undefined, -Math.PI / 2); quiet(e);
+    return e;
+  };
+  const moveTo = (e, x, z) => { e.x = e.px = x; e.z = e.pz = z; };
+  test('lock-on: cover holds the lock for a moment, then lets go; seeing the target again restarts the wait', () => {
+    const e = behindPillar(), cover = CONFIG.lock.coverTime;
+    expect.near(cover, 1.5, 0.5, 'cover time');
+    expect.ok(gateBetween(Game.player, e), 'the pillar hides the enemy');
+    Game.setLock(e); sim.seconds(cover - 0.2, 6);
+    expect.ok(Game.lock === e, `still locked after ${(cover - 0.2).toFixed(1)} s behind the pillar`);
+    sim.seconds(0.4, 6);
+    expect.ok(!Game.lock, `let go after ${(cover + 0.2).toFixed(1)} s`);
+    Game.setLock(e); sim.seconds(cover - 0.4, 6);
+    moveTo(e, 36, -4); sim.step(2, 1);
+    expect.ok(!gateBetween(Game.player, e) && Game.lock === e, 'stepped out from behind the pillar: seen, still locked');
+    moveTo(e, 36, -8); sim.seconds(cover - 0.4, 6);
+    expect.ok(Game.lock === e, 'hidden again: the wait started over');
+  });
+  test('lock-on: a closed gate between the player and the target breaks the lock at once', () => {
+    Game.startLevel('test-crowd'); sim.begin(); sim.clearEnemies();
+    sim.place(36, 0); Game.player.yaw = Math.PI / 2; Game.cam.yaw = Math.PI / 2; Game.updateCamera(0, true);
+    const e = sim.spawn('hollow', 43, 0, undefined, -Math.PI / 2); quiet(e);
+    expect.ok(world.gates.some(g => g.id === 'zone-crowd' && !g.open), 'the crowd gate is shut');
+    Game.setLock(e); sim.step(1, 1);
+    expect.ok(!Game.lock, 'the lock broke on the first step');
+  });
+
+  // Test: Crowd with the player at (10, 0) facing east, and rooted enemies (no walking, no attacks) at the given
+  // spots: [name, enemy id, x, z, noticed]. Those `noticed` are fighting the player. Starts unlocked.
+  const rooted = id => ({ ...A.ENEMY_BY_ID[id], speed: 0, firstDelay: [999, 999] });
+  const retargetRange = spots => {
+    Game.startLevel('test-crowd'); sim.begin(); sim.clearEnemies();
+    sim.place(10, 0); Game.player.yaw = Math.PI / 2; Game.cam.yaw = Math.PI / 2; Game.updateCamera(0, true);
+    const out = {};
+    for (const [name, id, x, z, noticed] of spots) {
+      const e = out[name] = sim.spawn(rooted(id), x, z, undefined, -Math.PI / 2); quiet(e);
+      if (noticed) e.setState(ES.CHASE);
+    }
+    Game.setLock(null);
+    return out;
+  };
+  const nameOf = (e, t) => Object.keys(e).find(k => e[k] === t) || 'nothing';
+  test('lock-on: with no target, the lock goes to the enemy fighting the player that is most centred and closest', () => {
+    let e = retargetRange([['centreNear', 'hollow', 15, 0.3, true], ['sideFar', 'hollow', 22, 7, true]]);
+    sim.step(1, 1);
+    expect.ok(Game.lock === e.centreNear, `centred and near beats off to the side and far (${nameOf(e, Game.lock)})`);
+    e = retargetRange([['close', 'hollow', 13, 2.6, true], ['farCentre', 'hollow', 25, 0, true]]);
+    sim.step(1, 1);
+    expect.ok(Game.lock === e.close, `the enemy 4 m away beats one 15 m off in the middle of the screen (${nameOf(e, Game.lock)})`);
+    e = retargetRange([['nearSide', 'hollow', 15, 3.5, true], ['nearCentre', 'hollow', 16, 0.2, true]]);
+    sim.step(1, 1);
+    expect.ok(Game.lock === e.nearCentre, `about as near: the more centred one (${nameOf(e, Game.lock)})`);
+  });
+  test('lock-on: the automatic pick never takes an enemy that has not noticed the player', () => {
+    const e = retargetRange([['idle', 'hollow', 13, 0, false], ['fighting', 'hollow', 20, 4, true]]);
+    sim.step(1, 1);
+    expect.ok(Game.lock === e.fighting, `the one fighting, not the idle one in front (${nameOf(e, Game.lock)})`);
+    e.fighting.die(); sim.seconds(2, 6);
+    expect.ok(!Game.lock, `once the fighter is dead, the idle one is not picked either (${nameOf(e, Game.lock)})`);
+  });
+
+  test('lock-on: automatic picks never take archers or mages; Q and Tab still reach them', () => {
+    let e = retargetRange([['archer', 'bowman', 22, 0, true], ['melee', 'hollow', 17, 5, true]]);
+    sim.step(1, 1);
+    expect.ok(Game.lock === e.melee, `a far archer in the middle of the screen is skipped (${nameOf(e, Game.lock)})`);
+    e = retargetRange([['archer', 'bowman', 16, 0.5, true], ['melee', 'hollow', 21, 5, true]]);
+    sim.step(1, 1);
+    expect.ok(Game.lock === e.melee, 'a nearby archer is skipped too');
+    e = retargetRange([['archer', 'bowman', 24, 0, true]]);
+    sim.step(1, 1);
+    expect.ok(!Game.lock, 'a lone archer is never taken automatically');
+    e = retargetRange([['archer', 'bowman', 22, 0, true], ['melee', 'hollow', 17, 5, true]]);
+    sim.step(1, 1); sim.press('lock'); sim.step(1, 1); sim.press('lock'); sim.step(1, 1);
+    expect.ok(Game.lock === e.archer, `Q locks the archer in the middle of the screen (${nameOf(e, Game.lock)})`);
+    Game.setLock(e.melee); sim.step(1, 1);
+    expect.ok(tab() === e.archer, 'Tab reaches the archer');
+  });
+
+  test('lock-on: first encounters and kill handoffs also skip ranged enemies', () => {
+    for (const id of ['bowman', 'castleBowman', 'wisp']) {
+      const e = retargetRange([['ranged', id, 16, 0, true]]);
+      sim.step(1, 1);
+      expect.ok(!Game.lock, `${id}: automatic retarget skipped`);
+      Game.retarget = false; sim.step(1, 1);
+      expect.ok(!Game.lock, `${id}: first encounter skipped`);
+      const melee = sim.spawn(rooted('hollow'), 14, 1, undefined, -Math.PI / 2); quiet(melee);
+      Game.setLock(melee); melee.die(); sim.step(1, 1);
+      expect.ok(!Game.lock, `${id}: kill handoff skipped`);
+      sim.press('lock'); sim.step(1, 1);
+      expect.ok(Game.lock === e.ranged, `${id}: explicit input still locks`);
+    }
+  });
+
+  test('lock-on: melee fighters with projectile moves remain automatic targets in every lock path', () => {
+    const mixed = A.ENEMY_DEFS.filter(d => d.autoLock !== false && d.attacks.some(a => a.projectile));
+    expect.ok(mixed.some(d => d.id === 'varn') && mixed.some(d => d.id === 'ostrey'), 'covers the story\'s bosses');
+    for (const d of mixed) {
+      const e = retargetRange([['mixed', d.id, 16, 0, true]]).mixed;
+      // Some bosses gain their projectile later. Eligibility follows the entity, across phase changes.
+      if (e.phaseIds) e.enterPhase(e.phaseIds.length - 1);
+      sim.step(1, 1);
+      expect.ok(Game.lock === e, `${d.id}: automatic retarget`);
+      Game.setLock(null); Game.retarget = false; e.discovered = false; sim.step(1, 1);
+      expect.ok(Game.lock === e, `${d.id}: first encounter`);
+      const fallen = sim.spawn(rooted('hollow'), 14, 1, undefined, -Math.PI / 2); quiet(fallen);
+      Game.setLock(fallen); fallen.die(); sim.step(1, 1);
+      expect.ok(Game.lock === e, `${d.id}: kill handoff`);
+    }
+  });
+
+  test('lock-on: Q letting go turns the automatic pick off; a Q lock-on, a rest, a death and a level start turn it back on', () => {
+    // The player at Test: Crowd's bonfire facing east; a rooted enemy fighting it 11 m away (beyond the first-encounter
+    // range, so only the automatic pick ever locks it). `picks()`: with no lock, does a step lock it?
+    const start = () => { Game.startLevel('test-crowd'); sim.begin(); sim.clearEnemies(); log.length = 0; };
+    const atFire = () => { sim.place(4, -11.5); Game.player.yaw = Math.PI / 2; Game.cam.yaw = Math.PI / 2; Game.updateCamera(0, true); };
+    const fighter = () => { const e = sim.spawn(rooted('hollow'), 15, -8, undefined, -Math.PI / 2); e.setState(ES.CHASE); return e; };
+    const picks = () => { Game.setLock(null); sim.step(1, 1); return !!Game.lock; };
+    const letGo = () => { Game.setLock(Game.enemies.find(e => e.alive())); sim.press('lock'); sim.step(1, 1); expect.ok(!Game.lock, 'Q let go'); };
+    start(); atFire(); fighter();
+    expect.ok(picks(), 'on at the start of a level');
+    letGo(); sim.seconds(1, 6);
+    expect.ok(!Game.lock, 'after Q lets go, losing the target picks nobody');
+    const fresh = sim.spawn(rooted('hollow'), 9, -11, undefined, -Math.PI / 2); quiet(fresh); sim.step(1, 1);
+    expect.ok(Game.lock === fresh, 'off: a first encounter still locks on');
+    fresh.die(); sim.step(1, 1);
+    expect.ok(!!Game.lock && Game.lock !== fresh, 'off: a kill still moves on to the next target');
+    letGo(); sim.press('lock'); sim.step(1, 1);
+    expect.ok(!!Game.lock && picks(), 'a Q lock-on turns it back on');
+    letGo(); sim.press('rest'); sim.seconds(CONFIG.rest.time + 0.5, 6);
+    expect.ok(log.includes('rest'), 'rested'); sim.clearEnemies(); atFire(); fighter();
+    expect.ok(picks(), 'a rest turns it back on');
+    letGo(); Game.player.hp = 0; Game.player.setState(PS.DEAD); sim.seconds(CONFIG.death.respawnDelay + 0.2, 6);
+    expect.ok(Game.player.alive(), 'died and came back'); sim.clearEnemies(); atFire(); fighter();
+    expect.ok(picks(), 'a death turns it back on');
+    letGo(); start(); atFire(); fighter();
+    expect.ok(picks(), 'a level start turns it back on');
+  });
+
+  test('lock-on: training dummies are never picked automatically, even swinging at the player', () => {
+    trainingAt('dummy'); sim.seconds(3, 6);
+    expect.ok(!Game.lock, 'the dummy in front is not locked');
+    trainingAt('sparring'); Game.setLock(null);
+    let swung = false;
+    for (let i = 0; i < 6 * 10; i++) { sim.step(10, 10); if (Game.enemies[0].state === ES.WINDUP) swung = true; }
+    expect.ok(swung && !Game.lock, 'the sparring dummy swung and was never locked');
+  });
+  test('lock-on: when the target dies, the next is the best enemy fighting the player, not an idle one in the middle', () => {
+    const e = retargetRange([['target', 'hollow', 14, 0, true], ['idle', 'hollow', 18, 0.2, false], ['side', 'hollow', 16, 4.5, true]]);
+    Game.setLock(e.target); sim.step(1, 1);
+    e.target.die(); sim.step(1, 1);
+    expect.ok(Game.lock === e.side, `moved on to the one fighting (${nameOf(e, Game.lock)})`);
+  });
+
+  // ---- v4.0 the town's pieces: props, barricades, houses (Test: Town) ---------------------------------------------
+  // Test: Town's square: the fountain at (20, 0), the well at (8, 8), a cart at (28, 9), a stall at (28, -9) facing
+  // north (its back panel to the south), crates at (14, -10). The street east of it ends at a barricade at x 72.
+  const town = () => { Game.startLevel('test-town'); sim.begin(); sim.clearEnemies(); log.length = 0; shots.length = 0; return Game.player; };
+  const propAt = (x, z) => world.solids.find(s => s.kind === 'prop' && x >= s.x0 && x <= s.x1 && z >= s.z0 && z <= s.z1);
+  test('props: carts, stalls and the fountain stop the player and enemies; an enemy walks round the fountain to the player', () => {
+    const p = town(); sturdy(p);
+    expect.ok(propAt(28, 9) && propAt(28, -9) && propAt(20, 0) && propAt(8, 8) && propAt(14, -10), 'the cart, stall, fountain, well and crates are solid');
+    sim.place(28, 5); sim.move(0, 1); sim.seconds(2); sim.move(null);
+    expect.below(p.z, propAt(28, 9).z0, `walked into the cart: stopped at z ${p.z.toFixed(2)}`);
+    sim.place(28, -5); sim.move(0, -1); sim.seconds(2); sim.move(null);
+    expect.above(p.z, propAt(28, -9).z1, `walked into the stall: stopped at z ${p.z.toFixed(2)}`);
+    sim.place(20, 7); p.yaw = Math.PI;
+    const e = sim.spawn('hollow', 20, -7, undefined, 0); e.setState(ES.CHASE);
+    let crossed = false;
+    for (let i = 0; i < 8 * 60 && !crossed; i++) { sim.step(); crossed = e.z > propAt(20, 0).z1; }
+    expect.ok(crossed, `the enemy went round the fountain (stuck at ${e.x.toFixed(1)}, ${e.z.toFixed(1)})`);
+  });
+  test('props: they stop bolts; a low well hides nobody, a stall\'s back panel does', () => {
+    const p = town();
+    sim.place(28, -4); p.yaw = Math.PI;
+    const archer = sim.spawn('bowman', 28, -14, undefined, 0); quiet(archer);
+    const hp0 = p.hp, stopped = log.length;
+    A.projectiles.fire(archer, A.ENEMY_BY_ID.bowman.attacks.find(a => a.projectile), p); settleBolts();
+    expect.ok(p.hp === hp0 && log.slice(stopped).includes('boltStopped'), 'the bolt hit the stall, not the player');
+    expect.ok(gateBetween(p, archer), 'the stall hides the archer');
+    archer.die();
+    sim.place(8, 3); p.yaw = Game.cam.yaw = 0; Game.updateCamera(0, true);
+    const e = sim.spawn('hollow', 8, 13, undefined, Math.PI); quiet(e);
+    expect.ok(!gateBetween(p, e), 'seen over the well');
+    Game.setLock(null); sim.press('lock'); sim.step(1, 1);
+    expect.ok(Game.lock === e, 'and locked on over the well');
+    e.die(); Game.setLock(null);
+    sim.place(28, -4); p.yaw = Game.cam.yaw = Math.PI; Game.updateCamera(0, true);
+    const hidden = sim.spawn('hollow', 28, -14, undefined, 0); quiet(hidden);
+    Game.setLock(hidden); sim.seconds(CONFIG.lock.coverTime + 0.2, 6);
+    expect.ok(Game.lock !== hidden, 'an enemy behind the stall cannot be held locked past the cover time');
+  });
+  test('props: a low cart right behind the player leaves the camera behind it, not on the player\'s head', () => {
+    const p = town();
+    sim.place(28, 7.4); p.yaw = Game.cam.yaw = Math.PI; Game.cam.pitch = 0; Game.zoomTarget = Game.cam.zoom = CONFIG.zoom.default;
+    Game.mouseHold = 99; Game.updateCamera(0, true); sim.seconds(1);
+    const back = Math.hypot(Game.cam.pos.x - p.x, Game.cam.pos.z - p.z);
+    expect.above(back, 4, `the camera stays ${back.toFixed(2)} m behind, over the cart`);
+  });
+  test('props: clutter along the house fronts never stops the player', () => {
+    const p = town();
+    for (const [x0, z, x1] of [[1, 15.3, 39], [1, -15.3, 39], [41, 3.4, 71], [41, -3.4, 71]]) {
+      sim.place(x0, z); sim.move(1, 0);
+      sim.until(() => p.x > x1, 12); sim.move(null);
+      expect.above(p.x, x1, `walked along z ${z} from x ${x0}: reached x ${p.x.toFixed(1)}`);
+    }
+  });
+
+  test('barricades: one holds the player and stops bolts and sight while shut, falls when its street is won, and counts toward completion', () => {
+    Game.startLevel('test-town'); sim.begin(); log.length = 0;
+    const p = Game.player, Z = Game.zones.find(z => z.id === 'zone-street'); sturdy(p);
+    expect.ok(A.TEST_TOWN.gated.find(z => z.id === 'zone-street').gate.style === 'barricade', 'the street gate is a barricade');
+    for (const e of Z.actors) quiet(e);
+    sim.place(68, 0); sim.move(1, 0); sim.seconds(2); sim.move(null);
+    expect.below(p.x, 72, `held at the barricade (x ${p.x.toFixed(2)})`);
+    const beyond = sim.spawn(rooted('bowman'), 78, 0, undefined, -Math.PI / 2); quiet(beyond);
+    expect.ok(gateBetween(p, beyond), 'no sight through it');
+    const hp0 = p.hp, n = log.length;
+    A.projectiles.fire(beyond, A.ENEMY_BY_ID.bowman.attacks.find(a => a.projectile), p); settleBolts();
+    expect.ok(p.hp === hp0 && log.slice(n).includes('boltStopped'), 'a bolt is stopped');
+    beyond.die();
+    for (const e of Z.actors) e.die();
+    expect.ok(sim.until(() => Z.gate.lift >= 1, 4) >= 0 && log.includes('gateOpened'), 'it fell once the street was won');
+    sim.place(68, 0); sim.move(1, 0); sim.until(() => p.x > 76, 4); sim.move(null);
+    expect.above(p.x, 76, 'walked through where it stood');
+    expect.ok(Game.complete && log.includes('levelComplete'), 'its zone counted: the level is complete');
+  });
+
+  test('houses: solid to the player, bolts and sight; the inn is walked into by its door, and has a roof', () => {
+    const p = town();
+    expect.ok(world.solids.some(s => s.kind === 'house'), 'houses are solid');
+    sim.place(75, 0); sim.move(1, 0); sim.seconds(2); sim.move(null);   // the chapel stands free in the yard at x 78..82
+    expect.below(p.x, 78, `stopped at the chapel (x ${p.x.toFixed(2)})`);
+    const e = sim.spawn(rooted('bowman'), 84, 0, undefined, -Math.PI / 2); quiet(e);
+    expect.ok(gateBetween(p, e), 'no sight through the chapel');
+    const hp0 = p.hp, n = log.length;
+    A.projectiles.fire(e, A.ENEMY_BY_ID.bowman.attacks.find(a => a.projectile), p); settleBolts();
+    expect.ok(p.hp === hp0 && log.slice(n).includes('boltStopped'), 'a bolt is stopped by it');
+    sim.place(13, 14); sim.move(0, 1); sim.until(() => p.z > 21, 4); sim.move(null);
+    expect.above(p.z, 21, 'through the inn door and inside');
+    expect.below(world.ceilingAt(p.x, p.z, p.y + 1), p.y + 4.5, 'under the inn\'s ceiling');
+    sim.place(10, 14); sim.move(0, 1); sim.seconds(2); sim.move(null);
+    expect.below(p.z, 16, 'beside the door, the inn front stops the player');
+  });
+  test('houses: Levels 2 and 4 and the older test rooms build exactly the same solids and slabs as before', () => {
+    const sig = L => {   // the same fingerprint taken before houses and props existed
+      const T = A.terrainFor(L), f = b => [b.kind, b.x0, b.x1, b.z0, b.z1, b.y0, b.y1].map(v => typeof v === 'number' ? v.toFixed(3) : v).join(',');
+      return [T.solids.length, T.slabs.length, strSeed(T.solids.map(f).join(';') + '|' + T.slabs.map(f).join(';'))];
+    };
+    const want = { 'sunken-keep': [78, 20, 3411835110], 'the-tower': [436, 150, 3494895368], 'test-crowd': [14, 4, 170810182],
+                   'test-heights': [131, 54, 3405753706], 'test-courtyard': [77, 19, 1323673726], 'test-mixed': [29, 6, 3293135696] };
+    for (const [id, w] of Object.entries(want)) {
+      const got = sig(A.ALL_LEVELS.find(l => l.id === id));
+      expect.ok(got.join() === w.join(), `${id}: ${got.join()} (want ${w.join()})`);
+    }
+  });
+
+  test('data: houses, props, gate styles and the landmark are checked at load', () => {
+    expect.ok(A.validateData().length === 0, `the shipped data passes (${A.validateData().join(' | ')})`);
+    const L = A.TEST_TOWN, chapel = L.houses.find(h => h.rect[0] === 78), cart = L.props.find(p => p.kind === 'cart');
+    const rejects = (obj, key, value, words) => {   // one bad value: a readable error that names the thing and the problem
+      const had = key in obj, old = obj[key];
+      obj[key] = value;
+      const errors = A.validateData();
+      if (had) obj[key] = old; else delete obj[key];
+      expect.ok(errors.some(m => words.every(w => m.includes(w))), `${key} = ${JSON.stringify(value)}: ${errors.join(' | ') || 'no error'}`);
+    };
+    rejects(chapel, 'y', 3, ['house', 'floor']);
+    rejects(chapel, 'rect', [68, 76, -2, 2], ['house', 'overlaps', 'street']);
+    rejects(chapel, 'ridge', 'y', ['house', 'ridge']);
+    rejects(chapel, 'eaves', 1, ['house', 'eaves']);
+    rejects(chapel, 'rooms', ['nowhere'], ['house', 'nowhere']);
+    const yardHouse = L.houses.find(h => h.rect[0] === 72 && h.rect[2] === 8);
+    rejects(yardHouse, 'rect', [70, 84, 8, 18], ['house', 'overlaps the house']);
+    rejects(A.LEVEL_1, 'props', [], ['props belong in room levels']);
+    rejects(A.LEVEL_3.dispersed.find(d => d.zone), 'zone', 'zone-nowhere', ['zone "zone-nowhere"']);
+    rejects(cart, 'kind', 'boulder', ['prop', 'boulder']);
+    rejects(cart, 'yaw', 0.3, ['prop', 'yaw']);
+    rejects(cart, 'z', 200, ['prop', 'floor']);
+    const withProp = (P, words) => {   // one more prop, somewhere it must not stand
+      L.props.push(P); const errors = A.validateData(); L.props.pop();
+      expect.ok(errors.some(m => words.every(w => m.includes(w))), `${JSON.stringify(P)}: ${errors.join(' | ') || 'no error'}`);
+    };
+    withProp({ kind: 'cart', x: 40.5, z: 0 }, ['prop', 'doorway']);
+    withProp({ kind: 'crates', x: 4.5, z: 0 }, ['prop', 'spawn']);
+    withProp({ kind: 'cart', x: 28, z: 15.5 }, ['prop', 'wall']);
+    withProp({ kind: 'well', x: 71, z: 0 }, ['prop', 'gate']);
+    rejects(L.gated[0].gate, 'style', 'wall', ['gate style', 'wall']);
+    rejects(L.atmosphere, 'landmark', { x: 'far', z: 0 }, ['landmark']);
+    rejects(L.atmosphere, 'embers', 5, ['embers']);
+  });
+
+  test('town look: the far castle, smoke over burning houses and embers are drawn where a level asks, and nowhere else', () => {
+    town(); sim.step(1); Game.render(1, STEP);
+    const I = A.visuals.info(), Lm = A.TEST_TOWN.atmosphere.landmark;
+    expect.ok(I.landmark, 'the far castle is drawn');
+    expect.above(I.far, Math.hypot(Lm.x - Game.player.x, Lm.z - Game.player.z), `the camera sees as far as the castle (far ${I.far})`);
+    const burning = A.TEST_TOWN.houses.filter(h => h.burning || h.ruined).length;
+    expect.ok(I.smoke === burning, `a smoke column over each burning or ruined house (${I.smoke} of ${burning})`);
+    expect.above(I.embers, 0, 'embers drift');
+    Game.startLevel('sunken-keep'); sim.begin(); sim.step(1); Game.render(1, STEP);
+    const K = A.visuals.info();
+    expect.ok(!K.landmark && K.smoke === 0 && K.embers === 0, `Level 2 has none of them (${JSON.stringify({ l: K.landmark, s: K.smoke, e: K.embers })})`);
+  });
+  test('town look: frame time on Test: Town against Test: Courtyard', () => {
+    const gl = A.renderer.getContext(), px = new Uint8Array(4);
+    const measure = (id, x, z) => {
+      Game.startLevel(id); sim.begin(); sim.place(x, z);
+      for (let i = 0; i < 20; i++) { sim.step(1); Game.render(1, STEP); }   // warm-up: shaders compile here
+      gl.readPixels(0, 0, 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, px);
+      const t0 = performance.now();
+      for (let i = 0; i < 90; i++) { sim.step(1); Game.render(1, STEP); }
+      gl.readPixels(0, 0, 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, px);   // wait for the GPU
+      return (performance.now() - t0) / 90;
+    };
+    const court = measure('test-courtyard', 42, 0), townMs = measure('test-town', 20, -6);
+    metrics.townFrame = { townMs: +townMs.toFixed(2), courtyardMs: +court.toFixed(2) };
+    expect.below(townMs, court * 2.5 + 3, `Test: Town frame (${townMs.toFixed(1)} ms) against Test: Courtyard (${court.toFixed(1)} ms)`);
+  });
+
+  // ---- v4.0 the Pillager Captain ----------------------------------------------------------------------------------
+  test('Pillager Captain: a posture boss between the throne pair and the Bell Warden, with a bill held in both hands', () => {
+    Game.startFight('pillagerCaptain'); sim.begin(); Game.render(1, STEP);
+    const e = Game.duel, B = A.ENEMY_BY_ID;
+    expect.ok(!!e.def.posture && !A.hud.eBars.classList.contains('hidden'), 'its posture shows on the big bar at the top of the screen');
+    expect.ok(A.hud.eBars.textContent.includes('Pillager Captain'), 'named on the boss bar');
+    expect.near(e.def.hp, 1800, 0, '1800 HP (doubled from 900)');
+    expect.above(e.def.hp, Math.max(B.knight.hp, B.warden.hp), 'tougher than either of Level 2\'s throne pair');
+    expect.below(e.def.hp, B.bellWarden.hp, 'less than the Bell Warden');
+    expect.ok(!!e.rig.grip && !!e.rig.embers && e.rig.weaponSlotMeshes.burn && !e.rig.weaponSlotMeshes.burn.visible, 'a bill in both hands, its rags not yet burning');
+  });
+  // ---- pass 63: the Captain's own fight: the hook drags you in; lit, the bill burns and leaves fire on the floor ---------
+  test('Pillager Captain: the hook cannot be parried or blocked and drags you in to him; the chop after it can be parried', () => {
+    Game.startFight('pillagerCaptain'); sim.begin(); log.length = 0; sturdy(Game.player);
+    const p = Game.player, e = Game.duel, hook = e.def.attacks.find(a => a.id === 'captainHook');
+    expect.ok(!canParryHit(hook, 0) && canParryHit(hook, 1), 'the sweep is roll-only, the chop parryable');
+    faceOff(e, p, 3.6); quiet(e); e.notice = 30;
+    sim.hold('block'); sim.step(2); const hp0 = p.hp; e.beginAttack(hook);
+    sim.until(() => e.state === ES.ACTIVE, 3); sim.step(6); sim.release('block');
+    const d0 = Math.hypot(p.x - e.x, p.z - e.z); sim.step(30);
+    const d1 = Math.hypot(p.x - e.x, p.z - e.z);
+    expect.ok(p.hp < hp0, 'the hook went through the guard');
+    expect.ok(d1 < 2.2 && d1 < d0, `dragged in: ${d0.toFixed(2)} m, then ${d1.toFixed(2)} m from him`);
+  });
+  test('Pillager Captain: at half his strength only the bill burns, and where it lands fire burns on the floor, then goes out', () => {
+    Game.startFight('pillagerCaptain'); sim.begin(); sturdy(Game.player); Game.render(1, STEP);
+    const p = Game.player, e = Game.duel;
+    e.takeHit({ ...strikeOf('heavy'), damage: e.hp * 0.55 }, behind(e));
+    sim.until(() => e.def.ignite === 'weapon' && e.state === ES.ACTIVE && e.attack.id === 'captainKindling', 12);
+    expect.ok(e.attack && e.attack.id === 'captainKindling', `the lit phase opens with Kindling (${e.attack && e.attack.id})`);
+    sim.step(2); Game.render(1, STEP);
+    expect.ok(e.fires.length === 6, `six fires stand round him (${e.fires.length})`);
+    sim.until(() => e.state !== ES.ACTIVE, 2); sim.step(30); Game.render(1, STEP);
+    expect.ok(e.rig.weaponSlotMeshes.burn.visible && e.rig.embers.visible, 'the bill burns');
+    expect.ok(!e.rig.bodyMats.some(m => m.emissive && m.emissive.r > 0.3), 'his armour does not glow');
+    // stand in one: it burns, a tick at a time; a roll's i-frames keep it off
+    const f = e.fires[0]; quiet(e); e.x += 25; e.px = e.x;   // out of his reach: only the fire hurts
+    p.x = f.x; p.z = f.z; p.y = f.y; p.hp = p.maxHp = 1000; const hp0 = p.hp; log.length = 0;
+    sim.step(60);
+    expect.near(hp0 - p.hp, f.dps, f.dps * 0.1, `a second in the fire costs its dps (${(hp0 - p.hp).toFixed(1)})`);
+    sim.step(Math.ceil((f.time - f.age) * 60) + 2);
+    expect.ok(!e.fires.includes(f), 'and then it goes out');
+  });
+  test('Pillager Captain: its three-cut combo can be parried, its overhead only rolled, its thrust comes only from mid range', () => {
+    Game.startFight('pillagerCaptain'); sim.begin(); log.length = 0; sturdy(Game.player);
+    const p = Game.player, e = Game.duel, combo = e.def.attacks.find(a => a.hits.length === 3), over = e.def.attacks.find(a => a.rollOnly);
+    expect.ok(combo && combo.tracking.rate > 0 && !makeStrike(combo).rollOnly, 'a tracking three-cut combo, not roll-only');
+    faceOff(e, p, 2); e.beginAttack(combo);
+    const n = deflectString(e, combo);
+    expect.ok(n === 3 && e.state === ES.PARRIED, `all three cuts deflected (${n}), the last left it open`);
+    Game.startFight('pillagerCaptain'); sim.begin(); sturdy(Game.player); log.length = 0;
+    const q = Game.player, c = Game.duel; faceOff(c, q, 2); quiet(c); c.notice = 30;
+    sim.hold('block'); sim.step(2); const hp0 = q.hp; c.beginAttack(over);
+    sim.until(() => c.state === ES.RECOVER, 4); sim.release('block');
+    expect.ok(over && makeStrike(over).rollOnly && q.hp < hp0 && log.includes('perilous'), 'the overhead glowed blue and went through the guard');
+    const far = attacksAt('pillagerCaptain', 8), near = attacksAt('pillagerCaptain', 2.2);
+    expect.ok(far.includes('captainThrust') && !near.includes('captainThrust'), `thrust only from range (8 m: ${far.join(', ')}; 2.2 m: ${near.join(', ')})`);
+  });
+  test('Pillager Captain: deflected strings and chained hits break its posture', () => {
+    Game.startFight('pillagerCaptain'); sim.begin(); log.length = 0; sturdy(Game.player);
+    const p = Game.player, e = Game.duel, combo = e.def.attacks.find(a => a.hits.length === 3);
+    let strings = 0;
+    while (e.state !== ES.BROKEN && strings < 6) {
+      sim.until(() => e.state !== ES.PARRIED && e.state !== ES.WINDUP && e.state !== ES.ACTIVE, 4);
+      faceOff(e, p, 2); e.beginAttack(combo); log.length = 0;
+      if (deflectString(e, combo)) strings++;
+      sim.until(() => e.state === ES.BROKEN || e.state === ES.CHASE, 3);
+    }
+    expect.ok(e.state === ES.BROKEN && strings <= 3, `posture broke after ${strings} deflected strings`);   // pass 85: every blow deflected fills it
+    Game.startFight('pillagerCaptain'); sim.begin();
+    const d = Game.duel; let n = 0;
+    while (d.state !== ES.BROKEN && n++ < 30) { d.takeHit(strikeOf('heavy'), behind(d)); sim.step(10); }
+    expect.ok(d.state === ES.BROKEN, `posture broke after ${n} chained heavy hits`);
+  });
+
+  // ---- Story boss moves borrowed from the move sources (js/data/bosses/) -------------------------------------------
+  const MOVE_SOURCES = [GODRICK, CRUCIBLE_KNIGHT, GODFREY, MALIKETH, RADAGON];   // unregistered since v7.54.0
+  const STORY_BOSS_MOVES = [];   // pass 68 and 72: the Bell Warden's and the Giant Skeleton's borrowed moves gave way to their own
+  test('Story boss moves: none borrowed, and doubled health in levels and duels', () => {
+    for (const b of [{ id: 'giant', level: 'long-hall', hp: 1920 }]) {
+      expect.ok(!A.ENEMY_BY_ID[b.id].attacks.some(a => a.origin), `${b.id}: no borrowed moves`);
+      Game.startFight(b.id); sim.begin();
+      expect.ok(Game.duel.hp === b.hp && Game.duel.def.hp === b.hp, `${b.id}: doubled duel health`);
+      Game.startLevel(b.level); sim.begin();
+      const e = Game.enemies.find(e => e.def.id === b.id), road = Math.round(b.hp * roadMight(b.level, true).health);   // pass 79: its chapter's share
+      expect.ok(e && e.hp === road && e.def.hp === road, `${b.id}: its chapter's share of its health in its level (${e && e.def.hp}, ${road})`);
+    }
+    expect.ok(!A.ENEMY_BY_ID.bellWarden.attacks.some(a => a.id === 'bellSkyfall' || a.origin || a.hits.some(h => h.box && h.box.ring)), 'Bell Warden has no Skyfall area shockwave, and no borrowed moves');
+    const aldric = A.ENEMY_BY_ID.varn;
+    expect.ok(aldric.hp === 1600 && aldric.phases.field.hp === 1600 && aldric.phases.throne.hp === 1400 && aldric.phases.knell.hp === 1500, 'Aldric health as set in v7.65.0; the throne room bars trimmed for the mending Ember (pass 75)');
+    expect.ok(!aldric.attacks.some(a => a.origin), 'Aldric has no borrowed moves');
+  });
+  test('Story boss moves: source animations and hit data are preserved without shared objects or foreign branches', () => {
+    for (const b of STORY_BOSS_MOVES) for (const a of A.ENEMY_BY_ID[b.id].attacks.filter(a => a.origin)) {
+      const source = MOVE_SOURCES.find(d => d.id === a.origin.enemy).attacks.find(s => s.id === a.origin.attack);
+      expect.ok(source && a !== source && a.hits !== source.hits && a.box !== source.box && a.tracking !== source.tracking, `${a.id}: independent copy`);
+      expect.ok(a.pose === source.pose && JSON.stringify(a.tracking) === JSON.stringify(source.tracking), `${a.id}: source animation and timing`);
+      // Recovery is the borrowing boss's own (pass 54: every boss's data is its 1x), never quicker than the source's.
+      expect.ok(a.recovery >= source.recovery, `${a.id}: recovers at the borrowing boss's pace (${a.recovery} s, source ${source.recovery} s)`);
+      expect.ok(!a.followUps, `${a.id}: no branches into the source boss's other moves`);
+      for (let i = 0; i < a.hits.length; i++) {
+        const h = a.hits[i], s = source.hits[i];
+        expect.ok(h !== s && h.startup === s.startup && h.active === s.active && h.follow === s.follow, `${a.id}/${i}: source hit timing`);
+        expect.ok(h.active <= CONFIG.player.rollIFrames - 0.08, `${a.id}/${i}: roll margin`);
+      }
+    }
+  });
+  test('Story boss moves: every borrowed attack strikes, deals damage and recovers with rendering', () => {
+    for (const b of STORY_BOSS_MOVES) for (const a of A.ENEMY_BY_ID[b.id].attacks.filter(a => a.origin)) {
+      Game.startFight(b.id); sim.begin();
+      const p = Game.player, e = Game.duel;
+      sturdy(p); faceOff(e, p, 2); quiet(e);
+      const hp = p.hp, seen = new Set();
+      e.beginAttack(a);
+      Game.render(1, STEP);
+      const done = sim.until(() => {
+        if (e.state === ES.ACTIVE && !seen.has(e.hitIndex)) { seen.add(e.hitIndex); Game.render(1, STEP); }
+        return e.state === ES.RECOVER;
+      }, 15);
+      Game.render(1, STEP);
+      expect.ok(done >= 0 && seen.size === a.hits.length, `${a.id}: every hit and a recovery`);
+      expect.below(p.hp, hp, `${a.id}: can damage the player`);
+      sim.until(() => e.state !== ES.RECOVER, 5);
+      expect.ok(e.state === ES.CHASE && e.cooldown > 0 && Number.isFinite(e.x) && Number.isFinite(e.y) && Number.isFinite(e.z), `${a.id}: completes at a finite position`);
+    }
+  });
+
+  // ---- v4.0 Level 3: The Burning Town ----------------------------------------------------------------------------
+  // The main path, as waypoints [x, z, zone?]: arriving at a zone's waypoint kills its fighters and waits for its gate.
+  const TOWN_ROUTE = [
+    [20, 0, 'zone-lower-gate'], [30, 0], [46, 0, 'zone-first-street'], [56, 0], [66, 4, 'zone-market'], [65, 12], [65, 20], [65, 25],
+    [40, 25, 'zone-steep-street'], [24, 25], [18, 24.5], [18, 30], [18, 38, 'zone-alley'], [18, 43], [18, 49], [22, 59.5],
+    [28, 59.5, 'zone-fountain'], [31, 59.5], [38, 59.5], [45, 59.5], [50, 60], [64, 60], [74, 60], [80, 61], [100, 62, 'zone-church'],
+    [114, 62], [120, 62], [130, 62], [140, 62, 'zone-captain'], [151, 62],
+  ];
+  const townLevel = () => { Game.startLevel('burning-town'); sim.begin(); log.length = 0; shots.length = 0; return Game.player; };
+  // Walk to (x, z) through whatever engages (it falls at once); returns true if reached.
+  const walkClear = (x, z, maxSeconds = 30, each = () => {}) => {
+    const p = Game.player;
+    const ok = sim.until(() => {
+      for (const e of Game.enemies) if (e.alive() && !e.in('unaware') && e.state !== ES.DORMANT) e.die();
+      each();
+      const dx = x - p.x, dz = z - p.z;
+      if (Math.hypot(dx, dz) < 0.5) return true;
+      sim.move(dx, dz); return false;
+    }, maxSeconds) >= 0;
+    sim.move(null);
+    return ok;
+  };
+  const insideHouse = c => world.solids.find(s => s.kind === 'house' && c.x > s.x0 + 0.05 && c.x < s.x1 - 0.05 && c.z > s.z0 + 0.05 && c.z < s.z1 - 0.05
+    && c.y > s.y0 + 0.05 && c.y < s.y1 - 0.05);
+  test('the burning town: Level 2 leads into it and it into the Tower; the Levels menu shows it as Level 3, the Tower as Level 4', () => {
+    const names = A.LEVELS.map(l => l.name), at = A.LEVELS.indexOf(A.LEVEL_3);
+    expect.ok(A.LEVEL_3.id === 'burning-town' && A.LEVELS[at - 1] === A.LEVEL_2 && A.LEVELS[at + 1] === A.LEVEL_4, `order: ${names.join(' | ')}`);
+    expect.ok(A.LEVEL_3.name === 'Level 3: The Burning Town' && A.LEVEL_4.name === 'Level 4: The Tower', 'names');
+    expect.ok(A.LEVEL_2.next === 'burning-town' && A.LEVEL_3.next === 'the-tower', 'Level 2 -> the town -> the Tower');
+    Game.showMenu('practiceLevels');
+    const shown = [...document.querySelectorAll('#menuList .menuBtn .n')].map(n => n.textContent);
+    expect.ok(shown.indexOf('Level 3: The Burning Town') + 1 === shown.indexOf('Level 4: The Tower'), `menu: ${shown.join(' | ')}`);
+    expect.ok(/sacked|burn/i.test(A.LEVEL_3.description) && /Tower/.test(A.LEVEL_3.completeHint), 'its story: the sacked town, then on to the Tower');
+  });
+  test('the burning town: 17 enemies with the church Bowman (plus an optional Knight), its HP between Level 2\'s and the Tower\'s', () => {
+    const hpOf = L => [...L.gated.flatMap(z => z.enemies || [{ enemy: z.enemy }]), ...L.dispersed].reduce((s, m) => s + A.ENEMY_BY_ID[m.enemy].hp, 0);
+    const L = A.LEVEL_3, main = [...L.gated.flatMap(z => z.enemies), ...L.dispersed.filter(s => s.behavior === 'sentry')];
+    expect.ok(main.length === 17, `${main.length} enemies on the main path`);
+    expect.ok(L.dispersed.some(s => s.enemy === 'knight' && s.behavior === 'slumber'), 'a sleeping Knight off the path');
+    const town = main.reduce((s, m) => s + A.ENEMY_BY_ID[m.enemy].hp, 0), keep = hpOf(A.LEVEL_2), tower = hpOf(A.LEVEL_4);
+    // The Captain's doubled boss bar lifts the town above the old 2.7x cap; it still sits below the Tower.
+    expect.ok(town > keep * 1.8 && town < tower, `HP: town ${town}, Level 2 ${keep}, Tower ${tower}`);
+    const debut = id => L.gated.findIndex(z => z.enemies.some(m => m.enemy === id));
+    const alone = id => L.gated.find(z => z.enemies.some(m => m.enemy === id)).enemies.length;
+    expect.ok(alone('lancer') === 1 && alone('duelist') === 1, 'the Lancer and the Duelist are met alone first');
+    const bowZone = L.gated.findIndex(z => z.id === L.dispersed.find(s => s.enemy === 'bowman').zone);   // Bowmen are optional sentries of a zone
+    expect.ok(debut('lancer') < bowZone && bowZone < debut('duelist'), 'Lancer, then Bowman (with a Lancer), then Duelist');
+  });
+  test('the burning town: a scripted run opens every gate in turn and completes the level; the camera never enters a house', () => {
+    const p = townLevel(); sturdy(p);
+    const opened = [], inHouse = [];
+    const watch = () => { const h = insideHouse(Game.cam.pos); if (h && inHouse.length < 5) inHouse.push(`(${Game.cam.pos.x.toFixed(1)}, ${Game.cam.pos.y.toFixed(1)}, ${Game.cam.pos.z.toFixed(1)})`); };
+    for (const [x, z, zone] of TOWN_ROUTE) {
+      const reached = walkClear(x, z, 30, watch);
+      expect.ok(reached && p.alive(), `reached (${x}, ${z}); stuck at (${p.x.toFixed(1)}, ${p.z.toFixed(1)}, y ${p.y.toFixed(1)})`);
+      if (!zone) continue;
+      const Z = Game.zones.find(q => q.id === zone);
+      for (const e of Z.actors) if (e.alive()) e.die();
+      expect.ok(sim.until(() => Z.gate.lift >= 1, 4) >= 0, `${zone}: its gate opened`);
+      opened.push(zone);
+    }
+    expect.near(p.y, 12, 1e-6, 'through the upper town gate, at the top of the town');
+    expect.ok(Game.complete && log.includes('levelComplete') && opened.length === Game.zones.length, `LEVEL COMPLETE (${opened.length} gates)`);
+    expect.ok(!inHouse.length, `the camera went inside a house at ${inHouse.join(', ')}`);
+    sim.seconds(CONFIG.nextLevel.delay + CONFIG.nextLevel.fadeTime + 0.2);
+    expect.ok(Game.level.id === 'the-tower', `then on into the Tower (${Game.level.id})`);
+  });
+  test('the burning town: the steep street\'s barricade falls with its Lancer, the balcony Bowman optional; up through the stair house, and a jump over its low rail back down', () => {
+    const p = townLevel(); sturdy(p);
+    const Z = Game.zones.find(q => q.id === 'zone-steep-street'), bow = Game.enemies.find(e => e.def.id === 'bowman' && Math.abs(e.y - 8) < 1e-6);
+    expect.ok(!!bow && bow.zone === 'zone-steep-street' && !Z.actors.includes(bow), 'a Bowman on the balcony, 4 m up, waking with the zone but not part of it');
+    sim.place(54, 26, 4);
+    for (const e of Z.actors) e.die();
+    expect.ok(sim.until(() => Z.gate.lift >= 1, 4) >= 0 && bow.alive(), 'the Lancer is dead: the barricade fell, the Bowman still up there');
+    for (const [x, z] of [[54, 28.6], [54, 31], [51, 30.8], [46, 30.8], [43, 30.6]]) {
+      bow.notice = 0; bow.setState(ES.IDLE);
+      expect.ok(sim.walkTo(x, z, 0.4, 8), `walked to (${x}, ${z}); at (${p.x.toFixed(1)}, ${p.z.toFixed(1)}, y ${p.y.toFixed(1)})`);
+    }
+    expect.near(p.y, 8, 0.01, 'up the stair inside the house and out onto the balcony');
+    bow.die();
+    sim.place(41, 29, 8); sim.move(0, -1); sim.step(10); sim.press('jump');
+    sim.until(() => p.y < 4.5 && p.grounded, 4); sim.move(null);
+    expect.near(p.y, 4, 0.01, `jumped the rail and dropped to the street (at z ${p.z.toFixed(1)}, y ${p.y.toFixed(1)})`);
+  });
+  test('the burning town: the shortcut is shut from below, opens for good from the fountain square, and leads down to bonfire 1', () => {
+    const p = townLevel(); sturdy(p); sim.clearEnemies();
+    const g = world.gates.find(q => q.id === 'fountain-shortcut');
+    sim.place(6, 5); sim.walkTo(6, 46.6, 0.4, 20);
+    expect.below(p.z, 46.6, `held below the shut gate (z ${p.z.toFixed(2)})`); expect.ok(!g.open, 'still shut from below');
+    sim.place(6, 52, 8); sim.step(2);
+    expect.ok(g.open && log.includes('gateOpened'), 'opened from the fountain square');
+    expect.ok(sim.walkTo(6, 46, 0.4, 6) && sim.walkTo(6, 5.5, 0.4, 30) && sim.walkTo(6, 2, 0.4, 4), `down to the lower gate (at ${p.x.toFixed(1)}, ${p.z.toFixed(1)}, y ${p.y.toFixed(1)})`);
+    expect.near(p.y, 0, 1e-6, 'at the lower gate street');
+    sim.place(4.5, -1); sim.press('rest'); sim.seconds(CONFIG.rest.time + 0.5);
+    Game.player.hp = 0; Game.player.setState(PS.DEAD); sim.seconds(CONFIG.death.respawnDelay + 0.2);
+    expect.ok(world.gates.find(q => q.id === 'fountain-shortcut').open, 'it stays open through resting and dying');
+  });
+  test('the burning town: resting at the tavern is not blocked by the church square, and makes it the respawn point', () => {
+    const p = townLevel(); sim.place(38, 61.4, 8); sim.step(2);
+    expect.ok(!!Game.canRest(), 'the tavern bonfire can be rested at with the church square still held');
+    sim.press('rest'); sim.seconds(CONFIG.rest.time + 0.5);
+    expect.ok(log.includes('rest'), 'rested');
+    Game.player.hp = 0; Game.player.setState(PS.DEAD); sim.seconds(CONFIG.death.respawnDelay + 0.2);
+    const q = Game.player;
+    expect.ok(q.alive() && Math.hypot(q.x - 38, q.z - 60.5) < 0.5 && Math.abs(q.y - 8) < 1e-6, `respawned at the tavern (${q.x.toFixed(1)}, ${q.z.toFixed(1)}, y ${q.y.toFixed(1)})`);
+  });
+  test('the burning town: the gallery Bowman is optional, and once the church square is won it is not brought back', () => {
+    const p = townLevel(); sturdy(p);
+    const onGallery = () => Game.enemies.filter(e => e.def.id === 'bowman' && Math.abs(e.y - 17) < 1e-6);
+    expect.ok(onGallery().length === 1 && !Game.zones.some(z => z.actors.includes(onGallery()[0])), 'a Bowman on the gallery, in no zone');
+    sim.place(38, 61.4, 8); sim.press('rest'); sim.seconds(CONFIG.rest.time + 0.5);
+    expect.ok(onGallery().length === 1, 'resting before the church square is won brings it back');
+    const Z = Game.zones.find(z => z.id === 'zone-church');
+    for (const e of Z.actors) e.die();
+    sim.until(() => Z.gate.open, 2);
+    sim.place(38, 61.4, 8); sim.press('rest'); sim.seconds(CONFIG.rest.time + 0.5);
+    expect.ok(onGallery().length === 0, 'once the church square is won, resting does not bring it back (the run to the Captain is clear)');
+    Game.player.hp = 0; Game.player.setState(PS.DEAD); sim.seconds(CONFIG.death.respawnDelay + 0.2);
+    expect.ok(onGallery().length === 0, 'nor does dying');
+  });
+  test('the burning town: the overlook is the one drop that hurts (by the numbers); rails hold elsewhere, and nothing kills', () => {
+    townLevel(); sim.clearEnemies();
+    const open = [...A.LEVEL_3.rooms, ...A.LEVEL_3.ramps].flatMap(R => Object.entries(R.edges || {}).filter(([, v]) => v === 'open').map(([k]) => `${R.id}.${k}`));
+    expect.ok(open.join() === 'overlook.s', `open edges: ${open.join(', ')}`);
+    expect.ok(A.LEVEL_3.rooms.every(R => !R.pits), 'no pits');
+    const [y, dmg, alive] = dropFrom(74, 12, 7.5, 0, -1);
+    expect.near(y, 0, 1e-6, 'landed in the market');
+    expect.near(dmg, (7.5 - CONFIG.fall.safe) * CONFIG.fall.perMetre, 0.5, 'a 7.5 m drop costs its fall damage');
+    expect.ok(alive && dmg >= 25 && dmg <= 30, `about 25 to 30 HP, and the player lives (${dmg.toFixed(1)} HP)`);
+    const p = Game.player;
+    for (const [x, z, yy, dx, dz, what] of [[38, 29.5, 8, 0, -1, 'the balcony'], [96, 81.4, 17, 0, -1, 'the gallery'], [170, 62, 12, 0, 1, 'the cliff road'],
+                                         [170, 62, 12, 0, -1, 'the cliff road, south'], [182, 62, 12, 1, 0, 'the end of the cliff road']]) {
+      sim.place(x, z, yy); sim.move(dx, dz); sim.seconds(2); sim.move(null);
+      expect.near(p.y, yy, 1e-6, `${what}: the rail held`);
+    }
+  });
+  test('the burning town: the far castle is on screen from most of the main path, facing along it', () => {
+    townLevel(); sim.clearEnemies();
+    for (const g of world.gates) g.open = true;
+    const Lm = A.LEVEL_3.atmosphere.landmark, marks = [0.3, 0.5, 0.7, 0.9].map(f => new THREE.Vector3(Lm.x, Lm.y + Lm.height * f, Lm.z));
+    const pts = [[4, 1], ...TOWN_ROUTE.map(([x, z]) => [x, z])], seen = [], hidden = [];
+    for (let i = 0; i + 1 < pts.length; i++) {
+      const [x0, z0] = pts[i], [x1, z1] = pts[i + 1], n = Math.max(1, Math.round(Math.hypot(x1 - x0, z1 - z0) / 5));
+      for (let k = 0; k < n; k++) {
+        const x = lerp(x0, x1, k / n), z = lerp(z0, z1, k / n), yaw = Math.atan2(x1 - x0, z1 - z0);
+        // The player looking ahead along the street: the camera as low as it goes (at rest it looks down at the player).
+        sim.place(x, z); Game.player.yaw = Game.cam.yaw = yaw; Game.cam.pitch = CONFIG.mouse.pitchMin; Game.zoomTarget = Game.cam.zoom = CONFIG.zoom.default;
+        Game.mouseHold = 99; Game.updateCamera(0, true); camera.position.copy(Game.cam.pos); camera.lookAt(Game.cam.look); camera.updateMatrixWorld();
+        const c = Game.cam.pos, visible = m => {   // some height of the castle on screen, and no wall or house in the way
+          const v = m.clone().project(camera), d = m.clone().sub(c);
+          return v.z < 1 && Math.abs(v.x) <= 1 && Math.abs(v.y) <= 1 && !world.solids.some(s => !s.low && segBox3(c.x, c.y, c.z, d.x, d.y, d.z, s) <= 1);
+        };
+        (marks.some(visible) ? seen : hidden).push(`(${x.toFixed(0)}, ${z.toFixed(0)})`);
+      }
+    }
+    const share = seen.length / (seen.length + hidden.length);
+    metrics.townCastleSeen = +share.toFixed(2);
+    expect.above(share, 0.5, `the castle seen from ${seen.length} of ${seen.length + hidden.length} points (hidden at ${hidden.slice(0, 12).join(' ')}…)`);
+  });
+  test('the burning town: frame time on the church square, against Test: Courtyard', () => {
+    const gl = A.renderer.getContext(), px = new Uint8Array(4);
+    const measure = (id, x, z, y) => {
+      Game.startLevel(id); sim.begin(); sim.place(x, z, y);
+      for (let i = 0; i < 20; i++) { sim.step(1); Game.render(1, STEP); }
+      gl.readPixels(0, 0, 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, px);
+      const t0 = performance.now();
+      for (let i = 0; i < 90; i++) { sim.step(1); Game.render(1, STEP); }
+      gl.readPixels(0, 0, 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, px);
+      return { ms: (performance.now() - t0) / 90, lights: A.visuals.info().pointLights };
+    };
+    const court = measure('test-courtyard', 42, 0), town = measure('burning-town', 96, 62, 12);
+    metrics.burningTownFrame = { churchSquareMs: +town.ms.toFixed(2), courtyardMs: +court.ms.toFixed(2), lights: town.lights };
+    expect.ok(town.lights === CONFIG.cull.maxLights, `culled lights (${town.lights})`);
+    expect.below(town.ms, court.ms * 2.5 + 3, `church square frame (${town.ms.toFixed(1)} ms) against Test: Courtyard (${court.ms.toFixed(1)} ms)`);
+  });
+
+  // ---- v4.1 the HUD ------------------------------------------------------------------------------------------------
+  test('HUD: a lost health bar keeps its trail, then drains it; the vitals dim when calm and light at a threat', () => {
+    Game.startLevel('burning-town'); sim.begin(); sim.step(0.2); Game.render(1, STEP);
+    const H = CONFIG.hud, p = Game.player, hud = A.hud;
+    p.hp = p.maxHp * 0.5; Game.render(1, STEP);
+    expect.near(parseFloat(hud.pHpFill.style.width), 50, 1, 'the bar drops at once');
+    expect.above(parseFloat(hud.pHpTrail.style.width), 95, 'the trail stays where it was');
+    for (let i = 0; i < Math.ceil(H.trailHold / STEP) + 2; i++) Game.render(1, STEP);
+    expect.above(parseFloat(hud.pHpTrail.style.width), 85, 'the trail waits through its hold');
+    for (let i = 0; i < 60 * 3; i++) Game.render(1, STEP);
+    expect.near(parseFloat(hud.pHpTrail.style.width), 50, 1, 'then it drains down to the bar');
+    p.hp = p.maxHp; sim.clearEnemies(); hud.idle = H.calmDelay + 1;
+    for (let i = 0; i < 60 * (H.calmFadeOut + 1); i++) { hud.idle = H.calmDelay + 1; Game.render(1, STEP); }
+    expect.above(hud.calm, 0.99, 'dimmed after a quiet spell');
+    A.events.emit('strike', { strike: {}, attacker: null, target: p, at: { x: p.x, y: p.y + 1, z: p.z }, blocked: false });
+    for (let i = 0; i < 60 * (H.calmFadeIn + 0.2); i++) Game.render(1, STEP);
+    expect.below(hud.calm, 0.01, 'a blow brings them back');
+  });
+  test('HUD: gate notices name each gate by its kind, the stage scale follows the window, and the HUD never writes to the game', () => {
+    Game.startLevel('burning-town'); sim.begin(); sim.step(0.2); Game.render(1, STEP);
+    const hud = A.hud;
+    const toastsFor = (gate, shortcut) => { const n = hud.toastList.length; A.events.emit('gateOpened', { gate, shortcut }); return hud.toastList.slice(n).map(t => t.el.textContent); };
+    expect.ok(toastsFor({ style: 'barricade' })[0] === CONFIG.hud.toasts.barricade, 'a barricade falls');
+    expect.ok(toastsFor({ style: 'portcullis' })[0] === CONFIG.hud.toasts.portcullis, 'a portcullis opens');
+    expect.ok(toastsFor({ style: 'barricade' }, true)[0] === CONFIG.hud.toasts.shortcut, 'a shortcut opens');
+    expect.ok(!document.getElementById('objective'), 'no objective counter on screen');
+    const before = JSON.stringify([Game.player.hp, Game.player.dashes, Game.enemies.map(e => [e.hp, e.x, e.z])]);
+    for (let i = 0; i < 30; i++) Game.render(1, STEP);
+    expect.ok(before === JSON.stringify([Game.player.hp, Game.player.dashes, Game.enemies.map(e => [e.hp, e.x, e.z])]), 'rendering the HUD changes nothing in the game');
+    const H = CONFIG.hud, u = Math.max(H.minScale, Math.min(H.maxScale, Math.min(innerWidth / H.refWidth, innerHeight / H.refHeight))) * A.settings.hudScale;
+    expect.near(hud.scale, u, 0.001, 'the stage scale fits the window');
+  });
+
+
+  // ---- audio: rendered offline, so no speakers or user gesture are needed ---------------------------------------
+  async function renderSound(id, opts) {
+    const sr = 44100, ctx = new OfflineAudioContext(2, sr * 3.6, sr), m = new AudioManager();
+    m.init(ctx); m.play(id, opts || { vel: 1 });
+    const buf = await ctx.startRendering(), L = buf.getChannelData(0), R = buf.getChannelData(1);
+    // Pitch estimate: the ratio of the signal's change per sample to its size is about 2 sin(pi f / sr) for a tone at f,
+    // weighting every frequency by its energy (so a low thud with a little hiss on top still reads low).
+    let peak = 0, e = 0, de = 0, prev = 0;
+    for (let i = 0; i < L.length; i++) {
+      const v = (L[i] + R[i]) / 2; peak = Math.max(peak, Math.abs(L[i]), Math.abs(R[i]));
+      e += v * v; de += (v - prev) * (v - prev); prev = v;
+    }
+    return { peak, hz: Math.asin(Math.min(1, Math.sqrt(de / Math.max(e, 1e-12)) / 2)) * sr / Math.PI };
+  }
+  test('audio: the sound data is valid and every recipe renders audibly without clipping', async () => {
+    expect.ok(validateAudio().length === 0, 'validateAudio: ' + validateAudio().join(' | '));
+    for (const id of Object.keys(AUDIO.sounds)) {
+      const r = await renderSound(id);
+      expect.above(r.peak, 0.003, `${id} peak`);
+      expect.below(r.peak, 1.0001, `${id} peak (the limiter keeps it under full scale)`);
+    }
+  });
+  test('audio: footsteps are low and sit well under impacts', async () => {
+    const step = await renderSound('footL', { vel: 0.7 }), hit = await renderSound('hitHurt', { vel: 1 }), swing = await renderSound('swingLight', { vel: 0.7 });
+    expect.below(step.peak, 0.3, 'a footstep peak');
+    expect.below(step.peak, hit.peak * 0.4, 'a footstep against a hit');
+    expect.below(step.peak, swing.peak * 0.6, 'a footstep against a sword swing');
+    expect.below(step.hz, 1200, 'footstep pitch (energy-weighted estimate, Hz)');
+  });
+  test('audio: the voice pool never grows past its limits and hands every strip back', async () => {
+    const ctx = new OfflineAudioContext(2, 44100 * 5, 44100), m = new AudioManager(); m.init(ctx);
+    const ids = Object.keys(AUDIO.sounds);
+    for (let i = 0; i < 400; i++) m.play(ids[i % ids.length], { vel: (i % 10) / 10, pos: { x: (i % 7) - 3, y: 0, z: (i % 5) - 2 } });
+    const s = m.stats();
+    expect.ok(s.busy <= AUDIO.strips && s.active <= AUDIO.voices, `busy ${s.busy}/${AUDIO.strips}, active ${s.active}/${AUDIO.voices}`);
+    expect.ok(s.plays > 0 && s.plays + s.dropped >= 400, 'every request is either played or dropped');
+    await ctx.startRendering();
+    await new Promise(r => setTimeout(r, 50));
+    expect.ok(m.stats().busy === 0, 'all strips are released once the sources end: ' + JSON.stringify(m.stats()));
+  });
+  test('audio: the engine leaves the game\'s random numbers alone', () => {
+    const m = new AudioManager();
+    const keep = Math.random; let calls = 0; Math.random = () => { calls++; return keep(); };
+    try { m.init(new OfflineAudioContext(2, 44100, 44100)); m.play('hitFlesh'); m.play('footL'); } finally { Math.random = keep; }
+    expect.ok(calls === 0, 'audio used Math.random ' + calls + ' times');
+  });
+
+  // ---- v4.3 Level 5: the Final Castle ------------------------------------------------------------------------------
+  const L5_WAY = [[60, 0], [86, 0], [100, 0], [98, 21], [114, 22], [129, 22], [114, 22], [98, 21], [100, -4], [120, -15], [120, -28], [108, -30],
+    [92, -30], [92, -10], [100, 0], [134, 0], [150, 0], [166, 0], [194, 0], [205, 0], [215, 0], [227.5, -9], [227.5, -14], [236, -16], [247.5, -14],
+    [247.5, -9], [254, 8], [254, 20], [254, 31], [230, 32], [208, 33], [206, 28], [206, 4], [206, 0], [250, 0], [262, 9.5], [262, 0], [282, 0],
+    [300, 0], [314, 0], [325, 0], [350, 0], [366, 0]];
+  test('Level 5: every room is walkable from the field to the throne, with the gates open', () => {
+    Game.startLevel('final-castle'); Game.loading = 0; sim.begin(); sim.clearEnemies();
+    for (const g of world.gates) { g.open = true; g.lift = 1; }
+    for (const [x, z] of L5_WAY) expect.ok(sim.walkTo(x, z, 0.6, 25), `walked to (${x}, ${z}); stuck at (${Game.player.x.toFixed(1)}, ${Game.player.y.toFixed(1)}, ${Game.player.z.toFixed(1)})`);
+    expect.near(Game.player.y, 24, 0.1, 'up at the throne room floor');
+  });
+  test('Level 5: a scripted run wakes every zone it enters, opens every gate in turn, and every archer and gargoyle engages', () => {
+    Game.startLevel('final-castle'); Game.loading = 0; sim.begin(); const p = Game.player; sturdy(p);
+    for (const z of Game.zones) for (const e of z.actors) expect.ok(inArea(z.trigger, e.x, e.z) && Math.abs(world.floorY(e.x, e.z, e.y + 0.1) - e.y) < 0.1 && (z.id !== 'zone-hall' || e.y === 0), `${z.id}: ${e.def.id} stands in its zone (y ${e.y})`);
+    for (const b of A.LEVEL_5.bonfires) expect.ok(Math.abs(world.floorY(b.x, b.z, b.y ?? 0) - (b.y ?? 0)) < 0.1, `bonfire ${b.id} on its own floor`);
+    Game.enemies.find(e => e.def.id === 'varn').deplete(); sim.seconds(7);
+    const route = [[86, 0], [100, 0], [98, 21], [114, 22], [129, 22], [114, 22], [98, 21], [100, -4], [120, -15], [120, -28], [112, -32], [120, -15], [134, 0],
+      [150, 0], [166, 0], [180, 0], [194, 0], [205, 0], [215, 0], [240, 0], [254, 8], [254, 20], [254, 31], [230, 32], [210, 34], [206, 28], [206, 4], [206, 0],
+      [250, 0], [262, 0], [282, 0], [300, 0], [314, 0]], engaged = new Set();
+    for (const [x, z] of route) {
+      const ok = sim.until(() => {
+        for (const e of Game.enemies) if (e.alive() && !e.phaseIds && !e.in('unaware') && e.state !== ES.DORMANT) { engaged.add(e); e.die(); }
+        const dx = x - p.x, dz = z - p.z; if (Math.hypot(dx, dz) < 0.6) return true; sim.move(dx, dz); return false;
+      }, 40) >= 0;
+      sim.move(null);
+      expect.ok(ok, `reached (${x}, ${z}); stuck at (${p.x.toFixed(1)}, ${p.y.toFixed(1)}, ${p.z.toFixed(1)})`);
+    }
+    expect.ok(Game.zones.filter(z => z.id !== 'zone-throne').every(z => z.gate.open), 'every gate before the throne opened');
+    for (const id of ['castleBowman', 'gargoyle', 'wisp']) {
+      const all = [...A.LEVEL_5.dispersed, ...A.LEVEL_5.gated.flatMap(g => g.enemies)].filter(s => s.enemy === id).length, n = [...engaged].filter(e => e.def.id === id).length;
+      expect.ok(n === all, `${id}: ${n} of ${all} came for the player`);
+    }
+  });
+  test('Level 5: the field fight ends in a retreat over the wall: no death, the gate opens, bonfire 1 lights', () => {
+    Game.startLevel('final-castle'); Game.loading = 0; sim.begin(); log.length = 0;
+    const b = Game.enemies.find(e => e.def.id === 'varn'), B = A.LEVEL_5.bonfires[0], zone = Game.zones.find(z => z.id === 'zone-field');
+    expect.ok(b.def.phaseId === 'field' && b.hp === b.def.hp, 'Aldric starts on his field bar');
+    expect.ok(!Game.bonfireLit(B) && !Game.nearBonfire(), 'bonfire 1 is cold before the fight is won');
+    sim.step(30); expect.ok(b.state !== ES.IDLE, `he comes for the player at once (${b.state})`);
+    b.deplete(); sim.step(2);
+    expect.ok(b.state === ES.RETREAT && b.invulnerable() && !log.includes('enemyDeath'), 'he retreats, untouchable, not dead');
+    sim.seconds(8);
+    expect.ok(b.state === ES.GONE && !b.alive() && !log.includes('enemyDeath'), `gone over the wall (${b.state}), never killed`);
+    expect.ok(zone.gate.open && Game.bonfireLit(B), 'the gate opened and bonfire 1 is lit');
+    expect.ok(!Game.target(), 'nothing left to show on the boss bar');
+    sim.place(B.x + 1, B.z); sim.step(2); expect.ok(!!Game.canRest(), 'bonfire 1 can be rested at');
+  });
+  test('Level 5: the throne fight: the fog seals, the transition hurts nobody, a new bar and name, death brings the ending', () => {
+    let wasDone = null; try { wasDone = localStorage.getItem('combatArena.complete'); } catch (err) { /* no storage */ }
+    A.finale.jump(A.LEVEL_5.devJumps[4]); Game.loading = 0; sim.begin(); log.length = 0; sturdy(Game.player);
+    const p = Game.player, F = A.finale.state, fog = F.fog, b = Game.enemies.find(e => e.def.id === 'varn');
+    expect.ok(fog.gate.open, 'the fog door is open from the bonfire side');
+    sim.walkTo(330, 0, 0.6, 10); sim.step(10);
+    expect.ok(!fog.gate.open, 'it closed behind the player');
+    expect.ok(b.def.phaseId === 'throne' && b.def.name === 'Aldric, the Gaoler King', 'first bar: the Gaoler King');
+    b.deplete(); sim.step(1);
+    expect.ok(b.state === ES.PHASE && b.def.name === 'Aldric, the Ember-Crowned', 'the transition begins: renamed, the Ember-Crowned');
+    sim.place(b.x - 2, b.z); const hp0 = p.hp; let maxHit = 0;
+    sim.until(() => { maxHit = Math.max(maxHit, hp0 - p.hp); p.hp = hp0; return b.state !== ES.PHASE; }, 20);
+    expect.ok(maxHit === 0, `nothing in the transition hurt the player standing at his feet (${maxHit})`);
+    expect.ok(b.hp === b.def.hp && b.def.hp === Math.round(1500 * roadMight('final-castle', true).health), 'a fresh full bar (its chapter of the road)');
+    expect.ok(!F.room.windows[0].mesh.visible && F.room.pillars.every(P => P.t > 0), 'the glass burst and the pillars fell');
+    b.deplete(); sim.step(2);
+    expect.ok(!b.alive() && Game.zones.find(z => z.id === 'zone-throne').gate.open && !!F.ending, 'his last bar: dead, the ending runs');
+    expect.ok(!A.hud.complete.classList.contains('show'), 'no LEVEL COMPLETE banner: the ending takes over');
+    expect.ok(A.finale.completed(), 'the game remembers it was finished');
+    try { if (wasDone === null) localStorage.removeItem('combatArena.complete'); } catch (err) { /* no storage */ }   // leave the player's own flag as it was
+  });
+  test('Level 5: dying in the throne room puts the player back at the final bonfire with the fog open and Aldric whole', () => {
+    A.finale.jump(A.LEVEL_5.devJumps[4]); Game.loading = 0; sim.begin();
+    const fog = A.finale.state.fog;
+    sim.walkTo(330, 0, 0.6, 10); sim.step(10); expect.ok(!fog.gate.open, 'sealed in');
+    const b = Game.enemies.find(e => e.def.id === 'varn'); b.deplete(); sim.step(2);
+    Game.player.hp = 0; Game.onPlayerDeath(); Game.player.setState(PS.DEAD);
+    sim.seconds(CONFIG.death.respawnDelay + 0.5);
+    const v = Game.enemies.find(e => e.def.id === 'varn');
+    expect.near(Game.player.x, 315.5, 0.5, 'back at the final bonfire');
+    expect.ok(fog.gate.open && v !== b && v.def.phaseId === 'throne' && v.hp === v.def.hp, 'fog open, Aldric back on his first throne bar');
+    expect.ok(A.finale.state.room.windows.every(w => w.mesh.visible), 'the throne room is whole again');
+  });
+  test('Aldric: every strike leaves a roll\'s i-frames a margin; each phase fights with its own attacks', () => {
+    const D = A.ENEMY_BY_ID.varn;
+    for (const a of D.attacks) for (const h of a.hits) expect.ok(h.active <= CONFIG.player.rollIFrames - 0.08, `${a.id}: active ${h.active}`);
+    expect.ok(Object.keys(D.phases).join() === 'field,throne,knell', 'three phases');
+    expect.ok(D.phases.knell.attacks.length >= D.phases.throne.attacks.length + 3, 'the Ember-Crowned adds at least three attacks');
+    expect.below(D.phases.knell.cooldown[1], D.phases.throne.cooldown[1], 'the Ember-Crowned waits less between attacks');
+    expect.below(D.phases.throne.cooldown[1], D.phases.field.cooldown[1], 'the throne bar presses harder than the field');
+  });
+  test('Aldric: his Blender model\'s cracks show the Ember only while he burns, from the Ember-Crowned on (v7.47.0)', () => {
+    Game.startFight('varn'); sim.begin();
+    const e = Game.enemies.find(o => o.def.id === 'varn'), seams = e.rig.burnMeshes;
+    expect.ok(KIT.resolve('varn').parts.every(p => p.use === 'baked') && seams && seams.length === 1, 'a baked figure with one burn mesh');
+    Game.render(1, STEP);
+    expect.ok(!seams[0].visible, 'the Gaoler King: no cracks lit');
+    e.enterPhase(1); e.state = ES.PHASE; e.stateTime = CONFIG.finale.igniteAt - 1; Game.render(1, STEP);
+    expect.ok(e.def.ignite && !seams[0].visible, 'the transition: dark until his armour catches');
+    e.stateTime = CONFIG.finale.igniteAt + 0.1; Game.render(1, STEP);
+    expect.ok(seams[0].visible, 'the Ember-Crowned: the cracks burn');
+    e.hp = 0; e.state = ES.DEAD; Game.render(1, STEP);
+    expect.ok(!seams[0].visible, 'dead: they go out');
+  });
+  // Pass 75: the Undying Ember will not let him stay hurt (`mend`); keep at him, or break him.
+  test('Aldric: the Ember closes his wounds once you stop, a break seals them, and his cracks light while one is open', () => {
+    Game.startFight('varn'); Game.loading = 0; sim.begin(); sturdy(Game.player); Game.render(1, STEP);
+    const e = Game.duel, M = e.def.mend, D = A.ENEMY_BY_ID.varn, seams = e.rig.burnMeshes, s = strikeOf('heavy');
+    expect.ok(M && e.def.phaseId === 'throne' && !D.phases.field.mend && D.phases.knell.mend, 'the throne room mends him; the field does not');
+    const rebukes = ph => D.phases[ph].attacks.filter(id => D.attacks.find(a => a.id === id).when === 'struck').length;
+    expect.ok(rebukes('field') === 0 && rebukes('throne') === 1 && rebukes('knell') === 1, 'in the throne room he answers a string of blows');
+    const foe = { ...behind(e), id: 'foe' }, ally = { ...inFrontOf(e), id: 'ally' };   // two players, known by id as on the server
+    quiet(e); e.takeHit(s, foe);
+    const hurt = e.hp, wound = s.damage * M.share;
+    expect.near(e.mendPool, wound, 1e-6, 'a blow opens a wound of its share');
+    Game.render(1, STEP); expect.ok(seams[0].visible, 'his cracks light while it is open');
+    quiet(e); sim.seconds(M.delay - 0.4);
+    expect.near(e.hp, hurt, 1e-6, 'it holds a while after the last blow');
+    quiet(e); sim.seconds(0.4 + wound / (M.rate * e.def.hp) + 0.3);
+    expect.near(e.hp, hurt + wound, 1e-3, 'then the Ember closes it, and no more than it');
+    expect.ok(e.mendPool === 0, 'the wound is gone'); Game.render(1, STEP); expect.ok(!seams[0].visible, 'and his cracks go dark');
+    // Co-op: each player's wound is their own. The one who stops pressing loses it while the other keeps striking.
+    e.posture = 0; quiet(e); e.takeHit(s, foe);
+    for (let k = 0; k < 5; k++) { quiet(e); sim.seconds(0.9); e.posture = 0; quiet(e); e.takeHit(s, ally); }
+    const own = who => e.wounds.filter(w => w.who === who.id).reduce((t, w) => t + w.pool, 0);
+    expect.ok(own(foe) === 0 && own(ally) > 0, `the idle player's wound closed while the other's stays open (${own(foe)}, ${own(ally)})`);
+    let n = 0; while (e.mendPool < M.cap * e.def.hp - 1e-6 && n++ < 40) { e.posture = 0; quiet(e); e.takeHit(s, foe); }
+    e.posture = 0; quiet(e); e.takeHit(s, foe);
+    expect.near(e.mendPool, M.cap * e.def.hp, 1e-6, `at most ${M.cap} of his bar open at once`);
+    n = 0; while (e.state !== ES.BROKEN && n++ < 40) { e.takeHit(s, foe); if (e.state !== ES.BROKEN) quiet(e); }
+    expect.ok(e.state === ES.BROKEN && e.hp > 0, `broken after ${n} heavy blows`);
+    sim.step(); e.takeHit(strikeOf('light'), foe);
+    expect.ok(e.mendPool === 0, `a break seals his wounds, and blows on him broken open none (${e.mendPool})`);
+  });
+  test('Aldric: the Last Toll\'s rings hurt where they pass, can be rolled, and leave the player inside alone', () => {
+    Game.startFight('varn'); Game.loading = 0; sim.begin(); sturdy(Game.player);
+    const p = Game.player, e = Game.duel, toll = e.baseDef.attacks.find(a => a.id === 'lastToll');
+    faceOff(e, p, 8); quiet(e); e.notice = 0; const hp0 = p.hp;
+    e.beginAttack(toll); sim.until(() => e.state === ES.ACTIVE, 3); sim.seconds(0.3);
+    expect.below(p.hp, hp0, 'the first ring reached the player 8 m out');
+    Game.startFight('varn'); sim.begin(); sturdy(Game.player);
+    const q = Game.player, f = Game.duel; faceOff(f, q, 8); quiet(f); f.notice = 0; const hp1 = q.hp;
+    f.beginAttack(toll); sim.until(() => f.state === ES.WINDUP && f.stateTime >= toll.hits[0].startup + 0.08 - CONFIG.player.rollIFrames * 0.5, 3);
+    sim.press('roll'); sim.seconds(0.6);
+    expect.ok(q.hp === hp1, 'rolled through the ring');
+  });
+  test('Aldric: the Last Toll rings run along the floor: a jump clears them; the Ash Wave is a flying slash; he has no stomp', () => {
+    const D = A.ENEMY_BY_ID.varn;
+    for (const h of D.attacks.find(a => a.id === 'lastToll').hits.slice(0, 3)) expect.ok(h.box.y + h.box.h / 2 <= 0.6 + 1e-6, `lastToll: low enough to jump (top ${h.box.y + h.box.h / 2} m)`);
+    expect.ok(!D.attacks.some(a => /stomp|stamp/i.test(a.id + ' ' + a.name)), 'his stamp is gone (pass 93): a sword king does not stomp');
+    expect.ok(D.attacks.find(a => a.id === 'ashWave').projectile.look === 'slash', 'the Ash Wave is drawn as a slash');
+    Game.startFight('varn'); Game.loading = 0; sim.begin(); sturdy(Game.player);
+    const p = Game.player, e = Game.duel, toll = e.baseDef.attacks.find(a => a.id === 'lastToll');
+    faceOff(e, p, 8); quiet(e); const hp0 = p.hp;
+    e.beginAttack(toll); sim.until(() => e.state === ES.WINDUP && e.stateTime >= toll.hits[0].startup - 0.12, 3);
+    sim.press('jump'); sim.seconds(0.5);
+    expect.ok(p.hp === hp0, `jumped over the ring (lost ${hp0 - p.hp})`);
+    expect.ok(toll.hits[0].box.ground, 'the rings are ground shockwaves: any time in the air clears them');
+    sim.until(() => e.hitIndex === 1 && e.state === ES.WINDUP && e.stateTime >= toll.hits[1].startup - 0.42, 3);
+    sim.press('jump'); sim.seconds(0.5);   // an early jump: in the air as the ring passes, though well below its old reach
+    expect.ok(p.hp === hp0, `an early jump clears it too (lost ${hp0 - p.hp})`);
+  });
+  test('Aldric: the Judgement Leap lands along its locked aim and he takes no fall damage', () => {
+    Game.startFight('varn'); Game.loading = 0; sim.begin(); sturdy(Game.player); log.length = 0;
+    const p = Game.player, e = Game.duel, leap = e.baseDef.attacks.find(a => a.id === 'varnLeap');
+    e.enterPhase(0); e.hp = e.def.hp;   // throne bar
+    faceOff(e, p, 9); quiet(e); e.notice = 0; const x0 = e.x, z0 = e.z;
+    e.beginAttack(leap); sim.until(() => e.state === ES.ACTIVE, 4);
+    expect.above(Math.hypot(e.x - x0, e.z - z0), 6, 'it leapt most of the way to the player');
+    expect.ok(e.hp === e.def.hp && !log.includes('fallDamage'), 'no fall damage from his own leap');
+  });
+  test('Level 4 now carries on into Level 5', () => {
+    expect.ok(A.LEVEL_4.next === 'final-castle' && A.LEVELS.some(L => L.id === 'final-castle'), 'the Tower leads to the castle');
+  });
+
+  // ---- Story mode (v4.4) -----------------------------------------------------------------------------------------
+  // Each test keeps the player's real save: it is put back afterwards.
+  const withSave = fn => async () => {
+    const key = CONFIG.story.saveKey; let kept = null;
+    try { kept = localStorage.getItem(key); } catch (e) { /* none */ }
+    try { await fn(); } finally {
+      Game.story = false;
+      try { if (kept === null) localStorage.removeItem(key); else localStorage.setItem(key, kept); } catch (e) { /* none */ }
+      A.story.load();
+    }
+  };
+  const S = () => A.story;
+  // A story moment leaves the player in control (pass 82, VISION.md): still in play, the camera turns with the mouse and
+  // stays where it was turned (nothing pulls it to a scripted subject), and the player walks (best of four ways, walls aside).
+  const inControl = label => {
+    const p = Game.player;
+    Game.setLock(null); Game.retarget = false;   // the mouse turns the camera only when unlocked, as a player would be
+    expect.ok(Game.mode === 'play', `${label}: still in play (${Game.mode})`);
+    const want = Game.cam.yaw - 120 * CONFIG.mouse.yawPerPx * settings.sensitivity;
+    Game.mouseLook(120, 0); sim.step(30);
+    expect.near(angDiff(Game.cam.yaw, want), 0, 0.03, `${label}: the camera turns with the mouse and stays there`);
+    let best = 0;
+    for (const [x, z] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+      const x0 = p.x, z0 = p.z; sim.move(x, z); sim.seconds(0.3); sim.move(null);
+      best = Math.max(best, Math.hypot(p.x - x0, p.z - z0)); sim.move(-x, -z); sim.seconds(0.3); sim.move(null);
+      if (best > 0.8) break;
+    }
+    expect.above(best, 0.8, `${label}: the player walks`);
+  };
+  test('Story: the chapters run Level 1 ... Level 14; the Still Mere is the last chapter built so far', withSave(() => {
+    expect.ok(A.STORY.chapters[0].level === 'long-hall', 'Ashmere begins in the Long Hall');
+    const order = ['long-hall', 'sunken-keep', 'burning-town', 'the-tower', 'final-castle', 'the-church', 'windward-moor', 'saltgrave', 'night-gaol', 'aurel', 'aurel-in-ash', 'torn-abbey', 'ember-root', 'still-mere'];
+    order.slice(0, -1).forEach((id, i) => expect.ok(S().nextLevelId(id) === order[i + 1], `${id} leads to ${order[i + 1]}`));
+    expect.ok(S().nextLevelId('still-mere') === null, 'nothing after the Still Mere yet');
+  }));
+  test('Story: a new game saves at the level start and Story offers Continue and New together', withSave(() => {
+    S().erase(); Game.showMenu('main');
+    expect.ok(Game.screens().main.items.map(i => i.name).slice(0, 3).join() === 'Story,Boss Rush,Practice', 'Story, Boss Rush, Practice, whatever the save');
+    S().newGame(); sim.begin();
+    expect.ok(Game.story && Game.level.id === 'long-hall', 'a new story starts in Level 1');
+    expect.ok(S().data.level === 'long-hall' && S().data.bonfire === null, 'saved at the level start');
+    Game.showMenu('main');
+    const names = Game.screens().main.items.map(i => i.name), road = Game.screens().story.items.filter(i => i.campaign === 'ashmere').map(i => i.name);
+    expect.ok(names[0] === 'Story' && names.includes('Practice') && road.join() === 'Continue,New', `Story offers Continue and New together (${road})`);
+    Game.select(0, false);
+    const second = Game.menuButtons[Game.menuItems.findIndex(it => it.size === 'second')];
+    expect.ok(Game.menuItems.find(it => it.size === 'primary').name === 'Continue' && !second.hidden, 'the title offers Continue, and New game beside it');
+    Game.select(Game.menuItems.indexOf(Game.menuItems.find(it => it.size === 'second')), false); Game.confirm();
+    expect.ok(Game.screen === 'storyConfirm', `New game asks before replacing the save (${Game.screen})`);
+    Game.menuBack(); expect.ok(Game.screen === 'main', 'and going back returns to the title');
+  }));
+  test('Title: Story, Boss Rush and Practice each start, and Practice fights anything within two picks', () => {
+    sim.begin();   // the stepped clock: a pick's loading card builds the fight at once (alone, the runner's own clock hid this)
+    const pick = (screen, name) => {
+      Game.showMenu(screen); const i = Game.menuItems.findIndex(it => it.name === name);
+      expect.ok(i >= 0, `${screen} offers ${name}`); Game.select(i, false); Game.confirm();
+    };
+    // The title: moving onto a mode chooses it, and the primary button and the line follow; the primary starts it.
+    Game.showMenu('main');
+    const at = name => Game.menuItems.findIndex(it => it.name === name), primary = () => Game.menuButtons[Game.menuItems.findIndex(it => it.size === 'primary')];
+    const newGame = () => Game.menuButtons[Game.menuItems.findIndex(it => it.size === 'second')];
+    Game.select(at('Practice'), false);
+    expect.ok(primary().textContent.startsWith('Choose a fight') && newGame().hidden && Game.menuButtons[at('Practice')].getAttribute('aria-pressed') === 'true',
+      `Practice chosen: ${primary().textContent}`);
+    Game.select(at('Story'), false);
+    expect.ok(/^(Begin|Continue)/.test(primary().textContent) && $('menuDesc').textContent === Game.menuItems[at('Story')].line, `Story chosen: ${primary().textContent}`);
+    Game.select(at('Options'), false);
+    expect.ok(Game.titleMode === at('Story') && /^(Begin|Continue)/.test(primary().textContent), 'moving to the footer keeps the chosen mode');
+    const join = multiplayer.join; let joined = 0; multiplayer.join = () => { joined++; };
+    try {
+      Game.select(at('Boss Rush'), false); Game.select(Game.menuItems.indexOf(Game.menuItems.find(it => it.size === 'primary')), false); Game.confirm();
+      pick('main', 'Boss Rush');
+    } finally { multiplayer.join = join; }
+    expect.ok(joined === 2, `Boss Rush joins the public lobby from its primary button and its row (${joined})`);
+    pick('main', 'Practice'); expect.ok(Game.screen === 'practice', 'Practice opens');
+    const boss = ENEMY_DEFS.find(isBossDef), foe = ENEMY_DEFS.find(d => !isBossDef(d));
+    pick('practice', 'Fight a boss'); pick('practiceBosses', boss.name);
+    expect.ok(Game.mode === 'play' && Game.kind === 'arena' && Game.enemies.map(e => e.baseDef.id).join() === boss.id, `a boss, fought at once (${Game.kind})`);
+    pick('practice', 'Fight an enemy'); pick('practiceEnemies', foe.name);
+    expect.ok(Game.kind === 'arena' && Game.enemies.map(e => e.baseDef.id).join() === foe.id, 'an enemy, fought at once');
+    Game.practiceGroup.length = 0;
+    pick('practice', 'Fight several at once');
+    expect.ok(Game.menuItems.find(it => it.name === 'Fight').disabled, 'an empty group cannot start');
+    pick('practiceGroup', '+ Add a boss'); pick('practiceBosses', boss.name);
+    pick('practiceGroup', '+ Add an enemy'); pick('practiceEnemies', foe.name);
+    expect.ok(Game.screen === 'practiceGroup' && Game.practiceGroup.join() === `${boss.id},${foe.id}`, 'picks join the group and come back to it');
+    expect.ok(Game.menuItems[Game.selected].name === 'Fight', `the group opens on Fight (${Game.menuItems[Game.selected].name})`);
+    pick('practiceGroup', 'Fight');
+    expect.ok(Game.kind === 'arena' && Game.enemies.map(e => e.baseDef.id).join() === `${boss.id},${foe.id}`, 'the group, fought together');
+    Game.pause(false); pick('pause', 'Leave the fight');
+    expect.ok(Game.screen === 'practiceGroup', `the pause menu goes back to the group (${Game.screen})`);
+    pick('practice', 'Play a level'); pick('practiceLevels', A.LEVELS[0].name);
+    expect.ok(Game.kind === 'level' && Game.level.id === A.LEVELS[0].id, 'a level, played on its own');
+    pick('practice', 'Boss vs Boss'); expect.ok(Game.screen === 'bossBattle' && Game.screens().bossBattle.back === 'practice', 'two teams of bosses');
+    Game.practiceGroup.length = 0; Game.showMenu('main');
+  });
+  test('Practice: Speed fights a boss at a later Boss Rush fight\'s pace, its health and blows its own', () => {
+    sim.begin();
+    const was = settings.practiceFight, boss = ENEMY_DEFS.find(isBossDef), foe = ENEMY_DEFS.find(d => !isBossDef(d));
+    try {
+      settings.practiceFight = 1;
+      Game.showMenu('practiceBosses');
+      const at = () => Game.menuItems.findIndex(it => it.name === 'Speed');
+      expect.ok(at() === 0 && Game.selected === 1, `Speed heads the bosses, the list opens on the first boss (${at()}, ${Game.selected})`);
+      Game.select(at(), false); Game.menuStep('right'); Game.menuStep('right');
+      const fight = CONFIG.practice.fights[2];
+      expect.ok(settings.practiceFight === fight && Game.menuButtons[at()].querySelector('.val').textContent === `Fight ${fight}`, `right twice: Fight ${fight} (${settings.practiceFight})`);
+      Game.menuStep('left'); Game.menuStep('right');
+      Game.select(Game.menuItems.findIndex(it => it.name === boss.name), false); Game.confirm();
+      const e = Game.enemies[0];
+      expect.ok(Game.kind === 'arena' && Math.abs(e.pace - rushPace(fight - 1)) < 1e-9 && e.pace > 1, `the boss at fight ${fight}'s pace (${e.pace})`);
+      expect.ok(e.hp === e.def.hp, `its health its own (${e.hp})`);
+      Game.pause(false);
+      expect.ok(Game.pauseFacts().rows.some(r => r[0] === 'Speed' && r[1] === `Fight ${fight}`), 'pause names the speed');
+      Game.resume();
+      Game.practiceGroup.length = 0; Game.practiceGroup.push(boss.id, foe.id);
+      Game.showMenu('practiceGroup');
+      expect.ok(Game.menuItems[Game.selected].name === 'Fight' && Game.menuItems.some(it => it.name === 'Speed'), 'the group offers Speed and still opens on Fight');
+      Game.confirm();
+      expect.ok(Game.enemies[0].pace === rushPace(fight - 1) && Game.enemies[1].pace === 1, 'in a group, the boss at that pace; a common foe as ever');
+      settings.practiceFight = 1;
+      Game.showMenu('practiceBosses'); Game.select(Game.menuItems.findIndex(it => it.name === boss.name), false); Game.confirm();
+      expect.ok(Game.enemies[0].pace === CONFIG.pace.boss, 'Fight 1: its own pace');
+    } finally { settings.practiceFight = was; saveSettings(); Game.practiceGroup.length = 0; Game.showMenu('main'); }
+  });
+  test('Menus: the gamepad alone walks the title, Practice, Options, Controls, the changelog and pause', () => {
+    sim.begin();
+    const read = gamepad.read, idle = { connected: true, buttons: PAD_BUTTONS.map(() => 0), axes: [0, 0, 0, 0] };
+    const press = code => {   // one press and release of a pad button
+      const buttons = PAD_BUTTONS.map(c => c === code ? 1 : 0);
+      gamepad.read = () => ({ connected: true, buttons, axes: [0, 0, 0, 0] }); real.poll.call(gamepad, STEP);
+      gamepad.read = () => idle; real.poll.call(gamepad, STEP);
+    };
+    const on = () => (Game.menuItems[Game.selected] || {}).name, until = (code, name, max = 12) => {
+      for (let i = 0; i < max && on() !== name; i++) press(code);
+      expect.ok(on() === name, `the pad reaches ${name} (${on()} on ${Game.screen}, ${Game.mode}${multiplayer.panelOpen ? ', lobby open' : ''})`);
+    };
+    const multiplayerJoin = multiplayer.join, suspended = input.suspended; multiplayer.join = () => {};
+    try {
+      input.suspended = false;   // a headless page may not have focus
+      gamepad.release(); gamepad.neutralRequired = false; gamepad.read = () => idle;
+      Game.showMenu('main');
+      until('PadDown', 'Practice'); press('PadA'); expect.ok(Game.screen === 'practice', `A starts the chosen mode (${Game.screen})`);
+      press('PadA'); expect.ok(Game.screen === 'practiceBosses', 'and opens a list');
+      press('PadB'); expect.ok(Game.screen === 'practice', 'B goes back a screen');
+      press('PadB'); expect.ok(Game.screen === 'main', 'and back to the title');
+      // The title's footer: down to it, then along it to Options.
+      for (let i = 0; i < 8 && Game.menuItems[Game.selected].size !== 'foot'; i++) press('PadDown');
+      until('PadRight', 'Options'); press('PadA'); expect.ok(Game.screen === 'options', 'Options from the footer');
+      until('PadDown', 'Camera');
+      press('PadRight'); expect.ok(on() === 'Camera motion', `right goes into the category's settings (${on()})`);
+      const motion = settings.cameraMotion;
+      press('PadA'); expect.ok(settings.cameraMotion === !motion, 'A flips an Off/On setting');
+      press('PadA'); press('PadDown');
+      const speed = settings.sensitivity; press('PadRight');
+      expect.ok(on() === 'Camera speed' && settings.sensitivity === Math.min(10, speed + 1), 'right steps a slider');
+      press('PadLeft'); expect.ok(settings.sensitivity === speed, 'left steps it back');
+      press('PadB'); expect.ok(on() === 'Camera', 'B on a setting returns to its category');
+      until('PadDown', 'Reset to defaults'); until('PadRight', 'Back'); press('PadA'); expect.ok(Game.screen === 'main', 'Back in the footer leaves Options');
+      // Controls from the footer: every control with its pad button (the pad was used last), B back.
+      for (let i = 0; i < 8 && Game.menuItems[Game.selected].size !== 'foot'; i++) press('PadDown');
+      until('PadRight', 'Controls'); press('PadA');
+      const binding = name => { const row = [...document.querySelectorAll('#menuSide .menu-binds .bind')].find(r => r.querySelector('.n').textContent === name); return row && row.querySelector('.v').textContent; };
+      const fixed = name => { const row = [...document.querySelectorAll('#menuSide .menu-controls div')].find(r => r.firstChild.textContent === name); return row && row.lastChild.textContent; };
+      expect.ok(Game.screen === 'controls' && on() === 'Back' && binding('Dodge') === 'B / ○' && binding('Light attack') === 'RB / R1',
+        `Controls lists the pad's buttons, starting on Back (${Game.screen}, ${on()}: Dodge ${binding('Dodge')}, Light ${binding('Light attack')})`);
+      expect.ok(binding('Block and deflect') === 'LB / L1, LT / L2' && !fixed('Help'), `the pad's own deflect trigger, F1 left out (${binding('Block and deflect')})`);
+      input.use('keyboard'); expect.ok(binding('Dodge') === 'Shift' && binding('Block and deflect') === 'L' && fixed('Help') === 'F1', `the keys after a key press (${binding('Dodge')}, ${binding('Block and deflect')})`);
+      input.use('pad');
+      press('PadB'); expect.ok(Game.screen === 'main', 'B leaves Controls');
+      for (let i = 0; i < 8 && Game.menuItems[Game.selected].size !== 'foot'; i++) press('PadDown');
+      until('PadRight', 'Changelog'); press('PadA');
+      expect.ok(Game.screen === 'changelog' && on() === `${CHANGELOG[0].version}  ·  ${CHANGELOG[0].title}`, `the changelog opens on the newest entry (${on()})`);
+      press('PadDown'); expect.ok($('menuDesc').textContent === CHANGELOG[1].text, 'down reads the next entry');
+      press('PadB'); expect.ok(Game.screen === 'main', 'B leaves the changelog');
+      // Pause: Start opens it, Options and back, Start resumes.
+      Game.startFight(ENEMY_DEFS.find(isBossDef).id); Game.tickLoading(CONFIG.loading.time + 0.01);
+      expect.ok(Game.mode === 'play', `a fight (${Game.mode})`);
+      press('PadStart'); expect.ok(Game.mode === 'pause' && Game.screen === 'pause' && on() === 'Resume', 'Start pauses, on Resume');
+      until('PadDown', 'Options'); press('PadA'); expect.ok(Game.screen === 'options', 'Options from pause');
+      press('PadB'); expect.ok(Game.screen === 'pause', 'B goes back to pause');
+      until('PadDown', 'Controls'); press('PadA');
+      expect.ok(Game.screen === 'controls' && Game.mode === 'pause' && $('menu').classList.contains('overlay'), `Controls from pause, over the fight (${Game.mode})`);
+      press('PadB'); expect.ok(Game.screen === 'pause' && on() === 'Resume', `B goes back to pause (${Game.screen}, on ${on()})`);
+      press('PadStart'); expect.ok(Game.mode === 'play', 'Start resumes');
+    } finally { gamepad.read = read; gamepad.release(); multiplayer.join = multiplayerJoin; input.suspended = suspended; Game.showMenu('main'); }
+  });
+  test('Story: Continue puts the player back at the rested bonfire with the beaten enemies gone and won gates open', withSave(() => {
+    S().jumpTo('sunken-keep'); sim.begin();
+    const z = Game.zones[0];
+    for (const a of z.actors) a.deplete();
+    sim.step(2);
+    expect.ok(z.gate.open, 'the first zone is won');
+    const b = Game.level.bonfires[Game.level.bonfires.length - 1];
+    Game.player.x = b.x + 0.5; Game.player.z = b.z; Game.player.y = world.floorY(b.x, b.z, b.y);
+    for (const e of Game.enemies) if (e.alive()) { e.x += 500; }
+    Game.tryRest();
+    const saved = S().data;
+    expect.ok(saved.bonfire === b.id, 'rested bonfire saved');
+    S().quit(); expect.ok(Game.mode === 'menu' && !Game.story, 'quit to the title');
+    S().resume(); sim.begin();
+    expect.ok(Game.story && Game.level.id === 'sunken-keep', 'back in the level');
+    expect.ok(Math.hypot(Game.player.x - saved.spawn.x, Game.player.z - saved.spawn.z) < 0.5, 'at the bonfire');
+    expect.ok(Game.zones[0].gate.open && Game.zones[0].actors.length === 0, 'the won zone stays won');
+  }));
+  // Pass 79 (PLAN.md track A item 5): flasks are found along the road, kept through a death and a Continue.
+  test('Story: a flask found on the road is one more for the rest of the road, saved at once', withSave(() => {
+    S().jumpTo('sunken-keep'); sim.begin();
+    const f = Game.level.flaskFinds[0], it = Game.player.inventory.flask, had = roadFlasks('sunken-keep');
+    expect.ok(it.max === had && it.count === had, `the flasks found before the keep (${it.max}, ${had})`);
+    expect.ok(A.lore.state.finds.length === 1 && A.lore.state.finds[0].core.visible, 'its light is drawn');
+    Game.player.x = f.x; Game.player.z = f.z + 0.5; Game.player.y = world.floorY(f.x, f.z, f.y);
+    for (const e of Game.enemies) if (e.alive()) e.x += 500;
+    sim.seconds(0.2); Game.render(1, STEP);
+    expect.ok(it.max === had + 1 && it.count === had + 1 && Game.found.has(f.id), `taken: one flask more, full (${it.max})`);
+    expect.ok(S().data.finds.includes(f.id) && S().data.progress.inventory.flask.max === had + 1, 'saved at once');
+    expect.ok(document.querySelectorAll('#pFlasks .flask').length === had + 1, 'the flask row grows');
+    sim.seconds(0.2);
+    expect.ok(Game.player.inventory.flask.max === had + 1, 'taken once');
+    Game.player.hp = 0; Game.player.setState(PS.DEAD); Game.onPlayerDeath(); sim.seconds(CONFIG.death.respawnDelay + 0.2);
+    expect.ok(Game.player.inventory.flask.max === had + 1, `kept through a death (${Game.player.inventory.flask.max})`);
+    S().quit(); S().resume(); sim.begin();
+    expect.ok(Game.player.inventory.flask.max === had + 1 && Game.found.has(f.id) && A.lore.state.finds.length === 0, 'kept through Continue, and lies there no more');
+  }));
+  // Pass 79: every chapter is a step up; the lobby's story and Practice's levels grant the chapter's flasks.
+  test('Story road: flasks and enemies climb chapter by chapter, Boss Rush untouched', () => {
+    const ids = STORY.chapters.map(c => c.level), flasks = ids.map(id => roadFlasks(id, true));
+    expect.ok(roadFlasks(ids[0]) === PLAYER_DEF.inventory[0].max && flasks.every((n, i) => !i || n >= flasks[i - 1]) && flasks.at(-1) > flasks[0], `flasks: ${flasks}`);
+    const boss = ids.map(id => roadMight(id, true)), foe = ids.map(id => roadMight(id, false));
+    expect.ok(foe.every((m, i) => !i || (m.damage > foe[i - 1].damage && m.health >= foe[i - 1].health)), 'foes hit harder every chapter');
+    expect.ok(boss[0].pace < 1 && boss.at(-1).pace >= 1, `bosses start slow and reach 1x (${boss[0].pace}, ${boss.at(-1).pace})`);
+    Game.startLevel('torn-abbey'); sim.begin();
+    const late = Game.enemies.find(e => !e.isBoss() && e.def.id === 'rendingBrother');
+    expect.ok(late && late.damageMul === roadMight('torn-abbey', false).damage && late.health === roadMight('torn-abbey', false).health && late.pace === roadMight('torn-abbey', false).pace, 'a level\'s foes are as strong as its chapter');
+    expect.ok(Game.player.inventory.flask.max === roadFlasks('torn-abbey', true), 'off Story, the chapter\'s flasks');
+    Game.startFight('hollis'); sim.begin();
+    expect.ok(Game.duel.pace === CONFIG.pace.boss && Game.duel.damageMul === 1 && Game.duel.health === 1, 'a duel is the boss as written');
+  });
+  test('Story: a broken or foreign save never crashes and offers a new story', withSave(() => {
+    for (const bad of ['{not json', JSON.stringify({ v: 1, level: 'nowhere' }), JSON.stringify({ v: 99 }), '"x"']) {
+      localStorage.setItem(CONFIG.story.saveKey, bad);
+      Game.showMenu('main');
+      expect.ok(S().status === 'broken' && Game.screens().main.items.some(i => i.name === 'Story'), `refused: ${bad}`);
+    }
+  }));
+  test('Story: with storage refused (private window) the story still plays, unsaved', withSave(() => {
+    const real = Object.getOwnPropertyDescriptor(Storage.prototype, 'setItem'), get = Storage.prototype.getItem;
+    Storage.prototype.setItem = () => { throw new Error('denied'); };
+    Storage.prototype.getItem = () => { throw new Error('denied'); };
+    try {
+      Game.showMenu('main');
+      S().newGame(); sim.begin();
+      expect.ok(Game.story && Game.level.id === 'long-hall' && !S().storageOk, 'Level 1 runs without saving');
+    } finally { Object.defineProperty(Storage.prototype, 'setItem', real); Storage.prototype.getItem = get; }
+  }));
+  test('Story: the pause menu offers Quit, and the Training Hall\'s Skip is gone; an old tutorial save continues in Level 1', withSave(() => {
+    S().newGame(); sim.begin(); Game.mode = 'play';
+    Game.pause(false);
+    const items = Game.screens().pause.items.map(i => i.name);
+    expect.ok(!items.some(n => /tutorial/i.test(n)) && items.includes('Quit to title'), `pause: ${items}`);
+    Game.resume();
+    const old = { ...JSON.parse(localStorage.getItem(CONFIG.story.saveKey)), level: 'tutorial', bonfire: 'tutorial-fire', spawn: { x: 9, z: -2, yaw: 0 } };
+    localStorage.setItem(CONFIG.story.saveKey, JSON.stringify(old)); S().load();
+    expect.ok(S().status !== 'broken' && S().data.level === 'long-hall' && S().data.bonfire === null && S().data.spawn === null, `migrated: ${S().status} ${JSON.stringify(S().data && S().data.level)}`);
+    S().resume(); sim.begin();
+    expect.ok(Game.story && Game.level.id === 'long-hall', 'Continue opens Level 1');
+  }));
+  test('Story: the ending marks the story complete and shows its own screen', withSave(() => {
+    S().jumpTo('final-castle'); sim.begin();
+    A.events.emit('endingDone');
+    expect.ok(Game.screen === 'storyDone' && S().data.completed && !Game.story, 'saved as complete');
+    Game.showMenu('main');
+  }));
+  // v7.36.0: Aldric's death is the end of Act I, not of the story (STORY.md): the Ember leaves him, and chapter 6 follows.
+  // Pass 82 (PLAN.md track A item 6): its lines rise over the throne room while the player walks and looks about.
+  test('Story: Aldric\'s death plays the Ember leaving him over the throne room, the player free throughout, with no credits, and Story mode goes on to the church', withSave(() => {
+    const D = { ...CONFIG.finale.death }, E = { ...CONFIG.finale.ending };
+    Object.assign(CONFIG.finale.death, { stagger: 0.1, kneel: 0.2, blaze: 0.3, fade: 0.6, overlay: 6.6 });   // past the usual next-level fade
+    Object.assign(CONFIG.finale.ending, { card: 1 });
+    try {
+      S().jumpTo('final-castle'); sim.begin();
+      A.finale.jump(A.LEVEL_5.devJumps[4]); Game.loading = 0; sim.begin(); sturdy(Game.player);
+      sim.walkTo(330, 0, 0.6, 10); sim.step(10);
+      const b = Game.enemies.find(e => e.def.id === 'varn');
+      b.deplete(); sim.step(1); sim.until(() => b.state !== ES.PHASE, 25); b.deplete(); sim.step(2);
+      expect.ok(!b.alive() && Game.complete && A.finale.state.ending, 'Aldric is dead and the end of Act I runs');
+      expect.ok(!S().data.completed, 'the story is not complete');
+      inControl('his death');
+      sim.seconds(4);
+      expect.ok(Game.level.id === 'final-castle' && !document.getElementById('fade').classList.contains('show'), `the death scene is not cut short by the usual next-level fade (${Game.level.id})`);
+      sim.until(() => document.getElementById('ending'), 5);
+      const overlay = document.getElementById('ending');
+      expect.ok(overlay && !overlay.querySelector('.roll'), 'the lines, with no credits');
+      expect.ok([...overlay.querySelectorAll('.card')].map(c => c.textContent).join('|') === A.LORE.ending.join('|') && /does not go out/.test(A.LORE.ending[0]), 'the Ember does not go out');
+      sim.step(2);
+      expect.ok(overlay.querySelector('.card.show') && getComputedStyle(overlay).pointerEvents === 'none' && !document.getElementById('fade').classList.contains('show'),
+        'a line shows over the world, which stays in view, and takes no input');
+      inControl('the end of Act I\'s lines');
+      sim.until(() => Game.level.id === 'the-church' && !Game.pendingLoad, 15); Game.loading = 0;
+      expect.ok(!document.getElementById('ending'), 'the lines end on their own');
+      expect.ok(Game.story && Game.level.id === 'the-church' && S().data.level === 'the-church', `chapter 6 follows in Story mode, saved there (${Game.level.id})`);
+      expect.ok(Game.levelCard('the-church')[0] === 'THE CHURCH IN THE PASS' && /still the ash falls/.test(Game.levelCard('the-church')[1]), 'its title and line');
+    } finally { Object.assign(CONFIG.finale.death, D); Object.assign(CONFIG.finale.ending, E); A.finale.cancelEnding(); }
+  }));
+  test('Story: Continue from a Final Castle save with Aldric beaten (cut short, or from before v7.36.0) goes on to the church', withSave(() => {
+    S().jumpTo('final-castle'); sim.begin();
+    const d = { ...S().data, zones: Game.zones.map(z => z.id), completed: true };
+    localStorage.setItem(CONFIG.story.saveKey, JSON.stringify(d)); S().load();
+    S().resume(); sim.begin(); Game.loading = 0;
+    expect.ok(Game.story && Game.level.id === 'the-church' && S().data.level === 'the-church', `on to chapter 6 (${Game.level.id})`);
+  }));
+  test('Story: Continue from a Still Mere save with the King\'s Blade beaten closes the road on STORY COMPLETE again', withSave(() => {
+    S().jumpTo('still-mere'); sim.begin();
+    const d = { ...S().data, zones: Game.zones.map(z => z.id), completed: true };
+    localStorage.setItem(CONFIG.story.saveKey, JSON.stringify(d)); S().load();
+    S().resume(); sim.step(1);
+    expect.ok(Game.screen === 'storyDone' && !Game.story && Game.screens().storyDone.title === 'Story complete', `the road's closing screen, not a finished level to stand in (${Game.screen}, ${Game.mode})`);
+    Game.showMenu('main');
+  }));
+  test('Story: beating the Antlered Hunger goes on to chapter 7, the Windward Moor (v7.38.0)', withSave(() => {
+    S().jumpTo('the-church'); sim.begin(); Game.loading = 0;
+    expect.ok(Game.story && Game.level.id === 'the-church', 'chapter 6 starts');
+    const h = Game.enemies.find(e => e.baseDef.id === 'antlered');
+    for (let i = 0; i < 4 && h.alive(); i++) { h.deplete(); sim.step(1); sim.until(() => h.state !== ES.PHASE, 20); }
+    sim.until(() => Game.level.id === 'windward-moor' && !Game.pendingLoad, 20); Game.loading = 0;
+    expect.ok(Game.story && Game.level.id === 'windward-moor' && S().data.level === 'windward-moor', `chapter 7 follows, saved there (${Game.level.id})`);
+    expect.ok(Game.levelCard('windward-moor')[0] === 'THE WINDWARD MOOR' && /Its gate is still kept/.test(Game.levelCard('windward-moor')[1]), 'its title and line');
+  }));
+  test('Story: beating Old Ostrey goes on to chapter 8, Saltgrave (v7.40.0)', withSave(() => {
+    S().jumpTo('windward-moor'); sim.begin(); Game.loading = 0;
+    expect.ok(Game.story && Game.level.id === 'windward-moor', 'chapter 7 starts');
+    const o = Game.enemies.find(e => e.baseDef.id === 'ostrey');
+    expect.ok(o && o.def.name === 'Old Ostrey, the Porter', 'the porter keeps the gate');
+    for (const z of Game.zones) if (z.id !== 'zone-ostrey') { z.gate.open = true; z.beaten = true; }   // the fights before the bridge, won
+    for (let i = 0; i < 4 && o.alive(); i++) { o.deplete(); sim.step(1); sim.until(() => o.state !== ES.PHASE, 20); }
+    sim.until(() => Game.level.id === 'saltgrave' && !Game.pendingLoad, 20); Game.loading = 0;
+    expect.ok(Game.story && Game.level.id === 'saltgrave' && S().data.level === 'saltgrave', `chapter 8 follows, saved there (${Game.level.id})`);
+    expect.ok(Game.levelCard('saltgrave')[0] === 'SALTGRAVE' && /a crown that does not answer/.test(Game.levelCard('saltgrave')[1]), 'its title and line');
+  }));
+  test('Story: beating the Castellans goes on to chapter 9, the Night Gaol (v7.42.0)', withSave(() => {
+    S().jumpTo('saltgrave'); sim.begin(); Game.loading = 0;
+    expect.ok(Game.story && Game.level.id === 'saltgrave', 'chapter 8 starts');
+    const twins = Game.enemies.filter(e => e.baseDef.id === 'hale' || e.baseDef.id === 'harrow');
+    expect.ok(twins.length === 2, 'two castellans hold the roof');
+    for (const z of Game.zones) if (z.id !== 'zone-castellans') { z.gate.open = true; z.beaten = true; }   // the fights before the roof, won
+    for (const o of twins) for (let i = 0; i < 10 && o.alive(); i++) { o.deplete(); sim.seconds(1); sim.until(() => o.state !== ES.PHASE, 20); }
+    sim.until(() => Game.level.id === 'night-gaol' && !Game.pendingLoad, 20); Game.loading = 0;
+    expect.ok(Game.story && Game.level.id === 'night-gaol' && S().data.level === 'night-gaol', `chapter 9 follows, saved there (${Game.level.id})`);
+    expect.ok(Game.levelCard('night-gaol')[0] === 'THE NIGHT GAOL' && /Thrale too had a bell/.test(Game.levelCard('night-gaol')[1]), 'its title and line');
+  }));
+  test('Story: beating the Ringer of Thrale goes on to chapter 10, Aurel (v7.44.0)', withSave(() => {
+    S().jumpTo('night-gaol'); sim.begin(); Game.loading = 0;
+    expect.ok(Game.story && Game.level.id === 'night-gaol', 'chapter 9 starts');
+    const r = Game.enemies.find(e => e.baseDef.id === 'ringer');
+    expect.ok(r && r.def.name === 'The Ringer of Thrale', 'the Ringer keeps the great ring');
+    for (const z of Game.zones) if (z.id !== 'zone-ringer') { z.gate.open = true; z.beaten = true; }   // the cells, won
+    for (let i = 0; i < 4 && r.alive(); i++) { r.deplete(); sim.step(1); sim.until(() => r.state !== ES.PHASE, 20); }
+    sim.until(() => Game.level.id === 'aurel' && !Game.pendingLoad, 20); Game.loading = 0;
+    expect.ok(Game.story && Game.level.id === 'aurel' && S().data.level === 'aurel', `chapter 10 follows, saved there (${Game.level.id})`);
+    expect.ok(Game.levelCard('aurel')[0] === 'AUREL, THE GILDED CITY' && /Its regent will be glad/.test(Game.levelCard('aurel')[1]), 'its title and line');
+  }));
+  test('Story: beating the Regent Hollis goes on to chapter 11, Aurel in Ash (v7.46.0)', withSave(() => {
+    S().jumpTo('aurel'); sim.begin(); Game.loading = 0;
+    expect.ok(Game.story && Game.level.id === 'aurel', 'chapter 10 starts');
+    const r = Game.enemies.find(e => e.baseDef.id === 'hollis');
+    expect.ok(r && r.def.name === 'The Regent Hollis', 'the Regent keeps the throne court');
+    for (const z of Game.zones) if (z.id !== 'zone-hollis') { z.gate.open = true; z.beaten = true; }   // the city, won
+    for (let i = 0; i < 4 && r.alive(); i++) { r.deplete(); sim.step(1); sim.until(() => r.state !== ES.PHASE, 20); }
+    sim.until(() => Game.level.id === 'aurel-in-ash' && !Game.pendingLoad, 20); Game.loading = 0;
+    expect.ok(Game.story && Game.level.id === 'aurel-in-ash' && S().data.level === 'aurel-in-ash', `chapter 11 follows, saved there (${Game.level.id})`);
+    expect.ok(Game.levelCard('aurel-in-ash')[0] === 'AUREL IN ASH' && /You have seen this done before/.test(Game.levelCard('aurel-in-ash')[1]), 'its title and line');
+  }));
+  test('Story: beating Oswin, the First Crown, goes on to chapter 12, the Torn Abbey (v7.48.0)', withSave(() => {
+    S().jumpTo('aurel-in-ash'); sim.begin(); Game.loading = 0;
+    expect.ok(Game.story && Game.level.id === 'aurel-in-ash', 'chapter 11 starts');
+    const r = Game.enemies.find(e => e.baseDef.id === 'oswin');
+    expect.ok(r && r.def.name === 'Oswin, the First Crown', 'the first king keeps the throne in ash');
+    for (const z of Game.zones) if (z.id !== 'zone-oswin') { z.gate.open = true; z.beaten = true; }   // the city, won
+    for (let i = 0; i < 6 && r.alive(); i++) { r.deplete(); sim.step(1); sim.until(() => r.state !== ES.PHASE, 20); }
+    sim.until(() => Game.level.id === 'torn-abbey' && !Game.pendingLoad, 20); Game.loading = 0;
+    expect.ok(Game.story && Game.level.id === 'torn-abbey' && S().data.level === 'torn-abbey', `chapter 12 follows, saved there (${Game.level.id})`);
+    expect.ok(Game.levelCard('torn-abbey')[0] === 'THE TORN ABBEY' && /The earth came with it/.test(Game.levelCard('torn-abbey')[1]), 'its title and line');
+  }));
+  test('Story: beating Mother Agathe goes on to chapter 13, the Root of the Ember (v7.50.0)', withSave(() => {
+    S().jumpTo('torn-abbey'); sim.begin(); Game.loading = 0;
+    expect.ok(Game.story && Game.level.id === 'torn-abbey', 'chapter 12 starts');
+    const r = Game.enemies.find(e => e.baseDef.id === 'agathe');
+    expect.ok(r && r.def.name === 'Mother Agathe, the Rending Hand', 'the abbess keeps the rent');
+    for (const z of Game.zones) if (z.id !== 'zone-agathe') { z.gate.open = true; z.beaten = true; }   // the abbey, won
+    for (let i = 0; i < 6 && r.alive(); i++) { r.deplete(); sim.step(1); sim.until(() => r.state !== ES.PHASE, 20); }
+    sim.until(() => Game.level.id === 'ember-root' && !Game.pendingLoad, 20); Game.loading = 0;
+    expect.ok(Game.story && Game.level.id === 'ember-root' && S().data.level === 'ember-root', `chapter 13 follows, saved there (${Game.level.id})`);
+    expect.ok(Game.levelCard('ember-root')[0] === 'THE ROOT OF THE EMBER' && /the root is still growing/.test(Game.levelCard('ember-root')[1]), 'its title and line');
+  }));
+  test('Story: beating the Kindling Tree goes on to chapter 14, the Still Mere (v7.51.0)', withSave(() => {
+    S().jumpTo('ember-root'); sim.begin(); Game.loading = 0;
+    expect.ok(Game.story && Game.level.id === 'ember-root', 'chapter 13 starts');
+    const r = Game.enemies.find(e => e.baseDef.id === 'kindlingTree');
+    expect.ok(r && r.def.name === 'The Kindling Tree', 'the tree keeps the heartwood');
+    for (const z of Game.zones) if (z.id !== 'zone-tree') { z.gate.open = true; z.beaten = true; }   // the root, won
+    for (let i = 0; i < 6 && r.alive(); i++) { r.deplete(); sim.step(1); sim.until(() => r.state !== ES.PHASE, 20); }
+    sim.until(() => Game.level.id === 'still-mere' && !Game.pendingLoad, 20); Game.loading = 0;
+    expect.ok(Game.story && Game.level.id === 'still-mere' && S().data.level === 'still-mere', `chapter 14 follows, saved there (${Game.level.id})`);
+    expect.ok(Game.levelCard('still-mere')[0] === 'THE STILL MERE' && /Something wearing your face is waiting/.test(Game.levelCard('still-mere')[1]), 'its title and line');
+  }));
+  test('Story: the King\'s Blade\'s death plays the story\'s ending, the mere\'s lines and the credits over the world, the player free throughout, and closes the road on STORY COMPLETE', withSave(() => {
+    const D = { ...CONFIG.finale.death }, E = { ...CONFIG.finale.ending };
+    Object.assign(CONFIG.finale.death, { stagger: 0.1, kneel: 0.2, blaze: 0.3, fade: 0.6, overlay: 0.8 });
+    Object.assign(CONFIG.finale.ending, { card: 1, credits: 4, hold: 0.5 });
+    const doneKey = 'combatArena.complete.still-mere', kept = localStorage.getItem(doneKey);   // the Levels menu's mark
+    try {
+      S().jumpTo('still-mere'); sim.begin(); Game.loading = 0; sturdy(Game.player);
+      expect.ok(Game.story && Game.level.id === 'still-mere', 'chapter 14 starts');
+      const r = Game.enemies.find(e => e.baseDef.id === 'kingsBlade');
+      expect.ok(r && r.def.name === 'The King\'s Blade', 'the one who waits keeps the ice');
+      for (const z of Game.zones) if (z.id !== 'zone-blade') { z.gate.open = true; z.beaten = true; }   // the mere, won
+      r.hp = r.def.hp * 0.45; sim.step(0.5); sim.until(() => r.state !== ES.PHASE && r.def.phaseId === 'emberWorn' && !r.invulnerable(), 12);   // past half: the Ember shows
+      for (let i = 0; i < 6 && r.alive(); i++) { r.deplete(); sim.step(1); sim.until(() => r.state !== ES.PHASE && !r.invulnerable(), 20); }
+      expect.ok(!r.alive() && A.finale.state && A.finale.state.ending, `the King's Blade is dead and the ending runs (phase ${r.def.phaseId})`);
+      expect.ok(S().data.completed && !S().active.goesOn(), 'the story is complete: the road no longer goes on');
+      sim.until(() => document.getElementById('ending'), 5);
+      const overlay = document.getElementById('ending');
+      const cards = [...overlay.querySelectorAll('.card')].map(c => c.textContent);
+      expect.ok(cards.join('|') === A.LORE.endings['still-mere'].join('|') && /ringing something small/.test(cards.at(-1)), `the mere's lines, ending on the small bell (${cards.length})`);
+      sim.step(2);
+      expect.ok(overlay.querySelector('.card.show') && getComputedStyle(overlay).pointerEvents === 'none' && !document.getElementById('fade').classList.contains('show'),
+        'a line shows over the world, which stays in view, and takes no input');
+      inControl('the mere\'s lines');
+      const roll = overlay.querySelector('.roll');
+      const heads = roll ? [...roll.querySelectorAll('h2')].map(h => h.textContent) : [];
+      expect.ok(heads.slice(0, 3).join() === 'THE ROAD,WHO WALKED BESIDE YOU,THOSE WHO STOOD IN THE WAY', `the credits (${heads})`);
+      expect.ok(/The Still Mere/.test(roll.textContent) && /Ysolde of Corvel/.test(roll.textContent) && /The King's Blade/.test(roll.textContent), 'the road, Ysolde and the last foe are named');
+      sim.until(() => overlay.classList.contains('rolling'), 10);
+      sim.step(30, 1);   // drawn each step: the credits move on the drawn frame
+      expect.ok(/translateY\(-/.test(roll.style.transform), `the credits roll (${roll.style.transform})`);
+      inControl('the credits');
+      sim.press('talk'); sim.step();
+      expect.ok(document.getElementById('ending') && Game.screen !== 'storyDone', 'Talk does nothing before the way back shows');
+      sim.until(() => overlay.querySelector('.back.show'), 10);
+      expect.ok(Game.mode === 'play' && Game.story, 'still walking the mere when the way back shows');
+      const fire = world.bonfires.find(b => Game.bonfireLit(b));   // Talk shares its key with Rest: here it leads back, not to the fire
+      if (fire) { sim.place(fire.x + 0.8, fire.z, fire.y + 0.5); sim.step(2); expect.ok(Game.canRest() && !Game.restWins(), 'at a bonfire, Talk still leads back'); }
+      sim.press('talk'); sim.step();
+      expect.ok(!document.getElementById('ending') && Game.screen === 'storyDone', `Talk leads to the road's closing screen (${Game.screen})`);
+      const screen = Game.screens().storyDone;
+      expect.ok(screen.title === 'Story complete' && screen.notice === A.STORY.done && /ash has stopped falling/.test(screen.notice), `its words (${screen.title})`);
+    } finally {
+      Object.assign(CONFIG.finale.death, D); Object.assign(CONFIG.finale.ending, E); A.finale.cancelEnding(); Game.showMenu('main');
+      if (kept === null) localStorage.removeItem(doneKey); else localStorage.setItem(doneKey, kept);
+    }
+  }));
+  // ---- Story moments (pass 82, PLAN.md track A item 6): nothing takes movement or the camera from the player -------------
+  test('Story moments: in every chapter, Ysolde, the inscriptions, the scenes and the sightings play while the player walks and turns the camera', () => {
+    const lore = A.lore, LS = () => A.lore.state;
+    // The moments, not the fights. sim.clearEnemies disposes their figures: emptying the list alone left ~360 in the scene,
+    // every later test drew them all, and a 15 s Ultra fight took 19 min on CI's software WebGL (v7.107.0).
+    const quiet = () => { sim.clearEnemies(); sturdy(Game.player); };
+    const seen = { npc: 0, inscription: 0, scene: 0, sighting: 0 };
+    for (const id of A.STORY.chapters.map(c => c.level)) {
+      const D = A.LORE.levels[id] || {};
+      for (let i = 0; i < (D.npcs || []).length; i++) {
+        lore.jumpTo(id, i); Game.loading = 0; sim.begin(); quiet();
+        const N = LS().npcs[i], z = N.def.after && Game.zones.find(q => q.id === N.def.after);
+        if (z) z.gate.open = true;   // she waits there once that fight is won
+        sim.place(N.x + Math.sin(N.yaw) * 1.3, N.z + Math.cos(N.yaw) * 1.3, N.y + 0.5);   // nearer her than the bonfire (Talk shares its key)
+        sim.step(2); sim.press('talk'); sim.step();
+        expect.ok(LS().talk && LS().talk.src === N, `${id}: ${N.name} speaks (${lore.prompt()})`);
+        inControl(`${id}: ${N.name}'s words`); seen.npc++;
+        expect.ok(LS().talk && LS().talk.src === N, `${id}: ${N.name} still speaks while the player walks and looks around`);
+      }
+      Game.startLevel(id); Game.loading = 0; sim.begin(); quiet(); sim.step(2);
+      for (const I of LS() ? LS().inscriptions : []) {
+        sim.place(I.x + Math.sin(I.def.yaw) * 1.1, I.z + Math.cos(I.def.yaw) * 1.1, I.y + 0.5); sim.step(2);
+        sim.press('talk'); sim.step();
+        expect.ok(LS().talk, `${id}: ${I.name} reads (${lore.prompt()})`);
+        inControl(`${id}: ${I.name}`); seen.inscription++;
+      }
+      for (const s of LS() ? LS().scenes : []) {
+        // Beside it, on a floor: the abbey's first corpse sits by a wall with nothing past it (a NaN player there broke the camera).
+        const [dx, dz] = [[1.5, 0], [-1.5, 0], [0, 1.5], [0, -1.5]].find(([dx, dz]) => Number.isFinite(world.floorY(s.def.x + dx, s.def.z + dz, s.y + 0.5))) || [];
+        expect.ok(dx !== undefined, `${id}: there is floor beside the ${s.def.kind} scene`);
+        sim.place(s.def.x + dx, s.def.z + dz, s.y + 0.5); sim.step(2); Game.render(1, CONFIG.step);
+        expect.ok(s.group.visible, `${id}: the ${s.def.kind} scene shows`);
+        inControl(`${id}: the ${s.def.kind} scene`); seen.scene++;
+      }
+      for (const s of A.finale.state ? A.finale.state.spectators : []) {
+        const [x0, x1, z0, z1] = s.def.trigger; sim.place((x0 + x1) / 2, (z0 + z1) / 2); sim.step(2);
+        expect.ok(s.state === 'watch', `${id}: ${s.def.id} watches the player (${s.state})`);
+        inControl(`${id}: ${s.def.id}`); seen.sighting++;
+      }
+    }
+    expect.ok(seen.npc >= 14 && seen.inscription >= 14 && seen.scene >= 5 && seen.sighting >= 2, `every kind of moment was played (${JSON.stringify(seen)})`);
+  });
+  test('Story moments: Aldric\'s retreat over the wall leaves the camera to the player', () => {
+    Game.startLevel('final-castle'); Game.loading = 0; sim.begin(); sturdy(Game.player);
+    const b = Game.enemies.find(e => e.def.id === 'varn');
+    sim.step(30); b.deplete(); sim.step(2);
+    expect.ok(b.state === ES.RETREAT, `he retreats (${b.state})`);
+    inControl('Aldric\'s leap onto the wall');
+    sim.until(() => b.state === ES.GONE, 10);
+    inControl('Aldric gone over the wall');
+  });
+
+  // ---- Lore (v5.1): Ysolde, inscriptions, scenes, the seamless subtitles -----------------------------------------
+  const lore = () => A.lore, LS = () => A.lore.state;
+  const atNpc = id => { lore().jumpTo(id); Game.loading = 0; sim.begin(); sim.step(2); };
+  const npcDist = (i = 0) => Math.hypot(Game.player.x - LS().npcs[i].x, Game.player.z - LS().npcs[i].z);
+  test('Lore: every NPC, inscription and scene of each level stands on a floor, off every zone fight', () => {
+    for (const [id, D] of Object.entries(A.LORE.levels)) {
+      Game.startLevel(id); Game.loading = 0;
+      const pts = [...(D.npcs || []), ...(D.inscriptions || []), ...(D.scenes || [])];
+      for (const q of pts) expect.near(world.floorY(q.x, q.z, (q.y ?? 0) + 0.1), q.y ?? 0, 0.3, `${id}: (${q.x}, ${q.z}) must stand on a floor at y ${q.y ?? 0}`);
+      for (const [i, N] of (D.npcs || []).entries()) {
+        expect.ok(LS().npcs[i] && LS().npcs[i].rig, `${id}: the NPC is built`);
+        const z = Game.zones.find(g => g.trigger && (Array.isArray(g.trigger[0]) ? g.trigger : [g.trigger]).some(r => r.length === 4 && inArea(r, N.x, N.z)));
+        expect.ok(!z, `${id}: the NPC stands inside zone ${z && z.id}`);
+      }
+    }
+  });
+  test('Lore: one press plays the whole dialogue while the player keeps full control', () => {
+    atNpc('long-hall');
+    expect.ok(lore().prompt() === 'Talk to Ysolde', `the Talk prompt shows (${lore().prompt()})`);
+    sim.press('talk'); sim.step();
+    const T = LS().talk;
+    expect.ok(T && T.i === 0 && T.full, 'the first line plays');
+    expect.ok(hud.subText.textContent === T.lines[0] && hud.subName.textContent === 'Ysolde of Corvel', 'subtitle with her name');
+    const x0 = Game.player.x; sim.move(1, 0); sim.seconds(0.6); const moved = Game.player.x - x0; sim.move(-1, 0); sim.seconds(0.6); sim.move(null);
+    expect.above(moved, 1, 'the player walks freely while she speaks');
+    expect.ok(Game.player.state !== PS.DEAD && LS().talk, 'still talking while walking about');
+    const steps = sim.until(() => !LS().talk, 120);
+    expect.ok(steps > 0 && LS().npcs[0].heard, 'it runs to the end on its own, and is heard');
+    expect.ok(!hud.sub.classList.contains('show'), 'the subtitles are gone');
+  });
+  test('Lore: Talk cannot skip a line, walking away fades it, coming back starts over, then an idle line', () => {
+    atNpc('long-hall');
+    sim.press('talk'); sim.step(); sim.press('talk'); sim.step();
+    expect.ok(LS().talk.i === 0 && lore().prompt() === null, 'Talk again does nothing, and no prompt shows while she speaks');
+    sim.place(30, 0); sim.step(2);
+    expect.ok(!LS().talk, 'far away: it fades');
+    sim.place(8, 4.6); sim.step(2);
+    sim.press('talk'); sim.step();
+    expect.ok(LS().talk.i === 0, 'back and Talk: from the beginning');
+    sim.until(() => !LS().talk, 120);
+    sim.place(30, 0); sim.step(2); sim.place(8, 4.6); sim.step(2);
+    expect.ok(LS().talk && !LS().talk.full && LS().talk.lines[0] === A.LORE.levels['long-hall'].npcs[0].idle, 'heard: a short idle line on coming back');
+    sim.until(() => !LS().talk, 30); sim.press('talk'); sim.step();
+    expect.ok(LS().talk.full && LS().talk.i === 0, 'Talk again replays the whole dialogue');
+  });
+  test('Lore: an enemy turning on the player clears the subtitles at once, and Talk is refused', () => {
+    atNpc('long-hall');
+    sim.press('talk'); sim.step();
+    const e = sim.spawn('hollow', Game.player.x + 6, Game.player.z);
+    sim.until(() => e.fightingPlayer(), 5);
+    sim.step();
+    expect.ok(!LS().talk && lore().prompt() === null, 'no subtitles, no prompt while it fights');
+  });
+  test('Lore: the bars of her cell keep the player out, and she cannot be struck', () => {
+    atNpc('long-hall');
+    sim.walkTo(8, 7.5, 0.3, 3);
+    expect.below(Game.player.z, 5.86, 'outside the bars');
+    expect.ok(!Game.enemies.some(e => e.def.id === 'ysolde'), 'she is no enemy: nothing can target or hit her');
+  });
+  test('Lore: an inscription reads the same way, and every level with an NPC has a dev jump', () => {
+    atNpc('long-hall');
+    const I = LS().inscriptions[0]; sim.place(I.x, I.z + 1.2); sim.step(2);
+    expect.ok(lore().prompt() === `Read: ${I.def.label}`, `the Read prompt (${lore().prompt()})`);
+    sim.press('talk'); sim.step();
+    expect.ok(LS().talk && LS().talk.src === I, 'its text plays as subtitles');
+    for (const [id, D] of Object.entries(A.LORE.levels)) for (let i = 0; i < (D.npcs || []).length; i++) {
+      lore().jumpTo(id, i); Game.loading = 0; sim.begin(); sim.step(2);
+      expect.below(npcDist(i), CONFIG.lore.talkRange, `${id} (${i + 1}): the jump puts the player by her`);
+      expect.ok(lore().prompt() && lore().prompt().startsWith('Talk'), `${id} (${i + 1}): Talk prompt at the jump (${lore().prompt()})`);
+    }
+  });
+
+  // ---- v5.1 fixes: checkpoints, the Bell Warden's arena, Story autosave ------------------------------------------
+  const dieAndRespawn = () => { Game.player.hp = 0; Game.player.setState(PS.DEAD); Game.onPlayerDeath(); sim.step(); sim.until(() => Game.player.alive(), CONFIG.death.respawnDelay + 2); sim.step(); };
+  const killZone = id => { const z = Game.zones.find(q => q.id === id); for (const a of z.actors) a.deplete(); sim.until(() => z.gate.open, 5); return z; };
+  test('Checkpoints: kills since the last rest come back after a death (gates stay open); rested kills stay dead', () => {
+    Game.startLevel('long-hall'); Game.loading = 0; sim.begin(); sim.step(2);
+    let z = killZone('zone-hollow');
+    expect.ok(z.gate.open && z.actors.every(a => !a.alive()), 'the Hollow is beaten and its gate opens');
+    dieAndRespawn();
+    z = Game.zones.find(q => q.id === 'zone-hollow');
+    expect.ok(z.gate.open, 'the gate stays open');
+    expect.ok(z.actors.length === 1 && z.actors[0].alive() && Game.enemies.includes(z.actors[0]), 'the unconfirmed kill stands again');
+    killZone('zone-hollow');
+    sim.place(4, -2.4); sim.step(2); sim.press('rest'); sim.step(120);
+    dieAndRespawn();
+    z = Game.zones.find(q => q.id === 'zone-hollow');
+    expect.ok(z.gate.open && z.actors.length === 0, 'rested after the kill: it stays dead');
+  });
+  test('Checkpoints: a beaten boss stays beaten after a death, even before a rest', () => {
+    Game.startLevel('the-tower'); Game.loading = 0; sim.begin(); sim.step(2);
+    const z = killZone('zone-bell');
+    dieAndRespawn();
+    expect.ok(z.gate.open && !z.actors.some(a => a.alive()), 'the Bell Warden does not come back');
+  });
+  test('Level 4: the Bell Warden ignores the player at the bell bonfire, and fights once they enter its arena', () => {
+    Game.startLevel('the-tower'); Game.loading = 0; sim.begin(); sim.step(2);
+    const b = Game.level.bonfires.find(q => q.id === 'tower-bell'), w = Game.enemies.find(e => e.def.id === 'bellWarden');
+    sim.place(b.x + 1.2, b.z + 0.6, b.y); sim.seconds(5);
+    expect.ok(!w.fightingPlayer() && Game.canRest(), 'the bonfire before the arena is safe to rest at');
+    sim.place(96, 0, 22); sim.until(() => w.fightingPlayer(), 6);
+    expect.ok(w.fightingPlayer(), 'inside the arena it comes for the player');
+  });
+  test('Story: a won zone is saved at once, and Continue opens its gate with its unconfirmed fighters back', withSave(() => {
+    S().jumpTo('long-hall'); Game.loading = 0; sim.begin(); sim.step(2);
+    killZone('zone-hollow'); sim.step();
+    expect.ok(S().data.zones.includes('zone-hollow'), 'saved the moment the gate opened');
+    S().load(); S().resume(); Game.loading = 0; sim.step(2);
+    const z = Game.zones.find(q => q.id === 'zone-hollow');
+    expect.ok(z.gate.open && z.actors.length === 1 && z.actors[0].alive(), 'Continue: gate open, the Hollow back at its post');
+  }));
+
+  // ---- v5.2: executions (js/execution.js) ---------------------------------------------------------------------
+  const kneel = e => { e.hitbox = null; e.setState(ES.BROKEN); };   // its bar just filled
+  const inFront = (e, p, gap = 0.6) => {   // the player gap m off the enemy's front edge, facing it
+    const d = e.radius + p.radius + gap;
+    sim.place(e.x + Math.sin(e.yaw) * d, e.z + Math.cos(e.yaw) * d, e.y); p.yaw = Math.atan2(e.x - p.x, e.z - p.z);
+  };
+  const execLog = [];
+  A.events.onAny(type => { if (/^execution/.test(type) || type === 'enemyDeath' || type === 'bossPhase' || type === 'bossRetreat') execLog.push(type); });
+  test('Execution: light attack in front of a kneeling Knight runs it through and kills it when low; the player is untouchable throughout', () => {
+    Game.startFight('knight'); Game.loading = 0; sim.begin();
+    const p = Game.player, e = Game.duel; execLog.length = 0;
+    e.hp = 80; kneel(e); inFront(e, p); sim.step(1, 1);
+    expect.ok(e.execReady && A.hud.execCue.classList.contains('show'), 'the cue shows');
+    sim.press('light'); sim.step(1);
+    expect.ok(p.state === PS.EXECUTE && e.state === ES.EXECUTED, `executing (${p.state}, ${e.state})`);
+    let alwaysSafe = true;
+    const hp0 = p.hp;
+    sim.until(() => { if (p.state !== PS.EXECUTE) return true; if (!p.invulnerable()) alwaysSafe = false; sim.press('roll'); sim.press('light'); return false; }, 5);
+    expect.ok(alwaysSafe, 'invulnerable every step of it');
+    expect.ok(!e.alive() && execLog.includes('execution') && execLog.includes('enemyDeath'), `dead (${e.state}, hp ${e.hp})`);
+    expect.ok(p.state !== PS.ROLL && p.invulnerable(), 'the roll presses were ignored, and a short grace follows');
+    sim.seconds(CONFIG.execution.grace + 0.05); expect.ok(!p.invulnerable() && p.hp === hp0, 'grace over, no harm taken');
+  });
+  test('Execution: from behind, too far, or before it kneels, light attack is a plain light cut', () => {
+    Game.startFight('knight'); Game.loading = 0; sim.begin();
+    const p = Game.player, e = Game.duel;
+    for (const [what, set] of [['behind', () => { kneel(e); const b = behind(e); sim.place(b.x, b.z, e.y); p.yaw = Math.atan2(e.x - p.x, e.z - p.z); }],
+                               ['far', () => { kneel(e); inFront(e, p, CONFIG.execution.range + 0.6); }],
+                               ['standing', () => { e.setState(ES.IDLE); e.notice = 0; inFront(e, p); }]]) {
+      set(); sim.step(1); sim.press('light'); sim.step(1);
+      expect.ok(p.state === PS.ATTACK && p.attack.id === 'light' && e.state !== ES.EXECUTED, `${what}: a light attack (${p.state})`);
+      sim.seconds(1.2);
+    }
+  });
+  test('Execution: a riposte after a parry fills the stagger and guard meters', () => {
+    for (const id of ['knight', 'warden']) {
+      Game.startFight(id); Game.loading = 0; sim.begin();
+      const e = Game.duel; e.setState(ES.PARRIED); const m0 = e.guardMeter;
+      e.takeHit(makeStrike(A.PLAYER_DEF.moveset.attacks.light, true), Game.player);
+      expect.above(e.guardMeter, m0, `${id}: the meter grew`);
+    }
+  });
+  test('Execution: the kneel gives no damage bonus any more', () => {
+    Game.startFight('giant'); Game.loading = 0; sim.begin();
+    const e = Game.duel, hp0 = e.hp; kneel(e);
+    e.takeHit(strikeOf('heavy'), behind(e));
+    expect.near(hp0 - e.hp, strikeOf('heavy').damage, 0.01, 'a heavy on the kneeling giant');
+  });
+  test('Execution: light attack damage buffs preserve 90 normal damage and 324 boss damage, capped at half a bar', () => {
+    for (const [id, want] of [['knight', 'hurt'], ['executioner', 'hurt'], ['warden', 'hurt'], ['shover', 'hurt'], ['sentinel', 'hurt'], ['giant', 'third'], ['pillagerCaptain', 'third'], ['bellWarden', 'third'], ['varn', 'third']]) {
+      Game.startFight(id); Game.loading = 0; sim.begin(); sturdy(Game.player);
+      const p = Game.player, e = Game.duel, max = e.def.hp;
+      kneel(e); inFront(e, p); sim.step(1); sim.press('light');
+      sim.until(() => p.state === PS.EXECUTE, 0.2);
+      expect.ok(p.state === PS.EXECUTE, `${id}: the execution starts`);
+      sim.until(() => p.state !== PS.EXECUTE, 5);
+      if (want === 'dead') expect.ok(!e.alive(), `${id}: killed outright (${e.hp.toFixed(0)} / ${max})`);
+      else if (want === 'hurt') expect.ok(e.alive() && Math.abs(max - e.hp - 90) < 0.01, `${id}: hurt, alive (${e.hp.toFixed(0)} / ${max})`);
+      else expect.ok(e.alive() && Math.abs(max - e.hp - Math.min(324, max / 2)) < 0.01, `${id}: capped boss damage off its bar (${e.hp.toFixed(0)} / ${max})`);
+      expect.ok(e.state !== ES.EXECUTED && e.state !== ES.BROKEN, `${id}: let go (${e.state})`);
+    }
+  });
+  test('Execution: other enemies and their bolts cannot hurt the player during it', () => {
+    Game.startFight('knight'); Game.loading = 0; sim.begin();
+    const p = Game.player, e = Game.duel, hp0 = p.hp;
+    kneel(e); inFront(e, p); sim.step(1);
+    const h = sim.spawn('hollow', p.x + Math.sin(p.yaw + Math.PI / 2) * 1.6, p.z + Math.cos(p.yaw + Math.PI / 2) * 1.6);
+    const b = sim.spawn('bowman', p.x - Math.sin(p.yaw) * 9, p.z - Math.cos(p.yaw) * 9);
+    sim.press('light'); sim.step(1);
+    let swung = false, shot = false;
+    sim.until(() => {
+      if (h.state === ES.CHASE && !h.attack) h.beginAttack(h.def.attacks[0]);
+      if (h.state === ES.CHASE && h.cooldown > 0) h.beginAttack(h.def.attacks[0]);
+      if (h.hitbox) swung = true;
+      if (b.state === ES.CHASE) { b.beginAttack(b.def.attacks.find(a => a.projectile)); shot = true; }
+      return p.state !== PS.EXECUTE;
+    }, 5);
+    expect.ok(p.hp === hp0, `no damage taken (${hp0 - p.hp})`);
+    expect.ok(swung, 'the Hollow did swing at the player');
+  });
+  test('Execution: two kneeling enemies: the one most in front is taken', () => {
+    Game.startFight('knight'); Game.loading = 0; sim.begin();
+    const p = Game.player, a = Game.duel; kneel(a); inFront(a, p, 0.4);
+    const side = sim.spawn('knight', p.x + Math.cos(p.yaw) * 1.8, p.z - Math.sin(p.yaw) * 1.8); kneel(side);
+    sim.step(1); sim.press('light'); sim.step(1);
+    expect.ok(a.state === ES.EXECUTED && side.state !== ES.EXECUTED, 'the one straight ahead');
+  });
+  test('Execution: the enemy dying from something else mid-animation ends it cleanly', () => {
+    Game.startFight('knight'); Game.loading = 0; sim.begin();
+    const p = Game.player, e = Game.duel; kneel(e); inFront(e, p); sim.step(1); sim.press('light'); sim.step(8);
+    e.die(); sim.until(() => p.state !== PS.EXECUTE, 3);
+    expect.ok(p.state === PS.IDLE && !p.exec, `back in control (${p.state})`);
+  });
+  test('Execution: by a ledge or a wall the slide in never takes the player over the edge or through it', () => {
+    Game.startFight('testShover'); Game.loading = 0; sim.begin(); sturdy(Game.player);
+    const at = { x: Game.duel.x, z: Game.duel.z, y: Game.duel.y };
+    sim.clearEnemies(); let e = sim.spawn('knight', at.x, at.z, at.y);
+    const p = Game.player, y0 = e.y;
+    e.notice = 0; let tried = 0;
+    for (const yaw of [0, Math.PI / 2, Math.PI, -Math.PI / 2]) {
+      e.yaw = yaw; e.hp = e.def.hp; kneel(e); inFront(e, p, 1.2);
+      if (Math.abs(p.y - y0) > 0.1) continue;   // nothing to stand on there
+      tried++;
+      sim.step(1); sim.press('light'); sim.step(1);
+      sim.until(() => p.state !== PS.EXECUTE, 4);
+      expect.ok(Math.abs(p.y - y0) < 0.1 && p.grounded && !p.inPit, `yaw ${yaw.toFixed(2)}: still on the terrace (y ${p.y.toFixed(2)})`);
+      sim.clearEnemies(); e = sim.spawn('knight', at.x, at.z, at.y); e.notice = 0;
+    }
+    expect.ok(tried > 0, 'tried at least one side');
+  });
+  test('Execution: Aldric: the field bar retreats, the throne bar turns, the last bar dies, each only after the animation', () => {
+    for (const [phase, after] of [['field', 'bossRetreat'], ['throne', 'bossPhase'], ['knell', 'enemyDeath']]) {
+      Game.startFight('varn'); Game.loading = 0; sim.begin(); sturdy(Game.player);
+      const p = Game.player, e = Game.duel;
+      if (phase === 'field') { e.phaseIds = ['field']; e.enterPhase(0); e.boss = { retreat: { to: [e.x + 20, 0, e.z], kneel: 1, hop: 1, wait: 1, fly: 1 } }; }
+      else { e.phaseIds = ['field', 'throne', 'knell']; e.enterPhase(phase === 'throne' ? 1 : 2); }
+      e.hp = 30; kneel(e); inFront(e, p); sim.step(1); execLog.length = 0; sim.press('light'); sim.step(1);
+      expect.ok(p.state === PS.EXECUTE, `${phase}: executing`);
+      sim.until(() => p.state !== PS.EXECUTE, 5); sim.step(1);
+      const i = execLog.indexOf(after), j = execLog.indexOf('executionEnd');
+      expect.ok(j >= 0 && i >= 0 && !execLog.slice(0, j).includes(after), `${phase}: ${after} only after the animation (${execLog.join(', ')})`);
+    }
+  });
+  test('Execution: the execution dummy kneels to two heavies; one execution finishes the EXECUTE card and it never dies', withLessons(() => {
+    const p = trainingAt('execution', 'long-hall'), d = Game.enemies[0]; A.lessons.show('execute');
+    expect.ok(!!d.def.stagger && d.training, 'a training dummy with a stagger meter');
+    d.takeHit(strikeOf('heavy'), p); d.takeHit(strikeOf('heavy'), p);
+    expect.ok(d.state === ES.BROKEN, 'two heavies break its stance');
+    inFront(d, p); sim.step(1); sim.press('light'); sim.step(1);
+    expect.ok(p.state === PS.EXECUTE, 'executing the dummy');
+    expect.ok(sim.until(() => A.lessons.learned('execute'), 5) >= 0, 'the card completed');
+    expect.ok(d.alive(), 'the dummy never dies');
+  }));
+
+  // ---- v6.0 the Ultra preset ----------------------------------------------------------------------------------------
+  // Quality changes made here go back to the player's own setting afterwards.
+  const restoreQuality = () => { applySettings.graphics = undefined; applySettings(); };
+  const ultraWarnings = () => [...warned].filter(w => w.startsWith('Ultra'));
+  test('Auto quality: loaded game scripts use the current release cache key', () => {
+    const scripts = [...document.scripts].filter(s => s.src && new URL(s.src).pathname.includes('/js/'));
+    expect.ok(scripts.length > 0, 'game scripts loaded');
+    // A page served by server/index.cjs adds its build hash (the arena-build meta) to the release stamp.
+    const build = document.querySelector('meta[name="arena-build"]')?.content, stamp = VERSION.slice(1) + (build ? `-${build}` : '');
+    for (const script of scripts) expect.ok(new URL(script.src).searchParams.get('v') === stamp, `${script.src}: current release`);
+  });
+  test('Auto quality: explicit menu recheck replaces cached detection and applies Auto', () => {
+    const saved = settings.graphics, from = Game.optionsFrom;
+    try {
+      const before = autoQuality.result(); settings.graphics = 'normal';
+      Game.optionsFrom = 'main'; Game.showMenu('options');
+      const item = Game.menuItems.find(i => i.name === 'Check graphics again');
+      expect.ok(!!item && typeof item.go === 'function', 'fresh-check action exists');
+      item.go();
+      expect.ok(settings.graphics === 'auto', 'explicit action selects Auto');
+      const after = autoQuality.result();
+      expect.ok(after && after !== before && after.checkedAt > 0 && after.version === VERSION, 'new result belongs to this release');
+      expect.ok(visuals.quality() === CONFIG.VISUALS.quality[after.pick], 'new recommendation is applied');
+    } finally { settings.graphics = saved; saveSettings(); Game.optionsFrom = from; restoreQuality(); }
+  });
+  test('Auto quality: older integrated GPUs play Normal while modern integrated GPUs may prove Ultra', () => {
+    const ready = { frames: { ultra: 3 }, cores: 8, memory: 8 };
+    for (const name of ['Intel UHD Graphics 620', 'Intel HD Graphics 520', 'AMD Radeon(TM) Graphics', 'Radeon Vega 8 Graphics', 'Google SwiftShader'])
+      expect.ok(autoQuality.recommend({ ...ready, name }).pick === 'normal', `${name}: Normal`);
+    for (const name of ['Intel Iris Xe Graphics', 'AMD Radeon 780M'])
+      expect.ok(autoQuality.recommend({ ...ready, name }).pick === 'ultra', `${name}: Ultra when it measures under budget`);
+    expect.ok(autoQuality.recommend({ ...ready, name: 'WebKit WebGL', cores: 4, memory: 4 }).pick === 'ultra', 'a masked fast adapter qualifies by measured frames, despite privacy-limited hints');
+    expect.ok(autoQuality.choices().join() === 'auto,normal,ultra', 'Options offers Auto, Normal and Ultra');
+  });
+  test('Auto quality: dedicated GPUs qualify by real frame cost instead of browser CPU hints', () => {
+    const ready = { name: 'NVIDIA GeForce RTX 5060', frames: { ultra: 6 }, cores: 4, memory: 4 };
+    for (const screen of [{ width: 1280, height: 720, pixelRatio: 1 }, { width: 1920, height: 1080, pixelRatio: 2 }, { width: 3840, height: 2160, pixelRatio: 1 }])
+      expect.ok(autoQuality.recommend({ ...ready, ...screen }).pick === 'ultra', 'already measured frame costs are never scaled a second time');
+    expect.ok(autoQuality.recommend({ ...ready, frames: { ultra: 24 } }).pick === 'normal', 'a slow Ultra test plays Normal');
+    expect.ok(autoQuality.recommend({ ...ready, frames: {} }).pick === 'normal', 'failed measurements remain safe');
+  });
+  test('Auto quality: recommendation reasons identify measured limits and failures', () => {
+    const r = autoQuality.recommend({ name: 'RTX 5060', frames: { ultra: 24 } });
+    expect.ok(r.reason === 'ultra-over-budget', 'Normal reason names the Ultra frame limit');
+    expect.ok(autoQuality.recommend({ name: 'RTX 5060', frames: {} }).reason === 'ultra-test-failed', 'failed Ultra is distinguishable');
+    expect.ok(autoQuality.summary().includes('Detected GPU:'), 'Options exposes the actual detected adapter');
+    const saved = settings.graphics;
+    try { for (const preset of ['normal', 'ultra', 'bare']) { settings.graphics = preset; expect.ok(autoQuality.effective() === preset, 'manual choice remains authoritative'); } }
+    finally { settings.graphics = saved; }
+  });
+  test('Auto quality: 3D benchmark restores the renderer and leaves every live actor untouched', () => {
+    const roots = [...scene.children], player = Game.player, enemies = Game.enemies, detail = KIT.detail();
+    const target = renderer.getRenderTarget(), viewport = renderer.getViewport(new THREE.Vector4()), shadows = renderer.shadowMap.enabled;
+    // An unrelated earlier draw must not make a valid graphics check fail.
+    renderer.getContext().bindTexture(-1, null);
+    const result = qualityBenchmark.measure('normal', { width: 640, height: 360, pixelRatio: 1 });
+    expect.ok(Number.isFinite(result.ms) && result.frames > 0 && result.method === 'synchronized-3d-frames', 'real frames were measured');
+    expect.ok(result.width === 640 && result.height === 360, 'actual candidate resolution is measured');
+    expect.ok(result.drawCalls > 20 && result.triangles > 10000, 'characters and 3D geometry actually issue draws, rather than an empty target');
+    expect.ok(Game.player === player && Game.enemies === enemies, 'live actors unchanged');
+    expect.ok(scene.children.length === roots.length && scene.children.every((o, i) => o === roots[i]), 'no benchmark roots left in the live scene');
+    expect.ok(renderer.getRenderTarget() === target && renderer.getViewport(new THREE.Vector4()).equals(viewport), 'render target and viewport restored');
+    expect.ok(renderer.shadowMap.enabled === shadows && JSON.stringify(KIT.detail()) === JSON.stringify(detail), 'shadows and model detail restored');
+    const draw = renderer.render; let failed = false;
+    try {
+      renderer.render = function(s, c) {
+        if (s.children.length > CONFIG.VISUALS.autoQuality.stage.propCount) throw new Error('injected benchmark failure');
+        return draw.call(this, s, c);
+      };
+      try { qualityBenchmark.measure('normal', { width: 640, height: 360, pixelRatio: 1 }); } catch (e) { failed = true; }
+    } finally { renderer.render = draw; }
+    expect.ok(failed && scene.children.length === roots.length && scene.children.every((o, i) => o === roots[i]), 'failed rendering also releases all temporary roots');
+    expect.ok(renderer.getRenderTarget() === target && renderer.shadowMap.enabled === shadows, 'failure restores the renderer');
+  });
+  test('Ultra: the presets share their keys and reserve sculpted anatomy for Ultra', () => {
+    const Q = CONFIG.VISUALS.quality, keys = Object.keys(Q.normal).sort().join();
+    for (const [n, q] of Object.entries(Q)) expect.ok(Object.keys(q).sort().join() === keys, `${n}: same keys as normal`);
+    expect.ok(Q.ultra && Q.ultra.ultra === true && !Q.normal.ultra && !Q.bare.ultra, 'ultra on Ultra only');
+    expect.ok(autoQuality.choices()[0] === 'auto' && autoQuality.choices().includes('ultra'), 'the Graphics option offers Auto first, and Ultra');
+    const saved = settings.graphics;
+    settings.graphics = 'auto';
+    expect.ok(autoQuality.effective() in Q && autoQuality.label('auto').startsWith('Auto ('), 'Auto resolves to a real preset and names it');
+    settings.graphics = saved;
+  });
+  test('Normal: every one of Ultra\'s effects, toned down, never switched off, at native resolution', () => {
+    const V = CONFIG.VISUALS, { bare, normal, ultra } = V.quality, C = V.cinematic;
+    for (const key of ['post', 'bloom', 'glows', 'shafts', 'combatFx', 'reflections', 'ao', 'volumetrics', 'refraction', 'proceduralFire', 'baked'])
+      expect.ok(normal[key] && ultra[key], `${key}: on in Normal as in Ultra`);
+    expect.ok(!normal.shadows && ultra.shadows && !bare.baked, 'Normal takes the moon\'s shadows from baked light, Ultra from its shadow map');
+    expect.ok(!bare.post && !bare.combatFx && !bare.shadows && bare.hidden && !normal.hidden && !ultra.hidden, 'Bare: the plain test preset, never offered');
+    expect.ok(normal.msaa > 0 || normal.fxaa, 'Normal smooths its edges (MSAA or FXAA)');
+    expect.ok(normal.lights <= ultra.lights && V.scenery.density.normal <= V.scenery.density.ultra, 'Normal: no more lights or scenery than Ultra');
+    for (const key of ['shadowMap', 'aoSamples', 'scatterLights', 'moonSteps', 'cloudLayers'])
+      expect.ok(C.normal[key] > 0 && C.normal[key] <= C.ultra[key], `cinematic ${key}: toned down, not off`);
+    for (const q of [bare, normal, ultra]) for (const dpr of [0.8, 1, 1.25, 1.5, 2, 3]) {
+      const d = qualityDraw(q, dpr);
+      expect.ok(d.ratio === dpr, `${q.label} at pixel ratio ${dpr}: the scene at the screen's own resolution`);
+      expect.ok(d.soft === Math.min(1, q.softRatio / dpr) && d.msaa === (dpr >= CONFIG.VISUALS.denseScreen ? q.denseMsaa : q.msaa), `${q.label} at ${dpr}: soft buffers and MSAA`);
+    }
+    expect.ok(normal.modelDetail.tex === 1 && ultra.modelDetail.tex === 1, 'native textures');
+    expect.ok(CONFIG.VISUALS.grain.amount <= 0.006 && CONFIG.VISUALS.grain.ultra <= CONFIG.VISUALS.grain.amount, 'fine grain preserves material detail');
+  });
+  test('High models: hero subdivision sits between Low and Ultra without implicitly changing anatomy', () => {
+    const was = KIT.detail(), Q = CONFIG.VISUALS.quality;
+    try {
+      for (const id of [PLAYER_DEF.look.model]) {   // (Old Ostrey left in v7.58.0, the Castellans in v7.60.0, the Ringer in pass 42, Hollis in pass 44: all Blender now, one detail)
+        KIT.setDetail(Q.bare.modelDetail); const low = KIT.modelParts(id);
+        KIT.setDetail(Q.normal.modelDetail); const high = KIT.modelParts(id);
+        KIT.setDetail(Q.ultra.modelDetail); const ultra = KIT.modelParts(id);
+        expect.ok(low.tris < high.tris && high.tris < ultra.tris, `${id}: intermediate triangle count`);
+        KIT.setDetail({ ...Q.normal.modelDetail, anatomy: true });
+        expect.ok(KIT.modelParts(id) !== high, `${id}: anatomy has its own cache entry`);
+      }
+      KIT.setDetail(Q.bare.modelDetail); const low = KIT.modelParts('hollowSoldier');
+      KIT.setDetail(Q.normal.modelDetail);
+      expect.ok(KIT.modelParts('hollowSoldier') === low, 'ordinary enemies reuse base geometry');
+    } finally { KIT.setDetail(was); }
+  });
+  test('High loading: small scene warm-up keeps live targets full-size and restores hidden phase visibility', () => {
+    const render = renderer.render, sizes = [];
+    try {
+      A.visuals.setQuality('normal'); Game.startFight('agathe'); sim.begin();
+      const roots = [];
+      scene.traverse(o => { if (o.isSkinnedMesh) roots.push([o, o.visible, o.frustumCulled]); });
+      const rt = A.visuals.composer.renderTarget1, size = [rt.width, rt.height];
+      renderer.render = function (s, c) {
+        if (s === scene) { const target = renderer.getRenderTarget(); sizes.push(target ? [target.width, target.height] : [canvas.width, canvas.height]); }
+        return render.call(this, s, c);
+      };
+      A.visuals.warmUp(Game.cam);
+      expect.ok(sizes.length > 0 && sizes.every(([w, h]) => w === 32 && h === 32), 'scene rasterizes at 32x32');
+      expect.ok(rt.width === size[0] && rt.height === size[1] && size[0] === canvas.width, 'live target never resized');
+      for (const [o, visible, culled] of roots) {
+        expect.ok(o.visible === visible && o.frustumCulled === culled, 'hidden phases and culling restored');
+        expect.ok(!!o.skeleton.boneTexture, 'every phase uploaded its skeleton');
+      }
+    } finally { renderer.render = render; restoreQuality(); }
+  });
+  test('High effects: decorative budgets reduce density while impacts remain visual only', () => {
+    try {
+      A.visuals.setQuality('normal'); Game.startFight('hale'); sim.begin();
+      const p = Game.player, e = Game.duel, state = [p.hp, e.hp, e.posture, p.x, e.x];
+      const at = { x: p.x, y: p.y + 1, z: p.z };
+      ultraFx.sparkBurst(at, 100); ultraFx.bloodSpray(at, [1, 0, 0], 100);
+      expect.ok(ultraFx.info().sparks === 55 && ultraFx.info().drops === 55, '55% burst density');
+      ultraFx.sparkBurst(at, 10000);
+      expect.ok(ultraFx.info().sparks === Math.floor(CONFIG.VISUALS.ultra.sparks.max * 0.55), 'bounded live capacity');
+      ultraBoss.IMPACT.blaze(e.x, e.y, e.z, 3, { el: FX_ELEMENTS.fire, scale: 1 }, e);
+      const warnings = ultraWarnings().length;
+      for (let i = 0; i < 12; i++) Game.render(1, STEP);
+      expect.ok(ultraWarnings().length === warnings, 'no effect failures');
+      expect.ok([p.hp, e.hp, e.posture, p.x, e.x].every((v, i) => v === state[i]), 'drawing preserves the fight');
+      expect.ok(ultraPost.info().on && bakedLight.active() && !renderer.shadowMap.enabled && ultraPost.info().volumetrics, 'Normal keeps baked light and shadows, AO and volumetric light');
+      A.visuals.setQuality('bare');
+      expect.ok(!ultraFx.on() && ultraFx.info().sparks === 0 && ultraFx.info().drops === 0 && ultraBoss.info().fires === 0, 'Low releases modern effects');
+      expect.ok(ultraPost.info().reflected === 0, 'Low removes metal reflections');
+    } finally { restoreQuality(); }
+  });
+  test('High loading: selected boss assets and all phase meshes are ready before play', () => {
+    try {
+      A.visuals.setQuality('normal'); sim.begin();
+      for (const [id, field] of [['rootbound', 'spectral'], ['kindlingTree', 'holySigil'], ['agathe', 'stormMeshes']]) {
+        Game.startFight(id);
+        expect.ok(!!Game.duel.rig[field], `${id}: effect prepared`);
+        let legacy = 0; scene.traverse(o => { if (o.userData.legacyEffectLight && o.visible) legacy++; });
+        expect.ok(legacy === 0, `${id}: fixed light count`);
+      }
+    } finally { restoreQuality(); }
+  });
+  test('High output: combined tone mapping and grade match the former two-pass colour order', () => {
+    const grade = A.visuals.passes.grade, composer = A.visuals.composer, shader = grade.material.fragmentShader;
+    const output = new OutputPass(), gl = renderer.getContext();
+    let worst = 0, total = 0, count = 0;
+    try {
+      A.visuals.setQuality('normal'); sim.begin();
+      for (const id of ['long-hall', 'burning-town', 'final-castle']) {
+        Game.startLevel(id); Game.render(1, STEP);
+        grade.uniforms.uGrain.value = 0; grade.uniforms.uFxaa.value = 0;   // edge smoothing is not part of the colour order
+        const read = () => {
+          A.visuals.draw(); const pixels = new Uint8Array(canvas.width * canvas.height * 4);
+          gl.readPixels(0, 0, canvas.width, canvas.height, gl.RGBA, gl.UNSIGNED_BYTE, pixels); return pixels;
+        };
+        const combined = read();
+        grade.material.fragmentShader = shader.replace(GRADE_OUTPUT, ''); grade.material.needsUpdate = true;
+        composer.insertPass(output, composer.passes.indexOf(grade));
+        const split = read();
+        for (let i = 0; i < split.length; i++) {
+          const delta = Math.abs(split[i] - combined[i]); worst = Math.max(worst, delta); total += delta; count++;
+        }
+        composer.removePass(output); grade.material.fragmentShader = shader; grade.material.needsUpdate = true;
+      }
+      expect.ok(worst <= 2 && total / count < 0.1, `colour difference: max ${worst}/255, mean ${(total / count).toFixed(4)}/255`);
+    } finally {
+      composer.removePass(output); output.dispose();
+      grade.material.fragmentShader = shader; grade.material.needsUpdate = true; restoreQuality();
+    }
+  });
+  test('High effects: delayed boss decorations cannot cross a level or quality change', () => {
+    const schedule = window.setTimeout, callbacks = [];
+    try {
+      A.visuals.setQuality('normal'); Game.startFight('hale'); sim.begin();
+      window.setTimeout = fn => { callbacks.push(fn); return 0; };
+      ultraBoss.IMPACT.toll(Game.duel.x, Game.duel.y, Game.duel.z, 2, { el: FX_ELEMENTS.toll, scale: 1 });
+      window.setTimeout = schedule;
+      A.visuals.setQuality('ultra');
+      const rings = ultraBoss.info().rings;
+      for (const callback of callbacks) callback();
+      expect.ok(callbacks.length === 3 && ultraBoss.info().rings === rings, 'stale delayed rings are discarded');
+    } finally { window.setTimeout = schedule; restoreQuality(); }
+  });
+  test('Ultra: switching it on and off leaves the scene as it was', () => {
+    Game.startLevel('long-hall'); Game.loading = 0; sim.begin();
+    const before = A.visuals.info().pointLights, moonBefore = { ...DEFAULT_ATMOSPHERE, ...(A.LEVEL_1.atmosphere || {}) }.moon.intensity;
+    try {
+      A.visuals.setQuality('ultra'); sim.step(30, 2);
+      const U = ultraPost.info();
+      expect.ok(U.on && U.shadows && renderer.shadowMap.enabled, 'shadows on with Ultra');
+      expect.ok(A.visuals.info().pointLights === before, 'the stage keeps its own light count (Ultra lights are not counted)');
+      expect.ok(ultraFx.info().fires > 0, 'flames are drawn as procedural fire');
+      A.visuals.setQuality('normal'); sim.step(4, 2);
+      const H = ultraPost.info();
+      expect.ok(!renderer.shadowMap.enabled && bakedLight.active() && H.on && H.aoSamples === 8, 'Normal: baked shadows instead of a shadow map, a smaller AO budget');
+      expect.ok(H.scatteringLights <= CONFIG.VISUALS.cinematic.normal.scatterLights, `Ultra's scattering budget does not leak into Normal (${H.scatteringLights})`);
+      let extra = 0; scene.traverse(o => { if (o.userData.ultra) extra++; });
+      expect.ok(extra === CONFIG.VISUALS.ultra.flash.lights, `Normal keeps its fixed impact light, and no shadowed sun (${extra})`);
+      expect.above(ultraPost.info().reflected, 0, 'Normal retains cached metal reflections');
+      expect.ok(ultraFx.info().fires > 0, 'Normal keeps the procedural fire');
+      A.visuals.setQuality('bare'); sim.step(4, 2);
+      expect.ok(!renderer.shadowMap.enabled && !ultraPost.info().on && ultraPost.info().bufferSize === null, 'Low releases screen-lighting targets');
+      expect.ok(Math.abs(moonLight.intensity - moonBefore) < 1e-6, 'Low restores the whole moon intensity');
+      expect.ok(ultraPost.info().reflected === 0, 'Low removes environment maps');
+    } finally { restoreQuality(); }
+  });
+  test('Ultra: a storm of combat events is drawn without errors and never touches the fight', () => {
+    Game.startFight('ostrey'); Game.loading = 0; sim.begin();
+    try {
+      A.visuals.setQuality('ultra');
+      const p = Game.player, e = Game.enemies[0], hp = [p.hp, e.hp, e.posture], at = { x: e.x, y: e.y + 1.4, z: e.z }, warn0 = ultraWarnings().length;
+      events.emit('strike', { strike: { damage: 53 }, attacker: p, target: e, at, blocked: false });
+      events.emit('strike', { strike: { damage: 40 }, attacker: e, target: p, at: { x: p.x, y: p.y + 1.2, z: p.z }, blocked: true });
+      events.emit('strike', { strike: { damage: 20 }, attacker: null, target: p, at: { x: p.x, y: p.y + 1.2, z: p.z }, blocked: false });   // a trap: no attacker
+      events.emit('parry', { target: e }); events.emit('postureBreak', { enemy: e });
+      events.emit('execution', { player: p, enemy: e, damage: 0, at, exit: { x: e.x + 0.5, y: at.y, z: e.z } });
+      events.emit('impact', { x: e.x, y: e.y, z: e.z, fx: { ring: 3, crack: 2, dust: 10, shake: 0 }, enemy: e });
+      events.emit('bossPhase', { enemy: e, from: 'omen', to: 'golden' }); events.emit('land', { x: p.x, y: p.y, z: p.z, fx: { ring: 1.5 } });
+      for (const kind of BOSS_FX_IMPACTS) ultraBoss.IMPACT[kind](e.x, e.y, e.z, 2, { el: FX_ELEMENTS.steel, scale: 1 }, e);
+      for (let i = 0; i < 20; i++) Game.render(1, STEP);
+      const F = ultraFx.info();
+      expect.above(F.sparks + F.drops + F.motes + F.puffs, 50, 'effects spawned');
+      expect.ok(ultraWarnings().length === warn0, `no effect failed (${ultraWarnings().join('; ')})`);
+      expect.ok(p.hp === hp[0] && e.hp === hp[1] && e.posture === hp[2], 'health and posture untouched by drawing');
+    } finally { restoreQuality(); }
+  });
+  test('Ultra boss effects: every boss, phase and attack named in BOSS_FX has a look and an impact', () => {
+    for (const k of BOSS_FX_IMPACTS) expect.ok(typeof ultraBoss.IMPACT[k] === 'function', `impact "${k}" is drawn`);
+    for (const [id, B] of Object.entries(BOSS_FX)) {
+      const d = ENEMY_BY_ID[id], phases = [null, ...Object.keys(d.phases || {})];
+      for (const ph of phases) for (const aid of Object.keys(B.attacks || {})) {
+        const L = ultraBoss.look({ baseDef: d, def: { phaseId: ph }, attack: { id: aid }, boss: true });
+        expect.ok(L && L.el && BOSS_FX_IMPACTS.includes((L.a && L.a.impact) || L.el.impact), `${id}/${ph}/${aid}: a look and an impact`);
+      }
+    }
+  });
+  test('Ultra: Hale and the Kindling Tree fight 15 s with every effect on, no effect failing', () => {
+    try {
+      A.visuals.setQuality('ultra');
+      for (const id of ['hale', 'kindlingTree']) {
+        Game.startFight(id); Game.loading = 0; sim.begin();
+        const warn0 = ultraWarnings().length;
+        sim.seconds(15, 3);
+        expect.ok(ultraWarnings().length === warn0, `${id}: no effect failed (${ultraWarnings().join('; ')})`);
+        expect.ok(Number.isFinite(Game.enemies[0].x), `${id}: the fight runs`);
+      }
+    } finally { restoreQuality(); }
+  });
+  test('Ultra models: every model builds at Ultra detail, with more triangles', () => {
+    const base = {}, was = KIT.detail();
+    try {
+      KIT.setDetail({ geo: 1, tex: 1 });
+      for (const id of Object.keys(MODEL_DEFS)) base[id] = KIT.modelParts(id).tris;
+      KIT.setDetail(CONFIG.VISUALS.ultra.models);
+      for (const id of Object.keys(MODEL_DEFS)) {
+        const fixed = (KIT.resolve(id).parts || []).some(p => p.use === 'baked');   // a Blender mesh has one detail (its own or one it `extends`)
+        expect.ok(KIT.modelParts(id).tris > (fixed ? 0 : base[id]), `${id}: more triangles at Ultra detail`);
+      }
+    } finally { KIT.setDetail(was); }
+  });
+  test('Ultra performance: stable scenes are not rescanned and new actors are prepared on their first draw', () => {
+    try {
+      A.visuals.setQuality('ultra'); Game.startLevel('long-hall'); Game.loading = 0; sim.begin();
+      Game.render(1, STEP);
+      const sweeps = ultraPost.info().sweeps;
+      for (let i = 0; i < 16; i++) Game.render(1, STEP);
+      expect.ok(ultraPost.info().sweeps === sweeps, 'no periodic whole-scene scan');
+      const e = sim.spawn('knight', Game.player.x + 3, Game.player.z);
+      Game.render(1, STEP);
+      expect.ok(ultraPost.info().sweeps > sweeps, 'new scene membership refreshes the cache');
+      let casters = 0; e.rig.root.traverse(o => { if (o.isMesh && o.castShadow) casters++; });
+      expect.above(casters, 0, 'the new actor casts shadows immediately');
+      let cubeShadows = 0; scene.traverse(o => { if (o.isPointLight && o.castShadow) cubeShadows++; });
+      expect.ok(cubeShadows === 0, 'no six-face point-light shadow renders');
+    } finally { restoreQuality(); }
+  });
+  test('Ultra performance: model indices stay in bounds and compact vertex data preserves every triangle', () => {
+    const was = KIT.detail();
+    try {
+      KIT.setDetail(CONFIG.VISUALS.ultra.models);
+      for (const id of Object.keys(MODEL_DEFS)) {
+        const built = KIT.modelParts(id); let triangles = 0, vertices = 0, indices = 0;
+        for (const { geo } of built.parts) {
+          const count = geo.attributes.position.count;
+          expect.ok(!!geo.index && geo.index.count % 3 === 0, `${id}: indexed triangles`);
+          for (const index of geo.index.array) expect.ok(index < count, `${id}: index in bounds`);
+          for (const name of ['normal', 'uv', 'skinIndex', 'skinWeight']) expect.ok(geo.attributes[name].count === count, `${id}: ${name} matches its vertices`);
+          triangles += geo.index.count / 3; vertices += count; indices += geo.index.count;
+        }
+        expect.ok(triangles === built.tris, `${id}: triangle accounting is unchanged`);
+        expect.below(vertices, indices, `${id}: shared vertices avoid duplicate skinning`);
+      }
+    } finally { KIT.setDetail(was); }
+  });
+  test('Ultra performance: particle uploads cover only live data and empty pools upload nothing', () => {
+    try {
+      A.visuals.setQuality('ultra'); Game.startLevel('long-hall'); sim.begin();
+      const pool = ultraFx.sparks, pos = pool.mesh.geometry.attributes.position;
+      pool.clear(); const version = pos.version;
+      pool.update(STEP, camera.position);
+      expect.ok(pos.version === version, 'empty pool does not dirty the GPU buffer');
+      ultraFx.sparkBurst({ x: Game.player.x, y: 2, z: Game.player.z }, 10);
+      pool.update(STEP, camera.position);
+      expect.ok(pos.updateRanges.length === 1 && pos.updateRanges[0].count === pool.count() * 12, 'only the live streak prefix is uploaded');
+      expect.below(pos.updateRanges[0].count, pos.array.length, 'unused capacity is not uploaded');
+      pool.update(10, camera.position);
+      expect.ok(pool.count() === 0 && !pool.mesh.visible, 'mass expiry empties the pool');
+    } finally { restoreQuality(); }
+  });
+  test('Ultra performance: flash feedback shares the grade and effects clear on quality and level changes', () => {
+    try {
+      A.visuals.setQuality('ultra'); Game.startLevel('long-hall'); sim.begin();
+      const grade = A.visuals.passes.grade;
+      expect.ok(A.visuals.composer.passes[A.visuals.composer.passes.length - 1] === grade, 'no extra full-screen lens pass');
+      ultraPost.pulse({ flash: 0.4, hurt: 0.7, color: 0xff0000 });
+      ultraFx.test('souls'); ultraFx.flashAt(Game.player, 0xffffff, 10);
+      Game.render(1, STEP);
+      expect.above(grade.uniforms.uFlash.value, 0, 'flash still draws');
+      expect.above(grade.uniforms.uHurt.value, 0, 'hurt feedback still draws');
+      A.visuals.setQuality('normal');
+      expect.ok(grade.uniforms.uFlash.value === 0 && grade.uniforms.uHurt.value === 0, 'feedback restored without waiting for a frame');
+      expect.ok(ultraFx.info().motes === 0 && ultraFx.info().ribbons === 0, 'old particles and owners released');
+      A.visuals.setQuality('ultra'); ultraFx.test('souls');
+      Game.startLevel('sunken-keep');
+      expect.ok(ultraFx.info().motes === 0, 'particles from the old level do not carry over');
+    } finally { restoreQuality(); }
+  });
+  test('Ultra loading: boss effect meshes are prepared before attacks and duplicate lights stay off', () => {
+    try {
+      A.visuals.setQuality('ultra'); sim.begin();
+      for (const [id, field] of [['rootbound', 'spectral'], ['kindlingTree', 'holySigil'], ['agathe', 'stormMeshes']]) {
+        Game.startFight(id);
+        const e = Game.enemies[0];
+        expect.ok(!!e.rig[field], `${id}: its attack effect is ready at the end of loading`);
+        let enabled = 0;
+        scene.traverse(o => { if (o.userData.legacyEffectLight && o.visible) enabled++; });
+        expect.ok(enabled === 0, `${id}: no legacy light can change Ultra's shader light count`);
+      }
+      A.visuals.setQuality('bare');
+      let enabledLow = 0;
+      scene.traverse(o => { if (o.userData.legacyEffectLight && o.visible) enabledLow++; });
+      expect.ok(enabledLow === 0, 'Low uses the bounded shared effect-light pool instead of per-effect lights');
+    } finally { restoreQuality(); }
+  });
+  test('Camera feel: a blow taken moves the drawn camera only, and the option turns it off', () => {
+    Game.startFight('ostrey'); Game.loading = 0; sim.begin();
+    const saved = settings.cameraMotion;
+    try {
+      settings.cameraMotion = true; sim.step(10, 1);
+      const camState = Game.cam.pos.clone();
+      events.emit('strike', { strike: { damage: 60 }, attacker: Game.enemies[0], target: Game.player, at: { x: Game.player.x, y: 1.2, z: Game.player.z }, blocked: false });
+      Game.render(1, STEP); Game.render(1, STEP);
+      const S = cameraFeel.state();
+      expect.ok(Math.abs(S.fov) > 0.01 || Math.hypot(S.x, S.z) > 0.001, 'the view reacts');
+      expect.ok(Game.cam.pos.equals(camState), 'Game.cam (aim, movement) untouched');
+      settings.cameraMotion = false; Game.render(1, STEP);
+      expect.ok(camera.fov === CONFIG.camera.fov, 'off: the plain field of view');
+    } finally { settings.cameraMotion = saved; }
+  });
+  test('Camera feel: a counter, and a heavy or finisher landing, punch the view in (pass 92)', () => {
+    const saved = settings.cameraMotion, punch = fn => { Game.startFight('hollow'); Game.loading = 0; sim.begin(); sim.step(5, 1); const p = Game.player, a = p.attack, pl = p.payload; try { fn(p); } finally { p.attack = a; p.payload = pl; } Game.render(1, STEP); Game.render(1, STEP); return cameraFeel.state().fov; };
+    try {
+      settings.cameraMotion = true;
+      const swing = (p, riposte) => { p.payload = { riposte }; events.emit('attackPhase', { actor: p, attack: { id: 'light' }, phase: PHASE.ACTIVE, hitIndex: 0 }); };
+      const counter = punch(p => swing(p, true)), plain = punch(p => swing(p, false));
+      expect.ok(counter < -0.4 && Math.abs(plain) < 0.1, `a counter's swing punches in, a plain light's doesn't (fov ${counter.toFixed(2)} / ${plain.toFixed(2)})`);
+      const land = (p, feel) => { p.attack = { feel }; events.emit('strike', { strike: { damage: 20, riposte: false, charge: 0 }, attacker: p, target: Game.duel, at: { x: p.x, y: 1, z: p.z }, blocked: false }); };
+      const heavy = punch(p => land(p, 'heavy')), light = punch(p => land(p, undefined));
+      expect.ok(heavy < -0.4 && Math.abs(light) < 0.1, `a finisher landing punches in, a light's doesn't (fov ${heavy.toFixed(2)} / ${light.toFixed(2)})`);
+    } finally { settings.cameraMotion = saved; }
+  });
+  test('Player look: a low dashing lunge, a whole-body deflect, a landing with weight, a cape that never stands on end (pass 92)', () => {
+    Game.startLevel('long-hall'); Game.loading = 0; sim.begin(); sim.clearEnemies();
+    const p = Game.player, r = p.rig, v = new THREE.Vector3(), L = ANIM_SETTINGS.clothClamp + 1e-6;
+    const head = () => { r.root.updateMatrixWorld(true); return r.head.getWorldPosition(v).y - r.root.position.y; };
+    const swing = c => { let x = 0, z = 0; for (let q = c; q; q = q.up) { x += q.bone.rotation.x; z += q.bone.rotation.z; } return Math.max(Math.abs(x), Math.abs(z)); };   // from plumb, summed up the drawn bones
+    const capeOk = () => !r.anim || r.anim.cloth.every(c => swing(c) <= L + 1e-6);
+    let cape = true;
+    sim.step(30, 1); const standHead = head(), standHip = r.spin.position.y;
+    sim.press('roll'); for (let i = 0; i < 4; i++) { sim.step(1, 1); cape = cape && capeOk(); }   // 4 frames in: the lunge is struck at once
+    expect.ok(p.state === PS.ROLL, 'dashing');
+    expect.ok(head() < standHead * 0.85 && r.spin.rotation.x > 0.45, `the dash snaps low and leaning (head ${head().toFixed(2)} of ${standHead.toFixed(2)} m, lean ${r.spin.rotation.x.toFixed(2)})`);
+    for (let i = 0; i < 8; i++) { sim.step(1, 1); cape = cape && capeOk(); }
+    expect.ok(head() < standHead * 0.85, 'and stays low');
+    for (let i = 0; i < 40; i++) { sim.step(1, 1); cape = cape && capeOk(); }
+    expect.ok(cape, 'a cape chain swings at most clothClamp from plumb all told, through and after a dash');
+    const hang = r.anim ? Math.max(...r.anim.cloth.map(swing)) : 0;
+    expect.ok(hang < 0.5, `and hangs again soon after (${hang.toFixed(2)} rad from plumb)`);
+    sim.hold('block'); sim.step(3, 1);
+    expect.ok(r.spin.position.y < standHip - 0.05, `a deflect press braces the hips (${r.spin.position.y.toFixed(2)} of ${standHip.toFixed(2)} m)`);
+    p.deflectedBlow = { enemy: null, key: 'look' }; sim.step(4, 1);
+    const byHilt = r.elbowL.getWorldPosition(new THREE.Vector3()).distanceTo(r.weapon.getWorldPosition(v));   // forearm's length or so
+    expect.ok(r.tip.rotation.x < -0.05 && byHilt < 0.5, `a blow turned aside rocks the body back, the off-hand kept by the hilt (${r.tip.rotation.x.toFixed(2)}, elbow ${byHilt.toFixed(2)} m from it)`);
+    const off = Math.hypot(r.root.position.x - p.x, r.root.position.z - p.z);
+    expect.ok(off > 0.12, `and the body is drawn stepped off its line, where the player stands still (${off.toFixed(2)} m)`);
+    sim.release('block'); sim.step(40, 1);
+    sim.press('jump'); sim.step(3, 1);   // drawn every step, so the look sees the fall
+    for (let i = 0; i < 180 && (p.state === PS.JUMP || p.state === PS.FALL); i++) sim.step(1, 1);
+    sim.step(3, 1);
+    expect.ok(r.spin.position.y < standHip - 0.04, `a landing bends the knees (${r.spin.position.y.toFixed(2)} m)`);
+  });
+  test('Player look: the dash steps through its poses, the guard holds the blade across the body, an open counter lights the blade (pass 94)', () => {
+    Game.startLevel('long-hall'); Game.loading = 0; sim.begin(); sim.clearEnemies();
+    const p = Game.player, r = p.rig, v = new THREE.Vector3(), w = new THREE.Vector3(), inv = new THREE.Matrix4();
+    sim.step(30, 1);
+    sim.press('roll'); sim.step(5, 1); const leg = r.legR.rotation.x, arm = r.armL.rotation.x;
+    sim.step(8, 1);
+    expect.ok(p.state === PS.ROLL && leg - r.legR.rotation.x > 0.8 && Math.abs(r.armL.rotation.x - arm) > 0.5,
+      `mid-dash the back leg swings through to the front and the free arm with it (leg ${leg.toFixed(2)} to ${r.legR.rotation.x.toFixed(2)}, arm ${arm.toFixed(2)} to ${r.armL.rotation.x.toFixed(2)})`);
+    sim.step(40, 1);
+    sim.hold('block'); sim.step(40, 1);
+    if (r.glint) {   // a modelled body: the blade from its hilt to its glint, in the body's own frame (x: the off side)
+      r.root.updateMatrixWorld(true); inv.copy(r.root.matrixWorld).invert();
+      const hilt = r.weapon.getWorldPosition(v).applyMatrix4(inv), d = r.glint.sprite.getWorldPosition(w).applyMatrix4(inv).sub(hilt).normalize();
+      expect.ok(d.y > 0.2 && d.y < 0.8 && d.x > 0.5 && Math.abs(hilt.x) < 0.3 && hilt.z > 0.2,
+        `the held guard lays the blade across the body, tip up to the off side (dir ${d.x.toFixed(2)}, ${d.y.toFixed(2)}, ${d.z.toFixed(2)}; hilt ${hilt.x.toFixed(2)}, ${hilt.z.toFixed(2)})`);
+    }
+    sim.release('block'); sim.step(30, 1);
+    const glow = () => r.weaponMat.emissive.b, plain = glow();
+    p.riposte = CONFIG.player.counterTime; sim.step(1, 1); const open = glow();
+    sim.step(30, 1); const closing = glow();
+    p.riposte = 0; sim.step(1, 1);
+    expect.ok(open > plain + 0.5 && closing < open && closing > plain && Math.abs(glow() - plain) < 1e-6,
+      `an open counter lights the blade, dimming as it closes, and only then (${plain.toFixed(2)}, ${open.toFixed(2)}, ${closing.toFixed(2)}, ${glow().toFixed(2)})`);
+  });
+  test('Momentum: an attack from a run carries its speed, the light string steers and lets go into the run (pass 94)', () => {
+    Game.startFight('hollow'); Game.loading = 0; sim.begin(); sim.clearEnemies(); sim.step(10);   // the open arena: room to run
+    const p = Game.player, speed = () => Math.hypot(p.vx, p.vz);
+    sim.move(1, 0); sim.step(40); const run = speed();
+    sim.press('light'); sim.step(6);
+    expect.ok(p.state === PS.ATTACK && speed() > run * 0.5, `six frames into a light from a run, still moving (${speed().toFixed(2)} of ${run.toFixed(2)} m/s)`);
+    expect.ok(sim.until(() => p.attackPhase() === PHASE.ACTIVE, 1) >= 0, 'the blow comes out');
+    const yaw = p.yaw; sim.move(0, 1); sim.step(3);
+    expect.ok(Math.abs(angDiff(p.yaw, yaw)) > 0.1, `the light string steers while its blow is out (${angDiff(p.yaw, yaw).toFixed(2)} rad)`);
+    const a = p.attack, whole = Math.round((a.hits.reduce((s, h) => s + h.startup + h.active + (h.follow || 0), 0) + a.recovery) / STEP);
+    const left = sim.until(() => p.state !== PS.ATTACK, 1);
+    expect.ok(left >= 0 && p.attackT < whole * STEP - a.recovery * 0.5, `with movement held it lets go into the run before its recovery ends (${p.attackT.toFixed(2)} of ${(whole * STEP).toFixed(2)} s)`);
+    sim.step(8);
+    expect.ok(p.state === PS.WALK && speed() > run * 0.6, `and runs on (${p.state}, ${speed().toFixed(2)} m/s)`);
+    sim.move(null);
+  });
+  test('Low performance: native resolution and dormant post targets stay small', () => {
+    try {
+      A.visuals.setQuality('bare');
+      const size = renderer.getDrawingBufferSize(new THREE.Vector2());
+      expect.ok(size.x === Math.floor(innerWidth * devicePixelRatio) && size.y === Math.floor(innerHeight * devicePixelRatio), '100% rendering: one pixel per screen pixel');
+      for (const target of [A.visuals.composer.renderTarget1, A.visuals.composer.renderTarget2]) expect.ok(target.width === 1 && target.height === 1, 'unused HDR targets stay at 1x1');
+    } finally { restoreQuality(); }
+  });
+  test('Graphics: every preset draws at the native resolution of a scaled screen', () => {
+    const dpr = Object.getOwnPropertyDescriptor(window, 'devicePixelRatio');
+    try {
+      for (const ratio of [1.5, 2]) {
+        Object.defineProperty(window, 'devicePixelRatio', { value: ratio, configurable: true });
+        for (const name of ['bare', 'normal', 'ultra']) {
+          A.visuals.setQuality(name);
+          const size = renderer.getDrawingBufferSize(new THREE.Vector2()), q = CONFIG.VISUALS.quality[name];
+          expect.ok(size.x === Math.floor(innerWidth * ratio) && size.y === Math.floor(innerHeight * ratio), `${name} at ${ratio}x: ${size.x}x${size.y}, the screen's own pixels`);
+          if (q.post) {
+            const rt = A.visuals.composer.renderTarget1, msaa = qualityDraw(q, ratio).msaa;
+            expect.ok(Math.round(rt.width) === Math.round(innerWidth * ratio) && rt.samples === Math.min(msaa, renderer.capabilities.maxSamples || 4), `${name} at ${ratio}x: the scene target at full size, ${msaa}x MSAA`);
+          }
+        }
+      }
+    } finally {
+      if (dpr) Object.defineProperty(window, 'devicePixelRatio', dpr); else delete window.devicePixelRatio;
+      restoreQuality();
+    }
+  });
+  test('Low loading: enemies, later phases and projectile pools are prepared before gameplay', () => {
+    try {
+      A.visuals.setQuality('bare'); sim.begin();
+      for (const [id, field] of [['rootbound', 'spectral'], ['kindlingTree', 'holySigil'], ['agathe', 'stormMeshes']]) {
+        Game.startFight(id);
+        expect.ok(!!Game.enemies[0].rig[field], `${id}: its attack effect is ready during loading`);
+        const textures = TEXLIB.count(), geometry = renderer.info.memory.geometries;
+        const enemy = Game.enemies[0], shot = enemy.baseDef.attacks.find(a => a.projectile);
+        if (shot) {
+          for (let i = 0; i < CONFIG.projectile.max; i++) projectiles.fireOne(enemy, shot, Game.player, 0);
+          Game.render(1, STEP);
+          expect.ok(TEXLIB.count() === textures, `${id}: firing needs no texture baking`);
+          expect.ok(renderer.info.memory.geometries === geometry, `${id}: every bolt's geometry is already uploaded`);
+          projectiles.clear();
+        }
+        const viewport = renderer.getViewport(new THREE.Vector4());
+        expect.ok(viewport.z === innerWidth && viewport.w === innerHeight && !renderer.getScissorTest(), 'warm-up restores the full viewport');
+      }
+      Game.startLevel('final-castle');
+      expect.ok(Game.enemies.length > 30 && Game.zones.every(z => z.spawned), 'the whole level cast is instantiated before play');
+    } finally { projectiles.clear(); restoreQuality(); }
+  });
+  test('Low performance: packed surface channels preserve height and roughness across tints', () => {
+    const opts = { size: 64, decay: 0.5 }, a = TEXLIB.get('rustedIron', opts), b = TEXLIB.get('rustedIron', { ...opts, tint: 0x5a3020 });
+    expect.ok(a.rough === a.bump && a.rough === b.rough && a.map !== b.map, 'tints share one packed surface map and keep separate colours');
+    const core = TEXCORE_FACTORY(TEXTURE_SETTINGS, seeded), def = TEXTURE_DEFS.find(d => d.id === 'rustedIron');
+    const raw = core.pack(core.bake(def, 64, 0xffffff, 0.5, strSeed('rustedIron')));
+    const packed = a.rough.image.getContext('2d').getImageData(0, 0, 64, 64).data;
+    let same = true;
+    for (let i = 0; i < packed.length; i += 4) if (packed[i] !== raw.bump[i] || packed[i + 1] !== raw.rough[i + 1]) { same = false; break; }
+    expect.ok(same, 'Three reads the exact original height from red and roughness from green');
+  });
+  test('Low performance: every model vertex uses exactly one bone', () => {
+    const was = KIT.detail();
+    try {
+      KIT.setDetail({ geo: 1, tex: 1 });
+      for (const id of Object.keys(MODEL_DEFS)) {
+        let valid = true;
+        for (const p of KIT.modelParts(id).parts) {
+          const weights = p.geo.attributes.skinWeight.array;
+          for (let i = 0; i < weights.length; i += 4) if (weights[i] !== 1 || weights[i + 1] || weights[i + 2] || weights[i + 3]) { valid = false; break; }
+        }
+        expect.ok(valid, `${id}: rigid shader matches its skin weights`);
+      }
+    } finally { KIT.setDetail(was); }
+  });
+  test('Loading: time spent building counts toward the title hold', () => {
+    try {
+      Game.loadStarted = performance.now() - 3000; Game.showLoading('Ready', '');
+      expect.ok(Game.loading === CONFIG.loading.readyTime, 'a long build does not add another full title delay');
+      Game.loadStarted = null; Game.showLoading('Fresh', '');
+      expect.ok(Game.loading === CONFIG.loading.time, 'a direct start keeps the normal title hold');
+    } finally { Game.loadStarted = null; }
+  });
+  test('Loading: the title card waits for nothing under the test clock', () => {
+    sim.begin();
+    let ran = false; Game.loadingFirst('x', 'y', () => { ran = true; });
+    expect.ok(ran && !Game.pendingLoad, 'ran at once');
+    expect.ok(Game.levelCard('long-hall')[0] === A.LEVEL_1.name, 'a level card names the level');
+  });
+
+  test('Combat clarity: resting enemies take poise and meter damage while rising', () => {
+    Game.startLevel('test-crowd'); Game.loading = 0; sim.begin(); sim.clearEnemies();
+    const p = Game.player;
+    for (const state of [ES.DORMANT, ES.RISE]) {
+      const e = sim.spawn('hollow', 25, 0); e.setState(state);
+      e.takeHit(strikeOf('jumpLight'), p);
+      expect.ok(e.state === ES.HURT, `${state}: jump light flinches the Hollow`);
+      expect.near(e.poise, e.def.poise - strikeOf('jumpLight').poise, 1e-6, `${state}: poise damage applied`);
+      e.takeHit(strikeOf('jumpHeavy'), p);
+      expect.ok(e.state === ES.STAGGER, `${state}: jump heavy breaks the Hollow's poise`);
+      const knight = sim.spawn('knight', 30, 0); knight.setState(state);
+      knight.takeHit(strikeOf('jumpHeavy'), p);
+      expect.near(knight.guardMeter, knight.def.stagger.heavy, 1e-6, `${state}: first jump heavy fills the meter`);
+      knight.takeHit(strikeOf('jumpHeavy'), p);
+      expect.ok(knight.state === ES.BROKEN, `${state}: second jump heavy kneels the Knight`);
+      sim.clearEnemies();
+    }
+  });
+  test('Combat clarity: jump heavies fill every enemy meter as heavy attacks', () => {
+    Game.startLevel('test-crowd'); Game.loading = 0; sim.begin(); sim.clearEnemies();
+    for (const d of [...A.ENEMY_DEFS, ...TRAINING_DEFS]) {
+      const M = d.stagger || d.guard; if (!M) continue;
+      const e = sim.spawn(d, 30, 0), p = Game.player;
+      if (d.posture) {
+        // A boss with a shield (the King's Blade): an open blow builds posture, and only a blow on the shield fills
+        // its guard, by `blockedMul` of a heavy's share.
+        e.setState(ES.RISE);
+        e.takeHit(strikeOf('jumpHeavy'), p);
+        expect.ok(e.posture > 0 && e.guardMeter === 0, `${d.id}: an open jump heavy builds posture, not the guard`);
+        e.posture = 0; e.setState(ES.IDLE); e.yaw = Math.atan2(p.x - e.x, p.z - e.z);
+        expect.ok(e.guarding(), `${d.id}: guards from idle`);
+        e.takeHit(strikeOf('jumpHeavy'), p);
+        expect.near(e.guardMeter, Math.min(M.heavy * M.blockedMul, M.max), 1e-6, `${d.id}: a blocked jump heavy fills the guard as a heavy`);
+      } else {
+        e.setState(ES.RISE);
+        e.takeHit(strikeOf('jumpHeavy'), p);
+        expect.near(e.guardMeter, Math.min(M.heavy, M.max), 1e-6, `${d.id}: jump heavy meter`);
+      }
+      sim.clearEnemies();
+    }
+    // Pass 85 cut every ordinary blow a third: a jump attack still hits harder than the ground swing it stands in for.
+    expect.ok(strikeOf('jumpLight').damage > strikeOf('light').damage && strikeOf('jumpHeavy').damage > strikeOf('heavy').damage, 'both jump attacks deal more damage than a light and a tapped heavy');
+    expect.ok(strikeOf('jumpHeavy').postureDmg > strikeOf('heavy').postureDmg, 'jump heavy rewards bosses with more posture damage');
+  });
+  test('Combat clarity: all boss attacks glow red exactly when combat allows parrying', () => {
+    const defs = Object.values(A.ENEMY_BY_ID).filter(isBossDef);
+    const sameColor = (a, b) => Math.abs(a.r - b.r) + Math.abs(a.g - b.g) + Math.abs(a.b - b.b) < 1e-6;
+    let checked = 0;
+    for (const d of defs) {
+      Game.startFight(d.id); Game.loading = 0; sim.begin();
+      const e = Game.duel, p = Game.player;
+      for (const a of d.attacks) for (let i = 0; i < a.hits.length; i++) {
+        const parryable = canParryHit(a, i);   // a gilt echo, a wall of fire, a hook's pull or a hit marked noParry: never
+        e.attack = a; e.hitIndex = i; e.setState(ES.WINDUP); e.stateTime = Math.max(0, a.hits[i].startup - CONFIG.parry.lead / 2); e.yaw = 0;
+        p.x = e.x; p.z = e.z + Math.max(0.1, a.box.fwd); p.y = e.y; p.yaw = Math.PI;
+        expect.ok((parryTiming(p, e, 0) !== null) === parryable, `${d.id}/${a.id}/${i}: actual parry result`);
+        Game.render(0, STEP);
+        const color = parryable ? WARN_COLOR : ROLL_ONLY_COLOR;
+        const glow = a.hits[i].echo ? 0 : clamp(e.stateTime / CONFIG.fx.windupGlowTime, 0, 1);   // an echo's tell is the gilt's own
+        // A blow told on the shield, claw or foot (`tell`, a model's shieldTell or tells) glows there and leaves the weapon dark.
+        const T = a.hits[i].tell && e.rig.tellGlows && e.rig.tellGlows[a.hits[i].tell], onShield = !!T;
+        expect.ok(sameColor(e.rig.weaponMat.emissive, color.clone().multiplyScalar(onShield ? 0 : glow * 1.6)), `${d.id}/${a.id}/${i}: weapon colour`);
+        const G = parryable ? CONFIG.VISUALS.windupGlow : CONFIG.VISUALS.rollOnlyGlow;
+        expect.ok(sameColor(e.rig.warnGlow.material.color, new THREE.Color(G.color).multiplyScalar(G.boost)), `${d.id}/${a.id}/${i}: halo colour`);
+        if (T) expect.ok(T.visible === glow > 0.002 && sameColor(T.material.color, e.rig.warnGlow.material.color)
+          && Math.abs(T.material.opacity - glow * CONFIG.VISUALS.windupGlow.opacity) < 1e-6, `${d.id}/${a.id}/${i}: ${a.hits[i].tell} glow`);
+        checked++;
+      }
+    }
+    expect.above(checked, 100, 'checked every strike of every boss, the Skeleton included');
+  });
+  test('Combat clarity: Aldric landing pounds hit on the floor and clear a jump', () => {
+    Game.startFight('varn'); Game.loading = 0; sim.begin();
+    const e = Game.duel, p = Game.player;
+    for (const a of e.baseDef.attacks) for (const h of a.hits) if (h.leap) {
+      const b = h.box || a.box;
+      e.yaw = 0; e.stateTime = 0;
+      p.x = e.x; p.z = e.z + b.fwd; p.y = e.y; p.grounded = true;
+      const hb = new Hitbox(e, b, makeStrike(a));
+      expect.ok(hb.overlaps(p), `${a.id}: damages a grounded player`);
+      sim.press('jump'); p.update(STEP, { x: 0, z: 0, has: false }, [], null);
+      expect.ok(!p.grounded && !hb.overlaps(p), `${a.id}: an actual jump clears the landing impact`);
+      p.setState(PS.IDLE); p.vy = 0;
+    }
+  });
+  test('Combat clarity: the EXECUTE card tells the whole sequence and stays put as the foe kneels; zoom controls are gone', withLessons(() => {
+    input.use('keyboard'); const p = trainingAt('execution', 'long-hall'), d = Game.enemies[0]; A.lessons.show('execute'); Game.render(1, STEP);
+    const instruction = shown('lessonText') + shown('lessonKeys');
+    expect.ok(/kneels/.test(instruction) && /front/.test(instruction) && document.querySelectorAll('#lessonKeys kbd').length > 0,`kneel, approach and the key, before it begins: "${instruction}"`);
+    d.takeHit(strikeOf('heavy'), p); d.takeHit(strikeOf('heavy'), p); sim.step(1); Game.render(1, STEP);
+    expect.ok(shown('lessonText') + shown('lessonKeys') === instruction, 'the card stays the same as it kneels');
+    expect.ok(!ACTIONS.zoomIn && !ACTIONS.zoomOut, 'no zoom bindings');
+    const zoom = Game.zoomTarget;
+    window.dispatchEvent(new WheelEvent('wheel', { deltaY: 100 })); input.down('Equal'); sim.step(2); input.up('Equal');
+    expect.near(Game.zoomTarget, zoom, 1e-6, 'wheel and former zoom key cannot alter camera distance');
+  }));
+
+  // ---- Lessons (v7.19.0): the controls taught inside Level 1, and a little in Levels 2 and 3 -------------------------
+  const card = () => A.lessons.card ? A.lessons.card.id : null;
+  const lessonsIn = id => (A.ALL_LEVELS.find(l => l.id === id).lessons || []).map(e => e.lesson);
+  test('Lessons: Level 1 teaches the basics first, in order; Levels 2 and 3 add one each; the rest have none', () => {
+    const hall = lessonsIn('long-hall');
+    expect.ok(hall.join() === 'move,light,roll,lock,block,flask,heavy,jumpAttack,stance,execute,parry,rest,switch,dodge,grip', `Level 1's course: ${hall}`);
+    expect.ok(lessonsIn('sunken-keep').join() === 'shield' && lessonsIn('burning-town').join() === 'blue', 'one lesson in Level 2 and one in Level 3');
+    const others = A.ALL_LEVELS.filter(l => l.lessons && !['long-hall', 'sunken-keep', 'burning-town'].includes(l.id)).map(l => l.id);
+    expect.ok(others.length === 0, `no other level teaches: ${others}`);
+    expect.ok(!A.ALL_LEVELS.some(l => l.id === 'tutorial') && !A.STORY.chapters.some(c => c.level === 'tutorial'), 'the Training Hall is gone from the road');
+  });
+  test('Lessons: walking out of the cell shows MOVE, then ATTACK, then ROLL, each done by doing it', withLessons(() => {
+    trainingAt(null, 'long-hall'); sim.step(2); Game.render(1, STEP);
+    expect.ok(card() === 'move' && document.getElementById('lesson').classList.contains('show'), `MOVE first (${card()})`);
+    expect.ok(shown('lessonTitle') === 'MOVE', `the card says so (${shown('lessonTitle')})`);
+    sim.move(1, 0); sim.until(() => A.lessons.learned('move'), 4); sim.move(null);
+    expect.ok(A.lessons.learned('move'), 'walking five metres learns it');
+    sim.until(() => card() === 'light', 4); Game.render(1, STEP);
+    expect.ok(card() === 'light' && shown('lessonTitle') === 'ATTACK', `ATTACK next (${card()})`);
+    sim.press('light'); sim.step(3);
+    expect.ok(A.lessons.learned('light'), 'a swing at nothing learns it');
+    sim.until(() => card() === 'roll', 4);
+    expect.ok(card() === 'roll', `ROLL after it (${card()})`);
+    sim.press('roll'); sim.step(2);
+    expect.ok(A.lessons.learned('roll'), 'a roll learns it');
+  }));
+  test('Lessons: the course keeps its order: rushing ahead never shows a later card before the basics', withLessons(() => {
+    const was = { ...CONFIG.lessons };
+    try {
+      CONFIG.lessons.show = 0.5;   // each card steps aside quickly, unanswered
+      trainingAt(null, 'long-hall'); sturdy(Game.player); sim.place(40, 0);   // past the first fight's start and the heavy's spot
+      const order = [];
+      for (let i = 0; i < 60 * 12; i++) { sim.step(); if (card() && order[order.length - 1] !== card()) order.push(card()); }
+      // Urgent cards (BLOCK as a blow winds up, HEAL) may cut in; the calm ones keep the course's order.
+      const calm = order.filter(id => !A.LESSONS[id].urgent);
+      expect.ok(calm.slice(0, 5).join() === 'move,light,roll,lock,heavy', `the basics in teaching order: ${order}`);
+      expect.ok(order.indexOf('block') < 0 || order.indexOf('block') > order.indexOf('light'), `BLOCK never before ATTACK: ${order}`);
+    } finally { Object.assign(CONFIG.lessons, was); }
+  }));
+  test('Lessons: a move made before its card does not skip it; a learned card never shows; a stale one is dropped', withLessons(() => {
+    localStorage.setItem(CONFIG.lessons.storageKey, JSON.stringify(['move', 'light', 'roll'])); A.lessons.load();
+    trainingAt(null, 'long-hall'); sim.step(2);
+    expect.ok(card() === null, `nothing the player has learned shows (${card()})`);
+    events.emit('lock', { player: Game.player });
+    expect.ok(!A.lessons.learned('lock'), 'a lock-on before its card is not taken as learned');
+    const z = Game.zones.find(z => z.id === 'zone-hollow'); sim.place(z.trigger + 1, 0); sim.step(2);
+    expect.ok(card() === 'lock', `its fight shows LOCK ON (${card()})`);
+    events.emit('lock', { player: Game.player }); sim.step(1);
+    expect.ok(A.lessons.learned('lock'), 'locking on while it shows learns it');
+    const was = { ...CONFIG.lessons };
+    try {
+      CONFIG.lessons.stale = 2; A.lessons.forget(); trainingAt(null, 'long-hall'); A.lessons.show('heavy'); sim.step(1);
+      expect.ok(A.lessons.queue.includes('move'), 'MOVE waits behind the card on screen');
+      sim.seconds(2.5);
+      expect.ok(!A.lessons.queue.includes('move') && !A.lessons.learned('move'), 'and is dropped once its moment has passed, unlearned');
+    } finally { Object.assign(CONFIG.lessons, was); }
+  }));
+  test('Lessons: an urgent card (HEAL) takes over; the calmer one comes back after it', withLessons(() => {
+    trainingAt(null, 'long-hall'); sim.step(2);
+    expect.ok(card() === 'move', 'MOVE up');
+    Game.player.hp = Game.player.maxHp * 0.4; sim.step(2);
+    expect.ok(card() === 'flask' && A.lessons.queue.includes('move'), `HEAL takes over (${card()}; queue ${A.lessons.queue})`);
+    events.emit('itemUsed', { item: 'flask', player: Game.player });
+    sim.seconds(CONFIG.lessons.done + CONFIG.lessons.gap + 0.1);
+    expect.ok(card() === 'move', `MOVE again after it (${card()})`);
+  }));
+  test('Lessons: a card unanswered for a while steps aside without being learned', withLessons(() => {
+    trainingAt(null, 'long-hall'); sim.step(2);
+    sim.seconds(CONFIG.lessons.show + 0.2);
+    expect.ok(card() !== 'move' && !A.lessons.learned('move'), `stepped aside unlearned (${card()})`);
+  }));
+  test('Lessons: they only watch: the same run plays out step for step with lessons on and off', withLessons(() => {
+    const was = settings.lessons, runOnce = on => {
+      settings.lessons = on; A.lessons.forget(); Math.random = seededRandom(777);
+      Game.startLevel('long-hall'); Game.loading = 0; sim.begin(); sim.place(14, 0);
+      sim.move(1, 0); sim.seconds(4, 6); sim.move(null); sim.press('roll'); sim.seconds(2, 6); sim.press('light'); sim.seconds(4, 6);
+      const p = Game.player, cardUp = card();
+      return { cardUp, state: [p.x, p.z, p.hp, p.dashes, ...Game.enemies.map(e => `${e.x.toFixed(6)},${e.z.toFixed(6)},${e.hp},${e.state}`)].map(String).join('|') };
+    };
+    try {
+      runOnce(false);   // both compared runs start from the same built stage
+      const on = runOnce(true), off = runOnce(false), a = on.state.split('|'), b = off.state.split('|'), at = a.findIndex((v, i) => v !== b[i]);
+      expect.ok(on.cardUp !== null && off.cardUp === null, `cards only with the option on (${on.cardUp} / ${off.cardUp})`);
+      expect.ok(at < 0 && a.length === b.length, `the same simulation (first difference at ${at}: ${a[at]} / ${b[at]})`);
+    } finally { settings.lessons = was; }
+  }));
+  test('Lessons: the option turns them off; duels, gauntlets and levels without lessons show none', withLessons(() => {
+    const was = settings.lessons;
+    try {
+      settings.lessons = false; trainingAt(null, 'long-hall'); sim.step(2);
+      expect.ok(!A.lessons.owns(Game) && card() === null && !document.getElementById('lesson').classList.contains('show'), 'Lessons: Off');
+    } finally { settings.lessons = was; }
+    trainingAt(null, 'the-tower'); sim.step(2); expect.ok(!A.lessons.owns(Game) && card() === null, 'Level 4 has none');
+    Game.startFight('hollow'); Game.loading = 0; sim.begin(); sim.step(2); expect.ok(!A.lessons.owns(Game) && card() === null, 'a duel has none');
+    const opt = Game.screens().options.items.filter(i => i.cat === 'game').map(i => i.name);
+    expect.ok(opt.join() === 'Game,Lessons,Show lessons again', `Options' Game category: ${opt}`);
+  }));
+  test('Lessons: the REST card points an arrow at its bonfire, and the CONTROLS panel steps aside in Level 1', withLessons(() => {
+    trainingAt(null, 'long-hall'); A.lessons.show('rest'); Game.render(1, STEP);
+    const fire = world.bonfires.find(b => b.id === 'after-rogue');
+    const arrow = scene.children.find(o => o.userData.shared && o.visible && o.renderOrder === 10 && Math.abs(o.position.x - fire.x) < 1e-6 && Math.abs(o.position.z - fire.z) < 1e-6);
+    expect.ok(!!arrow && arrow.position.y > world.floorY(fire.x, fire.z, fire.y) + 1, 'an arrow over the fire');
+    A.lessons.show('move'); Game.render(1, STEP);
+    expect.ok(!arrow.visible, 'other cards have no arrow');
+    trainingAt(null, 'the-tower'); Game.render(1, STEP);
+    expect.ok(!arrow.visible, 'nor other levels');
+  }));
+
+  // ---- Button hints in the world (pass 86, PLAN.md rework item 3b) ---------------------------------------------------
+  test('World hints: the player\'s own key over the foe to strike, deflect a red blow or dodge a blue one, until learned', () => {
+    const H = CONFIG.hints, W = A.worldHints, el = document.getElementById('worldHint');
+    let kept = null; try { kept = localStorage.getItem(H.storageKey); } catch (e) { /* none */ }
+    const wasLessons = settings.lessons, wasBlock = [...ACTIONS.block];
+    try {
+      W.forget(); settings.lessons = true;
+      Game.startLevel('long-hall'); Game.loading = 0; sim.begin(); sim.clearEnemies(); sturdy(Game.player);
+      const p = Game.player, e = sim.spawn('knight', p.x + 2.4, p.z);
+      const show = () => { Game.render(1, STEP); return W.shown; };
+      let s = show();
+      expect.ok(s && s.kind === 'attack' && s.key === 'J' && s.word === 'Attack' && el.classList.contains('show'), `a foe in reach: Attack over it (${JSON.stringify(s && { ...s, enemy: 0 })})`);
+      const r = el.getBoundingClientRect();
+      expect.ok(r.width > 0 && r.left >= 0 && r.right <= window.innerWidth && r.top >= 0, 'drawn on screen, over the foe');
+      const red = e.baseDef.attacks.find(a => canParryHit(a, 0)), hit = red.hits[0];
+      e.beginAttack(red); e.stateTime = 0;
+      if (hit.startup > H.lead + 0.05) expect.ok(!show(), 'early in the wind-up: nothing yet');
+      e.stateTime = hit.startup - H.lead * 0.5; s = show();
+      expect.ok(s && s.kind === 'deflect' && s.key === 'L', `a red blow about to land: Deflect, L (${s && s.kind} ${s && s.key})`);
+      e.holdLeft = 1; expect.ok(!show(), 'a held blow: not yet, its delay still to come'); e.holdLeft = null;
+      ACTIONS.block = ['KeyP', 'PadLB']; s = show();
+      expect.ok(s && s.key === 'P', `a rebound key shows at once (${s && s.key})`);
+      ACTIONS.block = wasBlock;
+      e.attack = { ...red, hits: red.hits.map(h => ({ ...h, noParry: true })) }; s = show();
+      expect.ok(s && s.kind === 'dodge' && s.key === 'Shift' && s.word === 'Dash', `a blue blow: Dash, Shift (${s && s.kind} ${s && s.key})`);
+      e.attack = red;
+      for (let i = 0; i < H.learn; i++) events.emit('parry', { target: e, player: p });
+      expect.ok(!show(), `deflected ${H.learn} times: the Deflect hint is gone`);
+      expect.ok(W.done.deflect === H.learn, 'kept as learned');
+      e.setState(ES.CHASE); settings.lessons = false;
+      expect.ok(!show() && !el.classList.contains('show'), 'the Lessons option off: no hints');
+      settings.lessons = true;
+      expect.ok(show() && W.shown.kind === 'attack', 'on again: Attack, not yet learned');
+      e.setState(ES.LURK); expect.ok(!show(), 'a foe lying in wait gives nothing away'); e.setState(ES.CHASE);
+    } finally {
+      settings.lessons = wasLessons; ACTIONS.block = wasBlock;
+      try { if (kept === null) localStorage.removeItem(H.storageKey); else localStorage.setItem(H.storageKey, kept); } catch (e) { /* none */ }
+      W.reload();
+    }
+  });
+  test('World hints: the moves made out of another (finisher, dash attack, jump attack) and a charged number key, until learned', () => {
+    const H = CONFIG.hints, W = A.worldHints, M = PLAYER_DEF.moveset.attacks;
+    let kept = null; try { kept = localStorage.getItem(H.storageKey); } catch (e) { /* none */ }
+    const wasLessons = settings.lessons;
+    try {
+      W.forget(); settings.lessons = true;
+      Game.startLevel('long-hall'); Game.loading = 0; sim.begin(); sim.clearEnemies(); sturdy(Game.player);
+      const p = Game.player, e = sim.spawn('knight', p.x + 2.4, p.z);
+      const show = () => { Game.render(1, STEP); return W.shown; };
+      const as = (state, attack = null) => { p.attack = attack; p.setState(state); return show(); };
+      const blow = id => events.emit('strike', { strike: makeStrike(M[id]), attacker: p, target: e, at: e, blocked: false });
+      let s = as(PS.ATTACK, M.light);
+      expect.ok(s && s.kind === 'finisher' && s.key === 'K' && s.word === 'Finisher', `mid-string: Finisher, K (${s && s.kind} ${s && s.key} ${s && s.word})`);
+      s = as(PS.ATTACK, M.light4); expect.ok(s && s.kind === 'finisher', 'the string\'s last light too');
+      s = as(PS.ATTACK, M.finisher1); expect.ok(!s || s.kind !== 'finisher', 'not during a finisher');
+      s = as(PS.ROLL); expect.ok(s && s.kind === 'dashAttack' && s.key === 'J' && s.word === 'Dash attack', `in a dash: Dash attack, J (${s && s.kind})`);
+      s = as(PS.JUMP); expect.ok(s && s.kind === 'jumpAttack' && s.key === 'J' && s.word === 'Jump attack', `in the air: Jump attack, J (${s && s.kind})`);
+      p.dropped = true; s = as(PS.FALL); expect.ok(!s || s.kind !== 'jumpAttack', 'dropped from a grip: no plunge'); p.dropped = false;
+      e.x = p.x + H.near + 1; s = as(PS.JUMP); expect.ok(!s, `a foe beyond ${H.near} m: nothing`); e.x = p.x + 2.4;
+      for (let i = 0; i < H.learn; i++) { blow('finisher1'); blow('dashLight'); blow('jumpLight'); }
+      expect.ok(W.done.finisher === H.learn && W.done.dashAttack === H.learn && W.done.jumpAttack === H.learn, `each learned by landing it (${JSON.stringify(W.done)})`);
+      s = as(PS.ROLL); expect.ok(!s || s.kind === 'attack', 'learned: the dash shows only Attack, if anything');
+      p.grantAbilities(['fire-burst']); s = as(PS.IDLE);
+      expect.ok(!s || s.kind === 'attack', 'a key not yet charged: nothing for it');
+      p.perk.charge.strike = p.kit.pressed.strike.v.charge; s = show();
+      expect.ok(s && s.kind === 'strike' && s.key === '1' && s.word === 'Fire Burst', `a charged key: its number and its ability (${s && s.kind} ${s && s.key} ${s && s.word})`);
+      e.x = p.x + CONFIG.abilities.press.range + 2; s = show(); expect.ok(!s, 'no foe in its reach: nothing'); e.x = p.x + 2.4;
+      for (let i = 0; i < H.learn; i++) events.emit('abilityPress', { body: p, key: 'strike', ability: 'fire-burst' });
+      s = show(); expect.ok(!s || s.kind === 'attack', `pressed ${H.learn} times: learned (${s && s.kind})`);
+    } finally {
+      settings.lessons = wasLessons;
+      try { if (kept === null) localStorage.removeItem(H.storageKey); else localStorage.setItem(H.storageKey, kept); } catch (e) { /* none */ }
+      W.reload();
+    }
+  });
+
+  // shard [k, n]: only the k-th (0-based) of n runs of consecutive matching tests, so CI can split the suite across
+  // jobs. Consecutive, because neighbours share their levels, models and textures, which each job builds once. With
+  // `weights` (test name -> seconds, tests/shard-weights.json) the runs are equal in time, else equal in count; a test
+  // goes to the shard its midpoint falls in, and one with no weight counts as the median.
+  async function run(filter = '', { shard = null, weights = null } = {}) {
+    const out = [], t0 = performance.now();
+    const names = filter.split('|'), wanted = t => !filter || names.some(f => t.name.includes(f));   // 'a|b': either
+    const picked = tests.filter(wanted);
+    let shardOf = null;
+    if (shard) {
+      const own = t => (weights && Object.hasOwn(weights, t.name) && typeof weights[t.name] === 'number') ? weights[t.name] : null;
+      const known = picked.map(own).filter(w => w !== null).sort((a, b) => a - b);
+      const median = known.length ? known[known.length >> 1] : 1;
+      const w = picked.map(t => Math.max(0.05, own(t) ?? median)), total = w.reduce((a, b) => a + b, 0);
+      let before = 0;
+      shardOf = w.map(x => { const k = Math.min(shard[1] - 1, Math.floor(shard[1] * (before + x / 2) / total)); before += x; return k; });
+    }
+    let matched = -1;
+    const wasMode = Game.mode;
+    // What the tests teach by playing (a roll, a lock-on) never sticks to this player: their lessons come back after.
+    const lessonsKey = CONFIG.lessons.storageKey; let keptLessons = null;
+    try { keptLessons = localStorage.getItem(lessonsKey); } catch (e) { /* none */ }
+    for (const t of tests) {
+      if (!wanted(t)) continue;
+      matched++;
+      if (shardOf && shardOf[matched] !== shard[0]) continue;
+      let ok = true, msg = '';
+      const started = performance.now();
+      Math.random = seededRandom(12345);   // seeded from the start, so enemies built before sim.begin() repeat too
+      try { await t.fn(); } catch (e) { ok = false; msg = e instanceof Fail ? e.message : `${e.name}: ${e.message}\n${(e.stack || '').split('\n').slice(1, 4).join('\n')}`; }
+      finally { sim.end(); }
+      const ms = performance.now() - started;
+      out.push({ name: t.name, ok, msg, ms });
+      if (window.__testProgress) await window.__testProgress({ name: t.name, ok, ms: Math.round(ms) });   // the headless runner logs each test as it ends
+      await new Promise(r => setTimeout(r, 0));   // let the page breathe between tests
+    }
+    try { if (keptLessons === null) localStorage.removeItem(lessonsKey); else localStorage.setItem(lessonsKey, keptLessons); } catch (e) { /* none */ }
+    A.lessons.load();
+    if (wasMode !== 'play') { Game.reset && Game.player && Game.showMenu('main'); }
+    const failed = out.filter(r => !r.ok);
+    const summary = `${out.length - failed.length}/${out.length} passed in ${((performance.now() - t0) / 1000).toFixed(1)} s`;
+    console.log(summary); for (const r of failed) console.warn('FAIL ' + r.name + '\n  ' + r.msg);
+    if (Object.keys(metrics).length) console.log('metrics', JSON.stringify(metrics));
+    const slowest = [...out].sort((a, b) => b.ms - a.ms).slice(0, 15).map(r => `${(r.ms / 1000).toFixed(1)} s  ${r.name}`);
+    return { summary, failed: failed.map(r => `${r.name}: ${r.msg}`), passed: out.filter(r => r.ok).map(r => r.name), metrics, slowest };
+  }
+  A.tests = { run, sim, expect, test, list: () => tests.map(t => t.name) };
+})();
