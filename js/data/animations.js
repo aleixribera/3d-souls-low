@@ -130,7 +130,7 @@ const ANIM_SETTINGS = {
   // The Finishing Blow's look (pass 103, js/finisher-fx.js).
   // crack: the glowing cracks on a foe's body, `size` m across for a 1.8 m body, `depth` of its radius toward the
   //   camera, `boost` bright in `color` (white-`hot` as one opens, growing over `pop` s), breathing `breath` at `pulse`
-  //   Hz (steady with reduced motion); through the last `cool` share of the fade they dim and turn `cold`; they crumble
+  //   Hz (steady with reduced motion); they crumble
   //   over `out` s, or burst over `burstTime` s as the cuts open.
   // freeze: time stopped: saturation down to `sat` of the level's (reds keep theirs), vignette + `vignette`, the world
   //   `dark` darker until the cuts open (then at once lit again), drifting dust at `hold` speed, in and out s; the
@@ -142,8 +142,8 @@ const ANIM_SETTINGS = {
   // burst: the star of light as the cuts open (`size` m, `time` s), `sparks`, a screen `flash`.
   // camera: a swing of `swing` rad round the foe through the steps, back over `back` s; a `punch` in as the cuts open.
   finisherFx: {
-    crack: { size: 1.3, depth: 0.8, boost: 2.0, color: 0xff7a2a, hot: 0xfff2d8, cold: 0x9a2810, pop: 0.18, breath: 0.12, pulse: 1.1,
-             cool: 0.3, out: 0.45, burstTime: 0.3 },
+    crack: { size: 1.3, depth: 0.8, boost: 2.0, color: 0xff7a2a, hot: 0xfff2d8, pop: 0.18, breath: 0.12, pulse: 1.1,
+             out: 0.45, burstTime: 0.3 },
     freeze: { sat: 0.1, vignette: 0.4, dark: 0.4, hold: 0.06, in: 0.07, out: 0.4, kick: 0.35, flash: 0.08 },
     streak: { width: 0.14, color: 0xfff1ea, life: 0.2, held: 0.25 },
     cut: { length: 2.6, thin: 0.025, wide: 0.08, held: 0.3, show: 0.75, color: 0xffffff, glow: 0xff2a1c, delay: 0.03,

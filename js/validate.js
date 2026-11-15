@@ -49,15 +49,15 @@ function validateData({ visual = true } = {}) {
       && Cf.aura.ring && hex(Cf.aura.ring.color) && pos(Cf.aura.ring.from) && pos(Cf.aura.ring.to) && Cf.aura.ring.to < Cf.aura.ring.from,
       'ANIM_SETTINGS.counterFx: dim (peak 0 to 0.8, in and out s), mark (size m, time s, colour), trail (colour, boost, life at least 1), cut (length, thin < wide m, show s, colour, sparks and arcSparks counts, tilt rad), aura (colour, size, boost, min 0 to 1, breath under 0.5, pulse under 3 Hz, body 0 to 1, in and out s, ring colour and from > to m).');
     const Ff = A.finisherFx, Fk = Ff && Ff.crack, Fz = Ff && Ff.freeze, Fc = Ff && Ff.cut, unit = v => typeof v === 'number' && v >= 0 && v <= 1;
-    need(Fk && pos(Fk.size) && unit(Fk.depth) && pos(Fk.boost) && [Fk.color, Fk.hot, Fk.cold].every(hex) && num(Fk.pop) && Fk.breath >= 0 && Fk.breath < 0.5
-      && Fk.pulse > 0 && Fk.pulse < 3 && unit(Fk.cool) && Fk.cool > 0 && pos(Fk.out) && pos(Fk.burstTime)
+    need(Fk && pos(Fk.size) && unit(Fk.depth) && pos(Fk.boost) && [Fk.color, Fk.hot].every(hex) && num(Fk.pop) && Fk.breath >= 0 && Fk.breath < 0.5
+      && Fk.pulse > 0 && Fk.pulse < 3 && pos(Fk.out) && pos(Fk.burstTime)
       && Fz && unit(Fz.sat) && unit(Fz.vignette) && unit(Fz.dark) && Fz.dark < 1 && unit(Fz.hold) && num(Fz.in) && num(Fz.out) && unit(Fz.kick) && unit(Fz.flash)
       && Ff.streak && pos(Ff.streak.width) && num(Ff.streak.life) && unit(Ff.streak.held) && hex(Ff.streak.color)
       && Fc && pos(Fc.length) && num(Fc.thin) && Fc.wide > Fc.thin && unit(Fc.held) && num(Fc.show) && hex(Fc.color) && hex(Fc.glow) && Fc.delay >= 0
       && Array.isArray(Fc.heights) && Fc.heights.length > 0 && Fc.heights.every(unit) && Array.isArray(Fc.tilts) && Fc.tilts.length > 0 && Fc.tilts.every(Number.isFinite)
       && Ff.burst && pos(Ff.burst.size) && num(Ff.burst.time) && hex(Ff.burst.color) && Number.isInteger(Ff.burst.sparks) && unit(Ff.burst.flash)
       && Ff.camera && Ff.camera.swing >= 0 && Ff.camera.swing < 1.2 && num(Ff.camera.back) && unit(Ff.camera.punch) && pos(Ff.camera.punchRate),
-      'ANIM_SETTINGS.finisherFx: crack (size, depth 0 to 1, boost, colour, hot and cold colours, pop s, breath under 0.5, pulse under 3 Hz, cool 0 to 1, out and burstTime s), freeze (sat, vignette, hold, kick and flash 0 to 1, dark 0 to under 1, in and out s), streak (width, life s, held 0 to 1, colour), cut (length, thin < wide m, held 0 to 1, show and delay s, colour, glow colour, heights 0 to 1, tilts rad), burst (size, time s, colour, sparks, flash 0 to 1) and camera (swing under 1.2 rad, back s, punch 0 to 1, punchRate 1/s).');
+      'ANIM_SETTINGS.finisherFx: crack (size, depth 0 to 1, boost, colour, hot colour, pop s, breath under 0.5, pulse under 3 Hz, out and burstTime s), freeze (sat, vignette, hold, kick and flash 0 to 1, dark 0 to under 1, in and out s), streak (width, life s, held 0 to 1, colour), cut (length, thin < wide m, held 0 to 1, show and delay s, colour, glow colour, heights 0 to 1, tilts rad), burst (size, time s, colour, sparks, flash 0 to 1) and camera (swing under 1.2 rad, back s, punch 0 to 1, punchRate 1/s).');
     const Gd = A.guard;
     need(Gd && Gd.drop >= 0 && Gd.drop < 0.3 && rot(Gd.pose), 'ANIM_SETTINGS.guard: drop (0 to 0.3 m) and a pose of [x, y, z] per bone.');
     need(L && num(L.rise) && num(L.hold) && num(L.fall) && num(L.drop) && num(L.min) && L.ref > 0 && Number.isFinite(L.lean), 'ANIM_SETTINGS.land: rise, hold and fall (s), drop (m), min (0 to 1), ref (m/s) and lean (rad).');
@@ -625,10 +625,10 @@ function validateData({ visual = true } = {}) {
   { const Fa = M.attacks.finisher, F = CONFIG.finisher;
     need(Fa && Fa.pose && Fa.hits.length === 1 && Fa.damage === 0, 'Player moveset: the Finishing Blow needs a one-hit "finisher" attack with a pose and no damage of its own.');
     need(F && Number.isInteger(F.cracks) && F.cracks >= 1 && Number.isInteger(F.steps) && F.steps >= 1
-      && ['fade', 'rest', 'past', 'hitstop', 'grace', 'push'].every(k => num(F[k]) && F[k] >= 0) && F.fade > F.rest
+      && ['rest', 'past', 'hitstop', 'grace', 'push'].every(k => num(F[k]) && F[k] >= 0)
       && ['base', 'mul', 'bossMul', 'bossCap'].every(k => num(F.damage[k]) && F.damage[k] > 0) && F.damage.bossCap <= 0.5
       && num(F.heal) && F.heal >= 0 && F.heal < 1 && num(F.camera.rate) && F.camera.rate > 0,
-      'CONFIG.finisher: cracks and steps whole numbers 1 or more, fade above rest, the other numbers 0 or more, damage above 0 with bossCap at most 0.5, heal under 1.');
+      'CONFIG.finisher: cracks and steps whole numbers 1 or more, the other numbers 0 or more, damage above 0 with bossCap at most 0.5, heal under 1.');
     const GS = CONFIG.fx && CONFIG.fx.guardCrackShake, burst = b => b && num(b.color) && Number.isInteger(b.count) && b.count >= 0 && num(b.speed) && b.speed >= 0;
     need(F.shake && num(F.shake.time) && F.shake.time >= 0 && num(F.shake.amp) && F.shake.amp >= 0
       && num(F.camera.push) && F.camera.push >= 0 && F.camera.push < 1 && num(F.camera.lower) && F.bursts && ['enter', 'exit', 'step'].every(k => burst(F.bursts[k]))
@@ -949,16 +949,14 @@ function validateShowcase(S, need) {
       need(b.counter === undefined || b.counter in PLAYER_DEF.moveset.counter, `${t}: counter is an action with a counter (${Object.keys(PLAYER_DEF.moveset.counter).join(', ')}).`);
       need(!b.kill || b.counter, `${t}: a kill needs its counter.`);
       // The Finishing Blow (js/finisher.js): the fight's cracks and its earlier counters crack the guard to the last
-      // exactly by a `finisher` beat's counter, and no sooner; each counter lands within the cracks' `fade` of the last.
+      // exactly by a `finisher` beat's counter, and no sooner.
       if (b.counter && f) {
-        const C = CONFIG.finisher, sec = beats => beats * 60 / S.bpm;
+        const C = CONFIG.finisher;
         const before = (S.beats || []).filter(x => x !== b && x.counter && x.at < b.at && fightAt(x.at) === f);
-        const cracks = (f.cracks || 0) + before.length, from = before.length ? before[before.length - 1].at : f.from;
+        const cracks = (f.cracks || 0) + before.length;
         need(b.finisher ? cracks === C.cracks : cracks < C.cracks, b.finisher
           ? `${t}: its counter is the Finishing Blow only on a guard cracked ${C.cracks} times; ${f.boss}'s cracks and earlier counters make ${cracks}.`
           : `${t}: ${f.boss}'s guard is cracked ${cracks} times by then, so this counter would be a Finishing Blow: mark it finisher.`);
-        // From one string's first blow to the next's: its string and its counter take up to about 3 s more.
-        need(!cracks || sec(b.at - from) + 3 < C.fade, `${t}: its counter comes about ${(sec(b.at - from) + 3).toFixed(1)} s after the last crack; they fade after ${C.fade} s.`);
       }
     }
   }

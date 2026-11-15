@@ -3,7 +3,7 @@
 // The Finishing Blow (pass 100): the reward for countering, in place of the posture bar and executions
 // ============================================================================
 // Each counter (a riposte's blow: after an opening deflect or a perfect dodge) that lands cracks the foe's guard
-// (crackGuard, from Enemy.takeHit). The cracks fade at once after CONFIG.finisher.fade s with no counter on it. The
+// (crackGuard, from Enemy.takeHit). The cracks stay until the Finishing Blow spends them (no timer), or the foe walks home. The
 // counter that lands on a guard cracked CONFIG.finisher.cracks times is the Finishing Blow: its striker runs the
 // `finisher` attack (js/data/player.js) on the same four-phase clock as every attack:
 //   wind-up   time stops for the foe (ES.EXECUTED: no AI, no hitbox, blows pass through); the striker flash-steps through
@@ -15,7 +15,7 @@
 // The striker is untouchable throughout (Player.invulnerable) and `grace` s after. In a party anyone's counters crack the
 // guard and the one landing the last gets the blow: the server counts the cracks and grants it (Simulation.hit).
 // Events (the look listens to these: js/finisher-fx.js, js/audio.js, js/ultra-fx.js, js/afterimage.js):
-//   guardCrack { enemy, cracks, by }         the crack level changed (0: faded, or spent by a Finishing Blow)
+//   guardCrack { enemy, cracks, by }         the crack level changed (0: spent by a Finishing Blow, or the foe went home)
 //   finisherStart { player, enemy, time }    time stops for the foe; `time` s until the cuts open
 //   finisherStep { player, enemy, i, from, to }   one flash step through it
 //   finisher { player, enemy, damage, lethal, at, exit }   the cuts open

@@ -5,8 +5,8 @@
 // Drawing only (rule 5): it listens to the Finishing Blow's events (js/finisher.js) and reads bodies on a render hook,
 // with sprites and meshes made at load, so nothing is allocated per frame and the fight never changes.
 // - Guard cracks: each counter that cracks a guard (guardCrack) breaks a glowing crack open on the foe's body, a bigger
-//   one and a second for the next counter, breathing slowly. They cool and dim as the cracks' fade
-//   (CONFIG.finisher.fade) runs out, and crumble when it does.
+//   one and a second for the next counter, breathing slowly. They hold until the
+//   Finishing Blow bursts them, or crumble if the foe goes home.
 // - The blow, on the striker's screen (finisherStart .. finisherEnd): time stops (the world drains of colour but its
 //   reds, the edges close in, drifting dust hangs, the foe holds the pose it was caught in, its cracks flare white);
 //   each flash step (finisherStep) leaves a streak of light along its path and a thin cut across the foe; as the cuts
@@ -246,7 +246,7 @@ const finisherFx = (() => {
     return out;
   }
   const PLACES = [[0, 0], [0.32, -0.2], [-0.28, 0.16]];   // each crack's spot on the body: across, up (shares of its height)
-  function drawCracks(real, t, net) {
+  function drawCracks(real, t) {
     const K = S().crack, calm = reducedMotion();
     for (const set of sets) {
       const e = set.foe;
@@ -262,8 +262,6 @@ const finisherFx = (() => {
       chestPoint(e, chest);
       toCam.copy(camera.position).sub(chest).normalize();
       right.set(1, 0, 0).applyQuaternion(camera.quaternion); up.set(0, 1, 0).applyQuaternion(camera.quaternion);
-      // how much of the fade is left: the cracks cool and dim through its last `cool` share
-      const life = net ? set.since : (e.crackTime || 0), left = clamp(1 - life / CONFIG.finisher.fade, 0, 1), coolK = clamp(left / K.cool, 0, 1);
       const breath = calm ? 1 : 1 + K.breath * Math.sin(t * Math.PI * 2 * K.pulse);
       set.flare = Math.max(0, set.flare - real * 0.6);
       const want = set.burst !== Infinity ? 3 : set.gone !== Infinity ? 3 : Math.min(3, set.level + (set.level >= 2 ? 1 : 0));
@@ -276,8 +274,8 @@ const finisherFx = (() => {
         const size = K.size * big * lvl * grow * (set.burst !== Infinity ? 1 + 0.9 * (1 - outK) : 1);
         v.copy(toCam).multiplyScalar(radius * K.depth).add(chest).addScaledVector(right, P[0] * radius * 1.6).addScaledVector(up, P[1] * h * 0.5);
         s.position.copy(v); s.scale.set(size, size, 1); s.material.rotation = i * 2.1 + 0.4;
-        col.setHex(K.color).lerp(col2.setHex(K.cold), 1 - coolK).lerp(col2.setHex(K.hot), Math.min(1, hot + set.flare));
-        const bright = K.boost * (0.35 + 0.65 * coolK) * breath * (1 + 1.6 * hot + 0.8 * set.flare) * outK;
+        col.setHex(K.color).lerp(col2.setHex(K.hot), Math.min(1, hot + set.flare));
+        const bright = K.boost * breath * (1 + 1.6 * hot + 0.8 * set.flare) * outK;
         s.material.color.copy(col).multiplyScalar(bright); s.material.opacity = Math.min(1, outK * 1.2);
         s.visible = true;
       }
@@ -386,7 +384,7 @@ const finisherFx = (() => {
     const real = effectSlots.real(), t = performance.now() / 1000;
     drawCamera(real);
     drawGrade(game, real);
-    drawCracks(real, t, typeof multiplayer !== 'undefined' && multiplayer.active());
+    drawCracks(real, t);
     drawStreaks(real);
     drawCuts(real);
     drawStar(real);

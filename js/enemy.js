@@ -382,10 +382,8 @@ class Enemy {
     this.updateFeedback(dt);
     this.chainTime += dt; this.blockTime += dt; this.struckTime += dt;
     const held = this.state === ES.EXECUTED;   // through a Finishing Blow (js/finisher.js)
-    // The cracks in its guard fade at once after CONFIG.finisher.fade s with no counter on it (a client's are the server's).
-    if (this.cracks > 0 && !held && (this.crackTime += dt) > CONFIG.finisher.fade && !(typeof multiplayer !== 'undefined' && multiplayer.active())) {
-      this.cracks = 0; events.emit('guardCrack', { enemy: this, cracks: 0 });
-    }
+    // The cracks in its guard never fade with time (js/finisher.js); crackTime only spaces one striker's cracks (`rest`).
+    if (this.cracks > 0 && !held) this.crackTime += dt;
     // A def's `resonance` (pass 68): it fades once no blow has landed for `delay` s, and a Finishing Blow empties it.
     if (this.resonanceRest > 0) this.resonanceRest -= dt;
     // Learned forms (pass 77): a Finishing Blow makes it forget everything it learned (a client's list is the server's).
@@ -476,7 +474,11 @@ class Enemy {
         const hx = this.home.x - this.x, hz = this.home.z - this.z, hd = Math.hypot(hx, hz);
         // Back to the chase only well inside its leash (else it flickers in place, alerting every step).
         if (engage && playerFromHome <= this.homeLeash * CONFIG.ai.leashResume) { this.setState(ES.CHASE); break; }
-        if (hd < E.homeArrive) { this.yaw = this.home.yaw; this.setState(this.home.state); break; }
+        if (hd < E.homeArrive) {   // home: the fight is over, its guard whole again (js/finisher.js)
+          this.yaw = this.home.yaw; this.setState(this.home.state);
+          if (this.cracks > 0) { this.cracks = 0; events.emit('guardCrack', { enemy: this, cracks: 0 }); }
+          break;
+        }
         const sp = d.speed * E.returnSpeedMul;
         tx = hx / hd * sp; tz = hz / hd * sp;
         this.yaw = turnToward(this.yaw, Math.atan2(hx, hz), d.turnRate * dt);
