@@ -167,8 +167,7 @@
   #menu.title-menu #menuAct { grid-area: act; display: flex; flex-direction: column; align-items: flex-start; gap: 8px; margin-top: 18px; }
   #menu.title-menu #menuAct [hidden] { display: none; }
   #menu.title-menu .title-mode { min-height: 46px; }
-  #menu.title-menu .title-primary { justify-content: space-between; }
-  #menu.title-menu .title-second { margin-left: -10px; }
+  #menu.title-menu .title-lead { justify-content: space-between; margin-bottom: 10px; font-size: 20px; }   /* Boss Rush, the main mode */
   #menu.title-menu .title-update { color: var(--ui-accent-hi); }
   #menu.title-menu #menuBox #menuHint { position: static; margin: 0; text-align: left; font: 400 var(--ui-size-hint)/1.4 var(--ui-text); letter-spacing: 0; color: var(--ui-muted); }
   @media (max-width: 640px) {   /* a phone upright: tighter edges, a smaller name, the footer's two halves stacked */
@@ -177,18 +176,26 @@
     #menu.title-menu #menuList { margin-top: 28px; }
     #menu.title-menu #menuFoot { left: 20px; right: 20px; bottom: max(34px, env(safe-area-inset-bottom)); }
   }
+  @media (max-width: 640px) and (max-height: 620px) {   /* a small phone upright: the five modes and their line above the footer */
+    #menu.title-menu #menuBox { padding-top: 36px; }
+    #menu.title-menu #menuList { margin-top: 16px; }
+    #menu.title-menu .title-mode { min-height: 40px; }
+    #menu.title-menu .title-lead { min-height: 48px; margin-bottom: 6px; }
+  }
   @media (max-height: 500px) and (min-width: 560px) {   /* a phone on its side: the modes on the left, the line and the primary beside them */
     #menu.title-menu #menuBox { grid-template-columns: minmax(0, 320px) minmax(0, 320px); grid-template-areas: "title title" "list desc" "list act";
       column-gap: 40px; align-items: start; padding: 20px 32px 96px; }
     #menu.title-menu #menuBox h1 { font-size: 30px; }
     #menu.title-menu #menuList { margin-top: 14px; }
-    #menu.title-menu .title-mode { min-height: 42px; }
-    #menu.title-menu #menuDesc { margin-top: 22px; }
+    #menu.title-menu #menuList { margin-top: 10px; }
+    #menu.title-menu .title-mode { min-height: 38px; }
+    #menu.title-menu .title-lead { min-height: 44px; margin-bottom: 4px; font-size: 18px; }
+    #menu.title-menu #menuDesc { margin-top: 18px; }
     #menu.title-menu #menuAct { margin-top: 10px; }
     #menu.title-menu #menuFoot { left: 32px; right: 32px; bottom: 12px; padding-top: 6px; }
   }
   @media (hover: none) and (pointer: coarse) {   /* a touch screen has no keys to hint: only the version stays */
-    #menu.title-menu .title-primary .ui-key, #menu.title-menu #menuHint span:not(:last-child) { display: none; }
+    #menu.title-menu .title-lead .ui-key, #menu.title-menu #menuHint span:not(:last-child) { display: none; }
   }
   /* A newer version on the server (js/version-check.js): an ember-lit row in pause. */
   .menuBtn.update .n { color: #f3c98a; }

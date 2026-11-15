@@ -64,27 +64,30 @@ Object.assign(Game, {
       adjust: d => { const i = Math.max(0, fights.indexOf(settings.practiceFight)); settings.practiceFight = fights[(i + (d || 1) + fights.length) % fights.length]; } };
     return {
       ...S.screens, ...bossBattle.screens(this),
-      // The title (v7.70.0, the mockups' menu style on js/ui-theme.js): the game's name, the modes as rows, one line
-      // about the chosen mode, one primary button that starts it, and a footer of quiet entries. Moving onto a mode or
-      // clicking it chooses it; Enter on it (or the primary) starts it; a mode's `second` is the button beside it. Boss Rush
-      // plays in the public lobby, or in private in this page (js/alone.js): its line says who is in the lobby right now
-      // (multiplayer.lobby, asked while the title shows), and it is chosen when the lobby answers.
-      main: { title: 'Combat Arena 3D', sub: '', layout: 'title', focus: this.titleLobby().reachable ? 1 : 0, items: [
-        { ...S.main[0], size: 'mode', second: S.main[0].newGame ? { name: 'New game', go: S.main[0].newGame } : null },
-        { ...this.titleLobby(), size: 'mode', online: true, name: 'Boss Rush' },
-        { name: 'Practice', size: 'mode', line: 'Any enemy, boss or level, straight away.', start: 'Choose a fight', go: () => this.showMenu('practice') },
+      // The title (the mockups' menu style on js/ui-theme.js): the game's name, the modes as rows, the line of the mode
+      // pointed at, and a footer of quiet entries. Boss Rush's line says who is in the lobby right now (multiplayer.lobby,
+      // asked while the title shows).
+      // One click starts each mode (Aleix 2026-11-15). Boss Rush leads and always tries the public lobby: playing in
+      // private is offered only when the lobby cannot be reached (the lobby screen's button, js/multiplayer.js). Story
+      // asks Continue or New game only when there is a save. Tutorial plays the showcase, then the sparring scene.
+      main: { title: 'Combat Arena 3D', sub: '', layout: 'title', focus: 0, items: [
+        { ...this.titleLobby(), size: 'mode', lead: true, online: true, name: 'Boss Rush', go: () => sparring.before(() => multiplayer.join()) },
+        { name: 'Story', size: 'mode', line: S.main[0].line, go: S.main[0].newGame ? () => this.showMenu('storyPick') : S.main[0].go },
+        { name: 'Tutorial (Recommended)', size: 'mode', line: 'Watch a fight, then learn the moves against a sparring partner.', go: () => this.playTutorial() },
+        { name: 'Practice', size: 'mode', line: 'Any enemy, boss or level, straight away.', go: () => this.showMenu('practice') },
         // The Collection (js/crate-screen.js): your level, the crates to open, what you own. Its line is redrawn on the way back.
-        ...(typeof crateScreen !== 'undefined' ? [{ name: 'Collection', size: 'mode', collection: true, line: crateScreen.titleLine(), start: 'Open the Collection',
+        ...(typeof crateScreen !== 'undefined' ? [{ name: 'Collection', size: 'mode', collection: true, line: crateScreen.titleLine(),
           go: () => crateScreen.collection(() => this.refreshTitleCollection()) }] : []),
-        { name: '', size: 'primary', go: () => { const m = this.menuItems[this.titleMode]; if (m) m.go(); } },
-        { name: '', size: 'second', go: () => { const m = this.menuItems[this.titleMode]; if (m && m.second) m.second.go(); } },
         { name: 'Options', size: 'foot', go: () => { this.optionsFrom = 'main'; this.showMenu('options'); } },
         { name: 'Controls', size: 'foot', go: () => { this.controlsFrom = 'main'; this.showMenu('controls'); } },
         { name: 'Changelog', size: 'foot', go: () => this.showMenu('changelog') },
-        ...(typeof showcase !== 'undefined' ? [{ name: 'Watch', size: 'foot', go: () => showcase.play() }] : []),   // the showcase again (js/showcase.js)
         ...(DEV ? [{ name: 'Test Grounds', size: 'foot', go: () => this.showMenu('tests') }] : []),
         ...(update('title') ? [update('title')] : []),
       ] },
+      storyPick: { title: 'Story', back: 'main', items: [
+        { name: 'Continue', desc: S.main[0].line, go: S.main[0].go },
+        { name: 'New game', desc: '', go: S.main[0].newGame || (() => {}) },
+        { name: 'Back', desc: '', cue: 'menuBack', go: () => this.showMenu('main') }] },
       tests: { title: 'Test grounds', back: 'main',
         items: [...S.devItems, ...finale.devItems(), ...lore.devItems(),   // the story's jumps live here, off the title
                 ...TEST_LEVELS.map(l => ({ name: l.name, desc: l.description, go: () => this.loadingFirst(l.name, l.description, () => this.startLevel(l.id)) })),
@@ -188,39 +191,36 @@ Object.assign(Game, {
     const L = typeof multiplayer !== 'undefined' ? multiplayer.lobby : { state: 'absent' }, n = L.players;
     const live = L.state === 'online' && n > 0, reachable = L.state === 'online';
     const line = live ? `${n} playing online now${L.playing ? ` · ${L.playing}` : ' · in the lobby'}` : `Boss after boss until you fall, faster every fight. Every ${CONFIG.endless.crowned}th is Crowned.`;
-    const lobby = { name: 'Join lobby', go: () => sparring.before(() => multiplayer.join()) };
-    const alone = { name: 'Play in private', go: () => sparring.before(() => multiplayer.playAlone()) };   // a new player spars first
-    const [first, second] = L.state === 'absent' ? [alone, null] : L.state === 'offline' ? [alone, lobby] : [lobby, alone];
-    return { line, lobbyState: live ? 'live' : reachable ? 'open' : L.state, reachable, start: first.name, go: first.go, second };
+    return { line, lobbyState: live ? 'live' : reachable ? 'open' : L.state, reachable };
   },
-  // A new answer from the lobby: rewrite Boss Rush's line in place (the screen and the selection stay), and choose it
-  // if the player has not touched the title yet.
+  // A new answer from the lobby: rewrite Boss Rush's line in place (the screen and the selection stay).
   refreshTitleLobby() {
     if (this.screen !== 'main' || this.mode !== 'menu') return;
-    const at = (this.menuItems || []).findIndex(it => it.online), t = this.titleLobby(), b = (this.menuButtons || [])[at];
-    if (!b) return;
-    Object.assign(this.menuItems[at], t);
-    if (!this.menuTouched) this.select(t.reachable ? at : 0, !!document.activeElement && $('menuBox').contains(document.activeElement));
-    this.chooseMode(this.titleMode);   // the line, when Boss Rush is the chosen mode
+    const at = (this.menuItems || []).findIndex(it => it.online);
+    if (at < 0) return;
+    Object.assign(this.menuItems[at], this.titleLobby());
+    this.titleLine();
+  },
+  // The title's Tutorial: the showcase, then the sparring scene, then the title again (js/showcase.js, js/sparring.js).
+  playTutorial() {
+    let started = false;   // a show that fails half-way calls onEnd and returns false: the scene still starts once
+    const spar = () => { if (!started) { started = true; sparring.start({ back: 'main' }); } };
+    if (typeof showcase === 'undefined' || !showcase.play({ toMenu: false, onEnd: spar })) spar();
   },
   refreshTitleCollection() {
     if (this.screen !== 'main' || this.mode !== 'menu') return;
     const it = (this.menuItems || []).find(x => x.collection);
     if (it) { it.line = crateScreen.titleLine(); this.chooseMode(this.titleMode); }
   },
-  // The title's chosen mode: its row is pressed, and the primary button and the line under the rows follow it.
+  // The title's mode under the pointer or the keys: the line under the rows describes it.
   chooseMode(i) {
-    const items = this.menuItems || [], it = items[i], btns = this.menuButtons || [];
+    const it = (this.menuItems || [])[i];
     if (!it || it.size !== 'mode') return;
     this.titleMode = i;
-    items.forEach((x, k) => { if (x.size === 'mode') btns[k].setAttribute('aria-pressed', String(k === i)); });
-    const p = items.findIndex(x => x.size === 'primary'), s = items.findIndex(x => x.size === 'second');
-    if (p >= 0) btns[p].children[0].textContent = items[p].name = it.start;
-    if (s >= 0) { btns[s].hidden = !it.second; if (it.second) btns[s].children[0].textContent = items[s].name = it.second.name; }
     this.titleLine();
   },
   // The line under the title's modes: the selected entry's own note when it has one (the new-version button), else
-  // the chosen mode's line.
+  // the last mode pointed at.
   titleLine() {
     const items = this.menuItems || [], it = items[this.selected], mode = items[this.titleMode];
     $('menuDesc').textContent = it && it.desc ? it.desc : mode ? mode.line || '' : '';
@@ -254,26 +254,22 @@ Object.assign(Game, {
     this.menuItems = s.items;   // what select() and adjust() read, so a key press never rebuilds every screen
     this.menuButtons = [];      // every button in item order, wherever it sits (the title and Options spread them out)
     this.menuLayout = layout; this.lastColumn = 'list';
-    // The title's pieces take the shared UI pieces (js/ui-theme.js): modes are rows, the primary starts the chosen one,
-    // the rest are quiet text buttons in the footer. Every other screen: entries are rows, Back is a footer button with
+    // The title's pieces take the shared UI pieces (js/ui-theme.js): modes are rows (Boss Rush, the lead, a primary
+    // button), the rest are quiet text buttons in the footer. Every other screen: entries are rows, Back is a footer button with
     // its key, and Options' settings are rows beside their categories, each with its control.
-    const titleClass = { mode: 'title-mode ui-row', primary: 'title-primary ui-primary', second: 'title-second ui-text-button',
-      foot: 'title-foot ui-text-button', update: 'title-foot title-update ui-text-button' };
+    const titleClass = { mode: 'title-mode ui-row', foot: 'title-foot ui-text-button', update: 'title-foot title-update ui-text-button' };
     s.items.forEach((it, i) => {
       const b = document.createElement('button'), at = this.itemPlace(it);
       b.type = 'button';
       if (title ? it.size === 'mode' || it.desc : at !== 'foot') b.setAttribute('aria-describedby', 'menuDesc');
-      b.className = title ? titleClass[it.size] : at === 'foot' ? 'ui-text-button' + (this.isBackItem(it) ? ' menu-back' : '')
+      b.className = title ? it.lead ? 'title-mode title-lead ui-primary' : titleClass[it.size] : at === 'foot' ? 'ui-text-button' + (this.isBackItem(it) ? ' menu-back' : '')
         : 'menuBtn ui-row' + (it.size === 'set' || it.size === 'bind' ? ' setting' : '') + (it.size ? ` ${it.size}` : '');
       b.innerHTML = '<span class="n"></span>';
       if (it.note) { const note = document.createElement('span'); note.className = 'note'; note.textContent = it.note; b.appendChild(note); }
-      if (title && it.size === 'primary') { const key = document.createElement('span'); key.className = 'ui-key'; key.setAttribute('aria-hidden', 'true'); b.appendChild(key); }
+      if (title && it.lead) { const key = document.createElement('span'); key.className = 'ui-key'; key.setAttribute('aria-hidden', 'true'); b.appendChild(key); }
       if (!title && this.isBackItem(it)) { const key = document.createElement('span'); key.className = 'ui-key'; key.setAttribute('aria-hidden', 'true'); b.prepend(key); }
       if (it.kind) b.appendChild(this.menuControl(it, i));
-      if ((title && it.size === 'mode') || it.size === 'cat') b.setAttribute('aria-pressed', 'false');
-      if (title && it.size === 'mode') {
-        b.addEventListener('dblclick', () => { this.select(i); this.confirm(); });   // a double click starts the mode, as Enter does
-      }
+      if (it.size === 'cat') b.setAttribute('aria-pressed', 'false');
       if (it.group) { b.dataset.group = it.group; b.classList.add('campaign-start'); }
       if (it.label) b.setAttribute('aria-label', it.label);
       if (it.team) b.dataset.team = it.team;
@@ -281,23 +277,23 @@ Object.assign(Game, {
       if (it.disabled) { b.setAttribute('aria-disabled', 'true'); b.classList.add('unavailable'); }
       this.fillRow(b, it);
       b.addEventListener('focus', () => this.select(i));
-      // A click on a title mode or an Options category only chooses it; every other button does its job.
-      b.addEventListener('click', () => { this.menuTouched = true; this.select(i); if (!(title && it.size === 'mode') && it.size !== 'cat') this.confirm(); });
+      // A click on an Options category only chooses it; every other button, the title's modes included, does its job.
+      b.addEventListener('click', () => { this.menuTouched = true; this.select(i); if (it.size !== 'cat') this.confirm(); });
       // Scrolling can put another row under a stationary pointer. Only actual mouse movement may select it, and the
-      // pointer only points: it never changes the title's chosen mode or the chosen category.
+      // pointer only points: it never changes the chosen category.
       b.addEventListener('mousemove', ev => {
         if ((!ev.movementX && !ev.movementY) || this.selected === i) return;
         events.emit('menuMove'); this.menuTouched = true;
         this.hovering = true; try { this.select(i); } finally { this.hovering = false; }
       });
-      (title ? it.size === 'mode' ? list : $(it.size === 'primary' || it.size === 'second' ? 'menuAct' : 'menuFootActions')
+      (title ? it.size === 'mode' ? list : $('menuFootActions')
         : at === 'foot' ? $('menuFootActions') : at === 'side' ? $('menuSide') : list).appendChild(b);
       this.menuButtons.push(b);
     });
     if (layout === 'pause') { this.pauseKey = null; this.tickPause(); }
     this.showMenuHint();   // draws the Controls screen's list too
     if (!keepSelection) this.menuTouched = false;
-    if (title) this.chooseMode(keepSelection && this.titleMode != null ? this.titleMode : s.focus);   // a redraw keeps the chosen mode
+    if (title) this.chooseMode(keepSelection && this.titleMode != null ? this.titleMode : s.focus);
     if (layout === 'options') this.chooseCategory(this.optionsCategory);
     this.select(keepSelection ? this.selected : s.focus ?? Math.max(0, s.items.findIndex(it => !it.disabled)), true);
     if (screen === 'main' && typeof multiplayer !== 'undefined') multiplayer.peek();   // who is online right now
@@ -461,12 +457,11 @@ Object.assign(Game, {
     this.rebinding = null; events.emit('menuConfirm');
     events.emit('device', { device: input.device });   // every key cap and line redraws from the new keys
   },
-  // The primary button shows the confirm key while it is what that key does: on the chosen mode or on the button itself.
+  // The leading mode (Boss Rush) shows the confirm key while it is selected.
   titleKeys() {
     if (this.screen !== 'main' || !this.menuButtons) return;
-    const items = this.menuItems || [], p = items.findIndex(x => x.size === 'primary'), it = items[this.selected];
-    const key = p >= 0 && this.menuButtons[p].querySelector('.ui-key');
-    if (key) key.textContent = this.selected === this.titleMode || (it && it.size === 'primary') ? usingPad() ? 'A' : 'Enter' : '';
+    const p = (this.menuItems || []).findIndex(x => x.lead), key = p >= 0 && this.menuButtons[p].querySelector('.ui-key');
+    if (key) key.textContent = this.selected === p ? usingPad() ? 'A' : 'Enter' : '';
   },
   // One step of directional menu input (keys, D-pad or stick); 'next' and 'prev' (Tab) go through every entry in order.
   menuStep(dir) {
@@ -480,19 +475,14 @@ Object.assign(Game, {
       return;
     }
     if (this.menuLayout === 'title' && it) {
-      // Rows: each mode, the primary, the chosen mode's second button (when shown), then the footer's entries together.
+      // Rows: each mode, then the footer's entries together.
       // Up and down go row to row (wrapping); left and right go along the footer.
       const rows = [];
       items.forEach((x, i) => { if (!shown(i)) return;
         const key = x.size === 'mode' ? `mode${i}` : x.size === 'update' ? 'foot' : x.size, row = rows.find(r => r.key === key);
         if (row) row.at.push(i); else rows.push({ key, at: [i] }); });
       const r = Math.max(0, rows.findIndex(row => row.at.includes(this.selected))), row = rows[r].at;
-      // The chosen mode's buttons without choosing another mode on the way: right from a mode goes to its primary, and
-      // left, or up from the primary, comes back to the chosen mode (Boss Rush's Join lobby, Story's New game).
-      const primary = items.findIndex(x => x.size === 'primary');
-      const to = it.size === 'mode' && dir === 'right' && primary >= 0 ? primary
-        : (it.size === 'primary' || it.size === 'second') && (dir === 'left' || dir === 'up' && it.size === 'primary') && this.titleMode != null ? this.titleMode
-        : dir === 'down' || dir === 'up' ? rows[(r + (dir === 'down' ? 1 : -1) + rows.length) % rows.length].at[0]
+      const to = dir === 'down' || dir === 'up' ? rows[(r + (dir === 'down' ? 1 : -1) + rows.length) % rows.length].at[0]
         : row.length > 1 ? row[(row.indexOf(this.selected) + (dir === 'left' ? -1 : 1) + row.length) % row.length] : this.selected;
       if (to !== this.selected) { events.emit('menuMove'); this.select(to, true); }
       return;
@@ -532,7 +522,7 @@ Object.assign(Game, {
     const it = (this.menuItems || [])[this.selected];
     if (it && it.size === 'cat' && !this.hovering) this.chooseCategory(it.cat);
     if (it && this.itemPlace(it) !== 'foot') this.lastColumn = this.itemPlace(it);
-    if (title) { if (it && it.size === 'mode' && !this.hovering) this.chooseMode(this.selected); this.titleLine(); this.titleKeys(); }
+    if (title) { if (it && it.size === 'mode') this.chooseMode(this.selected); this.titleLine(); this.titleKeys(); }
     else $('menuDesc').textContent = it ? it.desc || '' : '';
   },
   confirm() { const it = (this.menuItems || [])[this.selected]; if (!it || it.disabled) return; if (it.go) { events.emit(it.cue || 'menuConfirm'); it.go(); } else this.adjust(it.kind === 'toggle' ? 0 : 1); },

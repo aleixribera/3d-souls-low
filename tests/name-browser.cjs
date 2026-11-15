@@ -41,13 +41,13 @@ const { createServer } = require('../server/index.cjs');
     assert.equal(await a.evaluate(() => progress.name), '', 'empty storage: no name yet');
 
     // Solo never asks: Story starts straight away.
-    await a.evaluate(() => Game.menuItems[0].go());
+    await a.evaluate(() => Game.menuItems.find(it => it.name === 'Story').go());
     await a.waitForFunction(() => Game.mode === 'play' && Game.loading <= 0, null, { timeout: 90000 });
     assert.equal(await asking(a), false, 'Story never asks for a name');
     await a.evaluate(() => Game.showMenu('main'));
 
     // Online asks once, before joining.
-    await a.getByRole('button', { name: 'Join lobby', exact: false }).click();
+    await a.locator('#menuList .title-lead').click();
     assert.equal(await asking(a), true, 'opening online play with no name asks for one');
     assert.equal(await a.evaluate(() => multiplayer.connected), false, 'nothing joins before the name is given');
     assert.equal(await a.locator('#nameAskDone').isDisabled(), true, 'an empty name cannot join');
@@ -60,7 +60,7 @@ const { createServer } = require('../server/index.cjs');
     await a.setViewportSize({ width: 1280, height: 720 });
     await a.keyboard.press('Escape');
     assert.equal(await asking(a), false); assert.equal(await a.evaluate(() => progress.name), '', 'Escape keeps nothing');
-    await a.getByRole('button', { name: 'Join lobby', exact: false }).click();
+    await a.locator('#menuList .title-lead').click();
     await a.keyboard.type('Ser Vale'); await a.keyboard.press('Enter');
     await a.waitForFunction(() => multiplayer.connected);
     assert.deepEqual(await partyNames(a), ['Ser Vale (you)'], 'the chosen name shows in the party list');
@@ -70,7 +70,7 @@ const { createServer } = require('../server/index.cjs');
 
     // A reload joins with no ask.
     await a.reload(); await a.waitForFunction(() => window.__arenaReady, null, { timeout: 120000 });
-    await a.getByRole('button', { name: 'Join lobby', exact: false }).click();
+    await a.locator('#menuList .title-lead').click();
     assert.equal(await asking(a), false, 'never asked again');
     await a.waitForFunction(() => multiplayer.connected);
     assert.deepEqual(await partyNames(a), ['Ser Vale (you)']);
@@ -83,7 +83,7 @@ const { createServer } = require('../server/index.cjs');
       localStorage.setItem('combatArena.sparring', JSON.stringify({ done: true }));
     });
     const b = await open(friendContext);
-    await b.getByRole('button', { name: 'Join lobby', exact: false }).click();
+    await b.locator('#menuList .title-lead').click();
     assert.equal(await asking(b), false, 'a name from the old lobby box counts as set');
     await b.waitForFunction(() => multiplayer.connected);
     await a.waitForFunction(() => multiplayer.info.players.some(p => p.name === 'Friend'));
@@ -126,7 +126,7 @@ const { createServer } = require('../server/index.cjs');
     const freshContext = await browser.newContext({ viewport: { width: 1280, height: 720 } });
     await freshContext.addInitScript(() => { if (!localStorage.getItem('combat-arena-3d.settings')) localStorage.setItem('combat-arena-3d.settings', JSON.stringify({ graphics: 'bare', volume: 0 })); });
     const c = await open(freshContext);
-    await c.getByRole('button', { name: 'Join lobby', exact: false }).click();
+    await c.locator('#menuList .title-lead').click();
     await c.waitForFunction(() => sparring.active(), null, { timeout: 90000 });
     assert.equal(await asking(c), false, 'no ask over the sparring scene');
     await c.evaluate(() => sparring.skip());

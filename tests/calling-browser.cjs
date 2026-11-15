@@ -27,7 +27,7 @@ const out = process.env.CALLING_SHOTS || '.scratch/calling';
     }, name);
     await page.goto(`http://127.0.0.1:${app.server.address().port}/combat-arena-3d.html#dev`);
     await page.waitForFunction(() => window.__arenaReady, null, { timeout: 120000 });
-    await page.getByRole('button', { name: 'Join lobby', exact: false }).click();
+    await page.locator('#menuList .title-lead').click();
     await page.waitForFunction(() => multiplayer.connected);
     return page;
   }

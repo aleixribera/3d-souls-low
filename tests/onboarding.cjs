@@ -31,9 +31,8 @@ const server = http.createServer((req, res) => {
     await page.getByRole('button', { name: 'Practice', exact: true }).click();
     await page.waitForTimeout(300);
     assert.equal(await page.evaluate(() => !!document.fullscreenElement), false, 'the first click never enters fullscreen');
-    assert.equal(await page.evaluate(() => Game.menuItems[Game.titleMode].name), 'Practice', 'the first click chooses Practice');
-    await page.getByRole('button', { name: 'Story', exact: true }).click();
-    assert.equal(await page.evaluate(() => Game.menuItems[Game.titleMode].name), 'Story');
+    assert.equal(await page.evaluate(() => Game.screen), 'practice', 'one click opens Practice');
+    await page.evaluate(() => Game.showMenu('main'));
         await page.getByRole('button', { name: 'Options', exact: true }).click();
     assert.equal(await page.getByRole('button', { name: /^Fullscreen:/ }).count(), 0, 'Options omits the fullscreen control');
     assert.equal(await page.evaluate(() => !!document.fullscreenElement), false, 'Options never enters fullscreen');

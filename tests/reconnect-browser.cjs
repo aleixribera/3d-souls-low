@@ -26,7 +26,7 @@ const { config: C } = require('../js/net-protocol.js');
     }, name);
     await page.goto(url);
     await page.waitForFunction(() => window.__arenaReady, null, { timeout: 120000 });
-    await page.getByRole('button', { name: 'Join lobby', exact: false }).click();
+    await page.locator('#menuList .title-lead').click();
     await page.waitForFunction(() => multiplayer.connected);
     return page;
   }
@@ -90,7 +90,7 @@ const { config: C } = require('../js/net-protocol.js');
 
     // A hard reload uses the private persisted credential too.
     await a.reload(); await a.waitForFunction(() => window.__arenaReady, null, { timeout: 120000 });
-    await a.getByRole('button', { name: 'Join lobby', exact: false }).click(); await ready(a);
+    await a.locator('#menuList .title-lead').click(); await ready(a);
     assert.equal(await a.evaluate(() => multiplayer.info.self), oldId); await assertSaved(a, saved);
 
     // Recover a title/menu fallback without a refill, and retry repeated transport failures.

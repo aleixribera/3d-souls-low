@@ -48,7 +48,7 @@
     const second = watch().marks;
     expect.ok(first.length > 25 && first.join(';') === second.join(';'), `two runs differ: ${first.find((m, i) => m !== second[i])} / ${second.find((m, i) => m !== first[i])}`);
     Game.showMenu('main');
-    expect.ok(Game.menuItems.some(it => it.name === 'Watch'), 'the title has Watch to play it again');
+    expect.ok(Game.menuItems.some(it => it.name === 'Tutorial (Recommended)'), 'the title\'s Tutorial plays it again');
   });
   // At launch (PLAN.md "The showcase"): each new version plays it, once in SHOWCASE.again hours at most, never into a run.
   test('Showcase: plays at launch on each new version, once a day at most, never into a run', () => {

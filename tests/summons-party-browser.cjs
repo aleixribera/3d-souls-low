@@ -64,7 +64,7 @@ async function party(browser, mine, his) {
     });
     await page.goto(origin + '/combat-arena-3d.html#dev');
     await page.waitForFunction(() => window.__arenaReady, null, { timeout: 120000 });
-    await page.getByRole('button', { name: 'Join lobby', exact: false }).click();
+    await page.locator('#menuList .title-lead').click();
     await page.waitForFunction(() => multiplayer.connected);
     const ash = await page.evaluate(() => multiplayer.info.self);
     forced.set(ash, mine);

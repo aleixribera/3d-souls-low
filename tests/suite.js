@@ -2920,64 +2920,45 @@
   }));
   test('Story: a new game saves at the level start and Story offers Continue and New together', withSave(() => {
     S().erase(); Game.showMenu('main');
-    expect.ok(Game.screens().main.items.map(i => i.name).slice(0, 3).join() === 'Story,Boss Rush,Practice', 'Story, Boss Rush, Practice, whatever the save');
+    expect.ok(Game.screens().main.items.map(i => i.name).slice(0, 4).join() === 'Boss Rush,Story,Tutorial (Recommended),Practice', 'Boss Rush, Story, Tutorial, Practice, whatever the save');
     S().newGame(); sim.begin();
     expect.ok(Game.story && Game.level.id === 'long-hall', 'a new story starts in Level 1');
     expect.ok(S().data.level === 'long-hall' && S().data.bonfire === null, 'saved at the level start');
     Game.showMenu('main');
     const names = Game.screens().main.items.map(i => i.name), road = Game.screens().story.items.filter(i => i.campaign === 'ashmere').map(i => i.name);
-    expect.ok(names[0] === 'Story' && names.includes('Practice') && road.join() === 'Continue,New', `Story offers Continue and New together (${road})`);
-    Game.select(0, false);
-    const second = Game.menuButtons[Game.menuItems.findIndex(it => it.size === 'second')];
-    expect.ok(Game.menuItems.find(it => it.size === 'primary').name === 'Continue' && !second.hidden, 'the title offers Continue, and New game beside it');
-    Game.select(Game.menuItems.indexOf(Game.menuItems.find(it => it.size === 'second')), false); Game.confirm();
+    expect.ok(names[1] === 'Story' && names.includes('Practice') && road.join() === 'Continue,New', `Story offers Continue and New together (${road})`);
+    Game.select(1, false); Game.confirm();
+    expect.ok(Game.screen === 'storyPick' && Game.menuItems.map(i => i.name).join() === 'Continue,New game,Back', `one click on Story asks Continue or New game (${Game.screen})`);
+    Game.select(1, false); Game.confirm();
     expect.ok(Game.screen === 'storyConfirm', `New game asks before replacing the save (${Game.screen})`);
     Game.menuBack(); expect.ok(Game.screen === 'main', 'and going back returns to the title');
   }));
-  test('Title: Story, Boss Rush and Practice each start, and Practice fights anything within two picks', withSparring(S => {
+  test('Title: Boss Rush, Story, Tutorial and Practice each start in one click, and Practice fights anything within two picks', withSparring(S => {
     sim.begin();   // the stepped clock: a pick's loading card builds the fight at once (alone, the runner's own clock hid this)
     S.forget({ done: true });   // a fresh page is a new player, whom Boss Rush sends to the sparring scene first (pass 97)
     const pick = (screen, name) => {
       Game.showMenu(screen); const i = Game.menuItems.findIndex(it => it.name === name);
       expect.ok(i >= 0, `${screen} offers ${name}`); Game.select(i, false); Game.confirm();
     };
-    // The title: moving onto a mode chooses it, and the primary button and the line follow; the primary starts it.
+    // The title: one click starts each mode; moving onto one shows its line. Boss Rush always tries the public lobby
+    // (playing in private is the lobby screen's offer once it fails), whatever the lobby last answered.
     Game.showMenu('main');
-    const at = name => Game.menuItems.findIndex(it => it.name === name), primary = () => Game.menuButtons[Game.menuItems.findIndex(it => it.size === 'primary')];
-    const newGame = () => Game.menuButtons[Game.menuItems.findIndex(it => it.size === 'second')];
-    Game.select(at('Practice'), false);
-    expect.ok(primary().textContent.startsWith('Choose a fight') && newGame().hidden && Game.menuButtons[at('Practice')].getAttribute('aria-pressed') === 'true',
-      `Practice chosen: ${primary().textContent}`);
+    const at = name => Game.menuItems.findIndex(it => it.name === name);
+    expect.ok(Game.selected === at('Boss Rush') && Game.menuItems[at('Boss Rush')].lead, 'the title opens on Boss Rush, the leading mode');
     Game.select(at('Story'), false);
-    expect.ok(/^(Begin|Continue)/.test(primary().textContent) && $('menuDesc').textContent === Game.menuItems[at('Story')].line, `Story chosen: ${primary().textContent}`);
-    Game.select(at('Options'), false);
-    expect.ok(Game.titleMode === at('Story') && /^(Begin|Continue)/.test(primary().textContent), 'moving to the footer keeps the chosen mode');
-    // Boss Rush plays in the lobby from its primary button and its row, with Play in private beside it; while the lobby
-    // does not answer the two swap; with no lobby at all it plays only in private.
+    expect.ok($('menuDesc').textContent === Game.menuItems[at('Story')].line, 'Story shows its line');
     const join = multiplayer.join, playAlone = multiplayer.playAlone, look = Object.getOwnPropertyDescriptor(multiplayer, 'lobby');
     let joined = 0, played = 0; multiplayer.join = () => { joined++; }; multiplayer.playAlone = () => { played++; };
     const lobbyIs = state => Object.defineProperty(multiplayer, 'lobby', { configurable: true, get: () => ({ state, players: 0, capacity: 16, playing: null }) });
     try {
-      lobbyIs('absent');
-      Game.showMenu('main'); Game.select(at('Boss Rush'), false);
-      expect.ok(primary().textContent.startsWith('Play in private') && newGame().hidden, `no lobby: Play in private only (${primary().textContent})`);
-      Game.select(Game.menuItems.indexOf(Game.menuItems.find(it => it.size === 'primary')), false); Game.confirm();
-      pick('main', 'Boss Rush');
-      expect.ok(played === 2 && joined === 0, `no lobby: its primary button and its row play in private (${played})`);
-      lobbyIs('offline');
-      Game.showMenu('main'); Game.select(at('Boss Rush'), false);
-      expect.ok(primary().textContent.startsWith('Play in private') && newGame().textContent.startsWith('Join lobby'), `the lobby does not answer: Play in private, Join lobby beside it (${primary().textContent})`);
-      lobbyIs('online'); played = 0;
-      Game.showMenu('main'); Game.select(at('Boss Rush'), false);
-      expect.ok(primary().textContent.startsWith('Join lobby') && !newGame().hidden && newGame().textContent.startsWith('Play in private'), `the lobby answers: Join lobby, Play in private beside it (${primary().textContent} / ${newGame().textContent})`);
-      Game.menuStep('right');   // the keys and the pad reach it without choosing another mode
-      expect.ok(Game.menuItems[Game.selected].size === 'primary' && Game.titleMode === at('Boss Rush'), `right: Join lobby (${Game.menuItems[Game.selected].name})`);
-      Game.confirm();
-      expect.ok(joined === 1 && played === 0, 'Join lobby joins the public lobby');
-      Game.menuStep('down'); Game.confirm();
-      expect.ok(Game.menuItems[Game.selected].size === 'second' && played === 1 && joined === 1, `down: Play in private plays in this page (${Game.menuItems[Game.selected].name})`);
-      Game.menuStep('left'); expect.ok(Game.selected === at('Boss Rush'), 'left comes back to Boss Rush');
+      for (const state of ['absent', 'offline', 'online']) { lobbyIs(state); pick('main', 'Boss Rush'); }
+      expect.ok(joined === 3 && played === 0, `Boss Rush joins the lobby in one click, never private play from the title (${joined}/${played})`);
     } finally { multiplayer.join = join; multiplayer.playAlone = playAlone; Object.defineProperty(multiplayer, 'lobby', look); }
+    // Tutorial: the showcase, then the sparring scene.
+    const play = showcase.play, start = S.start; let shown = 0, spar = null;
+    showcase.play = o => { shown++; o.onEnd(); return true; }; S.start = o => { spar = o; };
+    try { pick('main', 'Tutorial (Recommended)'); } finally { showcase.play = play; S.start = start; }
+    expect.ok(shown === 1 && spar && spar.back === 'main', 'Tutorial plays the show, then the sparring scene, back to the title');
     pick('main', 'Practice'); expect.ok(Game.screen === 'practice', 'Practice opens');
     const boss = ENEMY_DEFS.find(isBossDef), foe = ENEMY_DEFS.find(d => !isBossDef(d));
     pick('practice', 'Fight a boss'); pick('practiceBosses', boss.name);
@@ -3558,15 +3539,15 @@
     const res = hit(riposte, { ...behind(e), id: 'friend' });
     expect.ok(res.finisher && e.cracks === 2, `in a party anyone's counter counts: a friend's is the Finishing Blow, theirs to run (${JSON.stringify(res)}, ${e.cracks})`);
   });
-  test('Finishing Blow: the cracks fade when no counter lands for a while', () => {
+  test('Finishing Blow: the cracks never fade with time, however long until the next counter', () => {
     Game.startFight('knight'); Game.loading = 0; sim.begin();
-    const p = Game.player, e = Game.duel, F = CONFIG.finisher; finLog.length = 0;
+    const p = Game.player, e = Game.duel; finLog.length = 0;
     counterOn(e, p); sim.until(() => e.cracks > 0, 1);
     expect.ok(e.cracks === 1 && finLog.includes('guardCrack'), `cracked (${e.cracks})`);
-    quiet(e); sim.seconds(F.fade - 0.5);
-    expect.ok(e.cracks === 1, 'it holds a while');
-    sim.seconds(1);
-    expect.ok(e.cracks === 0 && finLog.filter(t => t === 'guardCrack').length === 2, 'then fades, and says so');
+    quiet(e); sim.seconds(45);
+    expect.ok(e.cracks === 1 && finLog.filter(t => t === 'guardCrack').length === 1, `45 s with no counter: still cracked (${e.cracks})`);
+    e.x = e.home.x; e.z = e.home.z; e.notice = 0; e.setState(ES.RETURN); sim.seconds(0.1);
+    expect.ok(e.cracks === 0 && finLog.filter(t => t === 'guardCrack').length === 2, `a foe that gives up and walks home has its guard whole again (${e.cracks}, ${e.state})`);
   });
   test('Finishing Blow: 90 off an ordinary foe and 480 off a boss, at most half its bar, with its heal', () => {
     for (const [id, want] of [['knight', 'hurt'], ['executioner', 'hurt'], ['warden', 'hurt'], ['shover', 'hurt'], ['sentinel', 'hurt'], ['giant', 'boss'], ['pillagerCaptain', 'boss'], ['bellWarden', 'boss'], ['varn', 'boss']]) {

@@ -27,28 +27,21 @@ const { createServer } = require('../server/index.cjs');
     const selection = () => page.evaluate(() => ({ selected: Game.selected,
       focus: Game.menuButtons.indexOf(document.activeElement),
       stops: document.querySelectorAll('#menuBox button[tabindex="0"]').length }));
-    // The lobby answers, so the title rests on Boss Rush (Story, Boss Rush, Practice).
-    await page.waitForFunction(() => multiplayer.lobby.state === 'online' && Game.selected === 1);
-    assert.deepEqual(await selection(), { selected: 1, focus: 1, stops: 1 });
+    // The title rests on Boss Rush, its leading mode (Boss Rush, Story, Tutorial, Practice).
+    await page.waitForFunction(() => multiplayer.lobby.state === 'online' && Game.selected === 0);
+    assert.deepEqual(await selection(), { selected: 0, focus: 0, stops: 1 });
     await page.keyboard.press('Tab');
-    assert.deepEqual(await selection(), { selected: 2, focus: 2, stops: 1 });
-    await page.keyboard.press('Shift+Tab');
+    assert.deepEqual(await selection(), { selected: 1, focus: 1, stops: 1 });
     await page.keyboard.press('Shift+Tab');
     assert.deepEqual(await selection(), { selected: 0, focus: 0, stops: 1 });
     await page.keyboard.press('Shift+Tab');
     assert.equal((await selection()).selected, await page.evaluate(() => Game.menuButtons.length - 1), 'backward Tab wraps');
-    // The pointer only points: hovering a mode never chooses it, and the primary drops its Enter cap while Enter would
-    // start the hovered mode instead. A click chooses; Enter then starts it.
-    const title = () => page.evaluate(() => ({ hovered: Game.menuItems[Game.selected].name, chosen: Game.menuItems[Game.titleMode].name,
-      primary: document.querySelector('#menuAct .title-primary .n').textContent, key: document.querySelector('#menuAct .title-primary .ui-key').textContent }));
-    const practiceRow = page.locator('#menuList .title-mode').nth(2);
+    // Hovering a mode shows its line; one click starts it.
+    const practiceRow = page.getByRole('button', { name: 'Practice', exact: true });
     await practiceRow.hover({ position: { x: 40, y: 10 } }); await practiceRow.hover({ position: { x: 44, y: 12 } });
-    const story = await page.evaluate(() => Game.menuItems[0].start);
-    assert.deepEqual(await title(), { hovered: 'Practice', chosen: 'Story', primary: story, key: '' });
+    assert.equal(await page.locator('#menuDesc').textContent(), await page.evaluate(() => Game.menuItems.find(it => it.name === 'Practice').line), 'hovering Practice shows its line');
     await practiceRow.click();
-    assert.deepEqual(await title(), { hovered: 'Practice', chosen: 'Practice', primary: 'Choose a fight', key: 'Enter' });
-    await page.keyboard.press('Enter');
-    assert.equal(await page.evaluate(() => Game.screen), 'practice', 'Enter on the chosen mode starts it');
+    assert.equal(await page.evaluate(() => Game.screen), 'practice', 'one click on a mode starts it');
     await page.evaluate(() => Game.showMenu('main'));
     // Options: categories on the left, the chosen one's settings beside them, each with its control.
     await page.evaluate(() => { Game.optionsFrom = 'main'; Game.optionsCategory = 'game'; Game.showMenu('options'); });
@@ -196,7 +189,7 @@ const { createServer } = require('../server/index.cjs');
         return { lost: gl.isContextLost(), error: gl.getError() }; }), { lost: false, error: 0 });
     }
     await page.evaluate(() => { settings.graphics = 'bare'; applySettings(); Game.showMenu('main'); Game.manualClock = false; });
-    await page.getByRole('button', { name: 'Join lobby', exact: false }).click();
+    await page.locator('#menuList .title-lead').click();
     await page.waitForFunction(() => multiplayer.connected);
     await page.locator('#lobbyAdventure').selectOption('calling/boss-rush');
     await page.locator('#lobbyStart').click();
