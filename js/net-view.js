@@ -29,7 +29,7 @@ const netView = {
     if (s.learned) { e.learned.length = 0; e.learned.push(...s.learned); } else if (e.learned.length) e.learned.length = 0;   // pass 77 (the Antlered Hunger)
     // An attack id this release no longer has plays as no attack (an old replay), never as an error.
     e.attack = s.attack ? e.baseDef.attacks.find(x => x.id === s.attack) || null : null;
-    if (!e.attack && [ES.WINDUP, ES.ACTIVE, ES.RECOVER, ES.PARRIED].includes(e.state)) e.state = ES.CHASE;
+    if (s.attack && !e.attack && (e.state === ES.WINDUP || e.state === ES.ACTIVE || e.state === ES.RECOVER || e.state === ES.PARRIED)) e.state = ES.CHASE;
     e.hitIndex = s.hitIndex; e.netSerial = s.serial; e.attackNo = s.serial; e.netTarget = s.target; e.grounded = s.grounded;
     e.walkPhase = s.walkPhase; e.leaping = s.leaping; e.asleep = false;
     // A bolt's mark (pass 48): noted from the target the snapshot names, as the server notes it from the same body.

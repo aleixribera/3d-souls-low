@@ -24,7 +24,6 @@ Paused by Aleix, 2026-11-14 (after pass 103, v7.131.0). No pass until the loop c
   foe's reaction hidden behind the player.
 - Showcase: its finale is still a plain killing counter (hp 1); as the Finishing Blow it needs `cracks` at the
   last and its health left alone (`js/showcase.js` 165-170).
-- Old docs: `git show v7.56.0:docs/<file>`.
 
 ## Works
 
@@ -36,7 +35,7 @@ Paused by Aleix, 2026-11-14 (after pass 103, v7.131.0). No pass until the loop c
 - Figure lessons: thin limbs as open lofts (`hard`), not `soft()`; a band needs its own texture's slot; near-black
   and edge-on sheets take the rim light white: lower `rim` (model or slot).
 - Pace: `CONFIG.pace`, `CONFIG.enemy.press`, `rushPace`, `bossMove`; `tests/boss-pace.cjs`, `rush-flow.cjs`;
-  `tools/rush-curve.cjs bosses|runs|pairs` (`SKILLED=1`, `KIT=`). Practice's Speed: `CONFIG.practice.fights`.
+  `tools/rush-curve.cjs bosses|runs|pairs` (`SKILLED=1`, `KIT=`).
 - Bosses fight the group (v7.35.0): `CONFIG.aggro`, `bossTarget` (`js/lobby-sim.js`), `grouped` / `isAreaAttack`
   (`js/enemy.js`); `tests/boss-attention.cjs`.
 - Menus (pass 51, v7.72.0): title style everywhere, `optionsItems`, `pauseFacts`, `#runSummary`, Controls (`controlRows`); in-page `Menus:`.
@@ -55,11 +54,12 @@ Paused by Aleix, 2026-11-14 (after pass 103, v7.131.0). No pass until the loop c
   `Story moments:` (`inControl`), `Still Mere:`; `moments-*.jpg`.
 - Story's road (pass 79): `CONFIG.story.road`, `might`, `roadMight`/`roadFlasks`, `flaskFinds` (save `finds`);
   in-page `Story road:`, `Story: a flask`; `tools/story-curve.cjs`.
-- Bots: temperaments, strings, Finishing Blows, openings, backup: `tests/bot-temperament.cjs`; caution, room, rings, reach:
-  `bot-behavior.cjs`; `node tools/bot-fights.cjs story 10` (10 min; `PERSON=1`: a person stand-in).
+- Bots: `tests/bot-temperament.cjs`, `bot-behavior.cjs`; `node tools/bot-fights.cjs story 10` (`PERSON=1`).
+- Replays (pass 104): online runs recorded (`server/replays.cjs`, hooks in `lobby-host.js`; REPLAY_DIR, 60 days,
+  starred kept; 11.5-13.3 MB/h, ~0.09 ms a snapshot), viewer `js/replay.js` behind the tailnet-only door
+  (REPLAY_PORT, homelab :3083), list `replays/`; notes `node tools/replays.cjs`; `tests/server-replays.cjs`; audit
+  `docs/design-audit/2026-11-15.md`.
 - Scorecard frames: `tools/scorecard-frames.cjs`.
-- Capture scripts (untracked, `.scratch/`): `lab-many.cjs`, `lab-zoom.cjs`, `enemy-play.cjs`, `lab-probe.cjs`,
-  `solo-multi.cjs`.
 
 ## Broken
 
@@ -68,7 +68,7 @@ Paused by Aleix, 2026-11-14 (after pass 103, v7.131.0). No pass until the loop c
 
 ## Queued runs
 
-None (read the newest CI run). Probes (untracked, `.scratch/`): `render-scale.cjs`.
+None (read the newest CI run).
 
 ## wip// branches
 
