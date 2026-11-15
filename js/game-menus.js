@@ -67,11 +67,11 @@ Object.assign(Game, {
       // The title (v7.70.0, the mockups' menu style on js/ui-theme.js): the game's name, the modes as rows, one line
       // about the chosen mode, one primary button that starts it, and a footer of quiet entries. Moving onto a mode or
       // clicking it chooses it; Enter on it (or the primary) starts it; a mode's `second` is the button beside it. Boss Rush
-      // plays alone in this page (js/alone.js), or in the public lobby when it answers: its line says who is in it right
-      // now (multiplayer.lobby, asked while the title shows), and it is chosen when the lobby answers.
+      // plays in the public lobby, or in private in this page (js/alone.js): its line says who is in the lobby right now
+      // (multiplayer.lobby, asked while the title shows), and it is chosen when the lobby answers.
       main: { title: 'Combat Arena 3D', sub: '', layout: 'title', focus: this.titleLobby().reachable ? 1 : 0, items: [
         { ...S.main[0], size: 'mode', second: S.main[0].newGame ? { name: 'New game', go: S.main[0].newGame } : null },
-        { ...this.titleLobby(), size: 'mode', online: true, name: 'Boss Rush', start: 'Play alone', go: () => sparring.before(() => multiplayer.playAlone()) },   // a new player spars first
+        { ...this.titleLobby(), size: 'mode', online: true, name: 'Boss Rush' },
         { name: 'Practice', size: 'mode', line: 'Any enemy, boss or level, straight away.', start: 'Choose a fight', go: () => this.showMenu('practice') },
         // The Collection (js/crate-screen.js): your level, the crates to open, what you own. Its line is redrawn on the way back.
         ...(typeof crateScreen !== 'undefined' ? [{ name: 'Collection', size: 'mode', collection: true, line: crateScreen.titleLine(), start: 'Open the Collection',
@@ -181,14 +181,17 @@ Object.assign(Game, {
       { name: 'Back', desc: '', cue: 'menuBack', go: () => this.showMenu(back) },
     ];
   },
-  // The title's Boss Rush: the mode in a line, or who is in the public lobby right now (multiplayer.lobby), and Join
-  // lobby beside Play alone while the lobby answers.
+  // The title's Boss Rush: the mode in a line, or who is in the public lobby right now (multiplayer.lobby). It plays in
+  // the lobby, with Play in private beside it (Aleix); while the lobby does not answer the two swap, and a page with no
+  // lobby at all (a file, a static host) plays only in private.
   titleLobby() {
     const L = typeof multiplayer !== 'undefined' ? multiplayer.lobby : { state: 'absent' }, n = L.players;
     const live = L.state === 'online' && n > 0, reachable = L.state === 'online';
     const line = live ? `${n} playing online now${L.playing ? ` · ${L.playing}` : ' · in the lobby'}` : `Boss after boss until you fall, faster every fight. Every ${CONFIG.endless.crowned}th is Crowned.`;
-    return { line, lobbyState: live ? 'live' : reachable ? 'open' : L.state, reachable,
-      second: reachable ? { name: 'Join lobby', go: () => sparring.before(() => multiplayer.join()) } : null };
+    const lobby = { name: 'Join lobby', go: () => sparring.before(() => multiplayer.join()) };
+    const alone = { name: 'Play in private', go: () => sparring.before(() => multiplayer.playAlone()) };   // a new player spars first
+    const [first, second] = L.state === 'absent' ? [alone, null] : L.state === 'offline' ? [alone, lobby] : [lobby, alone];
+    return { line, lobbyState: live ? 'live' : reachable ? 'open' : L.state, reachable, start: first.name, go: first.go, second };
   },
   // A new answer from the lobby: rewrite Boss Rush's line in place (the screen and the selection stay), and choose it
   // if the player has not touched the title yet.

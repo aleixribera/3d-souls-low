@@ -47,7 +47,7 @@ const multiplayer = (() => {
     <div id="lobbyRunActions" class="lobby-actions" role="group" aria-label="Party controls" hidden><button id="lobbyRestart" class="ui-button">Restart run</button>
     <button id="lobbyReturn" class="ui-button">Return everyone to lobby</button></div></div>
     <div id="lobbyWaiting"><p class="lobby-waiting-text"></p><button id="lobbyGuestResume" class="ui-primary"><span class="ui-key" aria-hidden="true"></span>Return to game</button></div>
-    <button id="lobbyRetry" class="ui-primary" hidden>Try again</button>
+    <button id="lobbyRetry" class="ui-primary" hidden>Try again</button><button id="lobbyPrivate" class="ui-button" hidden>Play in private</button>
     </section><section class="lobby-party" aria-labelledby="lobbyPartyTitle">
     <div class="lobby-section-title"><h2 id="lobbyPartyTitle">Party</h2><span id="lobbyCount"></span></div>
     <div id="lobbyPlayers" aria-label="Players"></div>
@@ -89,7 +89,7 @@ const multiplayer = (() => {
     #publicLobby .lobby-actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:16px}#publicLobby #lobbyRunActions .ui-button{flex:1 1 auto}
     #publicLobby #lobbyReturn{color:var(--ui-alarm)}
     #lobbyWaiting{margin-top:8px}#lobbyWaiting .lobby-waiting-text:empty{display:none}#lobbyWaiting .lobby-waiting-text{margin:0 0 16px;font:400 var(--ui-size-row)/1.4 var(--ui-display);color:var(--ui-ink)}
-    #publicLobby #lobbyRetry{margin-top:16px}
+    #publicLobby #lobbyRetry{margin-top:16px}#publicLobby #lobbyPrivate{display:flex;width:100%;justify-content:center;margin-top:10px}#publicLobby #lobbyPrivate[hidden]{display:none}
     #publicLobby .online-level{margin:0 0 14px;color:var(--ui-accent-hi);font:600 var(--ui-size-text)/1.4 var(--ui-text);letter-spacing:0;text-transform:none}
     #publicLobby .lobby-section-title{display:flex;justify-content:space-between;align-items:baseline;gap:8px;margin-bottom:16px}
     #publicLobby .lobby-section-title h2{font:400 var(--ui-size-head)/1.2 var(--ui-display);color:var(--ui-ink)}
@@ -482,7 +482,7 @@ const multiplayer = (() => {
       if (!document.activeElement.classList.contains('pad-selected')) focusLobbyControl(document.activeElement);
       return document.activeElement;
     }
-    const preferred = [el('lobbyResume'), el('lobbyGuestResume'), el('lobbyStart'), el('lobbyRetry'),
+    const preferred = [el('lobbyResume'), el('lobbyGuestResume'), el('lobbyStart'), el('lobbyRetry'), el('lobbyPrivate'),
       el('lobbyModes').querySelector('[aria-pressed=true]'), el('lobbyLeave')].find(node => controls.includes(node));
     const next = preferred || controls[0]; focusLobbyControl(next); return next;
   }
@@ -799,6 +799,7 @@ const multiplayer = (() => {
     el('lobbyConnection').title = connected ? 'Round-trip connection time' : '';
     el('lobbyRetry').hidden = connected || starting || reconnectWanted;
     el('lobbyRetry').textContent = needsReload ? 'Reload game' : 'Try again';
+    el('lobbyPrivate').hidden = connected || starting || needsReload;   // the lobby failed or is being retried: Boss Rush in private instead (Aleix)
     el('lobbyWaiting').hidden = connected && self === leader || !connected;
     el('lobbyCount').textContent = connected ? `${roster.length} / ${capacity}` : '—';
   }
@@ -1317,6 +1318,7 @@ const multiplayer = (() => {
   el('lobbyTutorial').onclick = () => { leave(); sparring.start({ then: () => join() }); };   // the sparring scene, then back into the lobby (js/sparring.js)
   el('lobbyGuestResume').onclick = hide;
   el('lobbyRetry').onclick = () => needsReload ? location.reload() : join();
+  el('lobbyPrivate').onclick = () => { leave(); playAlone(); };
   el('lobbyAdventure').onchange = () => updateRoster();   // the row's click already sounds
   el('lobbyManage').onclick = () => {
     const open = panel.classList.toggle('managing-party'); el('lobbyManage').setAttribute('aria-expanded', String(open));

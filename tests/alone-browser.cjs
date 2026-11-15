@@ -1,6 +1,6 @@
 'use strict';
 // Boss Rush alone, with no server (js/alone.js; PLAN.md track B item 1): the page opened as a file plays a whole run. The
-// title offers Play alone and no Join lobby (no lobby answers a file); the run is the lobby's own (js/lobby-host.js) in
+// title offers Play in private and no Join lobby (no lobby answers a file); the run is the lobby's own (js/lobby-host.js) in
 // a frame of the page, from the free pick to fight 5; the pause holds it; a fall ends it on the end screen, whose xp
 // gives a level and a crate that are still there after a reload. node tests/alone-browser.cjs [screenshot directory]
 const assert = require('node:assert/strict');
@@ -29,7 +29,7 @@ const { chromium } = require('./browser.cjs');
     // The title: Boss Rush plays alone; a file has no lobby, so no Join lobby.
     await page.waitForFunction(() => multiplayer.lobby.state === 'absent');
     await page.locator('#menuList .title-mode').nth(1).click();
-    assert.match(await page.locator('#menuAct .title-primary').textContent(), /^Play alone/);
+    assert.match(await page.locator('#menuAct .title-primary').textContent(), /^Play in private/);
     assert.equal(await page.getByRole('button', { name: 'Join lobby', exact: false }).isVisible(), false, 'no Join lobby without a lobby');
     assert.match(await page.locator('#menuDesc').textContent(), /^Boss after boss/);
     await page.screenshot({ path: path.join(shots, 'title-alone-desktop.png') });
@@ -39,7 +39,7 @@ const { chromium } = require('./browser.cjs');
     await page.setViewportSize({ width: 1280, height: 720 });
     const before = await page.evaluate(() => ({ xp: progress.xp, level: progress.level.level, crates: progress.crates }));
 
-    // Play alone: no lobby screen, the run's intro, then the free pick before fight 1.
+    // Play in private: no lobby screen, the run's intro, then the free pick before fight 1.
     await page.locator('#menuAct .title-primary').click();
     await page.waitForFunction(() => multiplayer.alone && multiplayer.connected);
     assert.equal(await page.evaluate(() => multiplayer.panelOpen), false, 'no lobby screen alone');
