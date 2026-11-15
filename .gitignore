@@ -8,3 +8,4 @@ tools/blender/out/
 __pycache__/
 docs/design-audit/*/captures/
 docs/design-audit/*/after/
+design/abilities/originals/

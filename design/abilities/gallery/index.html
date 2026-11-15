@@ -1,0 +1,374 @@
+<title>Combat Arena Abilities</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600&family=Zen+Antique&display=swap">
+<style>
+:root {
+  color-scheme: dark;
+  --bg: #0c0d10;
+  --panel: #14161a;
+  --raise: #1b1e23;
+  --line: #2a2e35;
+  --fg: #e6e1d5;
+  --muted: #959186;
+  --faint: #6c6a64;
+  --common: #cfc8b6;
+  --rare: #8fb8dc;
+  --legendary: #e59a5c;
+  --story: #d8424b;
+  --gold: #e8c46a;
+  --focus: #e8c46a;
+  --display: "Zen Antique", "Hiragino Mincho ProN", "Yu Mincho", Georgia, serif;
+  --body: "Archivo", "Segoe UI", system-ui, sans-serif;
+}
+* { box-sizing: border-box; }
+body {
+  background: var(--bg); color: var(--fg); font-family: var(--body); font-size: 15px; line-height: 1.55;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 0 64px;
+}
+a { color: inherit; }
+button { font: inherit; color: inherit; }
+:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+.wrap { max-width: 1320px; margin: 0 auto; }
+
+/* header */
+.top { display: flex; flex-wrap: wrap; align-items: baseline; gap: 8px 28px; padding-block: 28px 18px; border-bottom: 1px solid var(--line); }
+.top h1 { font-family: var(--display); font-weight: 400; font-size: clamp(28px, 4.2vw, 44px); line-height: 1.05; margin: 0; letter-spacing: .01em; text-wrap: balance; }
+.top h1 a { text-decoration: none; }
+.nav { display: flex; flex-wrap: wrap; gap: 4px 20px; margin-left: auto; }
+.nav a { text-decoration: none; color: var(--muted); padding: 6px 0; border-bottom: 2px solid transparent; }
+.nav a:hover { color: var(--fg); }
+.nav a[aria-current="page"] { color: var(--fg); border-bottom-color: var(--legendary); }
+
+/* filters */
+.filters { display: grid; grid-template-columns: max-content 1fr; gap: 6px 18px; padding-block: 18px; align-items: baseline; }
+.filters .lab { color: var(--faint); font-size: 12px; text-transform: uppercase; letter-spacing: .1em; }
+.opts { display: flex; flex-wrap: wrap; gap: 2px 16px; min-width: 0; }
+.opt { background: none; border: 0; border-bottom: 2px solid transparent; padding: 4px 0; cursor: pointer; color: var(--muted); }
+.opt:hover { color: var(--fg); }
+.opt[aria-pressed="true"] { color: var(--fg); border-bottom-color: currentColor; }
+.opt[data-v="common"][aria-pressed="true"] { color: var(--common); }
+.opt[data-v="rare"][aria-pressed="true"] { color: var(--rare); }
+.opt[data-v="legendary"][aria-pressed="true"] { color: var(--legendary); }
+.opt[data-v="story"][aria-pressed="true"] { color: var(--gold); }
+.opt .n { color: var(--faint); font-size: 12px; margin-left: 5px; font-variant-numeric: tabular-nums; }
+.shown { color: var(--faint); font-size: 13px; padding-bottom: 14px; }
+
+/* grid */
+.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(290px, 1fr)); gap: 28px 22px; }
+.tile { display: flex; flex-direction: column; gap: 8px; text-decoration: none; min-width: 0; }
+.shot { position: relative; aspect-ratio: 16 / 9; max-width: 100%; background: var(--panel); overflow: hidden; border-top: 2px solid var(--r, var(--line)); }
+.shot img { width: 100%; height: 100%; object-fit: cover; display: block; transition: transform .35s ease, filter .35s ease; filter: saturate(.92); }
+.tile:hover .shot img { transform: scale(1.03); filter: saturate(1.1) brightness(1.06); }
+.shot .wait { position: absolute; inset: 0; display: flex; align-items: flex-end; padding: 12px 14px; color: var(--faint); font-size: 13px; line-height: 1.4; }
+.shot .more { position: absolute; right: 8px; bottom: 8px; background: rgba(12,13,16,.8); color: var(--fg); font-size: 12px; padding: 2px 7px; }
+.tile h3 { font-family: var(--display); font-weight: 400; font-size: 21px; line-height: 1.15; margin: 2px 0 0; color: var(--r); }
+.meta { color: var(--muted); font-size: 13px; }
+.card { color: var(--fg); font-size: 14.5px; }
+[data-r="common"] { --r: var(--common); }
+[data-r="rare"] { --r: var(--rare); }
+[data-r="legendary"] { --r: var(--legendary); }
+[data-r="story"] { --r: var(--gold); }
+
+/* detail */
+.crumbs { display: flex; flex-wrap: wrap; gap: 6px 18px; padding-block: 18px 14px; color: var(--muted); font-size: 14px; }
+.crumbs a { text-decoration: none; }
+.crumbs a:hover { color: var(--fg); }
+.crumbs .sp { margin-left: auto; display: flex; gap: 18px; }
+.slider { position: relative; width: min(100%, calc((100vh - 170px) * 16 / 9)); min-width: min(100%, 320px); background: #000; aspect-ratio: 16 / 9; max-width: 100%; overflow: hidden; border-top: 2px solid var(--r); touch-action: pan-y; user-select: none; }
+.track { display: flex; height: 100%; transition: transform .38s cubic-bezier(.2,.7,.2,1); }
+.track img { flex: 0 0 100%; width: 100%; height: 100%; object-fit: contain; display: block; pointer-events: none; }
+.slider.none { background: var(--panel); }
+.slider .empty { position: absolute; inset: 0; display: flex; flex-direction: column; justify-content: flex-end; gap: 6px; padding: 24px; color: var(--muted); max-width: 70ch; }
+.slider .empty b { color: var(--fg); font-weight: 500; }
+.arrow { position: absolute; top: 50%; transform: translateY(-50%); width: 46px; height: 64px; border: 0; background: rgba(12,13,16,.62); color: var(--fg); font-size: 26px; cursor: pointer; }
+.arrow:hover { background: rgba(12,13,16,.9); }
+.arrow[disabled] { opacity: .25; cursor: default; }
+.arrow.prev { left: 0; } .arrow.next { right: 0; }
+.under { display: flex; flex-wrap: wrap; gap: 6px 18px; align-items: center; padding-block: 10px 0; color: var(--muted); font-size: 13px; }
+.dots { display: flex; gap: 6px; }
+.dots button { width: 26px; height: 4px; border: 0; padding: 0; background: var(--line); cursor: pointer; }
+.dots button[aria-current="true"] { background: var(--r); }
+.under .orig { margin-left: auto; }
+.head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 18px; padding-block: 26px 4px; }
+.head h2 { font-family: var(--display); font-weight: 400; font-size: clamp(32px, 5vw, 54px); line-height: 1.05; margin: 0; color: var(--r); text-wrap: balance; }
+.head .meta { font-size: 15px; }
+.cardline { font-size: 19px; margin: 6px 0 0; padding-left: 14px; border-left: 3px solid var(--r); max-width: 60ch; }
+.cols { display: grid; grid-template-columns: minmax(0, 76ch) 300px; justify-content: space-between; gap: 56px; padding-top: 26px; }
+.facts { align-self: start; position: sticky; top: calc(env(safe-area-inset-top, 0px) + 16px); background: var(--panel); padding: 16px 18px; font-size: 14px; }
+.facts dl { display: grid; grid-template-columns: max-content 1fr; gap: 6px 14px; margin: 0; }
+.facts dt { color: var(--faint); }
+.facts dd { margin: 0; min-width: 0; overflow-wrap: anywhere; }
+.facts h4 { margin: 16px 0 6px; font-weight: 500; color: var(--muted); font-size: 13px; }
+.facts .lv { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; font-size: 13px; }
+.facts .lv th, .facts .lv td { text-align: left; padding: 3px 6px 3px 0; border-bottom: 1px solid var(--line); }
+.facts .lv th { color: var(--faint); font-weight: 400; }
+.facts p { margin: 10px 0 0; color: var(--muted); }
+
+/* markdown */
+.md { max-width: 74ch; min-width: 0; }
+.md h1 { display: none; }
+.md h2 { font-family: var(--display); font-weight: 400; font-size: 24px; margin: 34px 0 10px; color: var(--fg); }
+.md h3 { font-size: 16px; font-weight: 600; margin: 24px 0 8px; }
+.md p, .md ul, .md ol { margin: 0 0 12px; }
+.md ul, .md ol { padding-left: 20px; }
+.md li { margin: 4px 0; }
+.md code { font-family: Consolas, "SF Mono", Menlo, monospace; font-size: .88em; background: var(--raise); padding: 1px 5px; overflow-wrap: anywhere; }
+.md pre { background: var(--panel); padding: 14px 16px; overflow-x: auto; margin: 0 0 14px; border-left: 2px solid var(--line); }
+.md pre code { background: none; padding: 0; font-size: 13px; line-height: 1.5; overflow-wrap: normal; white-space: pre; }
+.md .tw { overflow-x: auto; margin: 0 0 14px; }
+.md table { border-collapse: collapse; font-size: 14px; min-width: 100%; }
+.md th, .md td { text-align: left; vertical-align: top; padding: 6px 12px 6px 0; border-bottom: 1px solid var(--line); }
+.md th { color: var(--muted); font-weight: 500; }
+.md strong { font-weight: 600; }
+.md a { color: var(--rare); }
+.doc { padding-top: 26px; }
+.doc .slider { margin-bottom: 8px; }
+
+@media (max-width: 860px) {
+  .cols { grid-template-columns: minmax(0, 1fr); gap: 24px; }
+  .facts { position: static; order: -1; }
+}
+@media (max-width: 520px) {
+  .filters { grid-template-columns: minmax(0, 1fr); gap: 2px; }
+  .filters .lab { padding-top: 8px; }
+  .nav { margin-left: 0; gap: 2px 14px; font-size: 14px; }
+  .grid { grid-template-columns: minmax(0, 1fr); }
+  .arrow { width: 38px; height: 52px; font-size: 22px; }
+  .crumbs .sp { margin-left: 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .track, .shot img { transition: none; }
+}
+</style>
+
+<div class="wrap">
+  <header class="top">
+    <h1><a href="#">Combat Arena Abilities</a></h1>
+    <nav class="nav" aria-label="Sections">
+      <a href="#" data-nav="">Pool</a>
+      <a href="#style" data-nav="style">Style</a>
+      <a href="#about" data-nav="about">Counts and rules</a>
+      <a href="#cuts" data-nav="cuts">Cuts</a>
+      <a href="#build-order" data-nav="build-order">Build order</a>
+    </nav>
+  </header>
+  <main id="view"><p class="shown">Loading the pool…</p></main>
+</div>
+
+<script>
+(() => {
+  const view = document.getElementById('view');
+  const RARITY = { common: 'Common', rare: 'Rare', legendary: 'Legendary', story: 'Story' };
+  const KEYS = { strike: 'Key 1 · Strike', guard: 'Key 2 · Guard', summon: 'Key 3 · Summon', ultimate: 'Key 4 · Ultimate' };
+  const KIND = { mods: 'Stat', perk: 'Perk', power: 'Power' };
+  const SHARE = new Set(['below', 'heal', 'drain', 'share', 'cut', 'mark']);
+  const DIST = new Set(['reach', 'width', 'radius']);
+  const TIME = new Set(['time', 'window', 'draw', 'cooldown', 'every', 'after', 'lead']);
+  let data = null;
+  const filt = { rarity: 'all', key: 'all', kind: 'all' };
+  try { Object.assign(filt, JSON.parse(localStorage.getItem('abilityFilters') || '{}')); } catch (e) { /* storage off */ }
+
+  const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  const fmt = (k, v) => {
+    if (typeof v !== 'number') return String(v);
+    if (TIME.has(k)) return v + ' s';
+    if (DIST.has(k)) return v + ' m';
+    if (v > 0 && v < 1 || (SHARE.has(k) && v === 1)) return Math.round(v * 100) + '%';
+    return String(v);
+  };
+  const cardText = (a) => a.text.replace(/\{(\w+)\}/g, (m, k) => {
+    const vals = a.levels.map((l) => fmt(k, l[k]));
+    return [...new Set(vals)].length === 1 ? vals[0] : vals.join(' / ');
+  });
+  const keyOf = (a) => a.key || 'triggered';
+  const kindOf = (a) => (a.summon ? 'summon' : a.plain || a.kind === 'mods' ? 'stat' : a.kind);
+  const metaOf = (a) => [RARITY[a.rarity], a.key ? KEYS[a.key] : 'Triggered', a.summon ? 'Summon' : KIND[a.kind]].join(' · ');
+  const imgSrc = (n) => `img/${n}.webp`;
+
+  // ---- markdown (headings, paragraphs, lists, tables, code, bold, italics, links) ----
+  const inline = (s) => esc(s)
+    .replace(/`([^`]+)`/g, '<code>$1</code>')
+    .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
+    .replace(/(^|[^*\w])\*([^*\s][^*]*)\*(?!\w)/g, '$1<em>$2</em>')
+    .replace(/\[([^\]]+)\]\((https?:[^)\s]+)\)/g, '<a href="$2" target="_blank" rel="noopener">$1</a>');
+  const md = (src) => {
+    const lines = src.replace(/\r/g, '').split('\n');
+    let html = '', i = 0;
+    while (i < lines.length) {
+      const l = lines[i];
+      if (/^```/.test(l)) {
+        const buf = []; i++;
+        while (i < lines.length && !/^```/.test(lines[i])) buf.push(lines[i++]);
+        i++; html += `<pre><code>${esc(buf.join('\n'))}</code></pre>`; continue;
+      }
+      const h = l.match(/^(#{1,4})\s+(.*)/);
+      if (h) { html += `<h${h[1].length}>${inline(h[2])}</h${h[1].length}>`; i++; continue; }
+      if (/^\s*\|/.test(l)) {
+        const rows = [];
+        while (i < lines.length && /^\s*\|/.test(lines[i])) rows.push(lines[i++]);
+        const cells = (r) => r.trim().replace(/^\||\|$/g, '').split(/(?<!\\)\|/).map((c) => c.trim());
+        const sep = rows[1] && /^[\s|:-]+$/.test(rows[1]);
+        const head = sep ? cells(rows[0]) : null;
+        const body = rows.slice(sep ? 2 : 0).map(cells);
+        const showHead = head && head.some((c) => c);
+        html += '<div class="tw"><table>' + (showHead ? '<thead><tr>' + head.map((c) => `<th>${inline(c)}</th>`).join('') + '</tr></thead>' : '') +
+          '<tbody>' + body.map((r) => '<tr>' + r.map((c) => `<td>${inline(c)}</td>`).join('') + '</tr>').join('') + '</tbody></table></div>';
+        continue;
+      }
+      if (/^\s*([-*]|\d+\.)\s+/.test(l)) {
+        const ordered = /^\s*\d+\./.test(l);
+        const items = [];
+        while (i < lines.length && (/^\s*([-*]|\d+\.)\s+/.test(lines[i]) || (/^\s{2,}\S/.test(lines[i]) && items.length))) {
+          if (/^\s*([-*]|\d+\.)\s+/.test(lines[i])) items.push(lines[i].replace(/^\s*([-*]|\d+\.)\s+/, ''));
+          else items[items.length - 1] += ' ' + lines[i].trim();
+          i++;
+        }
+        html += `<${ordered ? 'ol' : 'ul'}>` + items.map((t) => `<li>${inline(t)}</li>`).join('') + `</${ordered ? 'ol' : 'ul'}>`;
+        continue;
+      }
+      if (!l.trim()) { i++; continue; }
+      const para = [];
+      while (i < lines.length && lines[i].trim() && !/^(#{1,4}\s|```|\s*\||\s*([-*]|\d+\.)\s)/.test(lines[i])) para.push(lines[i++]);
+      html += `<p>${inline(para.join(' '))}</p>`;
+    }
+    return html;
+  };
+
+  // ---- pool view ----
+  const groups = [
+    ['rarity', 'Rarity', [['all', 'All'], ['common', 'Common'], ['rare', 'Rare'], ['legendary', 'Legendary'], ['story', 'Story']], (a) => a.rarity],
+    ['key', 'Key', [['all', 'All'], ['strike', '1 Strike'], ['guard', '2 Guard'], ['summon', '3 Summon'], ['ultimate', '4 Ultimate'], ['triggered', 'Triggered']], keyOf],
+    ['kind', 'Kind', [['all', 'All'], ['power', 'Power'], ['perk', 'Perk'], ['summon', 'Summon'], ['stat', 'Stat']], kindOf],
+  ];
+  const passes = (a, skip) => groups.every(([g, , , get]) => g === skip || filt[g] === 'all' || get(a) === filt[g]);
+
+  function renderPool() {
+    const list = data.pool.filter((a) => passes(a));
+    view.innerHTML = '<div class="filters">' + groups.map(([g, label, opts, get]) =>
+      `<span class="lab" id="lab-${g}">${label}</span><div class="opts" role="group" aria-labelledby="lab-${g}">` +
+      opts.map(([v, t]) => {
+        const n = data.pool.filter((a) => passes(a, g) && (v === 'all' || get(a) === v)).length;
+        return `<button class="opt" type="button" data-g="${g}" data-v="${v}" aria-pressed="${filt[g] === v}">${t}<span class="n">${n}</span></button>`;
+      }).join('') + '</div>').join('') + '</div>' +
+      `<p class="shown">${list.length} of ${data.pool.length} abilities</p>` +
+      '<div class="grid">' + list.map((a) => {
+        const first = a.imgs[0];
+        return `<a class="tile" href="#${a.id}" data-r="${a.rarity}">
+          <div class="shot">${first ? `<img src="${imgSrc(first)}" alt="${esc(a.name)} concept image" loading="lazy" width="1600" height="900">` : `<span class="wait">${esc(a.look || '')}</span>`}${a.imgs.length > 1 ? `<span class="more">${a.imgs.length} images</span>` : ''}</div>
+          <h3>${esc(a.name)}</h3><span class="meta">${metaOf(a)}</span><span class="card">${esc(cardText(a))}</span></a>`;
+      }).join('') + '</div>';
+    view.querySelectorAll('.opt').forEach((b) => b.addEventListener('click', () => {
+      filt[b.dataset.g] = b.dataset.v;
+      try { localStorage.setItem('abilityFilters', JSON.stringify(filt)); } catch (e) { /* storage off */ }
+      renderPool();
+    }));
+  }
+
+  // ---- slider ----
+  function slider(names, label, look) {
+    const box = document.createElement('div');
+    if (!names.length) {
+      box.innerHTML = '<div class="slider none"><div class="empty"><b>Image still to come</b>' + (look ? esc(look) : '') + '</div></div>';
+      return { el: box, go() {} };
+    }
+    box.innerHTML = `<div class="slider" role="region" aria-roledescription="carousel" aria-label="${esc(label)} images">
+      <div class="track">${names.map((n, i) => `<img src="${imgSrc(n)}" alt="${esc(label)}, image ${i + 1} of ${names.length}" ${i ? 'loading="lazy"' : ''} width="1600" height="900">`).join('')}</div>
+      ${names.length > 1 ? '<button class="arrow prev" type="button" aria-label="Previous image">‹</button><button class="arrow next" type="button" aria-label="Next image">›</button>' : ''}
+    </div>
+    <div class="under"><span class="count" aria-live="polite"></span>${names.length > 1 ? `<span class="dots">${names.map((n, i) => `<button type="button" aria-label="Image ${i + 1}"></button>`).join('')}</span>` : ''}<a class="orig" target="_blank" rel="noopener"></a></div>`;
+    const track = box.querySelector('.track');
+    const prev = box.querySelector('.prev'), next = box.querySelector('.next');
+    const dots = [...box.querySelectorAll('.dots button')];
+    const count = box.querySelector('.count'), orig = box.querySelector('.orig');
+    let at = 0;
+    const go = (n) => {
+      at = Math.max(0, Math.min(names.length - 1, n));
+      track.style.transform = `translateX(${-at * 100}%)`;
+      if (prev) { prev.disabled = at === 0; next.disabled = at === names.length - 1; }
+      dots.forEach((d, i) => d.setAttribute('aria-current', String(i === at)));
+      count.textContent = `${at + 1} / ${names.length}`;
+      const full = data.assets[names[at]];
+      orig.href = full || imgSrc(names[at]);
+      orig.textContent = full ? 'Full-quality original' : 'Open image';
+    };
+    prev && prev.addEventListener('click', () => go(at - 1));
+    next && next.addEventListener('click', () => go(at + 1));
+    dots.forEach((d, i) => d.addEventListener('click', () => go(i)));
+    const sl = box.querySelector('.slider');
+    let x0 = null, y0 = 0;
+    sl.addEventListener('pointerdown', (e) => { if (e.target.closest('.arrow')) return; x0 = e.clientX; y0 = e.clientY; });
+    sl.addEventListener('pointerup', (e) => {
+      if (x0 === null) return;
+      const dx = e.clientX - x0, dy = e.clientY - y0; x0 = null;
+      if (Math.abs(dx) > 40 && Math.abs(dx) > Math.abs(dy)) go(at + (dx < 0 ? 1 : -1));
+    });
+    sl.addEventListener('pointercancel', () => { x0 = null; });
+    go(0);
+    return { el: box, go: (d) => go(at + d) };
+  }
+
+  // ---- detail view ----
+  let current = null;
+  function renderAbility(a) {
+    const i = data.pool.indexOf(a);
+    const prevA = data.pool[(i - 1 + data.pool.length) % data.pool.length], nextA = data.pool[(i + 1) % data.pool.length];
+    const keys = [...new Set(a.levels.flatMap((l) => Object.keys(l)))];
+    const lv = `<table class="lv"><thead><tr><th></th>${keys.map((k) => `<th>${esc(k)}</th>`).join('')}</tr></thead><tbody>` +
+      a.levels.map((l, n) => `<tr><th>${['I', 'II', 'III', 'IV'][n]}</th>${keys.map((k) => `<td>${l[k] === undefined ? '' : esc(fmt(k, l[k]))}</td>`).join('')}</tr>`).join('') + '</tbody></table>';
+    view.innerHTML = `<div data-r="${a.rarity}">
+      <nav class="crumbs" aria-label="Ability"><a href="#">← Pool</a><span class="sp"><a href="#${prevA.id}">‹ ${esc(prevA.name)}</a><a href="#${nextA.id}">${esc(nextA.name)} ›</a></span></nav>
+      <div class="sl"></div>
+      <div class="head"><h2>${esc(a.name)}</h2><span class="meta">${metaOf(a)}</span></div>
+      <p class="cardline">${esc(a.text)}</p>
+      <div class="cols"><article class="md">${a.md ? md(a.md.replace(/^[\s\S]*?(?=^## )/m, '')) : `<p>${esc(a.idea || '')}</p><p>${esc(a.look || '')}</p>`}</article>
+      <aside class="facts" aria-label="Data"><dl>
+        <dt>Rarity</dt><dd>${RARITY[a.rarity]}</dd>
+        <dt>Key</dt><dd>${a.key ? KEYS[a.key] : 'None, triggered'}</dd>
+        <dt>Kind</dt><dd>${a.summon ? 'Summon, ' : ''}${KIND[a.kind]}</dd>
+        ${a.when ? `<dt>When</dt><dd>${esc(a.when)}</dd>` : ''}${a.then ? `<dt>Then</dt><dd>${esc(a.then)}</dd>` : ''}
+        <dt>Origin</dt><dd>${a.from ? 'Kept, redesigned' : 'New'}</dd>
+        ${a.story ? `<dt>Given</dt><dd>Chapter ${esc(a.story.chapter)}${a.story.place ? ', ' + esc(a.story.place) : ''}</dd>` : ''}
+      </dl><h4>Levels</h4>${lv}<p>${esc(cardText(a))}</p></aside></div></div>`;
+    const s = slider(a.imgs, a.name, a.look);
+    view.querySelector('.sl').appendChild(s.el);
+    current = s;
+  }
+
+  function renderDoc(name) {
+    view.innerHTML = '<div class="doc"><div class="sl"></div><article class="md"></article></div>';
+    view.querySelector('.md').innerHTML = md(data.docs[name] || '');
+    view.querySelector('.md h1') && (view.querySelector('.md h1').style.display = 'block');
+    if (name === 'style') { current = slider(data.styleImgs, 'Style'); view.querySelector('.sl').appendChild(current.el); }
+  }
+
+  function route() {
+    current = null;
+    const h = decodeURIComponent(location.hash.slice(1));
+    document.querySelectorAll('[data-nav]').forEach((n) => n.toggleAttribute('aria-current', false));
+    const navHit = document.querySelector(`[data-nav="${CSS.escape(data.docs[h] !== undefined ? h : '')}"]`);
+    const a = data.pool.find((x) => x.id === h);
+    if (a) renderAbility(a);
+    else if (data.docs[h] !== undefined) { renderDoc(h); navHit && navHit.setAttribute('aria-current', 'page'); }
+    else { renderPool(); navHit && navHit.setAttribute('aria-current', 'page'); }
+    if (a || data.docs[h] !== undefined) window.scrollTo(0, 0);
+    document.title = a ? `${a.name} · Combat Arena Abilities` : 'Combat Arena Abilities';
+  }
+
+  document.addEventListener('keydown', (e) => {
+    if (!current || e.altKey || e.ctrlKey || e.metaKey || /input|textarea/i.test(e.target.tagName)) return;
+    if (e.key === 'ArrowLeft') { current.go(-1); e.preventDefault(); }
+    if (e.key === 'ArrowRight') { current.go(1); e.preventDefault(); }
+    if (e.key === 'Escape' && data.pool.some((x) => '#' + x.id === location.hash)) location.hash = '';
+  });
+  window.addEventListener('hashchange', route);
+
+  fetch('gallery/data.json').then((r) => { if (!r.ok) throw new Error(r.status); return r.json(); })
+    .then((d) => { data = d; route(); })
+    .catch(() => { view.innerHTML = '<p class="shown">The pool did not load. Reload the page.</p>'; });
+
+  // Originals uploaded later go in data.assets; the asset store is only read when this viewer can open it.
+})();
+</script>
