@@ -111,8 +111,8 @@ Aleix, 2026-11-13.
   finish (its own section, first).
 - Counters (Aleix, 2026-11-15, from his Weekly Run's replay): a counter breaks the boss's string, every string, and
   the boss reels about half a second; every deflect opens one; the light counter is the only counter (heavy is a
-  normal heavy); the third counter stays the Finishing Blow; one cue when it opens. Top of the list, held until Aleix
-  says go (the section "First: counters").
+  normal heavy); the third counter stays the Finishing Blow; one cue when it opens. Top of the list, built from
+  Friday 2026-11-20, 21:10 (the section "First: counters").
 - The bosses' design session (Aleix, 2026-11-15): the 13 story bosses each get a moveset of their own (8 to 12
   attacks, combos, big moments, a phase-two change), a model sheet and attack key frames, designed now before the
   style bible, shown on the Designs page; the borrowed Elden Ring move sources retire (Art direction, step 1b).
@@ -152,7 +152,8 @@ attacking shouldn't be compatible"; "my muscle memory expects a counter after ev
 clearer or reworked". In that run 11 of 20 deflects opened no counter (each on a blow with more of the string to
 come), and 24 of 62 counters landed while the boss was still mid-string, some cracking the guard twice in one string.
 **Top of the list, but held** (Aleix: "don't start it, but put it on top of the priority list"): the grilling is
-done; no pass starts it until Aleix says go and this line says so.
+done. It starts **Friday 2026-11-20 at 21:10** (Aleix), as the first pass after the loop's pause ends (21:05), ahead
+of everything else in both tracks.
 
 1. **A counter breaks the string** (Aleix: yes), every string, no exceptions (Aleix: "action, spectacle": bosses stay
    dangerous through area attacks, blows that must be dodged, and how they chain one attack into the next, never
