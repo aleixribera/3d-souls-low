@@ -77,7 +77,8 @@ button { font: inherit; color: inherit; }
 .crumbs a { text-decoration: none; }
 .crumbs a:hover { color: var(--fg); }
 .crumbs .sp { margin-left: auto; display: flex; gap: 18px; }
-.slider { position: relative; width: min(100%, calc((100vh - 170px) * 16 / 9)); min-width: min(100%, 320px); background: #000; aspect-ratio: 16 / 9; max-width: 100%; overflow: hidden; border-top: 2px solid var(--r); touch-action: pan-y; user-select: none; }
+.slider { position: relative; width: min(100%, calc((100vh - 170px) * 16 / 9)); min-width: min(100%, 320px); background: #000; aspect-ratio: 16 / 9; max-width: 100%; overflow: hidden; touch-action: pan-y; user-select: none; }
+.slider::before { content: ""; position: absolute; left: 0; right: 0; top: 0; height: 2px; background: var(--r); z-index: 1; }
 .track { display: flex; height: 100%; transition: transform .38s cubic-bezier(.2,.7,.2,1); }
 .track img { flex: 0 0 100%; width: 100%; height: 100%; object-fit: contain; display: block; pointer-events: none; }
 .slider.none { background: var(--panel); }
@@ -127,6 +128,37 @@ button { font: inherit; color: inherit; }
 .doc { padding-top: 26px; }
 .doc .slider { margin-bottom: 8px; }
 
+.slider:not(.none) { cursor: zoom-in; }
+.expand { position: absolute; top: 0; right: 0; width: 44px; height: 44px; border: 0; padding: 0; background: rgba(12,13,16,.62); color: var(--fg); cursor: pointer; display: grid; place-items: center; }
+.expand:hover { background: rgba(12,13,16,.9); }
+.expand svg { width: 18px; height: 18px; }
+
+/* full-screen viewer */
+.lb { position: fixed; inset: 0; z-index: 50; touch-action: none; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; overscroll-behavior: contain; overflow: hidden; color: var(--fg); -webkit-tap-highlight-color: transparent; }
+.lb[hidden] { display: none; }
+.lb:focus { outline: none; }
+.lb-bg { position: absolute; inset: 0; background: #000; }
+.lb-strip, .lb-slide { position: absolute; inset: 0; }
+.lb-slide img { position: absolute; left: 0; top: 0; max-width: none; transform-origin: 50% 50%; pointer-events: none; -webkit-user-drag: none; }
+.lb-ui { transition: opacity .18s ease; }
+.lb.bare .lb-ui { opacity: 0; pointer-events: none; }
+.lb-top { position: absolute; left: 0; right: 0; top: 0; display: flex; align-items: center; gap: 14px; padding: env(safe-area-inset-top, 0px) max(4px, env(safe-area-inset-right, 0px)) 0 max(16px, env(safe-area-inset-left, 0px)); min-height: 56px; background: linear-gradient(rgba(0,0,0,.66), rgba(0,0,0,0)); }
+.lb-name { font-family: var(--display); font-size: 21px; line-height: 1.15; color: var(--r, var(--fg)); min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; text-shadow: 0 1px 3px #000; }
+.lb-count { color: var(--muted); font-size: 14px; font-variant-numeric: tabular-nums; white-space: nowrap; text-shadow: 0 1px 3px #000; }
+.lb-x { margin-left: auto; flex: none; width: 48px; height: 48px; border: 0; background: none; cursor: pointer; display: grid; place-items: center; }
+.lb-x svg { width: 22px; height: 22px; }
+.lb-x:hover { color: #fff; background: rgba(12,13,16,.6); }
+.lb-dots { position: absolute; left: 0; right: 0; bottom: max(18px, env(safe-area-inset-bottom, 0px)); display: flex; justify-content: center; gap: 6px; pointer-events: none; }
+.lb-dots i { width: 22px; height: 3px; background: rgba(230,225,213,.28); }
+.lb-dots i.on { background: var(--r, var(--fg)); }
+.lb-arrow { position: absolute; top: 50%; width: 56px; height: 88px; margin-top: -44px; border: 0; background: rgba(12,13,16,.5); color: var(--fg); cursor: pointer; display: none; }
+.lb-arrow svg { width: 26px; height: 26px; display: block; margin: auto; }
+.lb-arrow:hover { background: rgba(12,13,16,.85); }
+.lb-arrow[disabled] { opacity: 0; pointer-events: none; }
+.lb-prev { left: max(0px, env(safe-area-inset-left, 0px)); } .lb-next { right: max(0px, env(safe-area-inset-right, 0px)); }
+@media (hover: hover) and (pointer: fine) { .lb-arrow { display: block; } }
+@media (pointer: coarse) { .slider .arrow { display: none; } }
+
 @media (max-width: 860px) {
   .cols { grid-template-columns: minmax(0, 1fr); gap: 24px; }
   .facts { position: static; order: -1; }
@@ -138,9 +170,12 @@ button { font: inherit; color: inherit; }
   .grid { grid-template-columns: minmax(0, 1fr); }
   .arrow { width: 38px; height: 52px; font-size: 22px; }
   .crumbs .sp { margin-left: 0; }
+  body { overflow-x: clip; }
+  .sl .slider { width: 100vw; max-width: 100vw; min-width: 0; margin-left: calc(50% - 50vw); }
+  .sl .under { padding-inline: 0; }
 }
 @media (prefers-reduced-motion: reduce) {
-  .track, .shot img { transition: none; }
+  .track, .shot img, .lb-ui { transition: none; }
 }
 </style>
 
@@ -187,6 +222,9 @@ button { font: inherit; color: inherit; }
   const kindOf = (a) => (a.summon ? 'summon' : a.plain || a.kind === 'mods' ? 'stat' : a.kind);
   const metaOf = (a) => [RARITY[a.rarity], a.key ? KEYS[a.key] : 'Triggered', a.summon ? 'Summon' : KIND[a.kind]].join(' · ');
   const imgSrc = (n) => `img/${n}.webp`;
+  // In the claude.ai Artifact (always framed) the originals are in its asset store; the home server's copy
+  // (top-level, docs/ability-gallery.md in homelab) serves them beside the page as originals/<name>.png.
+  const origSrc = (n) => (window.top === window ? `originals/${n}.png` : data.assets[n]);
 
   // ---- markdown (headings, paragraphs, lists, tables, code, bold, italics, links) ----
   const inline = (s) => esc(s)
@@ -268,7 +306,7 @@ button { font: inherit; color: inherit; }
   }
 
   // ---- slider ----
-  function slider(names, label, look) {
+  function slider(names, label, look, onOpen) {
     const box = document.createElement('div');
     if (!names.length) {
       box.innerHTML = '<div class="slider none"><div class="empty"><b>Image still to come</b>' + (look ? esc(look) : '') + '</div></div>';
@@ -277,6 +315,7 @@ button { font: inherit; color: inherit; }
     box.innerHTML = `<div class="slider" role="region" aria-roledescription="carousel" aria-label="${esc(label)} images">
       <div class="track">${names.map((n, i) => `<img src="${imgSrc(n)}" alt="${esc(label)}, image ${i + 1} of ${names.length}" ${i ? 'loading="lazy"' : ''} width="1600" height="900">`).join('')}</div>
       ${names.length > 1 ? '<button class="arrow prev" type="button" aria-label="Previous image">‹</button><button class="arrow next" type="button" aria-label="Next image">›</button>' : ''}
+      <button class="expand" type="button" aria-label="View full screen"><svg viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M1 6V1h5M12 1h5v5M17 12v5h-5M6 17H1v-5"/></svg></button>
     </div>
     <div class="under"><span class="count" aria-live="polite"></span>${names.length > 1 ? `<span class="dots">${names.map((n, i) => `<button type="button" aria-label="Image ${i + 1}"></button>`).join('')}</span>` : ''}<a class="orig" target="_blank" rel="noopener"></a></div>`;
     const track = box.querySelector('.track');
@@ -290,7 +329,7 @@ button { font: inherit; color: inherit; }
       if (prev) { prev.disabled = at === 0; next.disabled = at === names.length - 1; }
       dots.forEach((d, i) => d.setAttribute('aria-current', String(i === at)));
       count.textContent = `${at + 1} / ${names.length}`;
-      const full = data.assets[names[at]];
+      const full = origSrc(names[at]);
       orig.href = full || imgSrc(names[at]);
       orig.textContent = full ? 'Full-quality original' : 'Open image';
     };
@@ -299,15 +338,19 @@ button { font: inherit; color: inherit; }
     dots.forEach((d, i) => d.addEventListener('click', () => go(i)));
     const sl = box.querySelector('.slider');
     let x0 = null, y0 = 0;
-    sl.addEventListener('pointerdown', (e) => { if (e.target.closest('.arrow')) return; x0 = e.clientX; y0 = e.clientY; });
+    const imgs = [...track.children];
+    const open = () => onOpen && onOpen(at, imgs[at]);
+    box.querySelector('.expand').addEventListener('click', open);
+    sl.addEventListener('pointerdown', (e) => { if (e.target.closest('button')) return; x0 = e.clientX; y0 = e.clientY; });
     sl.addEventListener('pointerup', (e) => {
       if (x0 === null) return;
       const dx = e.clientX - x0, dy = e.clientY - y0; x0 = null;
       if (Math.abs(dx) > 40 && Math.abs(dx) > Math.abs(dy)) go(at + (dx < 0 ? 1 : -1));
+      else if (Math.abs(dx) < 10 && Math.abs(dy) < 10 && e.button === 0) open();
     });
     sl.addEventListener('pointercancel', () => { x0 = null; });
     go(0);
-    return { el: box, go: (d) => go(at + d) };
+    return { el: box, go: (d) => go(at + d), to: go };
   }
 
   // ---- detail view ----
@@ -332,16 +375,315 @@ button { font: inherit; color: inherit; }
         <dt>Origin</dt><dd>${a.from ? 'Kept, redesigned' : 'New'}</dd>
         ${a.story ? `<dt>Given</dt><dd>Chapter ${esc(a.story.chapter)}${a.story.place ? ', ' + esc(a.story.place) : ''}</dd>` : ''}
       </dl><h4>Levels</h4>${lv}<p>${esc(cardText(a))}</p></aside></div></div>`;
-    const s = slider(a.imgs, a.name, a.look);
+    const s = slider(a.imgs, a.name, a.look, (i, img) => lb.open(everyImage(), everyImage().findIndex((it) => it.a === a && it.i === i), img));
     view.querySelector('.sl').appendChild(s.el);
     current = s;
+    if (startAt) { s.to(startAt); startAt = 0; }
   }
 
   function renderDoc(name) {
     view.innerHTML = '<div class="doc"><div class="sl"></div><article class="md"></article></div>';
     view.querySelector('.md').innerHTML = md(data.docs[name] || '');
     view.querySelector('.md h1') && (view.querySelector('.md h1').style.display = 'block');
-    if (name === 'style') { current = slider(data.styleImgs, 'Style'); view.querySelector('.sl').appendChild(current.el); }
+    if (name === 'style') {
+      const items = data.styleImgs.map((n, i) => ({ n, i, a: null, name: 'Style', rarity: 'common', of: data.styleImgs.length }));
+      current = slider(data.styleImgs, 'Style', '', (i, img) => lb.open(items, i, img));
+      view.querySelector('.sl').appendChild(current.el);
+    }
+  }
+
+  // Every concept image of the pool in pool order, so the full-screen viewer runs on from one ability into the next.
+  let every = null;
+  const everyImage = () => every || (every = data.pool.flatMap((a) => a.imgs.map((n, i) => ({ n, i, a, name: a.name, rarity: a.rarity, of: a.imgs.length }))));
+  let startAt = 0;
+
+  // ---- full-screen viewer: three recycled slides on a strip that follows the finger, flick to page, pinch or
+  // double-tap to zoom, drag down to close. Only transforms move while a finger is down, so it stays at frame rate.
+  const lb = (() => {
+    const GAP = 20, MAXZ = 5;
+    const reduced = () => matchMedia('(prefers-reduced-motion: reduce)').matches;
+    let root, bg, strip, nameEl, countEl, dotsEl, prevB, nextB, closeB;
+    let slots = [], items = [], idx = 0, W = 0, H = 0, isOpen = false, closing = false, pushed = false, onClose = null, back = null;
+    let z = { s: 1, x: 0, y: 0 };
+    const ptrs = new Map();
+    let g = null, settling = null, tapTimer = 0, lastTap = null, wheelX = 0, wheelAt = 0;
+
+    function build() {
+      root = document.createElement('div');
+      root.className = 'lb'; root.hidden = true; root.tabIndex = -1;
+      root.setAttribute('role', 'dialog'); root.setAttribute('aria-modal', 'true'); root.setAttribute('aria-label', 'Images');
+      root.innerHTML = `<div class="lb-bg"></div><div class="lb-strip">${'<div class="lb-slide"><img alt="" decoding="async" draggable="false"></div>'.repeat(3)}</div>
+        <div class="lb-ui lb-top"><span class="lb-name"></span><span class="lb-count" aria-live="polite"></span>
+        <button class="lb-x" type="button" aria-label="Close"><svg viewBox="0 0 22 22" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M4 4l14 14M18 4L4 18"/></svg></button></div>
+        <div class="lb-ui lb-dots" aria-hidden="true"></div>
+        <button class="lb-ui lb-arrow lb-prev" type="button" aria-label="Previous image"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M15 4l-8 8 8 8"/></svg></button><button class="lb-ui lb-arrow lb-next" type="button" aria-label="Next image"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M9 4l8 8-8 8"/></svg></button>`;
+      document.body.appendChild(root);
+      bg = root.querySelector('.lb-bg'); strip = root.querySelector('.lb-strip');
+      nameEl = root.querySelector('.lb-name'); countEl = root.querySelector('.lb-count'); dotsEl = root.querySelector('.lb-dots');
+      prevB = root.querySelector('.lb-prev'); nextB = root.querySelector('.lb-next'); closeB = root.querySelector('.lb-x');
+      slots = [...root.querySelectorAll('.lb-slide')].map((el) => ({ el, img: el.firstChild, n: -1, w: 0, h: 0 }));
+      slots.forEach((s) => s.img.addEventListener('load', () => { s.img.style.visibility = ''; fit(s); }));
+      closeB.addEventListener('click', close);
+      prevB.addEventListener('click', () => step(-1));
+      nextB.addEventListener('click', () => step(1));
+      root.addEventListener('pointerdown', down);
+      root.addEventListener('pointermove', move);
+      root.addEventListener('pointerup', up);
+      root.addEventListener('pointercancel', up);
+      root.addEventListener('wheel', wheel, { passive: false });
+      root.addEventListener('gesturestart', (e) => e.preventDefault());
+      root.addEventListener('focusin', (e) => { if (e.target.closest('.lb-ui')) root.classList.remove('bare'); });
+      root.addEventListener('keydown', (e) => {
+        if (e.key !== 'Tab') return;
+        const f = [...root.querySelectorAll('button')].filter((b) => !b.disabled && b.offsetParent);
+        const i = f.indexOf(document.activeElement);
+        if (e.shiftKey ? i <= 0 : i === f.length - 1) { (e.shiftKey ? f[f.length - 1] : f[0]).focus(); e.preventDefault(); }
+      });
+      window.addEventListener('resize', () => { if (isOpen) { measure(); slots.forEach(fit); setZoom(1, 0, 0); place(); } });
+      window.addEventListener('popstate', () => { if (isOpen) teardown(!pushed); });
+      // Android's back leaves fullscreen first without a popstate: treat that as closing the viewer.
+      document.addEventListener('fullscreenchange', () => { if (!document.fullscreenElement && isOpen) close(); });
+    }
+
+    const measure = () => { W = root.clientWidth; H = root.clientHeight; };
+    const cur = () => slots[1];
+    function fit(s) {
+      const nw = s.img.naturalWidth || 1600, nh = s.img.naturalHeight || 900;
+      const k = Math.min(W / nw, H / nh);
+      s.w = nw * k; s.h = nh * k;
+      Object.assign(s.img.style, { width: s.w + 'px', height: s.h + 'px', left: (W - s.w) / 2 + 'px', top: (H - s.h) / 2 + 'px' });
+    }
+    function load(s, n) {
+      s.n = n; s.img.style.transform = ''; s.img.style.transition = '';
+      if (n < 0 || n >= items.length) { s.el.hidden = true; s.img.removeAttribute('src'); return; }
+      s.el.hidden = false;
+      const it = items[n];
+      s.img.alt = `${it.name}, image ${it.i + 1} of ${it.of}`;
+      if (s.img.getAttribute('src') !== imgSrc(it.n)) { s.img.src = imgSrc(it.n); s.img.style.visibility = s.img.complete ? '' : 'hidden'; }
+      fit(s);
+    }
+    const warm = new Map();
+    function preload() {
+      for (const n of [idx + 2, idx - 2, idx + 3]) {
+        if (n < 0 || n >= items.length || warm.has(items[n].n)) continue;
+        const im = new Image(); im.src = imgSrc(items[n].n); im.decode().catch(() => {}); warm.set(items[n].n, im);
+        if (warm.size > 12) warm.delete(warm.keys().next().value);
+      }
+    }
+    function place() { slots.forEach((s, k) => { s.el.style.transform = `translate3d(${(k - 1) * (W + GAP)}px,0,0)`; }); }
+    function label() {
+      const it = items[idx];
+      root.style.setProperty('--r', `var(--${it.rarity === 'story' ? 'gold' : it.rarity})`);
+      nameEl.textContent = it.name;
+      countEl.textContent = it.of > 1 ? `${it.i + 1} / ${it.of}` : '';
+      dotsEl.innerHTML = it.of > 1 ? Array.from({ length: it.of }, (_, i) => `<i${i === it.i ? ' class="on"' : ''}></i>`).join('') : '';
+      prevB.disabled = idx === 0; nextB.disabled = idx === items.length - 1;
+    }
+    function show(n) { idx = n; load(slots[0], n - 1); load(slots[1], n); load(slots[2], n + 1); z = { s: 1, x: 0, y: 0 }; label(); preload(); }
+
+    // ---- zoom and transforms of the current image ----
+    function bounds(s) { const c = cur(); return { x: Math.max(0, (c.w * s - W) / 2), y: Math.max(0, (c.h * s - H) / 2) }; }
+    function apply(ms) {
+      const im = cur().img;
+      im.style.transition = ms ? `transform ${ms}ms cubic-bezier(.2,.8,.2,1)` : '';
+      im.style.transform = z.s === 1 && !z.x && !z.y ? '' : `translate3d(${z.x}px,${z.y}px,0) scale(${z.s})`;
+    }
+    function setZoom(s, x, y, ms) {
+      s = Math.min(MAXZ, Math.max(1, s));
+      const b = bounds(s);
+      z = { s, x: Math.max(-b.x, Math.min(b.x, x)), y: Math.max(-b.y, Math.min(b.y, y)) };
+      apply(ms);
+    }
+    function zoomAt(px, py, s1, s0, x0, y0) {
+      const cx = px - W / 2, cy = py - H / 2;
+      return { x: cx - (cx - x0) * (s1 / s0), y: cy - (cy - y0) * (s1 / s0) };
+    }
+
+    // ---- paging ----
+    function stripTo(x, ms) {
+      strip.style.transition = ms ? `transform ${ms}ms cubic-bezier(.2,.8,.2,1)` : '';
+      strip.style.transform = x ? `translate3d(${x}px,0,0)` : '';
+    }
+    function settle(dir, from) {
+      if (idx + dir < 0 || idx + dir >= items.length) dir = 0;
+      const to = -dir * (W + GAP);
+      const ms = reduced() ? 0 : Math.round(Math.min(340, Math.max(170, Math.abs(to - from) / (W + GAP) * 380)));
+      if (!ms) { finish(dir); return; }
+      stripTo(to, ms);
+      settling = { dir, t: setTimeout(() => finish(dir), ms + 20) };
+    }
+    function finish(dir) {
+      if (settling) { clearTimeout(settling.t); dir = settling.dir; settling = null; }
+      if (dir) {
+        cur().img.style.transform = '';
+        if (dir > 0) { slots.push(slots.shift()); idx++; load(slots[2], idx + 1); } else { slots.unshift(slots.pop()); idx--; load(slots[0], idx - 1); }
+        place(); z = { s: 1, x: 0, y: 0 }; label(); preload();
+      }
+      stripTo(0, 0);
+    }
+    function step(dir) {
+      if (settling) finish();
+      if (z.s > 1) setZoom(1, 0, 0);
+      settle(dir, 0);
+    }
+
+    // ---- gestures ----
+    const dist = (a, b) => Math.hypot(a.x - b.x, a.y - b.y);
+    const mid = (a, b) => ({ x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 });
+    function pending(p) { return { type: 'pending', x0: p.x, y0: p.y, z0: { ...z }, trail: [[performance.now(), p.x, p.y]] }; }
+    function down(e) {
+      if (e.target.closest('button') || (e.pointerType === 'mouse' && e.button !== 0)) return;
+      if (settling) finish();
+      root.setPointerCapture(e.pointerId);
+      ptrs.set(e.pointerId, { x: e.clientX, y: e.clientY });
+      if (ptrs.size === 1) g = pending(ptrs.get(e.pointerId));
+      else if (ptrs.size === 2) {
+        if (g && g.type === 'page') stripTo(0, 160);
+        if (g && g.type === 'drop') { bg.style.opacity = ''; apply(160); }
+        root.classList.remove('bare');
+        const [a, b] = [...ptrs.values()];
+        g = { type: 'pinch', d0: dist(a, b), m0: mid(a, b), z0: { ...z } };
+      }
+    }
+    function move(e) {
+      const p = ptrs.get(e.pointerId);
+      if (!p || !g) return;
+      p.x = e.clientX; p.y = e.clientY;
+      if (g.type === 'pinch') {
+        const [a, b] = [...ptrs.values()], m = mid(a, b);
+        const s = Math.min(MAXZ, Math.max(0.7, g.z0.s * dist(a, b) / g.d0));
+        const t = zoomAt(g.m0.x, g.m0.y, s, g.z0.s, g.z0.x, g.z0.y);
+        z = { s, x: t.x + m.x - g.m0.x, y: t.y + m.y - g.m0.y };
+        apply(0); return;
+      }
+      const dx = p.x - g.x0, dy = p.y - g.y0;
+      g.trail.push([performance.now(), p.x, p.y]); if (g.trail.length > 6) g.trail.shift();
+      if (g.type === 'pending') {
+        if (Math.hypot(dx, dy) < 8) return;
+        g.type = g.z0.s > 1.01 ? 'pan' : Math.abs(dx) >= Math.abs(dy) ? 'page' : 'drop';
+        if (g.type !== 'pan') root.classList.add('bare');
+      }
+      if (g.type === 'page') {
+        const atEnd = (dx > 0 && idx === 0) || (dx < 0 && idx === items.length - 1);
+        stripTo(atEnd ? dx * 0.3 : dx, 0);
+      } else if (g.type === 'drop') {
+        const f = Math.min(1, Math.abs(dy) / H);
+        cur().img.style.transform = `translate3d(${dx * 0.5}px,${dy}px,0) scale(${1 - f * 0.3})`;
+        bg.style.opacity = String(1 - f * 1.4);
+      } else if (g.type === 'pan') {
+        const b = bounds(z.s), rub = (v, m) => (v > m ? m + (v - m) * 0.3 : v < -m ? -m + (v + m) * 0.3 : v);
+        z.x = rub(g.z0.x + dx, b.x); z.y = rub(g.z0.y + dy, b.y); apply(0);
+      }
+    }
+    function velocity() {
+      const t = g.trail, a = t[0], b = t[t.length - 1], dt = b[0] - a[0];
+      return dt > 0 && performance.now() - b[0] < 80 ? { x: (b[1] - a[1]) / dt, y: (b[2] - a[2]) / dt } : { x: 0, y: 0 };
+    }
+    function up(e) {
+      const p = ptrs.get(e.pointerId);
+      if (!p) return;
+      ptrs.delete(e.pointerId);
+      if (!g) return;
+      if (g.type === 'pinch') {
+        if (ptrs.size === 1) { if (z.s <= 1.01) setZoom(1, 0, 0, 220); const q = [...ptrs.values()][0]; g = pending(q); g.type = z.s > 1 ? 'pan' : 'none'; return; }
+        if (z.s < 1) setZoom(1, 0, 0, 220); else setZoom(z.s, z.x, z.y, 220);
+        g = null; return;
+      }
+      if (ptrs.size) return;
+      const dx = p.x - g.x0, dy = p.y - g.y0, v = velocity(), type = g.type;
+      g = null;
+      if (type === 'page') {
+        root.classList.remove('bare');
+        const dir = dx < -W * 0.2 || (v.x < -0.35 && dx < 0) ? 1 : dx > W * 0.2 || (v.x > 0.35 && dx > 0) ? -1 : 0;
+        settle(dir, dx);
+      } else if (type === 'drop') {
+        if (Math.abs(dy) > H * 0.14 || Math.abs(v.y) > 0.6) close();
+        else { root.classList.remove('bare'); bg.style.opacity = ''; apply(200); }
+      } else if (type === 'pan') setZoom(z.s, z.x, z.y, 220);
+      else if (type === 'pending' && e.type === 'pointerup') tap(e);
+    }
+    function tap(e) {
+      const now = performance.now(), x = e.clientX, y = e.clientY;
+      if (lastTap && now - lastTap.t < 300 && Math.hypot(x - lastTap.x, y - lastTap.y) < 40) {
+        clearTimeout(tapTimer); lastTap = null;
+        if (z.s > 1.01) setZoom(1, 0, 0, 240);
+        else { const t = zoomAt(x, y, 2.5, 1, 0, 0); setZoom(2.5, t.x, t.y, 240); }
+        return;
+      }
+      lastTap = { t: now, x, y };
+      const c = cur(), off = Math.abs(x - W / 2) > c.w * z.s / 2 || Math.abs(y - H / 2) > c.h * z.s / 2;
+      clearTimeout(tapTimer);
+      tapTimer = setTimeout(() => {
+        lastTap = null;
+        if (e.pointerType === 'mouse' && off && z.s === 1) close();
+        else if (e.pointerType !== 'mouse') root.classList.toggle('bare');
+      }, 300);
+    }
+    function wheel(e) {
+      e.preventDefault();
+      if (z.s > 1 || Math.abs(e.deltaX) <= Math.abs(e.deltaY)) return;
+      const now = performance.now();
+      if (now - wheelAt < 380) return;
+      wheelX += e.deltaX;
+      if (Math.abs(wheelX) > 40) { step(wheelX > 0 ? 1 : -1); wheelX = 0; wheelAt = now; }
+    }
+
+    // ---- open and close ----
+    function open(list, n, fromImg, done) {
+      if (n < 0 || !list.length) return;
+      if (!root) build();
+      items = list; onClose = done || null; back = document.activeElement; isOpen = true;
+      root.hidden = false; root.classList.remove('bare'); bg.style.opacity = ''; root.style.opacity = ''; root.style.transition = '';
+      document.documentElement.style.overflow = 'hidden';
+      measure(); place(); show(n); stripTo(0, 0);
+      pushed = false; closing = false;
+      try { history.pushState({ arenaLb: 1 }, ''); pushed = true; } catch (err) { /* sandboxed */ }
+      if (matchMedia('(pointer: coarse)').matches && root.requestFullscreen && !document.fullscreenElement) root.requestFullscreen({ navigationUI: 'hide' }).catch(() => {});
+      root.focus({ preventScroll: true });
+      // Grow out of the image that was tapped.
+      const r = fromImg && fromImg.getBoundingClientRect(), c = cur();
+      if (r && r.width && !reduced()) {
+        const k = r.width / c.w;
+        c.img.style.transform = `translate3d(${r.left + r.width / 2 - W / 2}px,${r.top + r.height / 2 - H / 2}px,0) scale(${k})`;
+        bg.style.opacity = '0';
+        c.img.getBoundingClientRect();
+        c.img.style.transition = 'transform 260ms cubic-bezier(.2,.8,.2,1)'; bg.style.transition = 'opacity 220ms ease';
+        c.img.style.transform = ''; bg.style.opacity = '';
+        setTimeout(() => { c.img.style.transition = ''; bg.style.transition = ''; }, 280);
+      }
+    }
+    function close() {
+      if (!isOpen || closing) return;
+      closing = true;
+      const leave = () => { if (pushed && history.state && history.state.arenaLb) history.back(); else teardown(); };
+      if (reduced()) { leave(); return; }
+      root.style.transition = 'opacity 130ms ease'; root.style.opacity = '0';
+      setTimeout(leave, 130);
+    }
+    function teardown(left) {
+      if (!isOpen) return;
+      isOpen = false; closing = false; g = null; ptrs.clear(); clearTimeout(tapTimer);
+      if (settling) finish();
+      if (document.fullscreenElement) document.exitFullscreen().catch(() => {});
+      root.hidden = true; root.style.opacity = ''; root.style.transition = ''; strip.style.transform = ''; bg.style.opacity = '';
+      document.documentElement.style.overflow = '';
+      const it = items[idx];
+      if (onClose && !left) onClose(it);
+      if (back && back.isConnected) back.focus({ preventScroll: true });
+    }
+    document.addEventListener('keydown', (e) => {
+      if (!isOpen) return;
+      const act = { Escape: close, ArrowLeft: () => step(-1), ArrowRight: () => step(1) }[e.key];
+      if (act) { act(); e.preventDefault(); e.stopPropagation(); }
+    }, true);
+    return { open: (list, n, img) => open(list, n, img, afterViewer), isOpen: () => isOpen };
+  })();
+
+  // Closing the viewer leaves the page on the ability and image it was showing.
+  function afterViewer(it) {
+    if (!it.a || location.hash === '#' + it.a.id) { current && current.to(it.i); return; }
+    startAt = it.i;
+    location.replace('#' + it.a.id);
   }
 
   function route() {
@@ -358,7 +700,7 @@ button { font: inherit; color: inherit; }
   }
 
   document.addEventListener('keydown', (e) => {
-    if (!current || e.altKey || e.ctrlKey || e.metaKey || /input|textarea/i.test(e.target.tagName)) return;
+    if (!current || lb.isOpen() || e.altKey || e.ctrlKey || e.metaKey || /input|textarea/i.test(e.target.tagName)) return;
     if (e.key === 'ArrowLeft') { current.go(-1); e.preventDefault(); }
     if (e.key === 'ArrowRight') { current.go(1); e.preventDefault(); }
     if (e.key === 'Escape' && data.pool.some((x) => '#' + x.id === location.hash)) location.hash = '';
