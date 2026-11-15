@@ -6,6 +6,7 @@
 //   title    a few words
 //   text     one to three sentences, shown under the list when the entry is selected
 const CHANGELOG = [
+  { version: 'v7.138.0', title: 'One click to play', text: 'The title now starts each mode in one click: Boss Rush goes straight to the lobby (playing in private is offered if joining fails), Story asks Continue or New game only when you have a save, and Tutorial plays the showcase and then the sparring. A foe\'s cracked guard from your counters no longer fades with time: it lasts until the Finishing Blow, or until the foe walks back home.' },
   { version: 'v7.137.0', title: 'Runs are recorded', text: 'Every online Boss Rush and Weekly Run is now recorded, so it can be watched again later.' },
   { version: 'v7.136.0', title: 'Boss Rush in the lobby', text: 'Boss Rush plays in the lobby again, with Play in private beside it. If the lobby doesn\'t answer or joining fails, Play in private starts the run on your own.' },
   { version: 'v7.135.0', title: 'Boss Rush alone', text: 'Boss Rush plays alone with no server: Play alone on the title, or Join lobby while the lobby answers. Levels and crates count the same, and the pause holds the run.' },
