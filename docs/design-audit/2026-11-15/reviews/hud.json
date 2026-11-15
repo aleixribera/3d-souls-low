@@ -1,0 +1,225 @@
+{
+  "lens": "hud",
+  "findings": [
+    {
+      "screen": "watch-summary",
+      "viewport": "phone",
+      "rule": "HUD-01",
+      "severity": "high",
+      "title": "The first-visit hint toast sits on top of the open summary and hides its text",
+      "detail": "On a phone the summary panel fills the scene, but the gesture hint is drawn over it, so Aleix's 'Downed most by', 'Hit most by' and 'Picked' lines are unreadable until the toast goes. The same toast overlaps the end panel on watch-cut@phone and the fight rows of the summary on watch-summary@land ('1. The Regent Hollis' half covered).",
+      "evidence": "Toast plate [98,497,194,78] ('Tap a player to follow them. Drag to look around, pinch to zoom.') overlaps summary lines at y 490-575; on land the toast [212,170,422,57] crosses the panel's first fight row at y 164.",
+      "fix": "Dismiss the hint as soon as any panel (Summary, Note) opens or on the first input, and stack it below panels in z-order.",
+      "box": [98, 497, 194, 78]
+    },
+    {
+      "screen": "watch-damaged",
+      "viewport": "phone",
+      "rule": "HUD-05",
+      "severity": "high",
+      "title": "The 'Damaged' state is truncated to 'Da…' on a phone",
+      "detail": "The only sign that the file is damaged is cut off by the Summary button, so a phone viewer cannot tell why the run stops early. The 'Cut short' tag next to it eats the room.",
+      "evidence": "Header reads 'Boss Rush  Cut short  Da…'; DOM 'Damaged' box [234,22,54,16] runs under the Summary button at x 279.",
+      "fix": "On narrow screens move state tags to their own line under the title (or into the timeline end), and never let a state tag ellipsize.",
+      "box": [234, 20, 34, 20]
+    },
+    {
+      "screen": "watch-follow",
+      "viewport": "desktop",
+      "rule": "HUD-05",
+      "severity": "medium",
+      "title": "A downed player's name tag looks the same as a standing one",
+      "detail": "'Aleix · down' uses the same dark plate and pale gold text as 'Marc' and 'Maren the Bold', so the most important state in the scene only shows as a small word. The timeline and camera buttons already use a red ring for 'went down'; the tag doesn't. Same on phone, land, free and note.",
+      "evidence": "All tags colour [242,224,171], 12 px, weight 600; 'Aleix · down' at [1041,401,70,16] is styled identically to 'Marc' [720,417,28,16].",
+      "fix": "Give the downed tag the alarm treatment: red-tinted border or plate plus the red ring icon used on the timeline and camera buttons.",
+      "box": [1033, 398, 86, 22]
+    },
+    {
+      "screen": "watch-live",
+      "viewport": "desktop",
+      "rule": "HUD-01",
+      "severity": "medium",
+      "title": "The followed player's own name tag is parked dead centre of the screen",
+      "detail": "When following a player, their tag sits at the same spot inside the centre box in every state, over the boss's body here, and repeats what the highlighted camera button already says. It is inconsistent too: in watch-follow the followed Ser Quill has no tag at all.",
+      "evidence": "'Aleix' tag at [946,447,28,16] in watch-live, watch-cut, watch-old, watch-damaged and watch-summary (phone [181,376]); centre box is x 768-1152, y 432-648. On watch-live its p10 contrast drops to 3.6 over the skeleton.",
+      "fix": "Hide the followed player's tag (as watch-follow already does), or show it for 2 s after switching camera and then fade it.",
+      "box": [918, 444, 84, 22]
+    },
+    {
+      "screen": "watch-free",
+      "viewport": "phone",
+      "rule": "HUD-01",
+      "severity": "medium",
+      "title": "Name tags stack into a column that hides the players they label",
+      "detail": "In free camera, distant players collapse to a few pixels while their full-size tags pile into a four-high column in the middle of the screen, so the viewer sees labels instead of the fight. The same stacking covers the followed player on watch-old@phone and the tiny figures on watch-free@desktop.",
+      "evidence": "Tags 'Marc' [168,273], 'Ser Quill' [157,300], 'Maren the Bold' [145,327], 'Aleix · down' [160,364] form a column about 104x116 px; desktop free camera stacks three tags at x 880-993, y 247-322 over figures about 60 px tall.",
+      "fix": "Declutter tags: shrink or fade them with distance, and merge overlapping tags into one plate ('Marc · Ser Quill · Maren') or offset them sideways.",
+      "box": [137, 270, 104, 116]
+    },
+    {
+      "screen": "watch-summary",
+      "viewport": "phone",
+      "rule": "NEW",
+      "severity": "medium",
+      "title": "Name tags show through the summary and note panels",
+      "detail": "Panels do not hide the floating name tags, so ghost plates ('Maren the Bold', 'Marc', 'Aleix') float across the summary text, one right under '0:50 · fell'. Same on watch-summary@land (over 'Left at fight 4' and 'Fights'), watch-summary@desktop ('Ser Quill' inside the panel at [1714,411]), watch-cut@phone and watch-note@land.",
+      "evidence": "Tags [285,328,88,16], [335,355,28,16], [181,376,28,16] are visible through the panel on top of '4. Giant Skeleton  0:50 · fell'.",
+      "fix": "Make panels opaque and stack them above the tag layer, or hide tags whose anchor sits under an open panel.",
+      "box": [150, 325, 225, 72]
+    },
+    {
+      "screen": "watch-note",
+      "viewport": "desktop",
+      "rule": "NEW",
+      "severity": "medium",
+      "title": "The note box opens on top of the key-hint toast, which peeks out around it",
+      "detail": "Two overlays stack in the same spot: the hint's key caps show at the left edge and 'free camera ·' shows past Cancel, so the note box looks broken. On phone and land the hint text also shows behind the note input ('h to' beside Cancel on land).",
+      "evidence": "Note panel about [701,862,518,96] over the still-present hint panel [666,893,588,66] (DOM 'play · 5 s · – speed …' at [743,902,484,48]).",
+      "fix": "Close the hint when the note opens, or dock the note input inside the controls bar instead of over the scene.",
+      "box": [666, 862, 588, 97]
+    },
+    {
+      "screen": "watch-follow",
+      "viewport": "land",
+      "rule": "HUD-01",
+      "severity": "medium",
+      "title": "In landscape the controls and overlays leave almost no scene to watch",
+      "detail": "The timeline and two rows of 44 px buttons take 150 of 390 px, the header takes about 50 more, and the hint toast then covers the middle of what is left, hiding every player. The note panel on watch-note@land and the summary on watch-summary@land (which also covers the end of the boss bar and fits only two fight rows) do the same.",
+      "evidence": "Controls band y 240-390 (38% of height); hint toast [212,170,422,57] covers the players at y 150-240; note panel [163,131,518,97] on watch-note@land; summary panel starts at x 485 while the boss bar ends at x 508.",
+      "fix": "In landscape use one control row (transport, time, speed, a camera select) and auto-hide the controls while playing; place hints and the note input inside the control bar.",
+      "box": [0, 240, 844, 150]
+    },
+    {
+      "screen": "watch-follow",
+      "viewport": "phone",
+      "rule": "HUD-03",
+      "severity": "medium",
+      "title": "Header and bottom controls sit inside the phone's notch and home-bar zones",
+      "detail": "The back link, title and Summary button start 10 px from the top and the last camera row ends 11 px from the bottom, where a notch, status bar or home indicator covers them in full-screen use. Land puts the back link, timeline and buttons 12-17 px from the left edge, the notch side. On desktop every control is 12-17 px from the edges (3% is 58 px).",
+      "evidence": "Back [12,10,64,44], title [84,20,77,23], Summary [279,10,99,44] are within the top 47 px; 'Maren the Bold' [13,789,131,44] ends at y 833 against the 810 limit.",
+      "fix": "Pad the header and controls with env(safe-area-inset-*) plus a base margin (at least 47 px top / 34 px bottom on phone, about 3% on desktop).",
+      "box": [12, 10, 366, 44]
+    },
+    {
+      "screen": "watch-old",
+      "viewport": "desktop",
+      "rule": "HUD-05",
+      "severity": "medium",
+      "title": "An older-version run plays a stand-in boss without telling the viewer",
+      "detail": "The only cue is a 12 px grey 'v7.090.0' after the date. The fight has no boss bar or boss name, only 'Fight 2 0:21', so the viewer can't tell that the boss shown is a stand-in for one that was removed.",
+      "evidence": "'v7.090.0' [444,23,47,16], 12 px, colour [170,164,147]; no boss-name text in the DOM, unlike every other watch-* shot.",
+      "fix": "Say it once where it matters: a short line under the boss area at the fight start ('Removed boss: shown as a stand-in') and a readable 'Older version' tag in the header.",
+      "box": [444, 23, 47, 16]
+    },
+    {
+      "screen": "watch-damaged",
+      "viewport": "desktop",
+      "rule": "HUD-05",
+      "severity": "medium",
+      "title": "Run-state tags ('Live', 'Cut short', 'Damaged') whisper",
+      "detail": "The states that change how to read the whole replay are 12 px tags after a 20 px date, and 'Live' and 'Damaged' share one class and colour, the same salmon as the 'went down' rings, so one colour means three things. 'Cut short' is grey over the scene with no plate.",
+      "evidence": "'Cut short' [428,23,53,16] 12 px, p10 4.42 (phone 3.26); 'Damaged' [491,23,54,16] and 'Live' (watch-live [437,23,22,16]) both class rv-live, colour [240,154,134].",
+      "fix": "Give run states a filled chip at 14 px with a distinct icon each (live dot, scissors or cut, broken file), keep salmon red for downs only, and back the header with a plate.",
+      "box": [428, 23, 117, 16]
+    },
+    {
+      "screen": "watch-end",
+      "viewport": "desktop",
+      "rule": "NEW",
+      "severity": "medium",
+      "title": "The end of a run reads like the start of a fight",
+      "detail": "Near the end the scene goes black behind a big 'Boss Rush / Fight 4: Giant Skeleton' card and the replay UI adds nothing, so it looks like a new fight is starting rather than that the run ended. Compare watch-cut, which opens the end panel with 'Watch again'. On phone the card fades over the scene under the name tags.",
+      "evidence": "Time 3:56 / 4:01; centre text 'Boss Rush' 44 px [832,498,256,50] and 'Fight 4: Giant Skeleton' [872,566,176,17]; no summary panel or end controls in the DOM.",
+      "fix": "When the last fight ends, open the summary panel with 'Watch again' at once and mark the timeline end ('Run ended at fight 4').",
+      "box": [832, 498, 256, 85]
+    },
+    {
+      "screen": "watch-live",
+      "viewport": "desktop",
+      "rule": "NEW",
+      "severity": "medium",
+      "title": "A live viewer can't see how far behind live they are or jump to it",
+      "detail": "Watching a run in progress, the viewer is 11 s behind the live edge with only two plain times to compare and no 'Go live' control; the small 'Live' tag says the run is live, not whether you are watching it live.",
+      "evidence": "Time readout '3:36 / 3:47' [285,1037,66,19]; controls are Play, Back 5 s, Forward 5 s, Next death, speed and cameras only.",
+      "fix": "Add a 'Live' button at the right end of the transport that jumps to the edge and lights up when at it (dimmed when behind).",
+      "box": [285, 1037, 66, 19]
+    },
+    {
+      "screen": "watch-follow",
+      "viewport": "desktop",
+      "rule": "TYP-01",
+      "severity": "medium",
+      "title": "Fight numbers on the timeline are too small and faint to find a fight",
+      "detail": "The tick labels 1-4 are the only way to spot where each fight starts on the timeline, and at 11 px grey they are barely visible; '1' sits on the playhead fill. Same on every watch-* shot, phone and land too.",
+      "evidence": "Labels '1'-'4' at y 986, 11 px, colour [170,164,147], declared contrast 2.46:1, p10 1.28 for '1' (contrast.md: size fail, contrast warn).",
+      "fix": "Raise the labels to 13-14 px in the primary text colour with 4.5:1 contrast, and show the boss name on hover or tap.",
+      "box": [17, 984, 1504, 18]
+    },
+    {
+      "screen": "watch-end",
+      "viewport": "desktop",
+      "rule": "HUD-04",
+      "severity": "low",
+      "title": "The game's 'Best played with a controller' hint leaks into the viewer",
+      "detail": "A prompt meant for players shows through the timeline in a replay where nobody plays, crossing the fight-3 tick. On phone it shows faintly behind the camera buttons.",
+      "evidence": "'Best played with a controller' [869,987,222,15], 13 px, opacity 0.84 (phone [104,767,222,15], opacity 0.25).",
+      "fix": "Suppress the game's input-device toasts in replay mode.",
+      "box": [869, 987, 222, 15]
+    },
+    {
+      "screen": "watch-note",
+      "viewport": "desktop",
+      "rule": "HUD-05",
+      "severity": "low",
+      "title": "The 'down' ring nearly vanishes on the selected camera button",
+      "detail": "When the followed player is down, the red ring on their gold, selected button is salmon on gold, so the one control-bar cue for 'your player is down' is lost exactly when it matters.",
+      "evidence": "Ring about 12 px, colour around [240,154,134] on button fill [217,181,107], under 1.5:1.",
+      "fix": "On the selected button draw the ring in dark red or as a filled red dot with a dark outline.",
+      "box": [1419, 1041, 14, 14]
+    },
+    {
+      "screen": "watch-follow",
+      "viewport": "desktop",
+      "rule": "HUD-02",
+      "severity": "low",
+      "title": "Speed and Note move between groups across viewports",
+      "detail": "Speed is a playback setting but sits with the camera buttons on desktop, alone at the far right of the transport row on land, and next to Note on phone; Note joins the camera row on desktop and land but the speed row on phone. Viewers who switch devices have to hunt again.",
+      "evidence": "Speed select [1319,1025,82,44] beside 'Aleix' on desktop; land [749,285,82,44]; phone [13,691,82,44] with Note [101,691,68,44].",
+      "fix": "Keep speed next to the transport buttons and Note at the end of the transport group on every viewport; let only the camera row wrap.",
+      "box": [1319, 1025, 82, 44]
+    },
+    {
+      "screen": "watch-damaged",
+      "viewport": "phone",
+      "rule": "HUD-03",
+      "severity": "low",
+      "title": "Tags for players near the edge are cut off by the screen edge",
+      "detail": "A player at the side of the view gets a half tag ('Quill'), so the viewer can't tell who it is. Same on watch-cut@phone ('Maren the Bold' at x -4).",
+      "evidence": "'Ser Quill' tag text at [-21,366,48,16], p10 contrast 1.78.",
+      "fix": "Clamp tags inside the safe area and add a small edge arrow when the player is at or past the edge.",
+      "box": [0, 362, 45, 26]
+    },
+    {
+      "screen": "watch-follow",
+      "viewport": "desktop",
+      "rule": "TYP-06",
+      "severity": "low",
+      "title": "The key-hint toast repeats the buttons right below it",
+      "detail": "'N next death' and 'M note' sit just above the 'Next death' and 'Note' buttons, and the line wraps so 'N next death · M note' is orphaned on a second row.",
+      "evidence": "Hint panel [666,893,588,66]: 'Space play · ← → 5 s · 1–6 speed · Q E player · F free camera · / N next death · M note'.",
+      "fix": "Show key letters on the buttons' hover tooltips instead, or keep the toast to the keys that have no button (Space, ← →, Q E, 1-6) on one line.",
+      "box": [666, 893, 588, 66]
+    },
+    {
+      "screen": "watch-gone",
+      "viewport": "desktop",
+      "rule": "NEW",
+      "severity": "low",
+      "title": "The 'This run is gone' card floats off-centre in an empty screen",
+      "detail": "On desktop the card sits at the upper left of a black 1920x1080 page, lined up with neither the back link nor the centre, so it looks misplaced. On phone it is centred. Its 'All replays' button also repeats the 'Replays' back link.",
+      "evidence": "Card about [154,324,460,205]; back link at x 12-112; phone card is centred at [31,253,328,206].",
+      "fix": "Centre the card on desktop (or align it to the header's left edge), and keep only one way back.",
+      "box": [154, 324, 460, 205]
+    }
+  ]
+}

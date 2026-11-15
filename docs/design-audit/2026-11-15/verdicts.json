@@ -1,0 +1,337 @@
+{
+  "F01": {
+    "verdict": "PASS",
+    "note": "Phone rows now carry the start time, so same-day runs differ.",
+    "evidence": "'Aleix, Marc' only -> '01:58 AM · Aleix, Marc', '01:54 AM · …'; '2 notes' line shown on the 12:58 row"
+  },
+  "F02": {
+    "verdict": "PASS",
+    "note": "The panel stops at the bar and scrolls; Notes now come right after Fights, in view.",
+    "evidence": "Notes hidden below the bar -> Notes second section, visible without scrolling"
+  },
+  "F03": {
+    "verdict": "PASS",
+    "note": "Phone Summary panel is opaque; no boss title or tags show through.",
+    "evidence": "ghosted 'Hale…', 'Maren the Bold', 'Marc' behind text -> solid panel, nothing behind '0:50 · fell'"
+  },
+  "F04": {
+    "verdict": "PASS",
+    "note": "Hint toast is gone when Summary is open on phone.",
+    "evidence": "toast [98,497,194,78] over Downed/Hit/Picked lines -> lines read clean, no toast"
+  },
+  "F05": {
+    "verdict": "PASS",
+    "note": "In short landscape the Summary takes the full height over the controls (Summary closes it).",
+    "evidence": "strip of 1.5 rows -> all four fights visible"
+  },
+  "F06": {
+    "verdict": "PASS",
+    "note": "Opaque, full-height panel; nothing collides with it.",
+    "evidence": "toast, tags and boss bar over a strip -> clean panel"
+  },
+  "F07": {
+    "verdict": "PASS",
+    "note": "The game's 'Boss Rush / Fight 4' title card no longer appears at 3:56; the scene plays to the end.",
+    "evidence": "'Boss Rush' 44 px card on black -> live scene, no card in DOM; no viewer end-state shown in this frame (5 s before end)"
+  },
+  "F08": {
+    "verdict": "PASS",
+    "note": "The version tag reads over the sky under the stronger scrim.",
+    "evidence": "worst tenth 1.49 -> 7.8 (after/contrast.md watch-old@desktop)"
+  },
+  "F09": {
+    "verdict": "PASS",
+    "note": "Phone header shows 'Damaged' in full; the redundant 'Cut short' chip is dropped there.",
+    "evidence": "'Cut short  Da…' -> 'Damaged'"
+  },
+  "F10": {
+    "verdict": "PASS",
+    "note": "'Damaged' is no longer truncated on phone.",
+    "evidence": "'Da…' -> 'Damaged' [171,22,54,16]"
+  },
+  "F11": {
+    "verdict": "PASS",
+    "note": "The damaged state reads in full on phone.",
+    "evidence": "'Boss Rush  Cut short  Da…' -> 'Boss Rush  Damaged'"
+  },
+  "F12": {
+    "verdict": "FAIL",
+    "note": "Rows still say 'Left the run' with an unlabelled 'Fight 4'; Summary still says 'Left at fight 4' / 'fell'.",
+    "evidence": "'Left the run … Fight 4' -> unchanged wording"
+  },
+  "F13": {
+    "verdict": "PASS",
+    "note": "Phone rows keep the time and the notes line.",
+    "evidence": "no time, no '2 notes' -> '01:38 AM · Aleix, Marc'; '2 notes' at [27,832]"
+  },
+  "F14": {
+    "verdict": "PASS",
+    "note": "Star and Delete are now 8 px apart.",
+    "evidence": "star ends 307 / Delete 309 (2 px) -> star ends 301 / Delete 309 (8 px)"
+  },
+  "F15": {
+    "verdict": "PASS",
+    "note": "'Try again' is a gold primary button and the filters are gone on error.",
+    "evidence": "outlined button under live filters -> filled gold 'Try again', no filters"
+  },
+  "F16": {
+    "verdict": "PASS",
+    "note": "Arming delete shows a short 'Delete?' in the Delete slot; the star barely moves and is not covered.",
+    "evidence": "star 263->197, confirm [243..370] over star spot -> star 257->251, 'Delete?' [303,352,67,44] clear of it (6 px shift left)"
+  },
+  "F17": {
+    "verdict": "PASS",
+    "note": "The downed tag is now coral and stands apart from the gold standing tags.",
+    "evidence": "'Aleix · down' same pale-gold plate as 'Marc' -> coral text/border tag"
+  },
+  "F18": {
+    "verdict": "FAIL",
+    "note": "Timeline marks still have no legend or key anywhere.",
+    "evidence": "rings/bars/numbers unexplained -> unchanged; hint has no line about them"
+  },
+  "F19": {
+    "verdict": "FAIL",
+    "note": "Fight numbers grew to 12 px but the finding asks 13-14 px; still a size warn.",
+    "evidence": "11 px (size fail) -> 12 px (size warn)"
+  },
+  "F20": {
+    "verdict": "FAIL",
+    "note": "Fight numbers still under 4.5:1 declared contrast.",
+    "evidence": "declared 2.46 -> 3.68 (need 4.5); p10 1.17 for '1'"
+  },
+  "F21": {
+    "verdict": "FAIL",
+    "note": "Only 'Free' was renamed; no 'Camera' label and companions still mixed with players.",
+    "evidence": "'Aleix Marc Ser Quill Maren the Bold Free' -> same row with 'Free camera'"
+  },
+  "F22": {
+    "verdict": "FAIL",
+    "note": "Phone header and bottom row still hug the screen edges; no safe-area padding.",
+    "evidence": "Back [12,10], Summary [279,10] -> unchanged; last row ends y 833"
+  },
+  "F23": {
+    "verdict": "PASS",
+    "note": "Phone and landscape control gaps are 8 px.",
+    "evidence": "Play 13-57 / Back 63 (6 px) -> Back 65 (8 px); rows 8 px apart"
+  },
+  "F24": {
+    "verdict": "FAIL",
+    "note": "In landscape the hint toast still sits over the followed players; it now hides the downed tag.",
+    "evidence": "toast [212,170,421,58] over players -> same spot, 'Aleix · down' tag hidden behind it"
+  },
+  "F25": {
+    "verdict": "FAIL",
+    "note": "Landscape dock still takes ~150 px and the toast still covers the scene centre.",
+    "evidence": "dock y 240-390 -> y 237-390; toast unchanged"
+  },
+  "F26": {
+    "verdict": "FAIL",
+    "note": "Landscape still leaves a thin band of scene under two button rows and overlays.",
+    "evidence": "controls band 38% of height -> ~39%; note and summary panels still cover the band"
+  },
+  "F27": {
+    "verdict": "PASS",
+    "note": "Landscape timeline hit area is 46 px tall.",
+    "evidence": "[17,247,810,38] -> [17,237,810,46]"
+  },
+  "F28": {
+    "verdict": "PASS",
+    "note": "The foreground knight is the downed Aleix: his coral tag now sits on the body, low over it.",
+    "evidence": "unlabelled knight -> \"Aleix · down\" on the body (watch-free@phone, @desktop)"
+  },
+  "F29": {
+    "verdict": "FAIL",
+    "note": "Free-camera tags still stack into a tower over a tiny cluster.",
+    "evidence": "Marc / Ser Quill / Maren the Bold / Aleix column -> Marc / Ser Quill / Maren the Bold column (Aleix moved off)"
+  },
+  "F30": {
+    "verdict": "PASS",
+    "note": "Fight names are now in the ink colour, no longer dimmer than the times.",
+    "evidence": "names rgb(170,164,147) vs times (236,229,211) -> names (236,229,211)"
+  },
+  "F31": {
+    "verdict": "PASS",
+    "note": "Boss name now sits on its own smaller line under each attack.",
+    "evidence": "'The Furrow Pillager Captain' on one line -> 'The Furrow' / 'Pillager Captain' (13 px) below"
+  },
+  "F32": {
+    "verdict": "PASS",
+    "note": "Notes moved up, after Fights.",
+    "evidence": "Notes below the fold -> second section"
+  },
+  "F33": {
+    "verdict": "PASS",
+    "note": "Button now reads 'Next down', matching the downs on the timeline.",
+    "evidence": "'Next death' -> 'Next down'"
+  },
+  "F34": {
+    "verdict": "PASS",
+    "note": "Name tags no longer show through the phone Summary panel.",
+    "evidence": "tags over '0:50 · fell' -> clean panel (tags still ghost through the cut-short panel on watch-cut@phone)"
+  },
+  "F35": {
+    "verdict": "PASS",
+    "note": "Phone Summary panel is opaque; no tags or boss HUD bleed into its text.",
+    "evidence": "'Maren the Bold'/'Marc' through panel -> none (cut-short and note panels still translucent)"
+  },
+  "F36": {
+    "verdict": "PASS",
+    "note": "Phone Summary panel no longer lets HUD or tags show through.",
+    "evidence": "boss name and tags behind text -> opaque panel"
+  },
+  "F37": {
+    "verdict": "PASS",
+    "note": "Hint is gone once Summary or Note is open, including landscape.",
+    "evidence": "toast over '1. The Regent Hollis' on land -> no toast"
+  },
+  "F38": {
+    "verdict": "PASS",
+    "note": "Opening Note hides the key-hint toast; no fragments peek out.",
+    "evidence": "'free camera ·' and key caps around note box -> clean note box"
+  },
+  "F39": {
+    "verdict": "PASS",
+    "note": "Selected camera is an outlined accent, leaving gold fill to Pin.",
+    "evidence": "Aleix gold-filled next to gold Pin -> Aleix outlined, Pin the only fill"
+  },
+  "F40": {
+    "verdict": "PASS",
+    "note": "Down ring stays visible on the selected camera button (dark fill now).",
+    "evidence": "coral ring on gold fill ~1.44:1 -> coral ring on dark button"
+  },
+  "F41": {
+    "verdict": "PASS",
+    "note": "No hint text shows around the landscape note composer.",
+    "evidence": "'ro', 'h to' between Pin and Cancel -> none"
+  },
+  "F42": {
+    "verdict": "PASS",
+    "note": "'Best played with a controller' no longer appears in the replay.",
+    "evidence": "tip at [869,987] -> absent from DOM and frame"
+  },
+  "F43": {
+    "verdict": "PASS",
+    "note": "The game end card and controller tip are gone on phone.",
+    "evidence": "faded 'Boss Rush' + tip behind camera row -> neither in DOM or frame"
+  },
+  "F44": {
+    "verdict": "FAIL",
+    "note": "'Live' and 'Damaged' still share the same coral class and colour.",
+    "evidence": "rv-live (240,154,134) for both -> unchanged"
+  },
+  "F45": {
+    "verdict": "FAIL",
+    "note": "Followed player's tag still parked at screen centre.",
+    "evidence": "'Aleix' [946,447] -> [945,445] in live/cut/old/damaged"
+  },
+  "F46": {
+    "verdict": "FAIL",
+    "note": "No go-live control or behind-live indicator was added.",
+    "evidence": "3:36 / 3:47 -> 2:19 / 2:27, same plain times, no Live button"
+  },
+  "F47": {
+    "verdict": "FAIL",
+    "note": "Copy link is brighter but its worst tenth over the sky is still just under 4.5:1.",
+    "evidence": "p10 1.92 -> 4.24"
+  },
+  "F48": {
+    "verdict": "FAIL",
+    "note": "State chips are still 12 px plain text without a plate, two at a time on desktop.",
+    "evidence": "'Cut short' + 'Damaged' 12 px -> 'Damaged' + 'Cut short' 12 px, reordered and brighter"
+  },
+  "F49": {
+    "verdict": "FAIL",
+    "note": "Desktop row layout is unchanged, facts still spread across the row.",
+    "evidence": "time 433, outcome 510, players 884, fight 1248, length 1349 -> same"
+  },
+  "F50": {
+    "verdict": "FAIL",
+    "note": "Labels, day headings and footer still 13 px.",
+    "evidence": "'Today', 'Player', 'When' 13 px -> 13 px (size warn)"
+  },
+  "F51": {
+    "verdict": "PASS",
+    "note": "Filters are hidden when there are no runs (and on error).",
+    "evidence": "Player/When/Starred above 'No runs yet' -> only title and message"
+  },
+  "F52": {
+    "verdict": "PASS",
+    "note": "Armed row now shifts only a few px instead of 35-66 px.",
+    "evidence": "names 884->849, Fight 1248->1183 -> names 881->877, Fight 1242->1236"
+  },
+  "F53": {
+    "verdict": "FAIL",
+    "note": "Name tags are 13 px; the finding asks 14 px on desktop and the check still warns.",
+    "evidence": "12 px -> 13 px (size warn)"
+  },
+  "F54": {
+    "verdict": "FAIL",
+    "note": "Hint still repeats 'N next down' and 'M note' right above those buttons, though it no longer wraps.",
+    "evidence": "two-line toast with N/M -> one line, N/M still listed"
+  },
+  "F55": {
+    "verdict": "PASS",
+    "note": "Hint is one line with no dangling separator.",
+    "evidence": "line ends 'free camera ·' then wraps -> single line"
+  },
+  "F56": {
+    "verdict": "FAIL",
+    "note": "Speed and Note still change groups between viewports.",
+    "evidence": "desktop speed beside cameras, phone beside Note -> unchanged"
+  },
+  "F57": {
+    "verdict": "FAIL",
+    "note": "Phone header still shows only 'Boss Rush' and a bare chevron.",
+    "evidence": "'Boss Rush' -> 'Boss Rush'"
+  },
+  "F58": {
+    "verdict": "PASS",
+    "note": "Phone camera and transport buttons are 8 px apart.",
+    "evidence": "Aleix->Marc 4 px, rows 4 px -> 8 px both ways"
+  },
+  "F59": {
+    "verdict": "PASS",
+    "note": "'Free' renamed 'Free camera' everywhere.",
+    "evidence": "'Free' -> 'Free camera'"
+  },
+  "F60": {
+    "verdict": "FAIL",
+    "note": "Summary section labels still 13 px grey.",
+    "evidence": "'Fights', 'Players' 13 px rgb(170,164,147) -> unchanged"
+  },
+  "F61": {
+    "verdict": "PASS",
+    "note": "Note editor no longer half-covers the hint; hint is hidden.",
+    "evidence": "hint visible at x 695-710 and 1145-1227 -> none"
+  },
+  "F62": {
+    "verdict": "PASS",
+    "note": "Gold fill is now only on the primary action; selected camera is outlined.",
+    "evidence": "Pin and Aleix both gold-filled -> only Pin filled"
+  },
+  "F63": {
+    "verdict": "PASS",
+    "note": "Phone note input takes the full width with Pin and Cancel below.",
+    "evidence": "input 181 px, text cut mid-word -> full-width input, full text visible"
+  },
+  "F64": {
+    "verdict": "FAIL",
+    "note": "Header chip 'Cut short' and panel title 'Cut short at fight 2' still both shown.",
+    "evidence": "chip [425,23] + panel title -> unchanged"
+  },
+  "F65": {
+    "verdict": "FAIL",
+    "note": "'Cut short' and the way back are still each shown twice.",
+    "evidence": "chip + title; 'Replays' + 'All replays' -> unchanged"
+  },
+  "F66": {
+    "verdict": "PASS",
+    "note": "Tags are kept inside the screen edges.",
+    "evidence": "tag at x -26 -> every tag within the frame"
+  },
+  "F67": {
+    "verdict": "FAIL",
+    "note": "'Gone' card still sits off-grid at x 154 and duplicates the back link.",
+    "evidence": "card [154,324,460,205] -> same position, same outlined button"
+  }
+}

@@ -1,0 +1,258 @@
+{
+  "lens": "hierarchy",
+  "findings": [
+    {
+      "screen": "watch-end",
+      "viewport": "desktop",
+      "rule": "NEW",
+      "severity": "high",
+      "title": "The end of a run shows the game's title card, which reads as fight 4 starting",
+      "detail": "At the end of the run the scene goes black and the biggest thing on screen is the game's own title card, 'Boss Rush' over 'Fight 4: Giant Skeleton', so the player reads a fight beginning instead of a run ending. The summary that should open is not on screen. The card's 'Best played with a controller' line also sits under the replay timeline. On phone the same card is drawn faintly over the scene and the name tags. NEW idea: the replay must hide the game's own title and menu overlays and show its own end state.",
+      "evidence": "Desktop: 'Boss Rush' 44 px at [832,498,256,50] and 'Fight 4: Giant Skeleton' at [872,566,176,17] are the only content in the frame. The timeline reads 3:56 / 4:01 and no summary panel is shown. 'Best played with a controller' at [869,987,222,15] lies inside the timeline strip [17,979,1886,46]. Phone: 'Boss Rush' 22 px at [118,392,155,25], under the 'Maren the Bold' tag at [142,379,88,16].",
+      "fix": "Suppress the game's title/attract overlay inside the replay viewer. When the timeline reaches the end, open the summary panel, or show a replay-owned end state such as 'Left at fight 4' with Watch again.",
+      "box": [832, 498, 256, 85]
+    },
+    {
+      "screen": "watch-summary",
+      "viewport": "phone",
+      "rule": "COL-01",
+      "severity": "high",
+      "title": "The summary panel is see-through and the hint toast sits on top of its text",
+      "detail": "The panel lets the boss bar, the Fight timer and the players' name tags show through behind its own text. The first-visit hint toast is drawn over the middle of the per-player stats, so the lines that say what downed each player are cut through. The same see-through panel puts the ghost of 'Hale, the Whole Castellan' and 'Fight 2 0:39' behind 'Cut short at fight 2' on watch-cut phone.",
+      "evidence": "The boss title [105,73,181,11] and 'Fight 2 0:25' [155,118,44,11] lie directly behind the panel title 'Left at fight 4' [21,80,153,35]. Name tags 'Maren the Bold' [285,328] and 'Marc' [335,355] land on '0:50 · fell' [310,340]. The toast text [121,507,148,58] covers 'Downed most by ...' [21,486], 'Hit most by ...' [21,532] and 'Picked ...' [21,557].",
+      "fix": "Make the panel an opaque plate (or near-opaque, alpha 0.96 or more), hide the scene name tags while it is open, and dismiss the hint toast when the summary opens (or never draw it above the panel).",
+      "box": [0, 64, 390, 523]
+    },
+    {
+      "screen": "watch-summary",
+      "viewport": "land",
+      "rule": "COL-01",
+      "severity": "high",
+      "title": "In landscape the summary is a cramped strip that the toast, the tags and the boss bar all collide with",
+      "detail": "In landscape the summary gets about 359x188 px, so only the title and two fight rows are visible. The hint toast covers the first fight row, the name tags 'Maren the Bold', 'Marc' and 'Ser Quill' float across 'Fights', and the panel cuts off the right end of the boss bar. The player can't read the summary they just opened.",
+      "evidence": "The panel spans x 485–844, y 52–240. The toast text [237,179,369,39] lies over '1. The Regent Hollis' [515,164,133,20]. The tags 'Maren the Bold' [522,99], 'Marc' [573,126] and 'Ser Quill' [684,135] sit inside the panel. 'Players' [505,385] is below the fold, under the controls dock that starts at y 247.",
+      "fix": "In landscape, open the summary as a full-height sheet over the scene and controls with its own close button (or collapse the dock while it is open). Hide the name tags and the toast while it shows.",
+      "box": [485, 52, 359, 188]
+    },
+    {
+      "screen": "list",
+      "viewport": "phone",
+      "rule": "NEW",
+      "severity": "high",
+      "title": "On phone, runs on the same day look identical",
+      "detail": "The phone layout drops the time of day and the '2 notes' line, so the two 'Today' runs show exactly the same text. The player can't tell which run is which, and the one with notes can't be found except by the star. NEW idea: every list row keeps at least one field that tells it apart from the others (time of day) at every width.",
+      "evidence": "Rows [20,336,243,76] and [20,413,243,76] both read 'Left the run / Aleix, Marc / 4:01 / Fight 4'. Desktop shows '01:38 AM' and '12:58 AM' plus '2 notes' for the same rows. With no clock time on the row, '4:01' at [229,349] could also be read as a time of day.",
+      "fix": "Keep the time of day on phone: put it in the second line ('01:38 · Aleix, Marc') and keep the '2 notes' / 'deleted in 3 days' line.",
+      "box": [20, 336, 350, 154]
+    },
+    {
+      "screen": "watch-damaged",
+      "viewport": "phone",
+      "rule": "TYP-04",
+      "severity": "high",
+      "title": "The 'Damaged' state is truncated to 'Da…' in the phone header",
+      "detail": "The header fits 'Boss Rush', 'Cut short' and 'Damaged' next to a large Summary button, so the one word that explains why the replay stops at 1:18 is cut to 'Da…'. The player sees a run that ends early with no readable reason.",
+      "evidence": "In the screenshot the header reads 'Boss Rush  Cut short  Da…'. Title [84,20,77,23], 'Cut short' [171,22,53,16] and 'Damaged' [234,22,54,16] at 12 px are squeezed against Summary [279,10,99,44].",
+      "fix": "Drop the redundant 'Cut short' chip when 'Damaged' is shown (damaged implies cut short), or move the run-state chip to a second header line on phone so it never truncates.",
+      "box": [171, 18, 120, 22]
+    },
+    {
+      "screen": "watch-damaged",
+      "viewport": "desktop",
+      "rule": "HUD-05",
+      "severity": "medium",
+      "title": "The run-state chips are the smallest text in the header",
+      "detail": "Whether a run is Live, Cut short, Damaged or from an older version changes how the player should read the whole replay. That state is shown only as a 12 px chip after a 20 px title and date, and 'Cut short' is in the same dim grey as secondary text. The eye skips it. The same applies to 'Live' on watch-live ([437,23,22,16], 12 px) and 'Cut short' on watch-cut.",
+      "evidence": "'Cut short' [428,23,53,16] is 12 px, colour rgb(170,164,147). 'Damaged' [491,23,54,16] is 12 px. The title 'Boss Rush · Fri, Nov 13, 01:38 AM' is 20 px. Both chips have no plate or icon.",
+      "fix": "Give the run state a plate at 14–15 px in the alarm or accent colour (for Damaged and Live), or a single line under the header ('File damaged after 1:18'), and keep only one state chip at a time.",
+      "box": [428, 23, 117, 16]
+    },
+    {
+      "screen": "watch-old",
+      "viewport": "desktop",
+      "rule": "ONB-03",
+      "severity": "medium",
+      "title": "A replay with a stand-in boss is flagged only by a grey version number",
+      "detail": "On a recording from an older game version a removed boss plays as a stand-in with no boss bar, and the only hint is a dim 'v7.090.0' after the date. A player can't tell from a version number that the boss on screen isn't the one they fought, so they misread the fight.",
+      "evidence": "'v7.090.0' [444,23,47,16] is 12 px, rgb(170,164,147). No boss name or bar is shown at the top. The stand-in has only a small red bar over its head near [910,370]. The same applies on phone: 'v7.090.0' sits next to 'Boss Rush'.",
+      "fix": "Replace the version chip with plain words, e.g. 'Older version: Fight 2 plays with a stand-in boss', shown where the boss bar would be or as the run-state chip at readable size. Keep the version number in the Summary.",
+      "box": [444, 23, 47, 16]
+    },
+    {
+      "screen": "watch-note",
+      "viewport": "desktop",
+      "rule": "MENU-01",
+      "severity": "medium",
+      "title": "The selected-camera button uses the same gold fill as the primary action",
+      "detail": "The followed player's button ('Aleix') is filled gold, exactly like 'Pin' in the note composer and 'Watch again' in the cut-short panel. Two equally loud gold buttons compete for 'what do I press', and gold stops meaning 'the next step'. Same on watch-cut (desktop and phone: 'Watch again' at [1561,282] vs 'Aleix' at [1428,1025]) and watch-summary.",
+      "evidence": "Pin [1056,901,64,46] and Aleix [1407,1025,80,44] both have the gold fill with dark text rgb(23,19,11). On phone watch-cut, 'Watch again' [21,282,136,56] and 'Aleix' [13,741,59,44] are the only two filled controls.",
+      "fix": "Show the followed player as a selected state that isn't the primary fill: a gold outline or underline with gold text on the dark button. Keep the solid gold fill for the one primary action.",
+      "box": [1056, 901, 431, 168]
+    },
+    {
+      "screen": "watch-follow",
+      "viewport": "desktop",
+      "rule": "NEW",
+      "severity": "medium",
+      "title": "Speed, camera targets and Note sit in one undifferentiated row",
+      "detail": "The speed select, the four player buttons, 'Free' and 'Note' share one row with identical styling and 8 px gaps. 'Note' (an action that pins a note) reads as a fifth camera target, and nothing groups 'who to watch' apart from playback settings. On phone the grouping breaks further: 'Note' is paired with the speed select, and the players wrap onto two rows with 'Free'. NEW idea: controls are grouped by what they act on, with a visible gap or divider between groups.",
+      "evidence": "Row: speed [1319,1025,82,44], Aleix [1407], Marc [1491], Ser Quill [1555], Maren the Bold [1643], Free [1778], Note [1839,1026,68,42], all with the same outline style and about 4–6 px apart. Phone: speed [13,691] and Note [101,691] share a row, and the players sit at y 741 and 789.",
+      "fix": "Split the row into three groups with a 24 px gap or a divider: speed next to the transport (play, back, forward), the camera group (players and Free) on its own, and Note as a separate action next to Next death.",
+      "box": [1319, 1025, 588, 44]
+    },
+    {
+      "screen": "watch-follow",
+      "viewport": "desktop",
+      "rule": "TYP-01",
+      "severity": "medium",
+      "title": "The fight numbers on the timeline are 11 px grey specks",
+      "detail": "The fight ticks 1–4 are the only labels on the timeline, which is how a player finds 'fight 3'. At 11 px in dim grey, tucked against the top of each tick, they nearly disappear, and the '1' at the left edge is lost entirely. Same on every viewer shot, phone and land included.",
+      "evidence": "'1' [21,986,4,15], '2' [594,986,6,15], '3' [969,986,6,15], '4' [1511,986,6,15]: 11 px, rgb(170,164,147). contrast.md gives a declared ratio of 2.46 and a p10 of 1.28 for '1'.",
+      "fix": "Draw the fight numbers at 13–14 px in the primary text colour, centred above each segment rather than glued to the tick, or label each segment 'F1'…'F4' inside the track.",
+      "box": [17, 984, 1505, 17]
+    },
+    {
+      "screen": "watch-follow",
+      "viewport": "land",
+      "rule": "HUD-04",
+      "severity": "medium",
+      "title": "In landscape the controls and toast leave a thin band of scene",
+      "detail": "In landscape the dock (timeline, transport and camera rows) takes 150 of 390 px and the header another 50. The hint toast then covers the middle of the remaining band, on top of the players' name tags. The replay the player came to watch gets less than half the screen, and its centre is hidden.",
+      "evidence": "The dock spans y 240–390 (38% of height). The toast text [237,179,369,39] sits in the scene centre, and its plate touches the 'Maren the Bold' tag [335,153,88,16]. The visible scene is roughly y 52–240.",
+      "fix": "In landscape, put transport and camera in one row (camera as a select or a compact chip strip), let the dock auto-hide while playing, and place the hint toast at the top edge, not the centre.",
+      "box": [0, 170, 844, 220]
+    },
+    {
+      "screen": "watch-free",
+      "viewport": "phone",
+      "rule": "NEW",
+      "severity": "medium",
+      "title": "Name tags pile into a tower and can't be matched to bodies",
+      "detail": "When players stand close together (always, in free camera from a distance), their tags stack straight up into a column of four labels above a tiny cluster, so the player can't tell which knight is which. On watch-damaged phone, a tag at the edge is clipped to 'Quill'. NEW idea: world-space tags collapse or offset with leader lines when they overlap, and stay inside the screen.",
+      "evidence": "Tags 'Marc' [168,273], 'Ser Quill' [157,300], 'Maren the Bold' [145,327] and 'Aleix · down' [160,364] form one vertical column over a cluster about 40 px wide. watch-damaged phone: 'Ser Quill' at x -21, cut by the left edge.",
+      "fix": "When tags overlap, merge them into one tag ('Marc, Ser Quill, Maren +1') or fan them out sideways with short leader lines. Clamp tags to the viewport with a 16 px inset.",
+      "box": [137, 268, 104, 116]
+    },
+    {
+      "screen": "watch-note",
+      "viewport": "land",
+      "rule": "COL-01",
+      "severity": "medium",
+      "title": "The hint toast shows through around the note composer",
+      "detail": "The note composer opens on top of the hint toast but is a different size and offset, so pieces of the toast text show between its buttons and at its edges. The player reads stray words beside 'Pin' and 'Cancel'. Same on desktop, where 'free camera ·' sticks out right of Cancel and a cut key chip shows at the left, and faintly on phone behind the input.",
+      "evidence": "Land: the composer [162,130,519,97] overlaps the toast text [237,179,369,39], and 'ro' and 'h to' are visible between Pin [518,169] and Cancel [590,169]. Desktop: composer x 700–1219 vs toast plate x 666–1254, with 'free camera ·' visible at [1145,906] behind and right of Cancel [1128,901].",
+      "fix": "Dismiss the hint toast when the note composer opens. If it must stay, render the composer as an opaque plate that fully covers the toast's bounds.",
+      "box": [162, 130, 519, 97]
+    },
+    {
+      "screen": "watch-summary",
+      "viewport": "desktop",
+      "rule": "TYP-02",
+      "severity": "medium",
+      "title": "In the fight list, the fight names are dimmer than their times",
+      "detail": "Each fight row shows the boss name in dim grey and the duration in bright text, so the eye lands on '0:57 0:39 1:00 0:50' before it knows which fight is which. The name is what the player scans for and clicks to jump.",
+      "evidence": "'1. The Regent Hollis' [1571,174,133,20] is rgb(170,164,147), 500 weight. '0:57' [1871,173,28,20] is rgb(236,229,211). The same holds for all four rows and on phone and land.",
+      "fix": "Swap the emphasis: fight name in the primary text colour, duration in the secondary grey (tabular figures), and keep the red 'fell' marker for the fatal fight.",
+      "box": [1561, 164, 338, 193]
+    },
+    {
+      "screen": "watch-summary",
+      "viewport": "desktop",
+      "rule": "COL-02",
+      "severity": "medium",
+      "title": "Attack names and boss names run together in 'Boss attacks that landed most'",
+      "detail": "Each row is the attack name immediately followed by the boss name, separated only by a colour shift. 'The Furrow Pillager Captain' or 'Stamp the Stones Hale, the Castellan' reads as one long attack name.",
+      "evidence": "'The Furrow' [1561,822,78,20] ends at x 1639 where 'Pillager Captain' [1639,822,104,20] begins. The only difference is colour, rgb(236,229,211) vs rgb(170,164,147), at the same size and weight.",
+      "fix": "Put the boss name on its own line under the attack at 13 px, or add a separator ('The Furrow · Pillager Captain'). Alternatively, group the rows under per-boss subheads.",
+      "box": [1561, 822, 338, 180]
+    },
+    {
+      "screen": "list-error",
+      "viewport": "phone",
+      "rule": "MENU-01",
+      "severity": "medium",
+      "title": "'Try again' looks exactly like the useless filter buttons above it",
+      "detail": "With the server down, the only way forward is 'Try again', but it has the same outlined style as 'Starred' and the selects, which still sit at full strength above the error though there is nothing to filter. The eye goes to the filter block first. Same on desktop ([420,233,96,44]).",
+      "evidence": "'Try again' [20,359,96,44] and 'Starred' [20,146,83,44] have the same border, fill and 15 px label. Player/When selects [20,92,170,44] and [200,92,170,44] are fully enabled.",
+      "fix": "Give 'Try again' the primary gold fill and disable or dim the filters while the list failed to load (or hide them, as they act on nothing).",
+      "box": [20, 359, 96, 44]
+    },
+    {
+      "screen": "list-delete",
+      "viewport": "desktop",
+      "rule": "NEW",
+      "severity": "low",
+      "title": "Arming delete shifts the row's columns out of line",
+      "detail": "When 'Delete' turns into the wider 'Delete for good?', the players, fight, duration and star of that row slide left, so the row no longer lines up with the rest of the list. That reads as a layout glitch at the moment the player is deciding to delete. NEW idea: confirm states keep the same footprint as the control they replace.",
+      "evidence": "Armed row: 'Aleix, Marc' x 849, 'Fight 4' x 1183, '4:01' x 1284, star x 1327. Other rows: 884, 1248, 1349, 1393, so the shift is 35–66 px.",
+      "fix": "Reserve the confirm button's width in every row (fixed-width action column of about 130 px), or let 'Delete for good?' overlay leftward over the star without reflowing the row.",
+      "box": [849, 251, 651, 44]
+    },
+    {
+      "screen": "list",
+      "viewport": "desktop",
+      "rule": "NEW",
+      "severity": "low",
+      "title": "Row facts are scattered across 1080 px with two unlabeled times",
+      "detail": "Each row puts the outcome at the left, the players alone in the middle (x 884) and 'Fight N' plus a duration far right, with about 270 px of empty space between groups. The eye has to cross the whole row to put a run together. The row also carries two clock-like numbers ('01:38 AM' and '4:01') with nothing saying the second is the run's length.",
+      "evidence": "Time [433,189], outcome [510,186], players [884,189], fight [1248,189], duration [1349,189]. The gaps are about 270 px and about 290 px.",
+      "fix": "Pack the row: outcome, then players and fight count as a second line under it, and the duration right-aligned next to the star. Or tighten the columns to about 120 px gaps and add a column header row ('Players · Reached · Length').",
+      "box": [433, 186, 944, 26]
+    },
+    {
+      "screen": "watch-summary",
+      "viewport": "desktop",
+      "rule": "TYP-02",
+      "severity": "low",
+      "title": "Section labels in the summary are weaker than the rows they head",
+      "detail": "'Fights', 'Players', 'Boss attacks that landed most' and 'Notes' are 13 px grey, smaller and dimmer than the 15 px rows under them. The panel reads as one long column, and the player has to scroll-scan to find the notes or the attack list.",
+      "evidence": "Section labels are 13 px, 600 weight, rgb(170,164,147) at [1561,132], [1561,381], [1561,790] and [1561,1027]. Rows are 15 px, and player names are 19 px gold.",
+      "fix": "Raise section labels to 15–16 px in the primary colour with 24 px space above, or use the serif at 17 px to match the panel title family.",
+      "box": [1561, 132, 176, 912]
+    },
+    {
+      "screen": "watch-note",
+      "viewport": "phone",
+      "rule": "NEW",
+      "severity": "low",
+      "title": "The note field is too narrow to show what's being typed",
+      "detail": "On phone the input shares a row with Pin and Cancel and is only 181 px wide, so a short sentence already scrolls and the player sees 's through the roll here' without its start. NEW idea: a text field shows a full short sentence at the width it's given.",
+      "evidence": "Input [25,517,181,46], Pin [214,517,64,46], Cancel about [286,517,79,46]. The visible text in the screenshot starts mid-word.",
+      "fix": "On phone, put the input on its own full-width row (340 px) with Pin and Cancel below it, or use a two-line textarea.",
+      "box": [25, 517, 181, 46]
+    },
+    {
+      "screen": "watch-gone",
+      "viewport": "desktop",
+      "rule": "TYP-06",
+      "severity": "low",
+      "title": "The 'gone' card floats off-grid and repeats the back link",
+      "detail": "The message card sits at x 154, aligned neither with the '‹ Replays' back link at the page edge nor with the centre, so the screen looks unfinished. Its only button, 'All replays', goes to the same place as the back link in the top-left corner.",
+      "evidence": "Card about [154,324,460,205]. Back link [12,10,100,44] reads 'Replays'. Button 'All replays' [183,458,104,44] goes to the same destination.",
+      "fix": "Centre the card (or align it to the 420 px content column the list uses) and make 'All replays' a filled primary button, dropping the duplicate back link on this screen.",
+      "box": [154, 324, 460, 205]
+    },
+    {
+      "screen": "watch-cut",
+      "viewport": "desktop",
+      "rule": "TYP-06",
+      "severity": "low",
+      "title": "'Cut short' is stated in the header and again as the panel title",
+      "detail": "The header chip 'Cut short' and the panel heading 'Cut short at fight 2' state the same fact on one screen. The panel line is the one with news (which fight), so the chip is noise here.",
+      "evidence": "Header chip 'Cut short' [425,23,53,16]. Panel title 'Cut short at fight 2' [1561,80,216,35].",
+      "fix": "Hide the header chip while the panel that states the run's end is open, or keep only the chip and title the panel 'Fight 2'.",
+      "box": [425, 23, 53, 16]
+    },
+    {
+      "screen": "watch-follow",
+      "viewport": "desktop",
+      "rule": "NEW",
+      "severity": "low",
+      "title": "The key-hint toast wraps with a dangling separator",
+      "detail": "The desktop hint wraps after 'free camera ·', leaving a trailing middle dot at the end of line one and a short second line. It reads as a cut-off list. NEW idea: list separators never end a line.",
+      "evidence": "Line 1 ends 'F free camera ·' near [1145,906]. Line 2 is 'N next death · M note' [883,930]. The plate spans [666,893,588,66].",
+      "fix": "Lay the hints out as discrete key-plus-label groups with gap spacing instead of '·' separators, or split them into two balanced lines (playback / camera and notes).",
+      "box": [1145, 904, 85, 20]
+    }
+  ]
+}

@@ -18,7 +18,7 @@ const replayView = (() => {
   };
   // ---- the run, as it streams in ----
   let id = null, card = null, chapters = [], marks = [], end = null, damaged = null, live = false, lines = 0, lastT = 0;
-  let streaming = false, streamFailed = 0, pollTimer = null, gone = false;
+  let streaming = false, streamFailed = 0, pollTimer = null, gone = false, pulled = false;   // pulled: the first stream has ended
   // ---- playback ----
   let active = false, T = 0, Tprev = 0, playing = false, speed = 1, built = null, building = false, finished = false;
   let cur = null;   // { ch, dec, ia, a, b, decodedTo }: frames ia (a) and ia + 1 (b) decoded, around T
@@ -29,7 +29,7 @@ const replayView = (() => {
   const ctx = { self: SELF, bodyOf: id => bodies.get(id)?.body || null };
   const rushView = { fight: 1, crowned: false, modifiers: [], clock: 0, par: 0 };
   // ---- camera ----
-  let camMode = 'follow', followId = null, fovSet = false;
+  let camMode = 'follow', followId = null;
   const orbit = { x: 0, y: 1.2, z: 0, yaw: 0, pitch: 0.42, dist: 9 };
   const chase = { pos: new THREE.Vector3(), ready: false };
   const v1 = new THREE.Vector3(), v2 = new THREE.Vector3(), qa = new THREE.Quaternion(), qb = new THREE.Quaternion(), look = new THREE.Vector3();
@@ -71,7 +71,7 @@ const replayView = (() => {
     } catch (e) {
       streamFailed++;
     } finally {
-      streaming = false;
+      streaming = false; pulled = true;
       ui.changed();
       if (!gone && (!ok || live && !end) && !damaged) {
         // A live run goes on arriving; a dropped connection is tried again, a little later each time.
@@ -95,7 +95,7 @@ const replayView = (() => {
     if (m.k === 'damaged') { damaged = m.error || 'The rest of this run could not be read.'; return; }
     lines++;
     if (m.k === 'start') {
-      chapters.push({ fight: m.fight, t0: m.t, session: m.session || {}, roster: Array.isArray(m.roster) ? m.roster : [], frames: [], keys: [], dec: new ArenaNet.FrameDecoder(), broken: false });
+      chapters.push({ fight: m.fight, t0: m.t, session: m.session || {}, roster: Array.isArray(m.roster) ? m.roster : [], frames: [], times: [], keys: [], dec: new ArenaNet.FrameDecoder(), broken: false });
       lastT = Math.max(lastT, m.t);
     } else if (m.k === 'f') {
       const ch = chapters[chapters.length - 1];
@@ -103,8 +103,9 @@ const replayView = (() => {
       const i = ch.frames.length;
       // A seek restores the decoder from the nearest key at or before it: its state before that frame.
       if (i % KEY_EVERY === 0) ch.keys.push({ i, epoch: ch.dec.epoch, groups: cloneGroups(ch.dec.groups) });
-      try { ch.dec.decode(m.m); } catch (e) { ch.broken = true; ch.keys.length = Math.min(ch.keys.length, Math.floor(i / KEY_EVERY)); return; }
-      ch.frames.push(m);
+      try { ch.dec.decode(m.m); } catch (e) { ch.broken = true; ch.keys.length = Math.min(ch.keys.length, Math.ceil(i / KEY_EVERY)); return; }   // the keys before the frame that failed
+      // Kept as its line (parsed again when played): an hour's run stays a few tens of MB on a phone.
+      ch.frames.push(line); ch.times.push(m.t);
       lastT = Math.max(lastT, m.t);
     } else if (m.k === 'roster') {
       const ch = chapters[chapters.length - 1];
@@ -122,16 +123,20 @@ const replayView = (() => {
   }
   function frameIndex(ch, t) {
     let lo = 0, hi = ch.frames.length - 1;
-    if (hi < 0 || ch.frames[0].t > t) return 0;
-    while (lo < hi) { const mid = (lo + hi + 1) >> 1; if (ch.frames[mid].t <= t) lo = mid; else hi = mid - 1; }
+    if (hi < 0 || ch.times[0] > t) return 0;
+    while (lo < hi) { const mid = (lo + hi + 1) >> 1; if (ch.times[mid] <= t) lo = mid; else hi = mid - 1; }
     return lo;
   }
   const known = id => ENEMY_BY_ID[id] ? id : STAND_IN;
   // The fight's arena and bosses, as the online client builds them; `drop`: at once, as Boss Rush's next boss drops in.
   function build(ch, drop) {
     const s = ch.session, ids = [s.id, ...(s.partners || [])];
+    const fightName = () => `Fight ${s.gauntlet?.number ?? ch.fight + 1}: ${ids.map(x => enemyName(x)).join(' & ')}`;
     const go = () => {
       Game.startFight(known(ids[0]), ids.slice(1).map(known));
+      // startFight shows a practice duel's card: the replay keeps its own over the fade.
+      document.getElementById('loadName').textContent = card?.mode === 'weekly' ? 'Weekly Run' : 'Boss Rush';
+      document.getElementById('loadTip').textContent = fightName();
       if (s.spawn) { Game.spawn = { ...s.spawn }; Game.spawnPlayer(); }
       const proxy = Game.player; proxy.execGrace = 1e9;   // the hidden stand-in for "the player": nothing ever strikes it
       enemyOf.clear();
@@ -146,17 +151,15 @@ const replayView = (() => {
       sync(false);
       if (drop) { Game.loading = 0; document.getElementById('loading').classList.remove('show'); }
       ui.changed(true);
+      if (ids.some(x => !ENEMY_BY_ID[x])) ui.say("This fight's boss is no longer in the game: a stand-in plays its part.", 5000);
     };
     building = true;
     if (drop) go();
-    else {
-      const names = ids.map(x => enemyName(x)).join(' & ');
-      Game.loadingFirst(card?.name || 'Boss Rush', `Fight ${s.gauntlet?.number ?? ch.fight + 1}: ${names}`, go);
-    }
+    else Game.loadingFirst(card?.mode === 'weekly' ? 'Weekly Run' : 'Boss Rush', fightName(), go);
   }
 
   // ============================================================================ the clock
-  function packet(ch, i) { const f = ch.frames[i], p = cur.dec.decode(f.m); p.t = f.t; return p; }
+  function packet(ch, i) { const f = JSON.parse(ch.frames[i]), p = cur.dec.decode(f.m); p.t = f.t; return p; }
   // Puts the world at T. `present`: the moments crossed since the last step are shown (blows, parries, sounds); a jump
   // shows none of them.
   function sync(present) {
@@ -210,9 +213,9 @@ const replayView = (() => {
       netView.body(r.body, s, q, f, since);
       if (jump) r.body.savePrev();
       const down = s.hp <= 0 || s.state === 'dead';
-      if (r.down !== down) { r.down = down; whoDirty = true; }
+      if (r.down !== down) { r.down = down; whoDirty = true; r.label.classList.toggle('rv-name-down', down); }
       const label = s.name + (r.down ? ' · down' : '');
-      if (r.text !== label) { r.text = label; r.name = s.name; r.labelText.textContent = label; }
+      if (r.text !== label) { r.text = label; r.name = s.name; r.labelText.textContent = label; r.tagW = 0; }
     }
     for (const [pid, r] of bodies) if (r.stamp !== stamp) { r.body.rig.dispose(); r.label.remove(); bodies.delete(pid); whoDirty = true; }
     if (!orbitReady) {   // the free camera's first place: over the middle of the fight
@@ -256,6 +259,7 @@ const replayView = (() => {
     ui.changed(true);
     return r;
   }
+  const shownTags = [], byTagY = (a, b) => b.tagY - a.tagY, DOWN_TAG = 0.6;   // a downed body lies on the ground: its tag sits on it
   function clearBodies() { for (const r of bodies.values()) { r.body.rig.dispose(); r.label.remove(); } bodies.clear(); }
   function players() {
     // Everyone in the run, in the order they joined, bots last: the camera's choices.
@@ -292,8 +296,11 @@ const replayView = (() => {
     return focusPoint;
   }
   // T moves to `t` (clamped to what has arrived); `final` false while a finger drags the timeline across fights.
+  // A moment still on its way (a long run streaming in) is waited for at the edge of what has arrived, then jumped to.
+  let pendingT = -1;
   function seek(t, final = true) {
     const top = Math.max(0, lastT);
+    pendingT = final && t > top + 0.5 && streaming ? t : -1;
     T = Tprev = clamp(t, 0, top);
     finished = false;
     if (!built || building) return;
@@ -318,16 +325,31 @@ const replayView = (() => {
     }
     const Tr = Tprev + (T - Tprev) * alpha;
     placeCamera(Tr, game.renderDt || CONFIG.step);
+    shownTags.length = 0;
     for (const r of bodies.values()) {
-      const q = r.pair[1], v = v1.set(q.x, q.y + r.body.height, q.z).project(camera);
+      const q = r.pair[1], v = v1.set(q.x, q.y + (r.down ? DOWN_TAG : r.body.height), q.z).project(camera);
       const hide = Game.loading > 0 || v.z < -1 || v.z > 1 || Math.abs(v.x) > 1 || Math.abs(v.y) > 1 || camMode === 'follow' && r === bodies.get(followId) && viewing(r);
       if (r.label.hidden !== hide) r.label.hidden = hide;
-      if (!hide) { r.label.style.left = `${(v.x + 1) * innerWidth / 2}px`; r.label.style.top = `${(1 - v.y) * innerHeight / 2}px`; }
+      if (hide) continue;
+      if (!r.tagW) { r.tagW = r.label.offsetWidth; r.tagH = r.label.offsetHeight + 2; }   // measured once per text
+      r.tagX = clamp((v.x + 1) * innerWidth / 2, r.tagW / 2 + 4, innerWidth - r.tagW / 2 - 4); r.tagY = (1 - v.y) * innerHeight / 2; shownTags.push(r);
     }
+    // Tags that would overlap stack upward, the lowest on screen keeping its place.
+    shownTags.sort(byTagY);
+    for (let i = 1; i < shownTags.length; i++) {
+      const a = shownTags[i];
+      for (let j = 0; j < i; j++) { const b = shownTags[j]; if (Math.abs(a.tagX - b.tagX) < (a.tagW + b.tagW) / 2 + 4 && a.tagY > b.tagY - b.tagH) a.tagY = b.tagY - b.tagH; }
+    }
+    for (const r of shownTags) { r.label.style.left = `${r.tagX}px`; r.label.style.top = `${r.tagY}px`; }
   }
   // Following a player whose camera was recorded (Boss Rush, alive): their own view, exactly as they saw it.
   const okView = v => v && Array.isArray(v.position) && v.position.length === 3 && Array.isArray(v.quaternion) && v.quaternion.length === 4 && Number.isFinite(v.fov);
   const viewing = r => okView(r.s.view);
+  // As wide as the recorded 16:9 view on a narrower screen (a phone held upright), as js/showcase.js frames its shots.
+  function setFov(v) {
+    const wide = 16 / 9, fov = camera.aspect >= wide ? v : Math.min(100, 2 * Math.atan(Math.tan(v * Math.PI / 360) * wide / camera.aspect) * 180 / Math.PI);
+    if (Math.abs(camera.fov - fov) > 1e-3) { camera.fov = fov; camera.updateProjectionMatrix(); }
+  }
   function placeCamera(Tr, dt) {
     const r = camMode === 'follow' ? bodies.get(followId) : null;
     if (r && viewing(r)) {
@@ -336,10 +358,10 @@ const replayView = (() => {
       camera.position.fromArray(av.position).lerp(v2.fromArray(bv.position), f);
       qa.fromArray(av.quaternion).normalize(); qb.fromArray(bv.quaternion).normalize();
       camera.quaternion.copy(qa.slerp(qb, f));
-      camera.fov = clamp(lerp(av.fov, bv.fov, f), 30, 110); camera.updateProjectionMatrix(); fovSet = true;
+      setFov(clamp(lerp(av.fov, bv.fov, f), 30, 110));
       chase.ready = false;
     } else {
-      if (fovSet) { camera.fov = CONFIG.camera.fov; camera.updateProjectionMatrix(); fovSet = false; }
+      setFov(CONFIG.camera.fov);
       if (r) {
         // No recorded view (down, or a bot): a steady camera behind them.
         const q = r.pair[1];
@@ -397,7 +419,7 @@ const replayView = (() => {
     const m = /(?:^#|&)t=(\d+(?:\.\d+)?)/.exec(location.hash);
     if (m) return Number(m[1]);
     const spot = store.get(SPOTS, {})[id];
-    return spot && spot.t > 0 ? spot.t : 0;
+    return spot && spot.t > 0 ? spot.t : live ? -1 : 0;
   }
 
   // ============================================================================ the page around it
@@ -407,20 +429,23 @@ const replayView = (() => {
     css.textContent = `
     body.replay-view #aTL,body.replay-view #controlsTips,body.replay-view #healingTip,body.replay-view #groupTip,body.replay-view #died,body.replay-view #won,
     body.replay-view #complete,body.replay-view #prompt,body.replay-view #talk,body.replay-view #lesson,body.replay-view #help,body.replay-view #rested,
-    body.replay-view #worldHint,body.replay-view #sparCard,body.replay-view #menu,body.replay-view #version,body.replay-view #counterDim{display:none!important}
+    body.replay-view #worldHint,body.replay-view #sparCard,body.replay-view #menu,body.replay-view #version,body.replay-view #counterDim,
+    body.replay-view #fpsCounter,body.replay-view #helpHint,body.replay-view #confirm,body.replay-view #loadPad{display:none!important}
     body.replay-view #aBC{bottom:calc(var(--rv-bar,150px) + 14px)}
     body.replay-view #aTC{top:calc(var(--rv-top,64px) + 6px)}
     body.replay-view canvas#view{touch-action:none;cursor:grab}
     body.replay-view canvas#view:active{cursor:grabbing}
-    body.replay-view .rv-name{z-index:20}
+    body.replay-view .rv-name{z-index:20;font-size:13px}
+    body.replay-view .rv-name-down{color:#f3b3a3;border-color:#e0806a80}
     #rv{position:fixed;inset:0;z-index:30;pointer-events:none;font:400 var(--ui-size-text)/1.4 var(--ui-text);color:var(--ui-ink)}
-    #rv button,#rv select,#rv input,#rv a{pointer-events:auto}
-    #rv .rv-panel{background:#0b0e10e6;border:1px solid var(--ui-line)}
+    #rv button,#rv select,#rv input,#rv a{pointer-events:auto;touch-action:manipulation;-webkit-tap-highlight-color:transparent}
+    #rv .rv-panel{background:#0b0e10f5;border:1px solid var(--ui-line)}
     #rvTop{position:absolute;left:0;right:0;top:0;display:flex;align-items:center;gap:8px;padding:10px max(12px,env(safe-area-inset-right)) 10px max(12px,env(safe-area-inset-left));
-      background:linear-gradient(#080a0cd9,#080a0c00);pointer-events:none}
+      background:linear-gradient(#080a0cf7 0%,#080a0ceb 65%,#080a0c00);pointer-events:none}
     #rvBack{color:var(--ui-ink);text-decoration:none}
+    #rvLink{color:#cfc8b6}
     #rvTitle{flex:1;min-width:0;margin:0;font:400 20px/1.2 var(--ui-display);color:var(--ui-ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-shadow:0 1px 3px #000}
-    #rvTitle .rv-tag{margin-left:10px;font:600 12px/1 var(--ui-text);letter-spacing:.02em;color:var(--ui-muted);vertical-align:3px}
+    #rvTitle .rv-tag{margin-left:10px;font:600 12px/1 var(--ui-text);letter-spacing:.02em;color:#cfc8b6;vertical-align:3px;text-shadow:0 1px 2px #000}
     #rvTitle .rv-live{color:#f09a86}
     #rvBar{position:absolute;left:0;right:0;bottom:0;padding:6px max(12px,env(safe-area-inset-right)) max(10px,env(safe-area-inset-bottom)) max(12px,env(safe-area-inset-left));border-width:1px 0 0}
     #rvLine{position:relative;height:46px;margin:0 4px;cursor:pointer;pointer-events:auto;touch-action:none;outline:none}
@@ -432,7 +457,7 @@ const replayView = (() => {
     #rvMarks{position:absolute;left:0;right:0;top:0;height:26px}
     .rv-m{position:absolute;bottom:2px;transform:translateX(-50%);pointer-events:none}
     .rv-fight{bottom:-14px;width:1px;height:30px;background:#ffffff59;transform:none}
-    .rv-fight b{position:absolute;left:4px;top:-1px;font:600 11px/1 var(--ui-text);color:var(--ui-muted)}
+    .rv-fight b{position:absolute;left:4px;top:-2px;font:600 12px/1 var(--ui-text);color:#cfc8b6}
     .rv-down{width:9px;height:9px;border:2px solid var(--ui-alarm);border-radius:50%;box-sizing:border-box}
     .rv-death{width:10px;height:10px;background:var(--ui-alarm)}
     .rv-finisher{width:9px;height:9px;background:var(--ui-accent-hi);transform:translateX(-50%) rotate(45deg);bottom:4px}
@@ -440,7 +465,7 @@ const replayView = (() => {
     .rv-note{width:3px;height:14px;background:var(--ui-ink)}
     #rvTip{position:absolute;bottom:50px;transform:translateX(-50%);padding:5px 9px;background:#06080af2;border:1px solid var(--ui-line-hi);font:500 13px/1.35 var(--ui-text);
       white-space:nowrap;max-width:min(320px,80vw);overflow:hidden;text-overflow:ellipsis;pointer-events:none}
-    #rvRow{display:flex;flex-wrap:wrap;align-items:center;gap:6px 6px}
+    #rvRow{display:flex;flex-wrap:wrap;align-items:center;gap:8px}
     #rv .rv-icon{min-width:44px;min-height:44px;padding:0 10px}
     #rv .rv-icon svg{width:18px;height:18px;fill:currentColor}
     #rvTime{min-width:7.5em;padding:0 6px;font:500 14px/1 var(--ui-text);font-variant-numeric:tabular-nums;color:var(--ui-muted)}
@@ -448,21 +473,25 @@ const replayView = (() => {
     #rvGrow{flex:1}
     #rvSpeed{min-height:44px;padding:0 10px;font:500 var(--ui-size-text)/1 var(--ui-text);color:var(--ui-ink);background:#0b0e10;border:1px solid var(--ui-line);border-radius:2px}
     #rvSpeed:focus-visible{outline:1px solid var(--ui-accent)}
-    #rvWho{display:flex;gap:4px;max-width:100%;overflow-x:auto;scrollbar-width:none}
+    #rvWho{display:flex;gap:8px;max-width:100%;overflow-x:auto;scrollbar-width:none}
     #rvWho::-webkit-scrollbar{display:none}
     #rvWho .ui-button{min-height:44px;padding:0 12px;white-space:nowrap}
-    #rvWho .ui-button[aria-pressed=true]{color:var(--ui-accent-ink);background:var(--ui-accent);border-color:var(--ui-accent)}
+    #rvWho .ui-button[aria-pressed=true]{color:var(--ui-accent-hi);background:var(--ui-accent-wash);border-color:var(--ui-accent);box-shadow:inset 0 0 0 1px var(--ui-accent)}
     #rvWho .ui-button .rv-down-dot{width:7px;height:7px;border:2px solid var(--ui-alarm);border-radius:50%}
     #rvStatus{position:absolute;left:50%;transform:translateX(-50%);bottom:calc(var(--rv-bar,150px) + 12px);max-width:min(560px,calc(100vw - 32px));padding:9px 14px;
       font:500 14px/1.4 var(--ui-text);text-align:center}
-    #rvStatus[hidden],#rvTip[hidden],#rvSide[hidden],#rvNoteForm[hidden],#rvGone[hidden]{display:none}
+    #rv [hidden]{display:none!important}
     #rvStatus .ui-key{margin:0 2px}
-    #rvSide{position:absolute;right:0;top:var(--rv-top,64px);bottom:var(--rv-bar,150px);width:min(380px,100vw);overflow-y:auto;padding:18px 20px 20px;box-sizing:border-box;border-width:1px 0 1px 1px;pointer-events:auto;overscroll-behavior:contain}
+    #rvStatus .rv-k{white-space:nowrap}
+    #rvStatus .rv-k+.rv-k:before{content:'·';margin:0 8px;color:var(--ui-muted)}
+    #rv #rvSide{position:absolute;right:0;top:var(--rv-top,64px);bottom:var(--rv-bar,150px);width:min(380px,100vw);overflow-y:auto;padding:18px 20px 20px;box-sizing:border-box;border-width:1px 0 1px 1px;pointer-events:auto;overscroll-behavior:contain;background:#0b0e10}
     #rvSide h2{margin:0 0 14px;font:400 26px/1.15 var(--ui-display)}
     #rvSide h3{margin:20px 0 8px;font:600 13px/1.3 var(--ui-text);color:var(--ui-muted)}
     #rvSide table{width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums}
-    #rvSide td{padding:5px 0;border-top:1px solid #ffffff12;vertical-align:top}
+    #rvSide td{padding:5px 0;border-top:1px solid #ffffff12;vertical-align:middle}
     #rvSide td+td{padding-left:10px;text-align:right;white-space:nowrap}
+    #rvSide td .ui-text-button{color:var(--ui-ink);text-align:left}
+    #rvSide .rv-by{display:block;color:var(--ui-muted);font-size:13px}
     #rvSide .rv-person{margin:0 0 12px;padding:10px 0 0;border-top:1px solid #ffffff12}
     #rvSide .rv-person strong{font:400 19px/1.2 var(--ui-display);color:var(--ui-accent-hi)}
     #rvSide .rv-person p{margin:4px 0 0;color:var(--ui-muted)}
@@ -475,26 +504,28 @@ const replayView = (() => {
     #rvSide .rv-actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:18px}
     #rvNoteForm{position:absolute;left:50%;transform:translateX(-50%);bottom:calc(var(--rv-bar,150px) + 12px);width:min(520px,calc(100vw - 24px));padding:12px;box-sizing:border-box;pointer-events:auto}
     #rvNoteForm label{display:block;margin:0 0 8px;color:var(--ui-muted);font-size:13px}
-    #rvNoteForm div{display:flex;gap:8px}
-    #rvNoteText{flex:1;min-width:0;min-height:44px;padding:0 12px;font:400 16px/1 var(--ui-text);color:var(--ui-ink);background:var(--ui-well);border:1px solid var(--ui-line-hi);border-radius:2px}
+    #rvNoteForm div{display:flex;flex-wrap:wrap;gap:8px}
+    #rvNoteText{flex:1 1 220px;min-width:0;min-height:44px;padding:0 12px;font:400 16px/1 var(--ui-text);color:var(--ui-ink);background:var(--ui-well);border:1px solid var(--ui-line-hi);border-radius:2px}
     #rvNoteText:focus{outline:1px solid var(--ui-accent)}
     #rvNoteForm .ui-primary{width:auto;min-height:44px}
-    #rvGone{position:absolute;left:max(24px,8vw);top:30vh;max-width:460px;padding:26px 28px;pointer-events:auto}
+    #rvGone{position:absolute;left:max(16px,8vw);top:30vh;max-width:min(460px,calc(100vw - 2 * max(16px,8vw)));box-sizing:border-box;padding:26px 28px;pointer-events:auto}
     #rvGone h2{margin:0 0 10px;font:400 30px/1.15 var(--ui-display)}
     #rvGone p{margin:0 0 20px;color:var(--ui-muted)}
     @media (max-width:640px){
       #rvTitle{font-size:17px}
       #rvTime{min-width:0;flex:1}
       #rvGrow{display:none}
-      #rvWho{order:5;flex:1 1 100%}
+      #rvWho{order:5;flex:1 1 100%;flex-wrap:wrap;overflow:visible}
       #rvSide{left:0;right:0;width:auto;border-width:1px 0}
-      #rv .rv-hide-narrow{display:none}
+      #rv .rv-hide-narrow,#rvTitle .rv-when,#rvTitle .rv-tag~.rv-tag{display:none}
+      #rvNoteText{flex-basis:100%}
     }
     @media (max-height:480px) and (orientation:landscape){
-      #rvTop{padding-top:6px;padding-bottom:6px}
-      #rvLine{height:38px}#rvTrack{top:22px}#rvThumb{top:17px}#rvMarks{height:21px}
+      #rvTop{padding-top:4px;padding-bottom:4px}
+      #rvTitle{font-size:16px}
+      #rv .rv-hide-narrow,#rvTitle .rv-when,#rvTitle .rv-tag~.rv-tag{display:none}
       #rvWho{order:0;flex:0 1 auto}
-      #rvSide{width:min(360px,60vw)}
+      #rv #rvSide{width:min(400px,62vw);bottom:0;z-index:2}
     }
     @media (prefers-reduced-motion:reduce){#rv *{transition:none!important}}`;
     document.head.appendChild(css);
@@ -512,7 +543,7 @@ const replayView = (() => {
       <div id="rvStatus" class="rv-panel" role="status" aria-live="polite" hidden></div>
       <form id="rvNoteForm" class="rv-panel" hidden>
         <label for="rvNoteText" id="rvNoteLabel"></label>
-        <div><input id="rvNoteText" maxlength="500" autocomplete="off" enterkeyhint="done"><button class="ui-primary" type="submit">Pin</button><button id="rvNoteCancel" class="ui-button" type="button">Cancel</button></div>
+        <div><input id="rvNoteText" name="note" maxlength="500" autocomplete="off" enterkeyhint="done"><button class="ui-primary" type="submit">Pin</button><button id="rvNoteCancel" class="ui-button" type="button">Cancel</button></div>
       </form>
       <section id="rvGone" class="rv-panel" hidden><h2 id="rvGoneTitle"></h2><p id="rvGoneText"></p><a class="ui-button" href="/">All replays</a></section>
       <div id="rvBar" class="rv-panel">
@@ -524,7 +555,7 @@ const replayView = (() => {
           <button id="rvPlay" class="ui-button rv-icon" type="button" aria-label="Play">${PLAY}</button>
           <button id="rvBack5" class="ui-button rv-icon" type="button" aria-label="Back 5 seconds">${icon('M11.5 6V3L6 7.5 11.5 12V9a5 5 0 1 1-5 5H4.5a7 7 0 1 0 7-8z')}</button>
           <button id="rvFwd5" class="ui-button rv-icon" type="button" aria-label="Forward 5 seconds">${icon('M12.5 6V3L18 7.5 12.5 12V9a5 5 0 1 0 5 5h2a7 7 0 1 1-7-8z')}</button>
-          <button id="rvNext" class="ui-button" type="button">Next death</button>
+          <button id="rvNext" class="ui-button" type="button" aria-keyshortcuts="N">Next down</button>
           <span id="rvTime"></span>
           <span id="rvGrow"></span>
           <select id="rvSpeed" aria-label="Speed">${SPEEDS.map(s => `<option value="${s}">${s}×</option>`).join('')}</select>
@@ -549,17 +580,17 @@ const replayView = (() => {
     // ---- what the run is ----
     function title() {
       const started = card ? new Date(card.startedAt) : null;
-      const when = started ? started.toLocaleString(undefined, { weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) : '';
-      const name = card?.name || 'Boss Rush';
+      const when = started ? started.toLocaleString(undefined, { ...(innerWidth > 640 ? { weekday: 'short' } : {}), day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) : '';
+      const name = card?.mode === 'weekly' ? 'Weekly Run' : 'Boss Rush';
       const tags = [];
+      if (damaged) tags.push('<span class="rv-tag rv-live">Damaged</span>');
       if (live && !end) tags.push('<span class="rv-tag rv-live">Live</span>');
       else if (!end && card && !card.live && (card.outcome === 'cut' || !card.outcome)) tags.push('<span class="rv-tag">Cut short</span>');
-      if (card?.version && card.version !== VERSION) tags.push(`<span class="rv-tag">Recorded on ${esc(card.version)}</span>`);
-      if (damaged) tags.push('<span class="rv-tag rv-live">Damaged</span>');
+      if (card?.version && card.version !== VERSION) tags.push(`<span class="rv-tag" title="Recorded on ${esc(card.version)}">${esc(card.version)}</span>`);
       const key = name + when + tags.join('');
       if (key === titleKey) return;
       titleKey = key;
-      $r('rvTitle').innerHTML = `${esc(name)}${when ? ' · ' + esc(when) : ''}${tags.join('')}`;
+      $r('rvTitle').innerHTML = `${esc(name)}<span class="rv-when">${when ? ' · ' + esc(when) : ''}</span>${tags.join('')}`;
       document.title = `${name} replay`;
     }
     function drawMarks() {
@@ -583,7 +614,7 @@ const replayView = (() => {
       whoKey = key;
       const who = $r('rvWho');
       who.innerHTML = list.map((p, i) => `<button class="ui-button" type="button" data-id="${esc(p.id)}" aria-pressed="${camMode === 'follow' && followId === p.id}"${i < 9 ? ` aria-keyshortcuts="Q E"` : ''}>${bodies.get(p.id).down ? '<i class="rv-down-dot" aria-hidden="true"></i>' : ''}${esc(p.name)}${bodies.get(p.id).down ? '<span class="ui-mirror"> (down)</span>' : ''}</button>`).join('')
-        + `<button class="ui-button" type="button" data-free aria-pressed="${camMode === 'free'}" aria-keyshortcuts="F">Free</button>`;
+        + `<button class="ui-button" type="button" data-free aria-pressed="${camMode === 'free'}" aria-keyshortcuts="F">Free camera</button>`;
     }
     function tickTime() {
       const d = duration(), sec = Math.floor(T), loadedAt = Math.floor(lastT);
@@ -604,15 +635,18 @@ const replayView = (() => {
     function changed(full) {
       if (!active) return;
       if (gone) { showGone('This run is gone', 'It was deleted, or it is older than 60 days and was not starred.'); return; }
-      if (!chapters.some(ch => ch.frames.length) && !streaming && (end || damaged || !live)) {
+      if (pulled && !chapters.some(ch => ch.frames.length) && !streaming && (end || damaged || !live)) {
         showGone(damaged ? 'This run could not be read' : 'Nothing was recorded', damaged ? 'Its file is damaged from the start.' : 'The run ended before its first fight began.');
         return;
       }
       title(); drawMarks(); drawWho(); tickTime();
       if (!built && !building && chapters.some(ch => ch.frames.length)) {
-        const want = startAt();   // a link's moment, or where this run was left: once it has arrived (or all has)
-        if (lastT >= want || !streaming) { T = Tprev = clamp(want, 0, Math.max(0, lastT)); finished = false; sync(false); }
+        // A link's moment, or where this run was left, once it has arrived (or all has); a live run with neither opens
+        // at its live edge, once what was recorded so far has arrived.
+        const want = startAt(), edge = want < 0;
+        if (edge ? pulled : lastT >= want || !streaming) { T = Tprev = clamp(edge ? lastT - 4 : want, 0, Math.max(0, lastT)); finished = false; sync(false); }
       }
+      if (pendingT >= 0 && built && (lastT >= pendingT || !streaming)) { const t = pendingT; pendingT = -1; seek(t); }
       if (full && !side.hidden) drawSide();
       if (damaged && !shownDamage) { shownDamage = true; say(esc(damaged) + ' What came before still plays.', 6000); }
       if (streamFailed && !shownDrop) { shownDrop = true; say('The connection dropped. Trying again…', 0); }
@@ -622,7 +656,7 @@ const replayView = (() => {
     let shownDamage = false, shownDrop = false;
     function showGone(head, text) {
       $r('rvGoneTitle').textContent = head; $r('rvGoneText').textContent = text;
-      $r('rvGone').hidden = false; $r('rvBar').hidden = true; $r('rvSummary').hidden = true; $r('rvLink').hidden = true;
+      $r('rvGone').hidden = false; $r('rvBar').hidden = true; $r('rvSummary').hidden = true; $r('rvLink').hidden = true; status.hidden = true; side.hidden = true;
       document.getElementById('loading').classList.remove('show');
       document.title = head;
     }
@@ -638,11 +672,12 @@ const replayView = (() => {
       return `Cut short at fight ${reached}`;
     }
     function drawSide() {
-      const s = card?.summary, notes = card?.notes || [];
+      const s = card?.summary;
       const out = [`<h2>${esc(outcomeLine())}</h2>`];
       if (!s) out.push(`<p>${live && !end ? 'The summary is written when the run ends.' : 'This run has no summary: the server stopped before it could write one.'}</p>`);
       else {
         out.push('<h3>Fights</h3><table>' + s.fights.map(f => `<tr><td><button class="ui-text-button" type="button" data-seek="${f.start}">${f.fight}. ${esc(f.bosses.map(enemyName).join(' & '))}${f.crowned ? ' (Crowned)' : ''}</button></td><td>${f.time != null ? clock(f.time) : '–'}${f.won ? '' : ' · fell'}</td></tr>`).join('') + '</table>');
+        out.push(notesHtml());
         out.push('<h3>Players</h3>');
         for (const p of s.players.filter(p => !p.bot)) {
           const hit = p.hitBy[0] ? attackName(p.hitBy[0].attack) : null, downed = p.downedBy[0] ? attackName(p.downedBy[0].attack) : null;
@@ -652,14 +687,19 @@ const replayView = (() => {
             + (hit ? `<p>Hit most by <b>${esc(hit.attack)}</b> (${esc(hit.boss)}), ${p.hitBy[0].count}×</p>` : '')
             + (p.picks.length ? `<p>Picked ${p.picks.map(a => `<b>${esc(ABILITY_BY_ID[a]?.name || a)}</b>`).join(', ')}</p>` : '') + '</div>');
         }
-        if (s.attacks.length) out.push('<h3>Boss attacks that landed most</h3><table>' + s.attacks.slice(0, 6).map(a => { const n = attackName(a.attack); return `<tr><td>${esc(n.attack)} <span style="color:var(--ui-muted)">${esc(n.boss)}</span></td><td>${a.count}</td></tr>`; }).join('') + '</table>');
+        if (s.attacks.length) out.push('<h3>Boss attacks that landed most</h3><table>' + s.attacks.slice(0, 6).map(a => { const n = attackName(a.attack); return `<tr><td>${esc(n.attack)}<span class="rv-by">${esc(n.boss)}</span></td><td>${a.count}</td></tr>`; }).join('') + '</table>');
       }
-      out.push('<h3>Notes</h3>' + (notes.length ? '<ul class="rv-notes">' + notes.map(n => `<li><button class="ui-text-button rv-note-time" type="button" data-seek="${n.t}" aria-label="Go to ${clock(n.t)}">${clock(n.t)}</button><span>${esc(n.text)}</span><button class="ui-text-button" type="button" data-unpin="${esc(n.id)}" aria-label="Remove this note">Remove</button></li>`).join('') + '</ul>'
-        : '<p>None yet. Pause where something happened and press Note.</p>'));
+      if (!s) out.push(notesHtml());
       out.push(`<div class="rv-actions">${finished ? '<button class="ui-primary" type="button" data-again style="width:auto">Watch again</button>' : ''}<a class="ui-button" href="/">All replays</a></div>`);
       side.innerHTML = out.join('');
     }
+    function notesHtml() {
+      const notes = card?.notes || [];
+      return '<h3>Notes</h3>' + (notes.length ? '<ul class="rv-notes">' + notes.map(n => `<li><button class="ui-text-button rv-note-time" type="button" data-seek="${n.t}" aria-label="Go to ${clock(n.t)}">${clock(n.t)}</button><span>${esc(n.text)}</span><button class="ui-text-button" type="button" data-unpin="${esc(n.id)}" aria-label="Remove this note">Remove</button></li>`).join('') + '</ul>'
+        : '<p>None yet. Pause where something happened and press Note.</p>');
+    }
     function toggleSide(open = side.hidden) {
+      if (open) hideHint();
       side.hidden = !open; $r('rvSummary').setAttribute('aria-expanded', String(open));
       if (open) drawSide();
     }
@@ -673,7 +713,7 @@ const replayView = (() => {
     let noteAt = 0;
     function openNote() {
       if (!form.hidden) return;
-      setPlaying(false); noteAt = T;
+      setPlaying(false); noteAt = T; hideHint();
       $r('rvNoteLabel').textContent = `Note at ${clock(noteAt)}`;
       form.hidden = false; noteText.value = ''; noteText.focus();
     }
@@ -710,7 +750,7 @@ const replayView = (() => {
     function nextDeath(dir = 1) {
       const list = marks.filter(m => m.type === 'down' || m.type === 'death');
       const m = dir > 0 ? list.find(m => m.t > T + 3.5) : [...list].reverse().find(m => m.t < T - 0.5);
-      if (!m) { say(dir > 0 ? 'No more deaths after this.' : 'No deaths before this.'); return; }
+      if (!m) { say(dir > 0 ? 'No more downs after this.' : 'No downs before this.'); return; }
       seek(Math.max(0, m.t - 3)); setPlaying(true);
       const who = nameOf(m.player), by = m.by ? attackName(m.by) : null;
       say(`${esc(who)} ${m.type === 'death' ? 'dies' : 'goes down'}${by ? ` to ${esc(by.attack)}` : ''}.`, 3500);
@@ -862,23 +902,24 @@ const replayView = (() => {
         orbit.x += (-sn * fwd + cs * right) * m; orbit.z += (-cs * fwd - sn * right) * m;
       }
       tickTime();
+      if (built && !hintTried && $r('rvGone').hidden) { hintTried = true; showHint(); }   // the keys, once there is a run to use them on
       if (playing && T > 0) saveSpot(false);
       if (whoDirty) { whoDirty = false; drawWho(); }
     }
     // ---- the keys, shown once ----
-    let hintShown = false;
+    let hintShown = false, hintTried = false;
     function showHint() {
       if (store.get(HINT, 0)) return;
       store.set(HINT, 1); hintShown = true;
       const touch = matchMedia('(pointer:coarse)').matches;
       say(touch ? 'Tap a player to follow them. Drag to look around, pinch to zoom.'
-        : '<span class="ui-key">Space</span> play · <span class="ui-key">←</span><span class="ui-key">→</span> 5 s · <span class="ui-key">1</span>–<span class="ui-key">6</span> speed · <span class="ui-key">Q</span><span class="ui-key">E</span> player · <span class="ui-key">F</span> free camera · <span class="ui-key">N</span> next death · <span class="ui-key">M</span> note', 9000);
+        : [['Space', 'play'], ['←→', '5 s'], ['1–6', 'speed'], ['QE', 'player'], ['F', 'free camera'], ['N', 'next down'], ['M', 'note']]
+          .map(([k, what]) => `<span class="rv-k">${k.length === 2 ? [...k].map(c => `<span class="ui-key">${c}</span>`).join('') : k === '1–6' ? '<span class="ui-key">1</span>–<span class="ui-key">6</span>' : `<span class="ui-key">${k}</span>`} ${what}</span>`).join(''), 9000);
     }
     function hideHint() { if (hintShown) { hintShown = false; status.hidden = true; } }
     function finishedRun() { toggleSide(true); }
     function open() {
       root.hidden = false; setSpeed(prefs.speed); layout();
-      showHint();
     }
     return { changed, tick, finished: finishedRun, open, say, showGone, drawWho };
   }
@@ -896,10 +937,10 @@ const replayView = (() => {
     document.getElementById('loadName').textContent = 'Replay'; document.getElementById('loadTip').textContent = '';
     document.getElementById('loading').classList.add('show');
     try {
-      const res = await fetch(`/api/runs/${encodeURIComponent(id)}`, { cache: 'no-store' });
-      if (res.status === 404) { gone = true; ui.changed(); return; }
+      const res = await fetch(`/api/runs?id=${encodeURIComponent(id)}`, { cache: 'no-store' });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      card = await res.json();
+      card = (await res.json()).runs?.[0] || null;
+      if (!card) { gone = true; ui.changed(); return; }
     } catch (e) {
       ui.showGone('The replays could not be reached', 'Check the connection, then reload this page.');
       return;

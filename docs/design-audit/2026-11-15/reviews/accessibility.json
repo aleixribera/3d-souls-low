@@ -1,0 +1,203 @@
+{
+  "lens": "accessibility",
+  "findings": [
+    {
+      "screen": "watch-summary",
+      "viewport": "phone",
+      "rule": "NEW",
+      "severity": "high",
+      "title": "The first-visit hint toast sits on top of the Summary text",
+      "detail": "On a phone, opening Summary while the touch hint is still up leaves the toast floating over the middle of the panel, so the player's Downed-by, Hit-by and Picked lines can't be read. The panel is the whole screen here, so there is nowhere else to read them. Idea: the hint should yield to any panel the viewer opens (dismiss it, or draw it below panels).",
+      "evidence": "Hint 'Tap a player to follow them. Drag to look around, pinch to zoom.' (14 px, rv-panel) at [98,497,194,78] covers Aleix's 'Downed most by The Gilt Cracks (The Regent Hollis), 1×', 'Hit most by The Furrow (Pillager Captain), 6×' and 'Picked Wind Blade, Cold Riposte…'. Measured p10 under it: 'The Furrow' 1.13:1, 'Cold Riposte' 1.11:1, 'Hit most by…' 1.98:1 (need 4.5:1). Also visible over the panel on watch-summary@land and watch-cut@phone.",
+      "fix": "Dismiss the hint as soon as Summary or Note opens (and on any first tap), or give the side panel a higher z-index than the hint.",
+      "box": [98, 497, 194, 78]
+    },
+    {
+      "screen": "watch-summary",
+      "viewport": "land",
+      "rule": "NEW",
+      "severity": "high",
+      "title": "In landscape the Summary panel is hidden under the timeline and controls",
+      "detail": "On a phone held sideways, the Summary panel runs down behind the control bar: the viewer sees the title and two fight rows, and fights 3-4 and the whole Players section sit under the timeline. Idea: a side panel must end above the control bar (or scroll inside the space left).",
+      "evidence": "DOM: '3. Pillager Captain' button [505,262,143,44] and '4. Giant Skeleton' [505,317,136,44] overlap the timeline [17,247,810,38] and control rows (y 285-379); 'Players' heading at y 385 of a 390 px viewport. Screenshot shows only 'Left at fight 4', 'Fights', '1. The Regent Hollis' (half under the hint toast) and '2. Hale, the Castellan'.",
+      "fix": "Constrain the panel to bottom: <control bar top> (about 240 px here) with overflow-y: auto, or in landscape show Summary as a full-height sheet that hides the control bar while open.",
+      "box": [485, 52, 359, 338]
+    },
+    {
+      "screen": "watch-summary",
+      "viewport": "phone",
+      "rule": "COL-01",
+      "severity": "medium",
+      "title": "Panels are see-through, so name tags and the boss HUD bleed into their text",
+      "detail": "The Summary, Cut-short and Note panels let the scene's name tags and boss bar show through, so ghost words sit behind and across panel text ('Maren the Bold' and 'Marc' over '0:50 · fell'; the boss name behind 'Left at fight 4'). It reads as clutter and lowers contrast of the real text.",
+      "evidence": "watch-summary@phone: tag 'Maren the Bold' [285,328,88,16] and 'Marc' [335,355,28,16] visible through the panel next to '0:50 · fell' [310,340,59,20]; 'Marc' p10 2.35:1. Boss title 'Hale, the Whole Castellan' and 'Fight 2 0:25' ghosted behind the panel heading. Same on watch-cut@phone (tags 'Marc', 'Aleix' through the panel, 'Maren the Bold' p50 1.49:1), watch-note@land (tags 'Marc', 'Aleix · down' and hint text behind the note editor) and watch-summary@desktop ('Ser Quill' tag at [1714,411] behind the Players list).",
+      "fix": "Make side panels and the note editor fully opaque (background alpha 1) and hide floating name tags whose anchor falls under an open panel.",
+      "box": [285, 328, 90, 43]
+    },
+    {
+      "screen": "watch-follow",
+      "viewport": "desktop",
+      "rule": "TYP-01",
+      "severity": "medium",
+      "title": "Fight numbers on the timeline are 11 px",
+      "detail": "The 1-4 fight labels are the only way to tell which part of the timeline is which fight, and at 11 px grey they are hard to pick out on a 1920 screen (and on phone, where they are also 11 px). The real pixels behind them are dark enough (p50 about 7.6:1), so size is the problem, not colour.",
+      "evidence": "'1' [21,986,4,15], '2' [594,986,6,15], '3' [969,986,6,15], '4' [1511,986,6,15]: 11 px, weight 600, colour rgb(170,164,147); contrast.md size 'fail' on every viewer shot (phone '1'-'4' at y 602, land at y 249).",
+      "fix": "Raise the fight tick labels to 13-14 px and the primary text colour rgb(236,229,211), or label them 'Fight 1'… where space allows.",
+      "box": [21, 986, 1497, 15]
+    },
+    {
+      "screen": "watch-damaged",
+      "viewport": "desktop",
+      "rule": "COL-01",
+      "severity": "medium",
+      "title": "'Copy link' fades into a bright sky",
+      "detail": "The Copy link button is muted grey text with no plate, sitting straight on the 3D scene, so over a bright sky it nearly disappears. A viewer looking for how to share the run may not find it.",
+      "evidence": "'Copy link' [1727,22,64,20], 15 px, rgb(170,164,147), no shadow: p50 3.34:1, p10 1.92:1 (fail, need 4.5:1) on watch-damaged@desktop; p10 4.13:1 on watch-free@desktop.",
+      "fix": "Give the viewer's top bar a solid or strongly graded dark backing (e.g. rgba(7,6,10,0.85) to 0 over ~72 px), or give Copy link the same bordered ui-button treatment as Summary with the primary text colour.",
+      "box": [1717, 12, 84, 40]
+    },
+    {
+      "screen": "watch-old",
+      "viewport": "desktop",
+      "rule": "COL-01",
+      "severity": "medium",
+      "title": "The 'v7.090.0' old-version tag is unreadable over the sky",
+      "detail": "The tag that warns a run was recorded on an older game version is 12 px grey on the brightest part of the scene, so most viewers won't notice it. The other header tags ('Live', 'Cut short', 'Damaged') are also 12 px, mixed-case, beside a 20 px title.",
+      "evidence": "'v7.090.0' [444,23,47,16], 12 px, rgb(170,164,147) with shadow: p50 2.36:1, p10 1.49:1 (need 4.5:1). Phone: p50 3.37, p10 2.36. 'Live' [437,23,22,16], 'Cut short' [428,23,53,16], 'Damaged' [491,23,54,16] all 12 px (size warn); 'Cut short' p10 4.42 and 'Damaged' p10 3.56 on watch-damaged@phone.",
+      "fix": "Put the header on a backing plate (see Copy link) and draw the tags as 13-14 px chips with an opaque dark fill and the primary text colour.",
+      "box": [444, 23, 47, 16]
+    },
+    {
+      "screen": "watch-damaged",
+      "viewport": "phone",
+      "rule": "NEW",
+      "severity": "medium",
+      "title": "The 'Damaged' tag is cut to 'Da…' on a phone",
+      "detail": "With two tags in the phone header ('Cut short' and 'Damaged') the second is truncated with an ellipsis before the Summary button, so the viewer can't tell why the replay may misbehave. Idea: a state tag never truncates; the header wraps or the tags move to their own line.",
+      "evidence": "Screenshot shows 'Boss Rush  Cut short  Da…'; DOM 'Damaged' box [234,22,54,16] runs into Summary [279,10,99,44].",
+      "fix": "On narrow widths, let the tags wrap to a second header line under the title (or into the Summary panel), and never apply text-overflow: ellipsis to a tag.",
+      "box": [234, 20, 45, 20]
+    },
+    {
+      "screen": "watch-note",
+      "viewport": "desktop",
+      "rule": "COL-02",
+      "severity": "medium",
+      "title": "The 'down' ring vanishes on the selected camera button",
+      "detail": "When the followed player is down, their camera button turns gold and the red ring that marks 'down' almost disappears into it, so the button no longer shows that state. The ring is the only visual mark of 'down' on the button.",
+      "evidence": "Sampled pixels: ring #e0806a on selected fill #d9b56b = 1.44:1 (non-text marks need 3:1); on an unselected button the same ring on #0f1111 is about 6:1. Ring is ~12 px with a 2 px stroke at [1419,1041,14,13]. Same on watch-note@phone and @land ('○ Aleix' selected).",
+      "fix": "Draw the ring in the dark text colour rgb(23,19,11) (or a dark-outlined red) when the button is selected, or add a short 'down' word after the name.",
+      "box": [1419, 1041, 14, 13]
+    },
+    {
+      "screen": "watch-follow",
+      "viewport": "land",
+      "rule": "MENU-03",
+      "severity": "medium",
+      "title": "In landscape the timeline is only 38 px tall to touch",
+      "detail": "Scrubbing and tapping markers on a sideways phone has a 38 px strip, below the 44 px touch minimum, with the play controls directly underneath, so mis-taps land on the wrong control.",
+      "evidence": "contrast.md: Small targets (need 44x44): '1 2 3 4' 810x38 on watch-follow@land, watch-summary@land, watch-note@land; DOM timeline [17,247,810,38] directly above Play [13,285,44,44]. Portrait and desktop timelines are 46 px.",
+      "fix": "Keep the timeline hit area at least 44 px tall in landscape (pad the track's hit box, not the visual bar), taking the space from the header instead.",
+      "box": [17, 247, 810, 38]
+    },
+    {
+      "screen": "watch-follow",
+      "viewport": "land",
+      "rule": "HUD-01",
+      "severity": "medium",
+      "title": "In landscape the hint toast covers the players being watched",
+      "detail": "Sideways, the scene is only about 240 px tall, and the first-visit hint sits across its middle, on top of the followed group and their name tags, until it goes away.",
+      "evidence": "Hint 'Tap a player to follow them. Drag to look around, pinch to zoom.' at about [212,170,421,58] (DOM text [237,179,369,39]) over the scene band y 0-240; the 'Maren the Bold' tag at [335,153,88,16] butts into it and the players' bodies are hidden.",
+      "fix": "In landscape, put the hint in a single line just above the timeline or in the header row, and auto-dismiss it after the first gesture or a few seconds.",
+      "box": [212, 170, 421, 58]
+    },
+    {
+      "screen": "watch-end",
+      "viewport": "phone",
+      "rule": "COL-01",
+      "severity": "medium",
+      "title": "The game's end card and 'Best played with a controller' ghost through the replay",
+      "detail": "At the end of the run the game's own title card fades in over the scene at 25% opacity, and its menu tip 'Best played with a controller' sits behind the camera buttons (desktop: behind the timeline). The replay controls are drawn over a tip that has no place in a replay, and the faded text is unreadable.",
+      "evidence": "Game element, made worse by the replay UI: 'Best played with a controller' [104,767,222,15] 13 px at opacity 0.25 behind the camera row, 1.25:1; 'Fight 4: Giant Skeleton' 1.34:1, 'Boss Rush' 22 px 1.64:1 over the scene. Desktop: the tip at [869,987,222,15] under the timeline, 3.18:1; 'Fight 4: Giant Skeleton' 4.17:1.",
+      "fix": "In the viewer, hide the game's title/end card and its controller tip (or show the end card fully opaque above the controls with no tip).",
+      "box": [104, 767, 222, 15]
+    },
+    {
+      "screen": "list",
+      "viewport": "phone",
+      "rule": "NEW",
+      "severity": "medium",
+      "title": "On a phone the run list drops the time and the notes count",
+      "detail": "The phone rows show outcome, players, fight and length but not the start time or '2 notes', so today's two 'Left the run · Aleix, Marc · Fight 4 · 4:01' rows look identical. Idea: what tells two rows apart must survive the narrow layout.",
+      "evidence": "list@phone DOM has no '01:38 AM' / '12:58 AM' and no '2 notes' (desktop row: '12:58 AM  Left the run / 2 notes' at [510,347,46,19]); rows 2 and 3 read 'Left the run Aleix, Marc Fight 4 4:01' in both link labels [20,336,243,76] and [20,413,243,76].",
+      "fix": "Keep the time on phone (e.g. on the players line: '01:38 AM · Aleix, Marc') and keep the sub-line ('2 notes', 'deleted in 3 days').",
+      "box": [20, 336, 243, 153]
+    },
+    {
+      "screen": "list",
+      "viewport": "phone",
+      "rule": "MENU-03",
+      "severity": "low",
+      "title": "Star and Delete are 2 px apart",
+      "detail": "On a phone the star and Delete targets touch, so aiming for one can hit the other. Delete needs a second tap, which limits the damage, but a mis-tap still stars a run or arms Delete.",
+      "evidence": "'Star: keep for good' [263,352,44,44] ends at x 307; 'Delete' [309,352,61,44] starts at x 309 (2 px gap, rule needs 8 px). Same 2 px on desktop (1437 / 1439).",
+      "fix": "Add at least 8 px between the star and Delete (e.g. column-gap: 8px on the row actions).",
+      "box": [263, 352, 107, 44]
+    },
+    {
+      "screen": "watch-follow",
+      "viewport": "phone",
+      "rule": "MENU-03",
+      "severity": "low",
+      "title": "Viewer buttons on phone are 4-6 px apart",
+      "detail": "The camera buttons and the transport buttons sit closer than the 8 px the rule asks for, so a thumb aiming for one player can select the neighbour.",
+      "evidence": "Aleix [13,741,80,44] to Marc [97,741,60,44]: 4 px; Marc to Ser Quill [162,741,84,44]: 5 px; Maren the Bold [13,789,131,44] to Free [148,789,55,44]: 4 px; rows 741+44=785 to 789: 4 px; Play [13,641] / Back 5 s [63,641] / Forward 5 s [113,641]: 6 px.",
+      "fix": "Set the control rows' gap to 8 px (row and column).",
+      "box": [13, 741, 233, 92]
+    },
+    {
+      "screen": "watch-note",
+      "viewport": "desktop",
+      "rule": "NEW",
+      "severity": "low",
+      "title": "The note editor half-covers the key-hint panel",
+      "detail": "Opening Note puts a narrower panel over the key hints, so fragments of the hint ('S', 'free camera ·') stick out on both sides of the editor. Idea: one panel at a time in the same slot.",
+      "evidence": "Note editor spans about x 701-1219; hint panel [665,893,590,66] behind it. Hint text visible at x 695-710 and 1145-1227, y 906; hint keys measured p10 1.55:1 where partly covered.",
+      "fix": "Hide the key-hint panel while the note editor is open (or make the editor at least as wide as the hint panel and fully opaque).",
+      "box": [665, 893, 590, 66]
+    },
+    {
+      "screen": "watch-note",
+      "viewport": "phone",
+      "rule": "NEW",
+      "severity": "low",
+      "title": "The note field is 181 px wide on a phone",
+      "detail": "With Pin and Cancel on the same row, the text box on a phone is narrow, so a short note already scrolls and the viewer sees 's through the roll here' instead of what they typed.",
+      "evidence": "Input [25,517,181,46] beside Pin [214,517,64,46] and Cancel [286,517,79,46]; screenshot shows the value 'Hollis turns through the roll here' cut to '…s through the roll here'.",
+      "fix": "On narrow widths put the input on its own full-width row (or use a 2-line textarea) with Pin and Cancel below it.",
+      "box": [25, 517, 181, 46]
+    },
+    {
+      "screen": "watch-follow",
+      "viewport": "desktop",
+      "rule": "TYP-01",
+      "severity": "low",
+      "title": "Player name tags are 12 px",
+      "detail": "Name tags are how a viewer tells the four players apart in the scene, and on a 1920 screen at 12 px they are small, especially with three tags stacked. Contrast passes (they have a dark plate).",
+      "evidence": "'Maren the Bold' [797,463,88,16], 'Marc' [720,417,28,16], 'Aleix · down' [1041,401,70,16]: 12 px, weight 600 (size warn in every viewer shot); p10 5.96-8.09:1.",
+      "fix": "Raise the tag text to 14 px on desktop (scale with viewport, keep 12-13 px on phone where space is tight).",
+      "box": [797, 463, 88, 16]
+    },
+    {
+      "screen": "watch-damaged",
+      "viewport": "phone",
+      "rule": "HUD-03",
+      "severity": "low",
+      "title": "Name tags run off the screen edge",
+      "detail": "A tag for a player near the edge is cut in half ('Quill'), so the viewer can't tell who it is.",
+      "evidence": "'Ser Quill' tag text box [-21,366,48,16] on watch-damaged@phone (screenshot shows 'Quill' at the left edge); 'Maren the Bold' [-4,294,88,16] on watch-cut@phone.",
+      "fix": "Clamp tag positions to stay inside the viewport (e.g. min x = 8 px, max x = width − tag width − 8 px), keeping the pointer aimed at the player.",
+      "box": [0, 362, 45, 26]
+    }
+  ]
+}

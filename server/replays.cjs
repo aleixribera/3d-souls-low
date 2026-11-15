@@ -26,9 +26,19 @@ const SYNC = { finishFlush: zlib.constants.Z_SYNC_FLUSH };
 // What can be read of a run's file: every whole gzip member up to the first that is not (a torn write, a bad disk).
 function readable(buf) {
   try { return { text: zlib.gunzipSync(buf).toString('utf8'), whole: true }; } catch {}
+  const { parts } = members(buf);
+  return { text: Buffer.concat(parts).toString('utf8'), whole: false };
+}
+// The bytes of `buf` that are whole gzip members, from the start.
+function wholeBytes(buf) {
+  try { zlib.gunzipSync(buf); return buf.length; } catch {}
+  return members(buf).at;
+}
+function members(buf) {
   // Member by member: zlib's plain 10-byte header, the deflate data (its length told by the inflater), an 8-byte trailer.
   const parts = [];
-  for (let at = 0; at + 18 <= buf.length && buf[at] === 0x1f && buf[at + 1] === 0x8b && buf[at + 2] === 8 && buf[at + 3] === 0;) {
+  let at = 0;
+  for (; at + 18 <= buf.length && buf[at] === 0x1f && buf[at + 1] === 0x8b && buf[at + 2] === 8 && buf[at + 3] === 0;) {
     try {
       const { buffer, engine } = zlib.inflateRawSync(buf.subarray(at + 10), { info: true });
       const next = at + 10 + engine.bytesWritten + 8;
@@ -36,7 +46,7 @@ function readable(buf) {
       parts.push(buffer); at = next;
     } catch { break; }
   }
-  return { text: Buffer.concat(parts).toString('utf8'), whole: false };
+  return { parts, at };
 }
 
 function createReplays({ dir = null, keepDays = 60, batchSeconds = 30, now = Date.now, clock = () => performance.now() } = {}) {
@@ -64,10 +74,18 @@ function createReplays({ dir = null, keepDays = 60, batchSeconds = 30, now = Dat
     }
     // A run that was still being written when the server stopped (a crash, an update) was cut short: it plays what it has.
     for (const r of runs.values()) {
-      if (r.live) { r.live = false; r.outcome = r.outcome || 'cut'; }
+      if (r.live) { r.live = false; r.outcome = r.outcome || 'cut'; trim(r.id); }
       try { r.bytes = fs.statSync(file(r.id)).size; } catch { r.missing = true; }
     }
     save();
+  }
+  // A file whose last batch was torn (the server stopped mid-write): cut back to its last whole batch, so it streams clean.
+  function trim(id) {
+    try {
+      const buf = fs.readFileSync(file(id));
+      const keep = wholeBytes(buf);
+      if (keep > 0 && keep < buf.length) fs.truncateSync(file(id), keep);
+    } catch (e) { if (e.code !== 'ENOENT') fail('a cut run could not be trimmed', e); }
   }
   function rebuild(id) {
     try {
@@ -81,7 +99,7 @@ function createReplays({ dir = null, keepDays = 60, batchSeconds = 30, now = Dat
         let m; try { m = JSON.parse(line); } catch { continue; }
         if (m.k === 'start') { card.reached = Math.max(card.reached, (m.fight ?? 0) + 1); card.duration = m.t; for (const p of m.roster || []) if (!p.bot && !card.players.includes(p.name)) card.players.push(p.name); }
         else if (typeof m.t === 'number') card.duration = m.t;
-        if (m.k === 'end') { card.outcome = m.outcome; if (m.summary) card.result = m.summary; }
+        if (m.k === 'end') { card.outcome = m.outcome; if (m.summary) card.result = m.summary; if (m.replay) card.summary = m.replay; }
       }
       card.outcome = card.outcome || 'cut';
       return card;
@@ -130,7 +148,7 @@ function createReplays({ dir = null, keepDays = 60, batchSeconds = 30, now = Dat
     const card = { ...blank({ ...head, id, startedAt }), live: true };
     runs.set(id, card);
     const encoder = new net.FrameEncoder();
-    let pending = [], flushedAt = clock(), writing = Promise.resolve(), lines = 0, ended = false;
+    let pending = [], flushedAt = clock(), writing = Promise.resolve(), lines = 0, ended = false, broken = false;
     // The newest lines, from the last batch on disk to the ones still waiting: a live viewer's stream ends with them.
     let tailLines = [], tailStart = 0, persisted = 0;
     const written = n => {
@@ -147,6 +165,7 @@ function createReplays({ dir = null, keepDays = 60, batchSeconds = 30, now = Dat
     const lastHp = new Map(), recent = [];   // player id -> hp; recent striking moments [{ t, enemy, def, attack, x, z }]
     let alive = new Map();
     const push = obj => {
+      if (broken) return;
       const line = JSON.stringify(obj);
       pending.push(line); tailLines.push(line); lines++;
       if (clock() - flushedAt >= batchSeconds * 1000) flush();
@@ -160,18 +179,21 @@ function createReplays({ dir = null, keepDays = 60, batchSeconds = 30, now = Dat
         const list = tailLines.slice(issued - tailStart); pending = []; flushedAt = clock();
         if (!list.length) return;
         issued = lines;
-        try { fs.appendFileSync(file(id), zlib.gzipSync(list.join('\n') + '\n', { level: 9 })); card.bytes = fs.statSync(file(id)).size; written(list.length); } catch (e) { fail('a batch could not be written', e); }
+        try { fs.appendFileSync(file(id), zlib.gzipSync(list.join('\n') + '\n', { level: 9 })); card.bytes = fs.statSync(file(id)).size; written(list.length); } catch (e) { stopWriting('a batch could not be written', e); }
         return;
       }
       if (!pending.length) return;
       const text = pending.join('\n') + '\n', n = pending.length, upto = lines; pending = []; flushedAt = clock();
       writing = writing.then(() => new Promise(resolve => zlib.gzip(text, { level: 9 }, (err, gz) => {
         if (issued >= upto) { resolve(); return; }
-        if (err) { fail('a batch could not be compressed', err); resolve(); return; }
+        if (err) { stopWriting('a batch could not be compressed', err); resolve(); return; }
         issued = upto;
-        fs.appendFile(file(id), gz, e => { if (e) fail('a batch could not be written', e); else { card.bytes += gz.length; written(n); } resolve(); });
+        try { fs.appendFileSync(file(id), gz); card.bytes += gz.length; written(n); } catch (e) { stopWriting('a batch could not be written', e); }
+        resolve();
       })));
     }
+    // A disk that refuses a batch: the file keeps what it has (played as cut short), and nothing more piles up in memory.
+    function stopWriting(what, e) { fail(what, e); broken = true; pending = []; tailLines = []; tailStart = persisted; }
     const at = () => Math.max(lastT, round((clock() - started) / 1000));
     push({ k: 'run', v: FORMAT, id, mode: card.mode, name: card.name, version: card.version, build: card.build, startedAt });
     saveSoon();
@@ -224,12 +246,13 @@ function createReplays({ dir = null, keepDays = 60, batchSeconds = 30, now = Dat
         ended = true;
         const t = at();
         const open = summary.fights.at(-1); if (open && open.time === null) open.time = round(t - open.start);
-        push({ k: 'end', t, outcome, summary: result || null });
+        const replay = finish();   // the viewer's summary, in the file too: a lost index rebuilds it
+        push({ k: 'end', t, outcome, summary: result || null, replay });
         card.outcome = outcome; card.live = false; card.duration = t; card.endedAt = now();
         if (result) card.result = { reached: result.reached, won: result.won, crowned: result.crowned, time: result.time,
           players: (result.players || []).map(r => ({ name: r.name, bot: !!r.bot, damage: r.damage, deaths: r.deaths, parries: r.parries, finishers: r.finishers, revives: r.revives, title: r.title })) };
         if (result?.reached) card.reached = result.reached;
-        card.summary = finish();
+        card.summary = replay;
         flush(true); live.delete(id); save();
       },
       // Lines written so far, for a live run's viewer (the file, then what is still waiting for its batch).
@@ -238,6 +261,11 @@ function createReplays({ dir = null, keepDays = 60, batchSeconds = 30, now = Dat
       flush,
       writing: () => writing,
     };
+    // The game calls these from its tick: an error here ends the recording (cut short), never the run being played.
+    for (const k of ['chapter', 'frame', 'roster', 'kit', 'end']) {
+      const f = rec[k];
+      rec[k] = (a, b) => { try { f(a, b); } catch (e) { fail('a run stopped recording', e); if (!ended) { ended = true; card.live = false; card.outcome = card.outcome || 'cut'; try { flush(true); } catch {} live.delete(id); saveSoon(); } } };
+    }
     live.set(id, rec);
 
     function mark(m) { push({ k: 'mark', t: lastT, ...m }); }
@@ -292,14 +320,16 @@ function createReplays({ dir = null, keepDays = 60, batchSeconds = 30, now = Dat
   const card = id => runs.get(id) || null;
   const list = () => [...runs.values()].sort((a, b) => b.startedAt - a.startedAt);
   // A run's lines from `from` on, decompressed: the file, then (a live run) what waits for its batch. Calls `out(text)`
-  // per chunk and `done(error)` once. A damaged file gives what could be read, then the error.
+  // per chunk (false: wait for `resume()`) and `done(error)` once. A damaged file gives what could be read, then the
+  // error. Returns { resume, cancel }.
   function stream(id, from, out, done) {
     const rec = live.get(id), decoder = new StringDecoder('utf8');
     let seen = 0, rest = '', over = false;
+    let gunzip = null, source = null, held = false;
     const emitLines = list => {
       const keep = [];
       for (const line of list) if (seen++ >= from) keep.push(line);
-      if (keep.length) out(keep.join('\n') + '\n');
+      if (keep.length && out(keep.join('\n') + '\n') === false && gunzip && !over) { held = true; gunzip.pause(); }
     };
     const emit = text => { const parts = (rest + text).split('\n'); rest = parts.pop(); emitLines(parts); };
     // Every batch ends a line, so a part line at the end is a batch still being appended: the recorder has it whole.
@@ -308,20 +338,26 @@ function createReplays({ dir = null, keepDays = 60, batchSeconds = 30, now = Dat
       if (rec && !error) { const { start, lines } = rec.tail; if (seen >= start) emitLines(lines.slice(seen - start)); }
       done(error || null);
     };
-    if (!dir) { finish(); return; }
-    const source = fs.createReadStream(file(id)), gunzip = zlib.createGunzip(SYNC);
+    const control = { resume() { if (held && !over) { held = false; gunzip.resume(); } }, cancel() { if (!over) { over = true; source?.destroy(); gunzip?.destroy(); } } };
+    if (!dir) { finish(); return control; }
+    // A live viewer at the edge (polling for what is new) needs nothing from the file.
+    if (rec && from >= rec.tail.start) { seen = rec.tail.start; finish(); return control; }
+    source = fs.createReadStream(file(id)); gunzip = zlib.createGunzip(SYNC);
     source.on('error', e => { gunzip.destroy(); finish(e.code === 'ENOENT' && rec ? null : e); });
     gunzip.on('data', chunk => emit(decoder.write(chunk)));
     gunzip.on('end', () => { emit(decoder.end()); finish(); });
-    // A damaged file: what can be read, from where the stream stopped, then the error.
+    // A damaged file: what can be read, from where the stream stopped, then the error. (zlib may drop the output of the
+    // chunk that failed, so the whole batches are read again: rare, since a run cut by a crash is trimmed at start.)
     gunzip.on('error', e => {
       source.destroy(); rest = '';
+      if (over) return;
       fs.readFile(file(id), (err, buf) => {
-        if (!err) { const all = readable(buf).text.split('\n'); all.pop(); emitLines(all.slice(seen)); }
+        if (!err && !over) { const all = readable(buf).text.split('\n'); all.pop(); emitLines(all.slice(seen)); }
         finish(e);
       });
     });
     source.pipe(gunzip);
+    return control;
   }
   function star(id, on) { const r = runs.get(id); if (!r) return null; r.starred = !!on; save(); return r; }
   function addNote(id, t, text) {
@@ -383,6 +419,7 @@ function replayDoor(replays, serveFile) {
     let pathname, query;
     try { const url = new URL(req.url, 'http://localhost'); pathname = decodeURIComponent(url.pathname); query = url.searchParams; } catch { res.writeHead(400).end(); return; }
     if (pathname === '/healthz') { json(res, 200, { ok: true, runs: replays.list().length, live: replays.live.size }); return; }
+    if (pathname === '/favicon.ico') { res.writeHead(204).end(); return; }   // the viewer's page names none (as on the lobby's port)
     const api = pathname.match(/^\/api\/runs(?:\/([^/]+))?(?:\/(stream|star|notes|delete))?(?:\/([^/]+))?$/);
     if (req.method === 'POST') {
       if (!api || !api[1] || !sameOrigin(req) || !/^application\/json\b/i.test(String(req.headers['content-type'] || ''))) { res.writeHead(403).end(); return; }
@@ -402,7 +439,8 @@ function replayDoor(replays, serveFile) {
     if (api) {
       const [, id, action, sub] = api;
       if (sub || (action && action !== 'stream')) { res.writeHead(404).end(); return; }   // the rest are POSTs
-      if (!id) { json(res, 200, { runs: replays.list(), now: Date.now() }); return; }
+      // ?id= asks after one run: the runs matching it, so an unknown one is an empty list, not an error.
+      if (!id) { const one = query.get('id'); json(res, 200, { runs: one ? [replays.card(one)].filter(Boolean) : replays.list(), now: Date.now() }); return; }
       if (id === 'feedback') { json(res, 200, replays.feedback(Number(query.get('since')) || 0)); return; }
       const card = replays.card(id);
       if (!card) { json(res, 404, { error: 'No such run' }); return; }
@@ -411,10 +449,13 @@ function replayDoor(replays, serveFile) {
       res.writeHead(200, { 'Content-Type': 'application/x-ndjson; charset=utf-8', 'Cache-Control': 'no-store', 'X-Run-Live': card.live ? '1' : '0' });
       if (req.method === 'HEAD') { res.end(); return; }
       const from = Math.max(0, Math.floor(Number(query.get('from')) || 0));
-      replays.stream(id, from, text => res.write(text), error => {
+      // At the pace the viewer takes it (a phone on a slow link), and no further once it has gone.
+      const s = replays.stream(id, from, text => res.write(text), error => {
+        if (res.destroyed) return;
         if (error) res.write(JSON.stringify({ k: 'damaged', error: 'The rest of this run could not be read.' }) + '\n');
         res.end();
       });
+      res.on('drain', () => s.resume()); res.on('close', () => s.cancel());
       return;
     }
     if (pathname === '/' || pathname === '/index.html') { serveFile(req, res, '/replays/index.html', query); return; }

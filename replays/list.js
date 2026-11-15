@@ -12,14 +12,13 @@
   const saveFilters = () => { try { localStorage.setItem(FILTERS, JSON.stringify(filters)); } catch (e) { /* not kept */ } };
 
   function outcome(r) {
-    const at = r.reached ? ` at fight ${r.reached}` : '';
     if (r.live) return 'Live now';
     if (r.damaged) return 'Damaged';
     if (r.outcome === 'won') return 'Won';
-    if (r.outcome === 'wiped') return `Team wiped${at}`;
-    if (r.outcome === 'left') return `Left${at}`;
-    if (r.outcome === 'error') return `Stopped by an error${at}`;
-    return `Cut short${at}`;
+    if (r.outcome === 'wiped') return 'Team wiped';
+    if (r.outcome === 'left') return 'Left the run';
+    if (r.outcome === 'error') return 'Stopped by an error';
+    return 'Cut short';
   }
   function detail(r) {
     const bits = [];
@@ -44,11 +43,13 @@
     player.value = filters.player; $('period').value = filters.period;
     $('starred').setAttribute('aria-pressed', String(!!filters.starred));
     const list = $('list');
-    if (!loaded) { list.innerHTML = ''; $('status').textContent = failed ? '' : 'Loading…'; if (failed) empty('The replays could not be loaded', 'The home server did not answer.', 'Try again', load); return; }
+    // The filters only once there are runs to filter.
+    document.querySelector('.filters').hidden = !loaded || !runs.length;
+    if (!loaded) { list.innerHTML = ''; $('status').textContent = failed ? '' : 'Loading…'; if (failed) empty('The replays could not be loaded', 'The home server did not answer.', 'Try again', load, true); return; }
     $('status').textContent = '';
     $('foot').hidden = !runs.length;
     const shown = visible();
-    if (!runs.length) { empty('No runs yet', 'Every multiplayer Boss Rush is recorded here from its first fight.'); return; }
+    if (!runs.length) { empty('No runs yet', 'Every online Boss Rush and Weekly Run is recorded here from its first fight.'); return; }
     if (!shown.length) { empty('No runs match', 'Nothing here for these filters.', 'Show every run', () => { filters.player = ''; filters.period = '0'; filters.starred = false; saveFilters(); draw(); }); return; }
     const days = new Map();
     for (const r of shown) {
@@ -68,15 +69,16 @@
     if (ago === 1) return 'Yesterday';
     return d.toLocaleDateString(undefined, { weekday: 'long', day: 'numeric', month: 'long', ...(d.getFullYear() !== today.getFullYear() ? { year: 'numeric' } : {}) });
   }
+  const mode = r => r.mode === 'weekly' ? 'Weekly Run' : 'Boss Rush';
   function row(r) {
     const time = new Date(r.startedAt).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' });
     const cls = r.live ? 'live' : r.outcome === 'won' ? 'won' : '';
     const who = r.players.length ? r.players.join(', ') : 'Bots only';
     return `<li class="run ${cls}" data-id="${esc(r.id)}">
-      <a href="/watch?run=${encodeURIComponent(r.id)}" aria-label="${esc(`${r.name || 'Boss Rush'} at ${time}: ${outcome(r)}. ${who}. ${clock(r.duration)}`)}">
+      <a href="/watch?run=${encodeURIComponent(r.id)}" aria-label="${esc(`${mode(r)} at ${time}: ${outcome(r)}${r.reached ? ` at fight ${r.reached}` : ''}. ${who}. ${clock(r.duration)}`)}">
         <span class="time">${esc(time)}</span>
-        <span class="what"><strong>${r.live ? '<i class="dot" aria-hidden="true"></i>' : ''}${esc(outcome(r))}</strong><span>${esc([r.name || 'Boss Rush', detail(r)].filter(Boolean).join(' · '))}</span></span>
-        <span class="who">${esc(who)}</span>
+        <span class="what"><strong>${r.live ? '<i class="dot" aria-hidden="true"></i>' : ''}${esc(outcome(r))}</strong><span>${esc([r.mode === 'weekly' ? 'Weekly Run' : '', detail(r)].filter(Boolean).join(' · '))}</span></span>
+        <span class="who"><span class="ptime">${esc(time)} · </span>${esc(who)}</span>
         <span class="reach">${r.reached ? `Fight ${r.reached}` : ''}</span>
         <span class="len">${clock(r.duration)}</span>
       </a>
@@ -86,8 +88,8 @@
       </span>
     </li>`;
   }
-  function empty(head, text, action, run) {
-    $('list').innerHTML = `<div class="empty"><h2>${esc(head)}</h2><p>${esc(text)}</p>${action ? `<button class="ui-button" type="button" id="emptyAction">${esc(action)}</button>` : ''}</div>`;
+  function empty(head, text, action, run, primary) {
+    $('list').innerHTML = `<div class="empty"><h2>${esc(head)}</h2><p>${esc(text)}</p>${action ? `<button class="${primary ? 'ui-primary' : 'ui-button'}" type="button" id="emptyAction">${esc(action)}</button>` : ''}</div>`;
     if (action) $('emptyAction').onclick = run;
   }
   async function load() {
@@ -116,7 +118,7 @@
     } else if (b.classList.contains('del')) {
       if (armed?.id !== r.id) {
         disarm(false); armed = { id: r.id, button: b, timer: setTimeout(disarm, 4000) };
-        b.classList.add('armed'); b.textContent = 'Delete for good?'; return;
+        b.classList.add('armed'); b.textContent = 'Delete?'; return;
       }
       disarm(false);
       try {

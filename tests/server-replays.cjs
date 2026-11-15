@@ -54,15 +54,10 @@ const lines = text => text.split('\n').filter(Boolean).map(l => JSON.parse(l));
     const game = await get(origin, '/combat-arena-3d.html');
     assert.equal(game.status, 200); assert.ok(!game.text.includes('arena-replay'), 'the public game page is never in replay mode');
 
-    // ---- a duel is not recorded ----
+    // ---- a Boss Rush is recorded from its first fight; nothing before it ----
     const a = await peer(origin, 'Ash'), b = await peer(origin, 'Bram'); peers.push(a, b);
-    a.send({ type: 'control', action: 'start', kind: 'arena', id: 'hollow' });
-    await a.next('start'); await b.next('start');
     await wait(300);
-    assert.equal(app.replays.list().length, 0, 'a duel is not a Boss Rush');
-    a.send({ type: 'control', action: 'lobby' }); await a.next('stop'); await b.next('stop');
-
-    // ---- a Boss Rush is ----
+    assert.equal(app.replays.list().length, 0, 'the lobby alone records nothing');
     a.send({ type: 'control', action: 'start', kind: 'calling', id: C.calling.id });
     const session = (await a.next('start')).session; await b.next('start');
     for (const p of [a, b]) p.send({ type: 'ready', epoch: session.epoch });
@@ -80,6 +75,10 @@ const lines = text => text.split('\n').filter(Boolean).map(l => JSON.parse(l));
     // Live: the door lists it and streams what was recorded so far (the file, then what waits for its batch).
     const listed = JSON.parse((await get(door, '/api/runs')).text);
     assert.equal(listed.runs[0].id, run.id); assert.equal(listed.runs[0].live, true);
+    // One run by id (what the viewer asks first): an unknown id is an empty list, not an error in its console.
+    assert.equal(JSON.parse((await get(door, `/api/runs?id=${run.id}`)).text).runs[0].id, run.id);
+    const unknown = await get(door, '/api/runs?id=2026-01-01-0123456789');
+    assert.equal(unknown.status, 200); assert.deepEqual(JSON.parse(unknown.text).runs, []);
     const liveStream = await get(door, `/api/runs/${run.id}/stream`);
     assert.equal(liveStream.headers.get('x-run-live'), '1');
     const early = lines(liveStream.text);
@@ -167,6 +166,25 @@ const lines = text => text.split('\n').filter(Boolean).map(l => JSON.parse(l));
     cutServer.close();
     assert.deepEqual(tornDoor.map(l => l.k), ['run', 'start', 'f', 'f', 'damaged']);
     assert.equal(tornDoor.at(-1).error, 'The rest of this run could not be read.');
+    // A run the server was still writing when it died: its torn last batch is cut off at the next start.
+    const idx = JSON.parse(fs.readFileSync(path.join(dir, 'index.json'), 'utf8'));
+    idx.runs.find(r => r.id === rec.id).live = true;
+    fs.writeFileSync(path.join(dir, 'index.json'), JSON.stringify(idx));
+    const again = createReplays({ dir, now: () => clock });
+    const trimmed = []; let trimError = 'not done';
+    await new Promise(r => again.stream(rec.id, 0, t => trimmed.push(...lines(t)), e => { trimError = e; r(); }));
+    assert.equal(trimError, null, 'a torn last batch is trimmed at start'); assert.deepEqual(trimmed.map(l => l.k), ['run', 'start', 'f', 'f']);
+    // A live viewer polling at the edge is answered from memory, the file untouched (here it does not exist yet).
+    const edge = again.begin({ mode: 'boss-rush', name: 'BOSS RUSH', version: 'v0.0.1', build: 'x' });
+    edge.chapter({ id: 'hollow', gauntlet: { run: true, fight: 0, number: 1, boss: 'hollow' }, spawn: { x: 0, y: 0, z: 0 } }, [{ id: 'p1', name: 'Cole' }]);
+    edge.frame({ epoch: 1, time: 0, enemies: [{ id: 'duel/hollow', x: 0, z: 0, hp: 10 }], gates: [], traps: [], events: [], shots: [], embers: [] }, [{ id: 'p1', name: 'Cole', x: 1, y: 0, z: 0, hp: 120, state: 'idle' }]);
+    const atEdge = []; let edgeError = 'not done';
+    await new Promise(r => again.stream(edge.id, edge.lines - 1, t => atEdge.push(...lines(t)), e => { edgeError = e; r(); }));
+    assert.equal(edgeError, null); assert.deepEqual(atEdge.map(l => l.k), ['f'], 'the newest line, from memory');
+    // A recorder that throws ends its recording (cut short), never the game calling it.
+    edge.frame(null, null);
+    assert.equal(again.live.has(edge.id), false); assert.equal(again.card(edge.id).outcome, 'cut');
+    again.stop();
     // A lost index comes back from the files.
     fs.unlinkSync(path.join(dir, 'index.json'));
     const rebuilt = createReplays({ dir, now: () => clock });
@@ -183,6 +201,7 @@ const lines = text => text.split('\n').filter(Boolean).map(l => JSON.parse(l));
     app.replays.star(run.id, false);
     assert.equal((await post(door, `/api/runs/${run.id}/delete`, {})).status, 200);
     assert.equal(app.replays.card(run.id), null); assert.equal((await get(door, `/api/runs/${run.id}`)).status, 404);
+    assert.deepEqual(JSON.parse((await get(door, `/api/runs?id=${run.id}`)).text).runs, [], 'a deleted run is gone for the viewer');
     for (const s of [store, cut, rebuilt, later]) s.stop();
     console.log('server-replays: ok');
   } finally {
