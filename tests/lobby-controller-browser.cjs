@@ -17,7 +17,7 @@ const rush = 'calling/' + C.calling.id, weekly = 'calling/' + C.weekly.id, adven
     }, name);
     await page.goto(`http://127.0.0.1:${app.server.address().port}/combat-arena-3d.html#dev`);
     await page.waitForFunction(() => window.__arenaReady, null, { timeout: 120000 });
-    await page.getByRole('button', { name: 'Join public lobby', exact: false }).click();
+    await page.getByRole('button', { name: 'Join lobby', exact: false }).click();
     await page.waitForFunction(() => multiplayer.connected);
     return page;
   }

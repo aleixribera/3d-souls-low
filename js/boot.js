@@ -87,8 +87,8 @@ window.addEventListener('keyup', ev => input.up(ev.code));
 function suspendInput() {
   input.suspended = true;
   Game.clearControls(); gamepad.release(); gamepad.neutralRequired = true;
-  // Online combat keeps running; returning always requires a deliberate Resume in solo play.
-  if (!multiplayer.active()) Game.pause(true, true);
+  // Online combat keeps running; returning always requires a deliberate Resume in solo play (Boss Rush alone too).
+  if (!multiplayer.active() || multiplayer.alone) Game.pause(true, true);
 }
 window.addEventListener('blur', suspendInput);
 window.addEventListener('focus', () => { input.suspended = document.hidden; });
@@ -175,7 +175,7 @@ function frame(now) {
   multiplayer.heartbeat(now);
   if (Game.mode === 'pause') Game.tickPause();   // online, pause's run clock goes on (redrawn once a second)
   document.body.classList.toggle('no-cursor', !multiplayer.panelOpen && !multiplayer.spectatorMode && !multiplayer.abilityOpen && (Game.mode === 'play' || input.device === 'pad'));   // spectator controls also accept clicks
-  if ((Game.mode !== 'play' && !(multiplayer.active() && ['pause', 'ending'].includes(Game.mode))) || Game.manualClock) { accumulator = 0; return; }   // online menus/credits keep the shared stream running
+  if ((Game.mode !== 'play' && !(multiplayer.active() && (Game.mode === 'ending' || Game.mode === 'pause' && !multiplayer.alone))) || Game.manualClock) { accumulator = 0; return; }   // online menus/credits keep the shared stream running; alone, pause holds
   if (Game.loading > 0) { Game.tickLoading(frameDt); accumulator = 0; Game.render(0, frameDt); return; }   // the loading screen holds the world
   accumulator += frameDt * Game.timeScale * dodgeMoment.scale(frameDt);   // timeScale < 1: the F6 slow motion of developer builds; a perfect dodge's beat (js/dodge-moment.js)
   let steps = 0;

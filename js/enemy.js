@@ -1208,7 +1208,7 @@ class Enemy {
 
 // The fires enemies leave on the floor (a hit's `fire`, Enemy.noteFires), every step: here alone (burnInFires), on a client
 // for its own body (js/multiplayer.js; each client owns its health), and on the server for its bots (ageFires + fireUnder,
-// server/simulation.js). They burn down; a body on the floor in one that has caught (and not untouchable: a roll's
+// js/lobby-sim.js). They burn down; a body on the floor in one that has caught (and not untouchable: a roll's
 // i-frames, an execution) loses its `dps` a second (the hottest it stands in, never the sum), with the `hazard` tick every
 // CONFIG.hazards.tick s; a death in fire goes through Player.die() (`hazardDeath`).
 function ageFires(game, dt) {

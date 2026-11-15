@@ -6,7 +6,7 @@
 // reads the fight the way a player watches it: each enemy's wind-up, how long until its blow opens, how far that
 // blow reaches, whether it can be parried, and how long an opening lasts. Every read comes from the enemy's own
 // attack data, so no enemy is special-cased. Tuning: CONFIG.bot; personalities: BOT_PROFILES (js/data/bots.js).
-// The lobby server runs bots (server/simulation.js); the brain never touches game state, it only presses.
+// The lobby server runs bots (js/lobby-sim.js); the brain never touches game state, it only presses.
 
 // The interface Player reads from `input`, keyed by action name. Presses age on the bot's own clock.
 class BotHands {

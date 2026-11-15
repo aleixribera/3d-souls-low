@@ -35,7 +35,7 @@ fs.mkdirSync(output, { recursive: true });
     });
     await page.goto(url);
     await page.waitForFunction(() => window.__arenaReady && window.__arena.tests, { timeout: 120000 });
-    await page.getByRole('button', { name: 'Join public lobby', exact: false }).click();
+    await page.getByRole('button', { name: 'Join lobby', exact: false }).click();
     await page.waitForFunction(() => __arena.multiplayer.connected, { timeout: 15000 });
     return page;
   }
@@ -164,7 +164,7 @@ fs.mkdirSync(output, { recursive: true });
     console.log('Online Finishing Blow: cracks in frames, the server\'s grant, local invulnerability and deferred boss phase passed.');
     // A player who leaves mid-run and joins again lands in the same fight.
     await c.evaluate(() => multiplayer.leave());
-    await c.getByRole('button', { name: 'Join public lobby', exact: false }).click();
+    await c.getByRole('button', { name: 'Join lobby', exact: false }).click();
     await c.waitForFunction(() => __arena.multiplayer.info.ready && Game.duelId === 'varn', null, { timeout: 90000 });
     console.log('All three clients: a late rejoin lands in the running fight.');
     await c.evaluate(() => multiplayer.leave());

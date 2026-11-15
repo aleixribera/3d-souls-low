@@ -2952,12 +2952,25 @@
     expect.ok(/^(Begin|Continue)/.test(primary().textContent) && $('menuDesc').textContent === Game.menuItems[at('Story')].line, `Story chosen: ${primary().textContent}`);
     Game.select(at('Options'), false);
     expect.ok(Game.titleMode === at('Story') && /^(Begin|Continue)/.test(primary().textContent), 'moving to the footer keeps the chosen mode');
-    const join = multiplayer.join; let joined = 0; multiplayer.join = () => { joined++; };
+    // Boss Rush plays alone from its primary button and its row; Join lobby sits beside it only while the lobby answers.
+    const join = multiplayer.join, playAlone = multiplayer.playAlone, look = Object.getOwnPropertyDescriptor(multiplayer, 'lobby');
+    let joined = 0, played = 0; multiplayer.join = () => { joined++; }; multiplayer.playAlone = () => { played++; };
     try {
-      Game.select(at('Boss Rush'), false); Game.select(Game.menuItems.indexOf(Game.menuItems.find(it => it.size === 'primary')), false); Game.confirm();
+      Object.defineProperty(multiplayer, 'lobby', { configurable: true, get: () => ({ state: 'absent', players: 0, capacity: 0, playing: null }) });
+      Game.showMenu('main'); Game.select(at('Boss Rush'), false);
+      expect.ok(primary().textContent.startsWith('Play alone') && newGame().hidden, `no lobby: Play alone only (${primary().textContent})`);
+      Game.select(Game.menuItems.indexOf(Game.menuItems.find(it => it.size === 'primary')), false); Game.confirm();
       pick('main', 'Boss Rush');
-    } finally { multiplayer.join = join; }
-    expect.ok(joined === 2, `Boss Rush joins the public lobby from its primary button and its row (${joined})`);
+      expect.ok(played === 2 && joined === 0, `Boss Rush plays alone from its primary button and its row (${played})`);
+      Object.defineProperty(multiplayer, 'lobby', { configurable: true, get: () => ({ state: 'online', players: 0, capacity: 16, playing: null }) });
+      Game.showMenu('main'); Game.select(at('Boss Rush'), false);
+      expect.ok(!newGame().hidden && newGame().textContent.startsWith('Join lobby'), `the lobby answers: Join lobby beside Play alone (${newGame().textContent})`);
+      Game.menuStep('right'); Game.menuStep('down');   // the keys and the pad reach it without choosing another mode
+      expect.ok(Game.menuItems[Game.selected].size === 'second' && Game.titleMode === at('Boss Rush'), `right, down: Join lobby (${Game.menuItems[Game.selected].name})`);
+      Game.confirm();
+      expect.ok(joined === 1, 'Join lobby joins the public lobby');
+      Game.menuStep('left'); expect.ok(Game.selected === at('Boss Rush'), 'left comes back to Boss Rush');
+    } finally { multiplayer.join = join; multiplayer.playAlone = playAlone; Object.defineProperty(multiplayer, 'lobby', look); }
     pick('main', 'Practice'); expect.ok(Game.screen === 'practice', 'Practice opens');
     const boss = ENEMY_DEFS.find(isBossDef), foe = ENEMY_DEFS.find(d => !isBossDef(d));
     pick('practice', 'Fight a boss'); pick('practiceBosses', boss.name);

@@ -5,8 +5,9 @@ The iterate loop's working note (`.claude/iterate.md`). Cap: 8,000 characters.
 ## Now
 
 Paused by Aleix, 2026-11-14 (after pass 103, v7.131.0). No pass until the loop chat resumes it (Friday 2026-11-20, 21:05).
-- v7.134.0: online is Boss Rush and the Weekly Run only. Single-Quad Boss, co-op Story, level starts, rests, gates and
-  the leaderboard/team-wipe screens went (code too); a wipe ends the run on its summary. Protocol 3.
+- v7.134.0: online is Boss Rush and the Weekly Run only. Single-Quad Boss, co-op Story, rests, gates and the old wipe
+  screens went (code too); a wipe ends the run on its summary. Protocol 3.
+- v7.135.0: Boss Rush alone, no server (`js/alone.js` hosts `js/lobby-host.js` in a frame).
 - Track A (pass 102): the dash stops at 5 (Aleix's last try, a deep lunge, judged 3, 3, 5 vs 4, 5, 4; BACKLOG).
   `tools/anim-strip.cjs` draws every step; `finisher` films the 3-counter chain (`CLIP=` an mp4). Deflect (in-page
   `pass 99`); sparring (pass 97). `.scratch/locked.sh` guards the browser lock. After the pause: deflect frames 5-9,
@@ -36,11 +37,11 @@ Paused by Aleix, 2026-11-14 (after pass 103, v7.131.0). No pass until the loop c
   and edge-on sheets take the rim light white: lower `rim` (model or slot).
 - Pace: `CONFIG.pace`, `CONFIG.enemy.press`, `rushPace`, `bossMove`; `tests/boss-pace.cjs`, `rush-flow.cjs`;
   `tools/rush-curve.cjs bosses|runs|pairs` (`SKILLED=1`, `KIT=`). Practice's Speed: `CONFIG.practice.fights`.
-- Bosses fight the group (v7.35.0): `CONFIG.aggro`, `bossTarget` (`server/simulation.js`), `grouped` / `isAreaAttack`
+- Bosses fight the group (v7.35.0): `CONFIG.aggro`, `bossTarget` (`js/lobby-sim.js`), `grouped` / `isAreaAttack`
   (`js/enemy.js`); `tests/boss-attention.cjs`.
 - Menus (pass 51, v7.72.0): title style everywhere, `optionsItems`, `pauseFacts`, `#runSummary`, Controls (`controlRows`); in-page `Menus:`.
 - Boss Rush (pass 65-73): `calling`, `offerAbilities`, `RUSH`, `CONFIG.endless`, `rushHealth`, `pickHold`
-  (`server/simulation.js`); `tests/calling.cjs`, `calling-browser.cjs`, `rush-alone-browser.cjs`. Weekly: `tests/weekly.cjs`.
+  (`js/lobby-sim.js`); `tests/calling.cjs`, `calling-browser.cjs`, `rush-alone-browser.cjs`. Weekly: `tests/weekly.cjs`.
 - Revive (pass 64): `js/revive.js`, `runTitles`; `tests/revive.cjs`, `revive-browser.cjs`.
 - The end of Act I (v7.36.0): `LORE.ending`, `showEnding` (`js/finale.js`), `LEVEL_5.next`, `goesOn`, `resume`;
   in-page `Story`, `Church`; `docs/scorecard/act1-*.jpg`.

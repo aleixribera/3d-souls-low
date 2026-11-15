@@ -8,12 +8,12 @@ const crypto = require('node:crypto');
 const root = path.resolve(__dirname, '..');
 const html = fs.readFileSync(path.join(root, 'combat-arena-3d.html'), 'utf8');
 const files = [...html.match(/const GAME_FILES = \[([\s\S]*?)\];/)[1].matchAll(/'([^']+\.js)'/g)].map(m => m[1]);
-const engine = new Set(['config.js', 'net-protocol.js', 'helpers.js', 'terrain.js', 'states.js', 'registries.js', 'events.js', 'world.js', 'character.js', 'player.js', 'enemy.js', 'crowd.js', 'combat.js', 'finisher.js', 'abilities.js', 'bot-navigation.js', 'bot.js', 'companions.js', 'game.js', 'game-menus.js', 'game-view.js', 'game-level.js', 'attack-anim.js']);
-const scripts = files.filter(f => engine.has(f) || f.startsWith('data/') || f.startsWith('levels/'));
+const net = require('../js/net-protocol.js');
+const scripts = files.filter(net.engineScript);
 // Ignore text/visual-only definitions in the compatibility fingerprint? No: clients and
 // server must run exactly the same release, including every level and balance edit.
 const hash = crypto.createHash('sha256');
-for (const f of files) hash.update(f).update(fs.readFileSync(path.join(root, 'js', f)));
+for (const f of [...files, ...net.hostFiles]) hash.update(f).update(fs.readFileSync(path.join(root, 'js', f)));
 const build = hash.digest('hex').slice(0, 24);
 
 class Vector3 { constructor() { this.x = this.y = this.z = 0; } }
@@ -47,7 +47,7 @@ function createSimulation({ seed, maxBots } = {}) {
   if (Number.isInteger(seed)) vm.runInContext(`{ let s = ${seed} >>> 0; Math.random = () => { s = (s + 0x6d2b79f5) >>> 0; let t = s; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }; }`, context);
   for (const file of scripts) vm.runInContext(fs.readFileSync(path.join(root, 'js', file), 'utf8'), context, { filename: file });
   validate(context);
-  vm.runInContext(fs.readFileSync(path.join(__dirname, 'simulation.js'), 'utf8'), context, { filename: 'server/simulation.js' });
+  vm.runInContext(fs.readFileSync(path.join(root, 'js', 'lobby-sim.js'), 'utf8'), context, { filename: 'lobby-sim.js' });
   return context.host;
 }
 module.exports = { createSimulation, build, root };

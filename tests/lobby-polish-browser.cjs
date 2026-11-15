@@ -21,7 +21,7 @@ const { config: C } = require('../js/net-protocol.js');
     }, name);
     await page.goto(url);
     await page.waitForFunction(() => window.__arenaReady, null, { timeout: 120000 });
-    await page.getByRole('button', { name: 'Join public lobby', exact: false }).click();
+    await page.getByRole('button', { name: 'Join lobby', exact: false }).click();
     await page.waitForFunction(() => multiplayer.connected);
     return page;
   }

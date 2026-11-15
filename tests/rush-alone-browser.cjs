@@ -35,8 +35,11 @@ const { config: C } = require('../js/net-protocol.js');
       } finally { gamepad.read = read; gamepad.release(); }
     }, button);
     const focused = () => page.evaluate(() => document.activeElement.id || document.activeElement.dataset.ability || document.activeElement.dataset.padKey || '');
-    // The title chooses Boss Rush once the lobby answers; A joins it.
+    // The title chooses Boss Rush once the lobby answers; the pad moves to Join lobby, and A joins it.
     await page.waitForFunction(() => Game.screen === 'main' && Game.menuItems[Game.titleMode]?.name === 'Boss Rush' && Game.menuItems[Game.selected]?.name === 'Boss Rush');
+    const onJoin = () => page.evaluate(() => Game.menuItems[Game.selected]?.size === 'second');
+    await pad(15); await pad(13);   // right to Play alone, down to Join lobby
+    assert.ok(await onJoin(), 'the pad reaches Join lobby');
     await pad(0);
     await page.waitForFunction(() => multiplayer.connected);
     // The lobby: Boss Rush by default, and nothing anywhere adds a bot.

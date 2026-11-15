@@ -10,7 +10,13 @@ Object.assign(Game, {
     const S = story.screens(this);
     const online = typeof multiplayer !== 'undefined' && multiplayer.active();
     const controlsRow = { name: 'Controls', desc: '', go: () => { this.controlsFrom = 'pause'; this.showMenu('controls'); } };
-    const pauseItems = online ? [
+    const pauseItems = online && multiplayer.alone ? [   // Boss Rush alone (js/alone.js): the run holds while this is open
+        { name: 'Resume', desc: '', go: () => this.resume() },
+        { name: 'Start over', desc: '', go: () => multiplayer.restart() },
+        { name: 'Options', desc: '', go: () => { this.optionsFrom = 'pause'; this.showMenu('options'); } },
+        controlsRow,
+        { name: 'Quit to title', desc: '', cue: 'menuBack', go: () => multiplayer.leave() },
+      ] : online ? [
         { name: 'Resume', desc: '', go: () => this.resume() },
         { name: 'Lobby', desc: 'The players, and the leader\'s controls.', go: () => multiplayer.show() },
         { name: 'Options', desc: '', go: () => { this.optionsFrom = 'pause'; this.showMenu('options'); } },
@@ -60,17 +66,18 @@ Object.assign(Game, {
       ...S.screens, ...bossBattle.screens(this),
       // The title (v7.70.0, the mockups' menu style on js/ui-theme.js): the game's name, the modes as rows, one line
       // about the chosen mode, one primary button that starts it, and a footer of quiet entries. Moving onto a mode or
-      // clicking it chooses it; Enter on it (or the primary) starts it. Boss Rush is played in the public lobby; its line
-      // says who is in it right now (multiplayer.lobby, asked while the title shows), and it is chosen when the lobby answers.
+      // clicking it chooses it; Enter on it (or the primary) starts it; a mode's `second` is the button beside it. Boss Rush
+      // plays alone in this page (js/alone.js), or in the public lobby when it answers: its line says who is in it right
+      // now (multiplayer.lobby, asked while the title shows), and it is chosen when the lobby answers.
       main: { title: 'Combat Arena 3D', sub: '', layout: 'title', focus: this.titleLobby().reachable ? 1 : 0, items: [
-        { ...S.main[0], size: 'mode' },
-        { ...this.titleLobby(), size: 'mode', online: true, name: 'Boss Rush', start: 'Join public lobby', go: () => sparring.before(() => multiplayer.join()) },   // a new player spars first
+        { ...S.main[0], size: 'mode', second: S.main[0].newGame ? { name: 'New game', go: S.main[0].newGame } : null },
+        { ...this.titleLobby(), size: 'mode', online: true, name: 'Boss Rush', start: 'Play alone', go: () => sparring.before(() => multiplayer.playAlone()) },   // a new player spars first
         { name: 'Practice', size: 'mode', line: 'Any enemy, boss or level, straight away.', start: 'Choose a fight', go: () => this.showMenu('practice') },
         // The Collection (js/crate-screen.js): your level, the crates to open, what you own. Its line is redrawn on the way back.
         ...(typeof crateScreen !== 'undefined' ? [{ name: 'Collection', size: 'mode', collection: true, line: crateScreen.titleLine(), start: 'Open the Collection',
           go: () => crateScreen.collection(() => this.refreshTitleCollection()) }] : []),
         { name: '', size: 'primary', go: () => { const m = this.menuItems[this.titleMode]; if (m) m.go(); } },
-        { name: 'New game', size: 'second', go: () => { const m = this.menuItems[this.titleMode]; if (m && m.newGame) m.newGame(); } },
+        { name: '', size: 'second', go: () => { const m = this.menuItems[this.titleMode]; if (m && m.second) m.second.go(); } },
         { name: 'Options', size: 'foot', go: () => { this.optionsFrom = 'main'; this.showMenu('options'); } },
         { name: 'Controls', size: 'foot', go: () => { this.controlsFrom = 'main'; this.showMenu('controls'); } },
         { name: 'Changelog', size: 'foot', go: () => this.showMenu('changelog') },
@@ -174,14 +181,14 @@ Object.assign(Game, {
       { name: 'Back', desc: '', cue: 'menuBack', go: () => this.showMenu(back) },
     ];
   },
-  // The title's Boss Rush line: what the public lobby looks like from here (multiplayer.lobby).
+  // The title's Boss Rush: the mode in a line, or who is in the public lobby right now (multiplayer.lobby), and Join
+  // lobby beside Play alone while the lobby answers.
   titleLobby() {
     const L = typeof multiplayer !== 'undefined' ? multiplayer.lobby : { state: 'absent' }, n = L.players;
-    const live = L.state === 'online' && n > 0;
-    const line = L.state === 'checking' ? 'Looking for the lobby…'
-      : L.state === 'online' ? live ? `${n} playing now${L.playing ? ` · ${L.playing}` : ' · in the lobby'}` : 'Nobody inside yet. Start a run, then share this link.'
-      : L.state === 'offline' ? 'The lobby is not answering right now.' : 'Online play is on the home server link.';
-    return { line, lobbyState: live ? 'live' : L.state === 'online' ? 'open' : L.state, reachable: L.state === 'online' };
+    const live = L.state === 'online' && n > 0, reachable = L.state === 'online';
+    const line = live ? `${n} playing online now${L.playing ? ` · ${L.playing}` : ' · in the lobby'}` : `Boss after boss until you fall, faster every fight. Every ${CONFIG.endless.crowned}th is Crowned.`;
+    return { line, lobbyState: live ? 'live' : reachable ? 'open' : L.state, reachable,
+      second: reachable ? { name: 'Join lobby', go: () => sparring.before(() => multiplayer.join()) } : null };
   },
   // A new answer from the lobby: rewrite Boss Rush's line in place (the screen and the selection stay), and choose it
   // if the player has not touched the title yet.
@@ -189,7 +196,6 @@ Object.assign(Game, {
     if (this.screen !== 'main' || this.mode !== 'menu') return;
     const at = (this.menuItems || []).findIndex(it => it.online), t = this.titleLobby(), b = (this.menuButtons || [])[at];
     if (!b) return;
-    b.classList.toggle('offline', !t.reachable && t.lobbyState !== 'checking');
     Object.assign(this.menuItems[at], t);
     if (!this.menuTouched) this.select(t.reachable ? at : 0, !!document.activeElement && $('menuBox').contains(document.activeElement));
     this.chooseMode(this.titleMode);   // the line, when Boss Rush is the chosen mode
@@ -207,7 +213,7 @@ Object.assign(Game, {
     items.forEach((x, k) => { if (x.size === 'mode') btns[k].setAttribute('aria-pressed', String(k === i)); });
     const p = items.findIndex(x => x.size === 'primary'), s = items.findIndex(x => x.size === 'second');
     if (p >= 0) btns[p].children[0].textContent = items[p].name = it.start;
-    if (s >= 0) btns[s].hidden = !it.newGame;
+    if (s >= 0) { btns[s].hidden = !it.second; if (it.second) btns[s].children[0].textContent = items[s].name = it.second.name; }
     this.titleLine();
   },
   // The line under the title's modes: the selected entry's own note when it has one (the new-version button), else
@@ -263,7 +269,6 @@ Object.assign(Game, {
       if (it.kind) b.appendChild(this.menuControl(it, i));
       if ((title && it.size === 'mode') || it.size === 'cat') b.setAttribute('aria-pressed', 'false');
       if (title && it.size === 'mode') {
-        if (it.reachable === false && it.lobbyState !== 'checking') b.classList.add('offline');
         b.addEventListener('dblclick', () => { this.select(i); this.confirm(); });   // a double click starts the mode, as Enter does
       }
       if (it.group) { b.dataset.group = it.group; b.classList.add('campaign-start'); }
@@ -365,10 +370,10 @@ Object.assign(Game, {
       rows.push(['Fighting', [this.duelId, ...(this.duelPartners || [])].map(id => ENEMY_BY_ID[id].name).join(', ')]);
       if (this.practiceWon > 0 && this.enemies.some(e => e.isBoss())) rows.push(['Speed', `Fight ${this.practiceWon + 1}`, ` · ${rushPace(this.practiceWon).toFixed(2)}×`]);
     }
-    if (mp) rows.push(['Party', mp.info.players.map(p => p.name).join(', ')]);
+    if (mp && !mp.alone) rows.push(['Party', mp.info.players.map(p => p.name).join(', ')]);   // alone, the run holds and the party is you
     // The abilities held: each with its level, rarity and what it does (abilityHeldList, js/ability-cards.js).
     const held = (this.player && this.player.kit && this.player.kit.ids) || [];
-    return { rows, held, note: mp ? r ? 'The run goes on while this is open.' : 'The world goes on while this is open.' : '' };
+    return { rows, held, note: mp && !mp.alone ? r ? 'The run goes on while this is open.' : 'The world goes on while this is open.' : '' };
   },
   tickPause() {
     if (this.screen !== 'pause' || this.mode !== 'pause') return;
@@ -472,14 +477,19 @@ Object.assign(Game, {
       return;
     }
     if (this.menuLayout === 'title' && it) {
-      // Rows: each mode, the primary, New game (when shown), then the footer's entries together. Up and down go row
-      // to row (wrapping); left and right go along the footer.
+      // Rows: each mode, the primary, the chosen mode's second button (when shown), then the footer's entries together.
+      // Up and down go row to row (wrapping); left and right go along the footer.
       const rows = [];
       items.forEach((x, i) => { if (!shown(i)) return;
         const key = x.size === 'mode' ? `mode${i}` : x.size === 'update' ? 'foot' : x.size, row = rows.find(r => r.key === key);
         if (row) row.at.push(i); else rows.push({ key, at: [i] }); });
       const r = Math.max(0, rows.findIndex(row => row.at.includes(this.selected))), row = rows[r].at;
-      const to = dir === 'down' || dir === 'up' ? rows[(r + (dir === 'down' ? 1 : -1) + rows.length) % rows.length].at[0]
+      // The chosen mode's buttons without choosing another mode on the way: right from a mode goes to its primary, and
+      // left, or up from the primary, comes back to the chosen mode (Boss Rush's Join lobby, Story's New game).
+      const primary = items.findIndex(x => x.size === 'primary');
+      const to = it.size === 'mode' && dir === 'right' && primary >= 0 ? primary
+        : (it.size === 'primary' || it.size === 'second') && (dir === 'left' || dir === 'up' && it.size === 'primary') && this.titleMode != null ? this.titleMode
+        : dir === 'down' || dir === 'up' ? rows[(r + (dir === 'down' ? 1 : -1) + rows.length) % rows.length].at[0]
         : row.length > 1 ? row[(row.indexOf(this.selected) + (dir === 'left' ? -1 : 1) + row.length) % row.length] : this.selected;
       if (to !== this.selected) { events.emit('menuMove'); this.select(to, true); }
       return;
@@ -624,7 +634,7 @@ Object.assign(Game, {
   },
   // R: instant on the death, win or level-complete screens; otherwise press twice.
   requestRestart() {
-    if (typeof multiplayer !== 'undefined' && multiplayer.active()) { multiplayer.show(); return; }
+    if (typeof multiplayer !== 'undefined' && multiplayer.active()) { if (!multiplayer.alone) multiplayer.show(); return; }   // alone: Start over is in pause
     if (this.story) return;   // a campaign has no restart: death returns you to the bonfire
     if (!this.player.alive() || this.duelWon() || this.complete || this.restartArm > 0) { this.reset(); return; }
     this.restartArm = CONFIG.restartConfirmTime;

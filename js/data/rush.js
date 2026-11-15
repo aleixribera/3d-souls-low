@@ -1,7 +1,7 @@
 // ============================================================================
 // Endless Boss Rush (pass 65, PLAN.md track B item 5): which bosses open a run, and the modifiers later fights carry.
 // The draw and its rules (how many opening fights, Crowned every few, two at once, how many modifiers) are
-// CONFIG.endless; the server draws each fight (server/simulation.js `calling`).
+// CONFIG.endless; the server draws each fight (js/lobby-sim.js `calling`).
 // ============================================================================
 // `opening`: the bosses the first fights (CONFIG.endless.opening) draw from, the warm-up's: the easiest to learn on, by
 // the skilled test bot alone (tools/rush-curve.cjs bosses, pass 73: the fewest falls and the least health taken).

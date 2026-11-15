@@ -196,7 +196,7 @@ const { createServer } = require('../server/index.cjs');
         return { lost: gl.isContextLost(), error: gl.getError() }; }), { lost: false, error: 0 });
     }
     await page.evaluate(() => { settings.graphics = 'bare'; applySettings(); Game.showMenu('main'); Game.manualClock = false; });
-    await page.getByRole('button', { name: 'Join public lobby', exact: false }).click();
+    await page.getByRole('button', { name: 'Join lobby', exact: false }).click();
     await page.waitForFunction(() => multiplayer.connected);
     await page.locator('#lobbyAdventure').selectOption('calling/boss-rush');
     await page.locator('#lobbyStart').click();

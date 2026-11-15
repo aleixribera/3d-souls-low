@@ -1,5 +1,5 @@
 'use strict';
-// Revive, drawn (CONFIG.revive; the server decides it in server/simulation.js reviveStep). Each fallen teammate's
+// Revive, drawn (CONFIG.revive; the server decides it in js/lobby-sim.js reviveStep). Each fallen teammate's
 // ember where they fell: sparks rising from it, and a ring on the ground at the reach a reviver stands in, filling round
 // as the revive runs; the cue over the bottom of the screen ("Reviving Ash", "Bram is reviving you"); a burst when they
 // rise. Drawing only: the list comes from the server's frames (js/multiplayer.js sets it) and nothing here changes the

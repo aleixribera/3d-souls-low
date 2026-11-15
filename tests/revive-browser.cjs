@@ -44,7 +44,7 @@ const wait = ms => new Promise(resolve => setTimeout(resolve, ms));
     });
     await page.goto(origin + '/combat-arena-3d.html#dev');
     await page.waitForFunction(() => window.__arenaReady, null, { timeout: 120000 });
-    await page.getByRole('button', { name: 'Join public lobby', exact: false }).click();
+    await page.getByRole('button', { name: 'Join lobby', exact: false }).click();
     await page.waitForFunction(() => multiplayer.connected);
     const bram = await teammate('Bram'), cole = await teammate('Cole'), dara = await teammate('Dara');
     await page.waitForFunction(() => multiplayer.info.players.length === 4);

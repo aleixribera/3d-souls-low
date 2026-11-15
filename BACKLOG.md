@@ -20,7 +20,7 @@ The loop's cuts and finds (`.claude/iterate.md`); the order of work is `PLAN.md`
 
 - **From the counter pass (pass 95, track A), for track B:** (1) PLAN's "deflected strings make the riposte chain a
   second time if the press comes again" is not built: a combat rule plus the server's riposte claim check
-  (server/simulation.js). (2) A counter out of a perfect dodge mid-string can still be cut short by the string's next
+  (js/lobby-sim.js). (2) A counter out of a perfect dodge mid-string can still be cut short by the string's next
   blow during its startup (the heavy's 0.24 s); counters may want i-frames through their startup. (3) The boss's gold
   hit flash on a riposte whites out the whole body for ~15 frames and hides the cut. The new counter poses
   (`counterFlash`, `counterRising`) were tuned only by eye in clips.
@@ -299,7 +299,7 @@ The loop's cuts and finds (`.claude/iterate.md`); the order of work is `PLAN.md`
   `js/gilt-echo.js`; `docs/scorecard/hollis-lab.jpg`, `aurel-hollis.jpg`). Bots don't know echoes (pass 45's area):
   `js/bot.js` 357 plans a parry on an echo hit (`parryTiming` refuses it), and its reach/escape/aimedElsewhere geometry
   measures from him, not from the cut (`e.cutOf(h.echo.of)`), so a bot at the cut after Called Home's leap is hit. The
-  server's parry check (`server/simulation.js` ~540) doesn't reject a claim during an echo (honest clients never send
+  server's parry check (`js/lobby-sim.js` ~540) doesn't reject a claim during an echo (honest clients never send
   one). Block and knockback for an echo come from him, not the cut. Figure: the mantle reads as a slab from the side,
   limbs thin, collar tall. The gold gilt is pale on the bright court in `high`; the embers read well. No one has fought
   him by hand yet.

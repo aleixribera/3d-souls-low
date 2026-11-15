@@ -159,7 +159,12 @@
       return { a, b, time, alpha, crossed };
     }
   }
-  const api = { config, finite, id, own, pose, bodyPose, name, cameraView, FrameEncoder, FrameDecoder, EnemyTrack };
+  // The game's files the lobby's simulation runs (server/headless.cjs, and the page alone in js/alone.js): the engine,
+  // every data/ and levels/ file, in GAME_FILES order; then hostFiles, which only the simulation loads.
+  const engine = new Set(['config.js', 'net-protocol.js', 'helpers.js', 'terrain.js', 'states.js', 'registries.js', 'events.js', 'world.js', 'character.js', 'player.js', 'enemy.js', 'crowd.js', 'combat.js', 'finisher.js', 'abilities.js', 'bot-navigation.js', 'bot.js', 'companions.js', 'game.js', 'game-menus.js', 'game-view.js', 'game-level.js', 'attack-anim.js']);
+  const engineScript = file => engine.has(file) || file.startsWith('data/') || file.startsWith('levels/');
+  const hostFiles = Object.freeze(['lobby-sim.js', 'lobby-host.js']);
+  const api = { engineScript, hostFiles, config, finite, id, own, pose, bodyPose, name, cameraView, FrameEncoder, FrameDecoder, EnemyTrack };
   if (typeof module === 'object' && module.exports) module.exports = api;
   else root.ArenaNet = api;
 })(globalThis);

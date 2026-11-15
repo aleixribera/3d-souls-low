@@ -6,6 +6,7 @@
 //   title    a few words
 //   text     one to three sentences, shown under the list when the entry is selected
 const CHANGELOG = [
+  { version: 'v7.135.0', title: 'Boss Rush alone', text: 'Boss Rush plays alone with no server: Play alone on the title, or Join lobby while the lobby answers. Levels and crates count the same, and the pause holds the run.' },
   { version: 'v7.134.0', title: 'Online is Boss Rush', text: 'The lobby now plays Boss Rush and the Weekly Run, nothing else: Single to Quad Boss and co-op Story are gone. When the whole party falls, the run ends on its end screen.' },
   { version: 'v7.133.0', title: 'The showcase after every update', text: 'After each update the showcase plays once when you launch the game, at most once a day. It never interrupts a lobby or a run.' },
   { version: 'v7.132.0', title: 'The opening waits for the page', text: 'The opening cinematic now starts once the game has finished loading, and plays at its real speed.' },

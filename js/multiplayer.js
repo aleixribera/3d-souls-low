@@ -11,6 +11,8 @@ const multiplayer = (() => {
   let remotes = new Map(), roster = [], lastPose = 0, lastPing = 0;
   let intentionalClose = false, grantedEnemy = null, deferredStart = null, latestFrame = null, receivedFrames = 0, lastStats = 0;
   let reconnectWanted = false, reconnectTimer = null, reconnectAttempt = 0, joinAttempt = 0;
+  let solo = false;   // Boss Rush alone (js/alone.js, the global `alone`): the lobby runs in this page, its socket is the page's
+  const ALONE_FAILED = 'Boss Rush stopped after an error.';
   const rushView = { fight: 0, clock: 0, par: 0, crowned: false, modifiers: [] };   // what `multiplayer.rush` hands the HUD
   const noModifiers = Object.freeze([]);
   let spectatorTarget = null, spectatorBarOpen = true, spectatorWasWaiting = false, spectatorViewApplied = false, lastView = null;
@@ -245,7 +247,7 @@ const multiplayer = (() => {
     const rows = el('runSummaryRows'); rows.replaceChildren();
     for (const r of data.players || []) {
       const tr = document.createElement('tr'); tr.dataset.self = String(r.id === self);
-      // The run's title for this player (server/index.cjs runTitles) under their name.
+      // The run's title for this player (js/lobby-host.js runTitles) under their name.
       const name = document.createElement('td'), who = document.createElement('span'); who.textContent = r.name; name.appendChild(who);
       if (r.title) { const title = document.createElement('span'); title.className = 'summary-title'; title.textContent = r.title; name.appendChild(title); }
       tr.appendChild(name);
@@ -254,6 +256,7 @@ const multiplayer = (() => {
     }
     panel.inert = true; runSummary.hidden = false; input.clear(); if (document.pointerLockElement) document.exitPointerLock();
     el('runSummaryLobbyKey').textContent = usingPad() ? 'B' : 'Esc';
+    el('runSummaryLobby').lastChild.textContent = solo ? 'Title' : 'Lobby';
     drawRunSummary(); summaryButtons()[0]?.focus({ preventScroll: true });
   }
   // Only the leader can start the run again; the others see who can.
@@ -267,6 +270,7 @@ const multiplayer = (() => {
   function closeRunSummary(focusLobby = true) {
     if (!summary) return;
     summary = null; runSummary.hidden = true; panel.inert = false;
+    if (focusLobby && solo) { leave(); return; }   // alone, the end screen's way out is the title
     if (focusLobby && connected && !usingPad()) el('lobbyLeave').focus();
   }
   function moveSummaryFocus(step) {
@@ -279,7 +283,8 @@ const multiplayer = (() => {
   };
   runSummary.querySelector('#runSummaryLobby').onclick = () => closeRunSummary();
   window.addEventListener('keydown', ev => {
-    if (runSummary.hidden || ev.code === 'Escape') return;
+    if (runSummary.hidden || ev.code === 'Escape' && !solo) return;   // online, Escape reaches the lobby (lobbyBack)
+    if (ev.code === 'Escape') { ev.preventDefault(); ev.stopImmediatePropagation(); if (!ev.repeat) closeRunSummary(); return; }
     userActivity(ev); ev.stopImmediatePropagation();
     if (ev.code === 'Tab') { ev.preventDefault(); moveSummaryFocus(ev.shiftKey ? -1 : 1); }
     else if (ev.code.startsWith('Arrow')) { ev.preventDefault(); moveSummaryFocus(ev.code === 'ArrowLeft' || ev.code === 'ArrowUp' ? -1 : 1); }
@@ -666,12 +671,12 @@ const multiplayer = (() => {
     if (foreground === value) return;
     if (!value) { publishPose(); heldActivity.clear(); activityPending = false; }
     foreground = value;
-    if (connected) send({ type: 'presence', foreground });
+    if (connected && !solo) send({ type: 'presence', foreground });   // alone, the run pauses instead (js/alone.js)
   }
   window.addEventListener('blur', () => setPresence(false));
   window.addEventListener('focus', () => setPresence(!document.hidden));
   document.addEventListener('visibilitychange', () => setPresence(!document.hidden && document.hasFocus()));
-  window.addEventListener('pagehide', () => { publishPose(); if (connected) send({ type: 'presence', foreground: false }); });
+  window.addEventListener('pagehide', () => { publishPose(); if (connected && !solo) send({ type: 'presence', foreground: false }); });
   function command(type, data = {}) { if (ready) send({ type, epoch: session.epoch, seq: ++seq, ...data }); }
   function clearControlPending() { clearTimeout(controlDeadline); controlDeadline = null; controlPending = null; }
   function control(action, data = {}) {
@@ -689,7 +694,7 @@ const multiplayer = (() => {
   }
   function overlayVisibility() {
     drawAbilities();
-    party.hidden = !active() || Game.mode !== 'play' || Game.loading > 0 || !panel.classList.contains('hidden') || !runIntro.hidden;
+    party.hidden = solo || !active() || Game.mode !== 'play' || Game.loading > 0 || !panel.classList.contains('hidden') || !runIntro.hidden;
     if (party.hidden) for (const remote of remotes.values()) remote.label.hidden = true;
   }
   function show() {
@@ -710,6 +715,7 @@ const multiplayer = (() => {
   function clearRemotes() { for (const r of remotes.values()) { r.body.rig.dispose(); r.label.remove(); } remotes.clear(); }
   function resetStream() { closeRunSummary(false); clearRunIntro(); tracks.clear(); decoder.reset(); latestFrame = null; receivedFrames = 0; playback = null; ready = false; lastPose = 0; deferredStart = null; resetSpectator(); embers = []; rescuer = null; revive.clear(); }
   function retryConnection(message) {
+    if (solo) { leave(ALONE_FAILED); return; }   // nothing to reconnect to: the lobby was this page's
     if (!reconnectWanted) return;
     leave(message, true);
     notice('Reconnecting automatically… You can leave the lobby to cancel.');
@@ -724,7 +730,7 @@ const multiplayer = (() => {
     if (!retry) { reconnectWanted = false; reconnectAttempt = 0; }
     intentionalClose = true;
     if (retry) socket?.close(); else socket?.close(1000, 'Left lobby');
-    socket = null;
+    socket = null; solo = false;
     connected = false; self = leader = null; session = null; loaded = false; starting = false; ping = null; resetStream(); clearRemotes(); clearControlPending();
     roster = []; rosterSignature = ''; panel.classList.remove('managing-party'); el('lobbyManage').setAttribute('aria-expanded', 'false');
     heldActivity.clear(); activityPending = false; lastActivitySent = -Infinity;
@@ -732,6 +738,28 @@ const multiplayer = (() => {
     if (Game.player) Game.clearActors();
     Game.loading = 0; el('loading').classList.remove('show'); Game.showMenu('main');
     if (message) { show(); el('lobbyStatus').textContent = message; el('lobbyLeave').lastElementChild.textContent = retry ? 'Leave lobby' : 'Back to main menu'; }
+  }
+  // A socket to the lobby (the server's, or alone the page's own): hello once open, then every message to receive().
+  function attach(next, build) {
+    socket = next;
+    const joining = socket;
+    const deadline = setTimeout(() => { if (joining === socket && !connected) { retryConnection('The lobby did not respond. Reconnecting…'); } }, C.connectTimeout);
+    socket.onopen = () => { if (socket === joining) send({ type: 'hello', protocol: C.protocol, build, name: solo ? progress.name || 'You' : progress.name, token: solo ? undefined : resumeToken, foreground: solo || foreground, ...gear() }); };
+    socket.onmessage = event => { if (socket !== joining) return; try { receive(JSON.parse(event.data)); } catch (e) { console.error('Lobby update failed', e); retryConnection('Recovering the current game…'); } };
+    socket.onclose = e => { clearTimeout(deadline); if (socket !== joining) return; if (!intentionalClose) {
+      if (e.code === 1008 || solo) leave(e.reason || 'The lobby refused the connection.');
+      else retryConnection(e.reason || 'Connection lost. Rejoining the current game…');
+    } };
+    socket.onerror = () => { if (socket === joining && !connected && !solo) notice('Could not connect. The lobby may be full or the server may be unavailable.'); };
+  }
+  // Boss Rush alone, with no server (js/alone.js): the run starts at once, with no lobby screen and no name asked. The
+  // loading card covers the title while the page's lobby starts, until the first fight's own card replaces it.
+  function playAlone() {
+    if (connected || starting) return;
+    clearTimeout(reconnectTimer); reconnectTimer = null; reconnectWanted = false;
+    joinAttempt++; solo = true; starting = true; intentionalClose = false;
+    Game.loadingFirst(C.calling.name.toLowerCase().replace(/\b\w/g, c => c.toUpperCase()), '', () => {});
+    attach(alone.open(() => Game.mode === 'pause' || document.hidden), alone.build);
   }
   async function join(retry = false) {
     if (connected) { show(); return; }
@@ -755,16 +783,7 @@ const multiplayer = (() => {
       const pageBuild = document.querySelector('meta[name="arena-build"]')?.content;
       if (info.version !== VERSION || pageBuild !== info.build) { reconnectWanted = false; needsReload = true; throw new Error('The game has updated. Reload this page before joining.'); }
       if (!starting || attempt !== joinAttempt) return;
-      socket = new WebSocket(`${location.protocol === 'https:' ? 'wss:' : 'ws:'}//${location.host}${C.path}`);
-      const joining = socket;
-      const deadline = setTimeout(() => { if (joining === socket && !connected) { retryConnection('The lobby did not respond. Reconnecting…'); } }, C.connectTimeout);
-      socket.onopen = () => { if (socket === joining) send({ type: 'hello', protocol: C.protocol, build: info.build, name: progress.name, token: resumeToken, foreground, ...gear() }); };
-      socket.onmessage = event => { if (socket !== joining) return; try { receive(JSON.parse(event.data)); } catch (e) { console.error('Lobby update failed', e); retryConnection('Recovering the current game…'); } };
-      socket.onclose = e => { clearTimeout(deadline); if (socket !== joining) return; if (!intentionalClose) {
-        if (e.code === 1008) leave(e.reason || 'The lobby refused the connection.');
-        else retryConnection(e.reason || 'Connection lost. Rejoining the current game…');
-      } };
-      socket.onerror = () => { if (socket === joining && !connected) notice('Could not connect. The lobby may be full or the server may be unavailable.'); };
+      attach(new WebSocket(`${location.protocol === 'https:' ? 'wss:' : 'ws:'}//${location.host}${C.path}`), info.build);
     } catch (e) {
       if (attempt !== joinAttempt) return;
       starting = false;
@@ -908,8 +927,8 @@ const multiplayer = (() => {
   function receive(msg) {
     if (msg.type === 'welcome') {
       connected = true; starting = false; reconnectAttempt = 0; needsReload = false; self = msg.id; leader = msg.leader; roster = msg.players; catalog = msg.catalog; capacity = msg.capacity;
-      resumeToken = typeof msg.token === 'string' ? msg.token : ''; board = msg.board && typeof msg.board === 'object' ? msg.board : null;
-      try { localStorage.setItem('combatArena.onlineToken', resumeToken); } catch {}
+      board = msg.board && typeof msg.board === 'object' ? msg.board : null;
+      if (!solo) { resumeToken = typeof msg.token === 'string' ? msg.token : ''; try { localStorage.setItem('combatArena.onlineToken', resumeToken); } catch {} }
       // A rename made while this was connecting went out with nothing to carry it: send it now.
       const name = progress.name;
       if (name && name !== roster.find(p => p.id === self)?.name) send({ type: 'name', name });
@@ -930,6 +949,7 @@ const multiplayer = (() => {
       select.value = `calling/${C.calling.id}`;
       el('lobbyStatus').textContent = ''; updateRoster();
       if (!panel.classList.contains('hidden')) focusLobbyControl(ensureLobbyFocus(true));   // joined: focus moves from Leave to Start
+      if (solo) control('start', { kind: 'calling', id: C.calling.id });
     } else if (msg.type === 'board') {
       board = msg.board && typeof msg.board === 'object' ? msg.board : null; drawBoard();
     } else if (msg.type === 'roster') {
@@ -967,7 +987,9 @@ const multiplayer = (() => {
     } else if (msg.type === 'stop') {
       clearControlPending();
       session = null; loaded = false; resetStream(); clearRemotes(); closeAbilities(); Game.loading = 0; el('loading').classList.remove('show');
-      if (Game.player) Game.clearActors(); Game.showMenu('main'); show(); notice(msg.message || 'The leader returned everyone to the lobby.');
+      if (Game.player) Game.clearActors(); Game.showMenu('main');
+      if (solo) { if (msg.summary) showRunSummary(msg.summary); else leave(msg.reason === 'error' ? ALONE_FAILED : ''); return; }
+      show(); notice(msg.message || 'The leader returned everyone to the lobby.');
       if (msg.summary) showRunSummary(msg.summary);
     } else if (msg.type === 'frame' && active() && ready && msg.frame.epoch === session.epoch) {
       const packet = decoder.decode(msg), frame = packet.frame;
@@ -1014,7 +1036,10 @@ const multiplayer = (() => {
     }
     else if (msg.type === 'abilities' && session) openAbilities(msg);   // also while loading back in: shown once loaded
     else if (msg.type === 'pong') { ping = Math.max(0, Math.round(performance.now() - msg.sent)); updateConnection(); }
-    else if (msg.type === 'error') { clearControlPending(); updateRoster(); notice(msg.message); }
+    else if (msg.type === 'error') {
+      if (solo && !session) { leave(msg.message); return; }   // alone, a run that cannot start goes back to the title
+      clearControlPending(); updateRoster(); notice(msg.message);
+    }
   }
   // Revive (CONFIG.revive): a teammate stood on this player's ember long enough (the server decided it). Up again where
   // they fell, with the bar the server gave and a moment untouchable; the next pose, sent at once, tells the server.
@@ -1361,7 +1386,7 @@ const multiplayer = (() => {
   }
   events.on('finisherEnd', d => { if (active() && d.player === Game.player) command('finisherEnd', { enemy: d.enemy.netId }); });
   Game.renderHooks.push(render);
-  return { join, leave, show, hide, active, peek, heartbeat, activity, update, hit, parry, dodged, lifesteal, landed, pad,
+  return { join, playAlone, restart: () => control('restart'), leave, show, hide, active, peek, heartbeat, activity, update, hit, parry, dodged, lifesteal, landed, pad,
     applySpectatorView, captureView, spectatorKey, spectatorPad, lobbyBack, abilityPad, abilityClaim,
     get abilityOpen() { return !abilityScreen.hidden; }, get abilityPending() { return !!ability; },
     get lobby() { return { ...peekState }; },
@@ -1381,7 +1406,7 @@ const multiplayer = (() => {
       rushView.clock = latestFrame?.fought || 0; rushView.par = session.par || 0;
       return rushView;
     },
-    get connected() { return connected; }, get grantedEnemy() { return grantedEnemy; }, get panelOpen() { return !panel.classList.contains('hidden'); },
+    get connected() { return connected; }, get alone() { return solo; }, get grantedEnemy() { return grantedEnemy; }, get panelOpen() { return !panel.classList.contains('hidden'); },
     get info() { return { self, leader, connected, ready, session, players: roster, ping, playback, spectatorTarget,
       frames: Math.max(0, ...[...tracks.values()].map(t => t.samples.length)), receivedFrames, remotes: remotes.size,
       playbackDelayMs: latestFrame && playback !== null ? Math.max(0, (latestFrame.time - playback) * 1000) : 0, server: latestFrame?.server }; },
