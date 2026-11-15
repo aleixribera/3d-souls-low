@@ -187,6 +187,9 @@ button { font: inherit; color: inherit; }
   const kindOf = (a) => (a.summon ? 'summon' : a.plain || a.kind === 'mods' ? 'stat' : a.kind);
   const metaOf = (a) => [RARITY[a.rarity], a.key ? KEYS[a.key] : 'Triggered', a.summon ? 'Summon' : KIND[a.kind]].join(' · ');
   const imgSrc = (n) => `img/${n}.webp`;
+  // In the claude.ai Artifact (always framed) the originals are in its asset store; the home server's copy
+  // (top-level, docs/ability-gallery.md in homelab) serves them beside the page as originals/<name>.png.
+  const origSrc = (n) => (window.top === window ? `originals/${n}.png` : data.assets[n]);
 
   // ---- markdown (headings, paragraphs, lists, tables, code, bold, italics, links) ----
   const inline = (s) => esc(s)
@@ -290,7 +293,7 @@ button { font: inherit; color: inherit; }
       if (prev) { prev.disabled = at === 0; next.disabled = at === names.length - 1; }
       dots.forEach((d, i) => d.setAttribute('aria-current', String(i === at)));
       count.textContent = `${at + 1} / ${names.length}`;
-      const full = data.assets[names[at]];
+      const full = origSrc(names[at]);
       orig.href = full || imgSrc(names[at]);
       orig.textContent = full ? 'Full-quality original' : 'Open image';
     };
