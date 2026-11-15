@@ -406,7 +406,7 @@ const hud = {
   // Boss Rush's corner (pass 96, PLAN.md "No hidden meters"): the fight's number (and Crowned, on a Crowned fight), its
   // clock only while a Swift kill is still possible (under par), and under them the fight's modifiers by name; written
   // only when a second turns over.
-  updateRush(r = typeof multiplayer !== 'undefined' && multiplayer.rush) {   // `r`: the streak to draw (tests hand their own)
+  updateRush(r = rushNow()) {   // `r`: the streak to draw (tests hand their own)
     this.rushClock.hidden = !r;
     if (!r) { this.rushKey = -1; this.rushMods.hidden = true; return; }
     const sec = Math.floor(r.clock), key = (r.fight * 4096 + sec) * 4096 + r.par;

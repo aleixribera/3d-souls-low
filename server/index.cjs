@@ -9,6 +9,7 @@ const net = require('../js/net-protocol.js');
 const { createSimulation, build, root } = require('./headless.cjs');
 const { createBoard } = require('./board.cjs');
 const { createLobby, runTitles } = require('../js/lobby-host.js');
+const { createReplays, replayDoor } = require('./replays.cjs');
 const C = net.config;
 
 // The client's address: the socket's own, or the last X-Forwarded-For entry added by a loopback/private proxy
@@ -35,7 +36,11 @@ function createServer(options = {}) {
   const dateNow = options.dateNow || Date.now;
   const board = createBoard({ file: options.boardFile ?? process.env.BOARD_FILE ?? null, size: C.weekly.board,
     bosses: sim.catalog().bosses.map(e => e.id), weekOf: () => sim.weekOf(dateNow()) });
-  const lobby = createLobby({ sim, build, board, capacity, dateNow, firstPick: options.firstPick, activityNow: options.activityNow, loadNow: options.loadNow,
+  // Replays (PLAN.md "replays"): every Boss Rush run recorded into REPLAY_DIR (`replayDir`), watched through the
+  // replay door (`replayServer`, REPLAY_PORT), never through this server's own port. Off without a folder.
+  const replayDir = options.replayDir !== undefined ? options.replayDir : process.env.REPLAY_DIR || null;
+  const replays = replayDir ? createReplays({ dir: replayDir, ...(options.replayOptions || {}) }) : null;
+  const lobby = createLobby({ sim, build, board, capacity, dateNow, replays, firstPick: options.firstPick, activityNow: options.activityNow, loadNow: options.loadNow,
     token: bytes => randomBytes(bytes).toString('hex'), uuid: randomUUID, byteLength: text => Buffer.byteLength(text) });
   const { clients, pending } = lobby;
   const addresses = new Map();   // address -> open sockets
@@ -47,19 +52,20 @@ function createServer(options = {}) {
   const stamp = fs.readFileSync(path.join(root, 'combat-arena-3d.html'), 'utf8').match(/const LOAD_STAMP = '([^']+)'/)?.[1];
   const version = stamp ? `${stamp}-${build}` : null;
   const bodies = new Map(); let bodyBytes = 0;   // path -> { mtime, raw, gzip }
-  function body(file, stat) {
-    const cached = bodies.get(file);
+  // `replay`: the page as the replay viewer (the replay door's /watch), cached apart.
+  function body(file, stat, replay = false) {
+    const key = replay ? file + '#replay' : file, cached = bodies.get(key);
     if (cached && cached.mtime === stat.mtimeMs && cached.size === stat.size) return cached;
     let raw = fs.readFileSync(file);
     if (file.endsWith('.html')) {
-      let html = raw.toString('utf8').replace('</head>', `<meta name="arena-build" content="${build}"></head>`);
+      let html = raw.toString('utf8').replace('</head>', `<meta name="arena-build" content="${build}">${replay ? '<meta name="arena-replay" content="1">' : ''}</head>`);
       if (version) html = html.replace("'?v=' + LOAD_STAMP", `'?v=' + LOAD_STAMP + '-${build}'`);
       raw = Buffer.from(html);
     }
     const entry = { mtime: stat.mtimeMs, size: stat.size, raw, gzip: raw.length >= C.compressMin ? zlib.gzipSync(raw, { level: 9 }) : null };
-    if (cached) { bodies.delete(file); bodyBytes -= cached.raw.length + (cached.gzip?.length || 0); }
-    bodies.set(file, entry); bodyBytes += entry.raw.length + (entry.gzip?.length || 0);
-    for (const [key, old] of bodies) { if (bodyBytes <= C.compressCache || key === file) break; bodies.delete(key); bodyBytes -= old.raw.length + (old.gzip?.length || 0); }
+    if (cached) { bodies.delete(key); bodyBytes -= cached.raw.length + (cached.gzip?.length || 0); }
+    bodies.set(key, entry); bodyBytes += entry.raw.length + (entry.gzip?.length || 0);
+    for (const [k, old] of bodies) { if (bodyBytes <= C.compressCache || k === key) break; bodies.delete(k); bodyBytes -= old.raw.length + (old.gzip?.length || 0); }
     return entry;
   }
   const server = http.createServer((req, res) => {
@@ -72,8 +78,12 @@ function createServer(options = {}) {
     if (pathname === '/api/lobby') { res.setHeader('Cache-Control', 'no-store'); res.setHeader('Content-Type', 'application/json'); res.end(JSON.stringify({ protocol: C.protocol, build, capacity, players: clients.size, playing: clients.size ? sim.describe(lobby.session) : null, version: sim.catalog().version, metrics: lobby.metrics })); return; }
     if (pathname === '/') pathname = '/combat-arena-3d.html';
     if (pathname === '/favicon.ico') { res.writeHead(204).end(); return; }
-    // Serve only public assets, never source control, server code or homelab files.
+    // Serve only public assets, never source control, server code, homelab files or anything of the replays.
     if (!['/combat-arena-3d.html', '/index.html'].includes(pathname) && !pathname.startsWith('/js/') && !pathname.startsWith('/assets/') && !(options.dev && pathname.startsWith('/tests/'))) { res.writeHead(404).end(); return; }
+    serveFile(req, res, pathname, query);
+  });
+  // One static file from the game's folder (this port's allow-list above; the replay door's in server/replays.cjs).
+  function serveFile(req, res, pathname, query, replay = false) {
     const file = path.resolve(root, '.' + pathname);
     if (!file.startsWith(root + path.sep) || pathname.includes('\\') || pathname.split('/').some(p => p.startsWith('.'))) { res.writeHead(403).end(); return; }
     fs.stat(file, (err, stat) => {
@@ -82,7 +92,7 @@ function createServer(options = {}) {
       res.setHeader('Content-Type', mime[ext] || 'application/octet-stream');
       const immutable = version && query.get('v') === version;
       res.setHeader('Cache-Control', immutable ? `public, max-age=${C.staticMaxAge}, immutable` : 'no-cache');
-      const etag = `W/"${stat.size.toString(16)}-${Math.floor(stat.mtimeMs).toString(16)}-${build}"`;
+      const etag = `W/"${stat.size.toString(16)}-${Math.floor(stat.mtimeMs).toString(16)}-${build}${replay ? '-r' : ''}"`;
       res.setHeader('ETag', etag);
       if (String(req.headers['if-none-match'] || '').split(',').some(tag => tag.trim() === etag)) { res.writeHead(304).end(); return; }
       if (!textTypes.has(ext)) {
@@ -91,14 +101,16 @@ function createServer(options = {}) {
         return;
       }
       let entry;
-      try { entry = body(file, stat); } catch { res.writeHead(500).end(); return; }
+      try { entry = body(file, stat, replay); } catch { res.writeHead(500).end(); return; }
       res.setHeader('Vary', 'Accept-Encoding');
       const gzip = entry.gzip && /\bgzip\b/i.test(String(req.headers['accept-encoding'] || ''));
       const out = gzip ? entry.gzip : entry.raw;
       if (gzip) res.setHeader('Content-Encoding', 'gzip');
       res.setHeader('Content-Length', out.length); res.end(req.method === 'HEAD' ? undefined : out);
     });
-  });
+  }
+  // The replay door: its own server, listened on by the caller (REPLAY_PORT below; tests pick a port).
+  const replayServer = replays ? http.createServer(replayDoor(replays, serveFile)) : null;
   const wss = new WebSocketServer({ noServer: true, maxPayload: C.maxMessage, perMessageDeflate: {
     threshold: C.compressionThreshold, serverNoContextTakeover: true, clientNoContextTakeover: true,
     concurrencyLimit: C.compressionConcurrency, zlibDeflateOptions: { level: C.compressionLevel },
@@ -142,9 +154,10 @@ function createServer(options = {}) {
   const timer = setInterval(() => lobby.tick(), 1000 / C.tickRate); timer.unref();
   function close() {
     clearInterval(timer); clearInterval(heartbeat); lobby.close();
+    if (replays) { replays.close(); replays.stop(); replayServer.close(); }
     for (const ws of wss.clients) ws.terminate(); wss.close(); return new Promise(resolve => server.close(resolve));
   }
-  return { server, close, sim, lobby, clients, pending, get session() { return lobby.session; }, get leader() { return lobby.leader; }, get metrics() { return lobby.metrics; } };
+  return { server, replayServer, replays, close, sim, lobby, clients, pending, get session() { return lobby.session; }, get leader() { return lobby.leader; }, get metrics() { return lobby.metrics; } };
 }
 if (require.main === module) {
   // Log everything; an uncaught exception leaves unknown state, so exit and let Docker restart the service.
@@ -152,6 +165,8 @@ if (require.main === module) {
   process.on('uncaughtException', e => { console.error('Uncaught exception:', e); process.exit(1); });
   const app = createServer();
   app.server.listen(Number(process.env.PORT || 3000), process.env.HOST || '0.0.0.0', () => console.log(`Combat Arena ${app.sim.catalog().version}: one public lobby on port ${app.server.address().port}`));
+  // The replay door listens only when it has a port (the container's 3001, published on loopback for Tailscale serve).
+  if (app.replayServer && process.env.REPLAY_PORT) app.replayServer.listen(Number(process.env.REPLAY_PORT), process.env.HOST || '0.0.0.0', () => console.log(`Replays (${app.replays.dir}) on port ${app.replayServer.address().port}`));
   for (const signal of ['SIGINT', 'SIGTERM']) process.on(signal, () => app.close().then(() => process.exit(0)));
 }
 module.exports = { createServer, runTitles };

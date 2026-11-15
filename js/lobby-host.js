@@ -49,6 +49,12 @@
     const activityNow = options.activityNow || (() => performance.now());
     const loadNow = options.loadNow || (() => performance.now());
     const dateNow = options.dateNow || Date.now;
+    // Replays (PLAN.md "replays"): `replays` (server/replays.cjs, the server only) records every Boss Rush run.
+    const replays = options.replays || null;
+    let recording = null, emptySince = 0;   // the run being recorded; since when nobody is in the lobby
+    const REPLAY_IDLE = 60000;   // a run with nobody in the lobby this long stops recording
+    function endRecording(outcome, summary = null) { if (recording) { recording.end(outcome, summary); recording = null; } }
+    const replayRoster = r => r.players.map(p => ({ id: p.id, name: p.name, ...(p.look ? { look: p.look } : {}), ...(p.bot ? { bot: true } : {}) }));
     // `clients` holds players who said hello (they own a slot); `pending` sockets are still joining.
     const clients = new Map(), pending = new Set(), hellos = new Map();   // address -> { count, at } joins this minute
     const memories = new Map(); // Private browser credentials; never included in roster or pose broadcasts.
@@ -109,7 +115,7 @@
     function broadcast(data) { for (const p of clients.values()) send(p, data); }
     // Every roster is the whole current state, so chatter (ready, names, presence, joins) coalesces to one per
     // `rosterInterval`. Structural changes (start, stop, leadership notices) still send at once.
-    function sendRoster(extra = {}) { rosterAt = performance.now(); broadcast({ ...roster(), ...extra }); }
+    function sendRoster(extra = {}) { rosterAt = performance.now(); const r = roster(); recording?.roster(replayRoster(r)); broadcast({ ...r, ...extra }); }
     function queueRoster() {
       if (rosterTimer) return;
       const wait = rosterAt + C.rosterInterval - performance.now();
@@ -160,6 +166,7 @@
     const error = (p, message) => send(p, { type: 'error', message });
     function stop(message, reason = null, extra = {}) {
       if (tally?.run.week && !tally.recorded) recordWeekly(runSummary('left'));   // a weekly run left for the lobby counts too
+      if (recording) endRecording(extra.summary?.outcome || (reason === 'error' ? 'error' : 'left'), extra.summary || (tally ? runSummary('left') : null));
       session = null; abilityFor = null; abilityRound.clear(); tally = null;
       for (const p of clients.values()) { p.ready = false; p.pose = null; p.encoder.reset(); }
       broadcast({ type: 'stop', message, reason, ...extra }); sendRoster();
@@ -223,12 +230,16 @@
       if (fight > 0) session.drop = true;   // the next boss drops straight in: no loading card
       if (fight === 0) tally = { key: secret(8), run: gauntlet.run, id: gauntlet.id, name: gauntlet.name, startedAt: performance.now(), won: 0, crowned: 0, times: [], players: new Map() };
       tally.at = gauntlet.number;   // the fight the run is in: the HUD's number
+      // The replay: a new run ends the one being recorded; each Boss Rush fight is a chapter of its own.
+      if (recording && fight === 0) endRecording('left');
+      if (replays && fight === 0) recording = replays.begin({ mode: gauntlet.run.week ? 'weekly' : 'boss-rush', name: gauntlet.name, version: sim.catalog().version, build });
       tallied = false;
       if (opening) session.opening = true;
       for (const p of clients.values()) { p.ready = false; p.pose = null; p.arenaDefeated = false; p.revive = null; p.claims.clear(); p.lastSeq = 0; p.encoder.reset(); p.loadingSince = performance.now(); remember(p); }
       arenaWipeFor = 0; bossLoadFor = 0; bossStarted = false; loadStarted = loadNow(); abilityFor = null; abilityRound.clear();
       firstPick = options.firstPick !== false && fight === 0 ? 'due' : null;   // firstPick: false, tests that check an exact kit
       accumulator = 0; sinceSnapshot = 0; lastSignature = null;
+      recording?.chapter(session, replayRoster(roster()));
       broadcast({ type: 'start', session, opening: !!session.opening }); sendRoster();
     }
     // Boss Rush, between fights (CONFIG.abilities): once the kill moment has played, every connected player is offered
@@ -250,7 +261,7 @@
         for (const p of clients.values()) if (p.hello) send(p, { type: 'abilitiesChosen' });
       }
       if (abilityFor < sim.abilityPickTime && (waiting.length || abilityFor < abilityPickedAt + sim.abilityPickHold)) return false;   // everyone chose: a short hold
-      sim.settleAbilities();
+      sim.settleAbilities(); recording?.kit(sim.abilities());
       return true;
     }
     // Someone arriving during the pick: their open offer again, or, the first time this round, one of their own.
@@ -282,7 +293,7 @@
     }
     function firstPickDone() {
       firstPick = null; abilityFor = null; abilityRound.clear();
-      session.abilities = sim.abilities(); session.par = rushParNow();
+      session.abilities = sim.abilities(); session.par = rushParNow(); recording?.kit(session.abilities);
       for (const p of clients.values()) if (p.hello) send(p, { type: 'firstPick', abilities: session.abilities, par: session.par });
     }
     // This player's open offer (if any), the time left to choose, and what they hold.
@@ -413,7 +424,7 @@
       if (!session || msg.epoch !== session.epoch) return;
       if (msg.type === 'pickAbility') {   // a pick from this player's own open offer, while the offers are open
         noteActivity(p);
-        if (abilityFor !== null && sim.pickAbility(p.id, msg.id)) { abilityPickedAt = abilityFor; send(p, { type: 'abilities', offer: null, held: sim.abilities()[p.id] || [] }); }
+        if (abilityFor !== null && sim.pickAbility(p.id, msg.id)) { abilityPickedAt = abilityFor; recording?.kit(sim.abilities()); send(p, { type: 'abilities', offer: null, held: sim.abilities()[p.id] || [] }); }
         return;
       }
       if (msg.type === 'ready') {
@@ -490,6 +501,7 @@
       updateMetrics(now);
       refreshLeader();
       if (!session) { accumulator = 0; return; }
+      if (recording && !clients.size) { emptySince ||= now; if (now - emptySince >= REPLAY_IDLE) endRecording('left', tally ? runSummary('left') : null); } else emptySince = 0;
       syncPlayers(); accumulator += elapsed;
       try {
         while (accumulator >= 1 / C.tickRate) {
@@ -530,6 +542,7 @@
               sinceSnapshot = 0; lastSignature = signature;
               const frame = sim.frame(), players = playerFrames();
               for (const p of clients.values()) sendFrame(p, frame, players);
+              recording?.frame(frame, players);
             }
           }
           // Boss Rush: once the kill moment has played, the fight's time is kept and the ability pick opens in the arena.

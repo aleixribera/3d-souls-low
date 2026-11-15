@@ -819,6 +819,7 @@ const GAME_FILES = [
   'name-ask.js',     // the name, asked once online and changed in Options (its keys before every other screen's)
   'crate-screen.js', // the crate roll, the Collection, a blade look (before multiplayer.js: its keys come first)
   'alone.js',       // Boss Rush alone: the lobby and its simulation in a frame of this page (js/lobby-host.js)
+  'net-view.js',     // the server's state put on bodies, shared by the online client and the replay viewer
   'multiplayer.js',
   'kill-moment.js',
   'dodge-moment.js',
@@ -827,6 +828,7 @@ const GAME_FILES = [
   'finisher-fx.js',  // the Finishing Blow's look (drawing only)
   'showcase-music.js',   // the showcase's music cue
   'showcase.js',   // the showcase: 30 s of the game played live (js/data/showcase.js)
+  'replay.js',     // the replay viewer: the replay door's /watch only (server/replays.cjs)
   'boot.js',
 ];
 const LOAD_STAMP = '7.136.0';   // bump for each release; stable within a release so browsers can cache scripts

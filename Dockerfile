@@ -9,6 +9,7 @@ RUN cd server && npm ci --omit=dev && npm cache clean --force
 COPY combat-arena-3d.html index.html ./
 COPY js ./js
 COPY assets ./assets
+COPY replays ./replays
 COPY server ./server
 USER node
 EXPOSE 3000

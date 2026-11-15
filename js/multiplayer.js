@@ -1145,39 +1145,7 @@ const multiplayer = (() => {
       // Advance the stream while holding the victim locally; its death/phase
       // still cannot appear before this player's Finishing Blow ends.
       if (Game.player.exec?.enemy === e) { e.stateTime += dt; continue; }
-      const priorState = e.state;
-      if (e.phase !== s.phase && s.phase >= 0) e.enterPhase(s.phase);
-      e.x = lerp(s.x, q.x, alpha); e.y = lerp(s.y, q.y, alpha); e.z = lerp(s.z, q.z, alpha);
-      e.yaw = s.yaw + angDiff(q.yaw, s.yaw) * alpha;
-      e.state = s.state;
-      e.stateTime = s.state === q.state && s.serial === q.serial && s.hitIndex === q.hitIndex
-        ? lerp(s.stateTime, q.stateTime, alpha) : s.stateTime + Math.max(0, time - a.time);
-      e.holdLeft = s.holdLeft; e.retreatHop = s.retreatHop; e.blinkLeft = s.blinkLeft;
-      e.vx = s.vx; e.vy = s.vy; e.vz = s.vz;
-      e.hp = s.hp; e.poise = s.poise; e.frozen = s.frozen || 0;
-      if ((s.cracks || 0) !== e.cracks) {   // pass 100: the server's cracks; `by` the striker (this player, or another's id)
-        e.cracks = s.cracks || 0; e.crack = e.cracks ? 1 : 0;
-        events.emit('guardCrack', { enemy: e, cracks: e.cracks, by: s.crackBy === self ? Game.player : s.crackBy ?? 'server' });
-      }
-      e.resonance = s.resonance || 0;   // pass 68 (the Bell Warden)
-      e.mendPool = s.mend || 0;   // pass 75 (Aldric)
-      if (s.learned) { e.learned.length = 0; e.learned.push(...s.learned); } else if (e.learned.length) e.learned.length = 0;   // pass 77 (the Antlered Hunger)
-      e.attack = s.attack ? e.baseDef.attacks.find(x => x.id === s.attack) : null;
-      e.hitIndex = s.hitIndex; e.netSerial = s.serial; e.attackNo = s.serial; e.netTarget = s.target; e.grounded = s.grounded;
-      e.walkPhase = s.walkPhase; e.leaping = s.leaping; e.asleep = false;
-      // A bolt's mark (pass 48): noted from the target the snapshot names, as the server notes it from the same body.
-      const wh = e.state === ES.WINDUP && e.attack && e.attack.hits[e.hitIndex];
-      if (wh && wh.bolt) e.noteBolt(s.lure || (s.target === self ? Game.player : remotes.get(s.target)?.body));   // `lure`: a summon draws it
-      if (e.netParried === s.serial && [ES.WINDUP, ES.ACTIVE].includes(s.state)) { e.state = ES.PARRIED; e.stateTime = 0; }
-      const boxKey = `${s.serial}/${s.hitIndex}`;
-      // Each cut is noted where it was first seen striking, hitbox or not, so that a later `echo` of it hangs there.
-      if (e.state === ES.ACTIVE && e.attack && e.netCutKey !== boxKey) { e.netCutKey = boxKey; e.noteCut(); }
-      if (s.hitbox && e.state === ES.ACTIVE && e.attack && e.netParried !== s.serial && e.netJoinSerial !== s.serial) {
-        if (e.netBoxKey !== boxKey || !e.hitbox) {
-          e.hitbox = e.makeHitbox(); e.netBoxKey = boxKey;   // notes where it stands for a later `echo` too
-        }
-      } else e.hitbox = null;
-      if (e.state === ES.DEAD && priorState !== ES.DEAD && !e.rewarded) { e.rewarded = true; events.emit('enemyDeath', { enemy: e }); }
+      netView.enemy(e, s, q, alpha, time - a.time, viewCtx);   // js/net-view.js, shared with the replay viewer
       for (const sample of track.pendingEvents) presentEvents(sample);
       track.pendingEvents = [];
     }
@@ -1189,37 +1157,10 @@ const multiplayer = (() => {
   }
   // A legendary, anyone's (js/ability-fx.js draws it): one on an enemy comes with that enemy's sample, one on none (a
   // Meteor's blast, a Blood Moon) as its frame arrives. The Blood Moon's own part, its drink, is this body's.
-  function presentAbility(d, e) {
-    if (!ArenaNet.own(ABILITY_BY_ID, d.power) || !d.v || typeof d.v !== 'object') return;
-    const body = d.holder === self ? Game.player : remotes.get(d.holder)?.body || null;
-    if (d.then === 'bloodMoon' && body === Game.player) { body.perk.moon = d.v.time; body.perk.moonV = d.v; }
-    events.emit('abilityPower', { ...d, body, enemy: e });
-  }
-  function presentEvents(sample) {
-    for (const d of sample.events) {
-      const e = Game.enemies.find(e => e.netId === d.enemy);
-      if (d.type === 'strike' && d.player !== self && e) {
-        const attacker = remotes.get(d.player)?.body;
-        if (attacker) events.emit('strike', { ...d, attacker, player: attacker, target: e });
-      // A teammate's parry names its body (or id), so camera feedback for the local player's own parries stays theirs.
-      } else if (d.type === 'parry' && d.player !== self && e) events.emit('parry', { target: e, player: remotes.get(d.player)?.body || d.player });
-      else if (d.type === 'abilityPower' && e) presentAbility(d, e);
-      if (['attackStart', 'attackPhase', 'bossPhase', 'bossRetreat', 'bossGone', 'enemyBlink'].includes(d.type) && e) {
-        const attack = sample.value.attack ? e.baseDef.attacks.find(a => a.id === sample.value.attack) : e.attack;
-        events.emit(d.type, { enemy: e, actor: e, attack, phase: PHASE.ACTIVE, hitIndex: d.hitIndex, seamless: d.seamless, out: d.out });
-      } else if (d.type === 'impact') events.emit('impact', { ...d, enemy: e });
-      else if (d.type === 'attackMarker' && e) {
-        // Wire values: the attack by id from this enemy's own data, the marker index bounds-checked.
-        const attack = e.baseDef.attacks.find(a => a.id === d.attackId) || e.def.attacks?.find(a => a.id === d.attackId);
-        const marker = attack && Array.isArray(attack.markers) && Number.isInteger(d.marker) && d.marker >= 0 && d.marker < attack.markers.length ? attack.markers[d.marker] : null;
-        if (marker) events.emit('attackMarker', { actor: e, attack, marker });
-      }
-    }
-    for (const shot of sample.shots) {
-      const e = Game.enemies.find(e => e.netId === shot.enemy), attack = e?.baseDef.attacks.find(a => a.id === shot.attack);
-      if (e && attack) projectiles.fire(e, attack, shot.target);
-    }
-  }
+  function presentAbility(d, e) { netView.ability(d, e, viewCtx); }
+  function presentEvents(sample) { netView.events(sample, viewCtx); }
+  // Whose body an id names, for the shared drawing (js/net-view.js).
+  const viewCtx = { get self() { return self; }, bodyOf: id => id === self ? Game.player : remotes.get(id)?.body || null };
 
   function update(dt) {
     const p = Game.player, c = Game.cam;
@@ -1256,14 +1197,7 @@ const multiplayer = (() => {
     for (const r of remotes.values()) {
       const { a, b, alpha: f } = remoteSample(r, now); if (!a) continue;
       const p = r.body;
-      p.x = lerp(a.x, b.x, f); p.y = lerp(a.y, b.y, f); p.z = lerp(a.z, b.z, f); p.yaw = a.yaw + angDiff(b.yaw, a.yaw) * f;
-      p.state = a.state; p.stateTime = a.stateTime + Math.max(0, now - a.at); p.hp = a.hp; p.attackT = a.attackT + (a.charge === 1 ? 0 : Math.max(0, now - a.at));
-      p.attack = ArenaNet.own(PLAYER_DEF.moveset.attacks, a.attack) || null; p.charge = a.charge; p.chargeT = a.chargeT + (a.charge === 1 ? Math.max(0, now - a.at) : 0); p.walkPhase = lerp(a.walkPhase, b.walkPhase, f);
-      p.vx = a.vx; p.vy = a.vy; p.vz = a.vz;
-      p.usingItem = ITEMS.flask; p.landTime = a.landTime; p.stunTime = a.stunTime;
-      p.activeAt = a.activeAt < 0 ? Infinity : a.activeAt;
-      p.exec = a.execEnemy ? { enemy: Game.enemies.find(e => e.netId === a.execEnemy), aim: 0 } : null;
-      if ([PS.ATTACK, PS.JUMP_ATTACK, PS.LAND, PS.EXECUTE].includes(p.state) && !p.attack) p.state = PS.IDLE;
+      netView.body(p, a, b, f, now - a.at);   // js/net-view.js, shared with the replay viewer
       const focus = remotes.get(spectatorTarget)?.body || game.player;
       const visible = Math.hypot(p.x - focus.x, p.z - focus.z) < C.remoteRange;
       p.rig.root.visible = p.rig.shadow.visible = visible;
@@ -1396,7 +1330,7 @@ const multiplayer = (() => {
     get spectatorMode() { return waitingForTeamWipe(); },
     get runIntroActive() { return !runIntro.hidden; },
     get spectating() { return waitingForTeamWipe() && !!spectatorTarget; },
-    get listener() { return waitingForTeamWipe() ? remotes.get(spectatorTarget)?.body || Game.player : Game.player; },
+    get listener() { if (typeof replayView !== 'undefined' && replayView.active) return replayView.listener; return waitingForTeamWipe() ? remotes.get(spectatorTarget)?.body || Game.player : Game.player; },
     get gauntlet() { return connected ? session?.gauntlet || null : null; },
     // Boss Rush's fight (v7.69.0): its number, its clock (the server's, s) and its par.
     // One object, refilled: the HUD reads it every frame.

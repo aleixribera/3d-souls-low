@@ -221,6 +221,7 @@ const Game = {
   // One fixed step. Order: death sequence or hit-pause (and stop), lock-on, rest, player, enemies,
   // body separation, combat, deaths, level gates, camera, then the lesson cards (which only read).
   update(dt) {
+    if (typeof replayView !== 'undefined' && replayView.active) { replayView.update(dt); return; }   // a replay plays the recording (js/replay.js)
     if (typeof multiplayer !== 'undefined' && multiplayer.active()) { multiplayer.update(dt); if (typeof lessons !== 'undefined') lessons.update(this, dt); return; }
     if (this.kind === 'bossBattle') { bossBattle.update(this, dt); return; }
     const p = this.player, c = this.cam;
@@ -303,6 +304,7 @@ const Game = {
     }
     camera.lookAt((this.lookAt || (this.lookAt = new THREE.Vector3())).lerpVectors(c.prevLook, c.look, alpha));
     if (typeof multiplayer !== 'undefined' && multiplayer.active()) multiplayer.applySpectatorView();
+    else if (typeof replayView !== 'undefined' && replayView.active) replayView.render(this, alpha, placed);   // the recorded players' bodies and the replay's camera
     projectiles.render(frozen ? 1 : alpha);
     const lockAt = this.lock && placed.find(([b]) => b === this.lock);
     lockMarker.visible = !!lockAt;

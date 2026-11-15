@@ -6,7 +6,7 @@
 const killMoment = (() => {
   let left = 0;
   events.on('enemyDeath', d => {
-    const e = d.enemy, rush = typeof multiplayer !== 'undefined' && multiplayer.rush;
+    const e = d.enemy, rush = rushNow();
     if (!rush || !e.isBoss() || Game.enemies.some(o => o.isBoss() && o.alive())) return;
     const K = CONFIG.killMoment, calm = reducedMotion();
     spawnBurst({ x: e.x, y: e.y + (e.height || 2) * 0.6, z: e.z }, { color: 0xff8a30, count: Math.round(calm ? K.embers / 3 : K.embers), speed: K.emberSpeed });
@@ -14,7 +14,7 @@ const killMoment = (() => {
   });
   Game.renderHooks.push(function killMoment(game) {
     // Over, or the run ended mid-moment (the next game, a Story level too, starts at full speed).
-    if (left <= 0 || !multiplayer.rush) { left = 0; game.drawSlow = 1; return; }
+    if (left <= 0 || !rushNow()) { left = 0; game.drawSlow = 1; return; }
     const dt = game.renderDt || 0;
     left -= dt; game.drawSlow = CONFIG.killMoment.slow;
     for (const e of game.enemies) if (!e.alive()) e.drawLag = (e.drawLag || 0) + dt * (1 - game.drawSlow);

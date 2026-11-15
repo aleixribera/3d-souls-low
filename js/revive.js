@@ -90,7 +90,7 @@ const revive = (() => {
     spawnBurst({ x, y: y + 0.6, z }, { color: V.color, count: Math.round(reducedMotion() ? V.burst / 3 : V.burst), speed: V.burstSpeed });
   }
   Game.renderHooks.push(function reviveEmbers(game) {
-    const on = typeof multiplayer !== 'undefined' && multiplayer.active() && game.mode === 'play' && list.length > 0;
+    const on = (typeof multiplayer !== 'undefined' && multiplayer.active() || typeof replayView !== 'undefined' && replayView.active) && game.mode === 'play' && list.length > 0;
     if (!on) { if (drawn || shownText) hide(); return; }
     if (!slots) build();
     drawn = true;
