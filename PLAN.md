@@ -109,6 +109,9 @@ Aleix, 2026-11-13.
   and notes pinned to moments as feedback; kept 60 days, starred ones forever. The viewer "especially good, usable,
   no weird errors nor inconveniences" (its own bar in the section). Built now, by one pass, start to
   finish (its own section, first).
+- The bosses' design session (Aleix, 2026-11-15): the 13 story bosses each get a moveset of their own (8 to 12
+  attacks, combos, big moments, a phase-two change), a model sheet and attack key frames, designed now before the
+  style bible, shown on the Designs page; the borrowed Elden Ring move sources retire (Art direction, step 1b).
 - The loop's open questions (Aleix, 2026-11-14):
   - **No wall, ever.** The Boss Rush curve never eases and never jumps: it keeps getting slowly harder, fight after
     fight, so a skilled player with a good kit gets to enjoy their skills for a long run. The ease after fight 15 and
@@ -489,6 +492,27 @@ ChatGPT Plus limits), never by the loop; the loop builds from their output, with
 
 1. **The abilities first** (the ability design session, `design/abilities/`, in progress). Its style bible is the
    seed of the rest.
+1b. **The bosses, now** (Aleix, 2026-11-15: "another same designer thread for all boss attacks and abilities"),
+   the boss design session, `design/bosses/`, before the style bible (it follows the abilities' `STYLE.md` and writes
+   the boss half of the game-wide one; step 2 reconciles any clash). The 13 story bosses, Boss Rush's whole roster
+   (Pillager Captain, Bell Warden, the Gaol Giant, Aldric, the Antlered Hunger, Ostrey, Hale and Harrow, the Ringer,
+   Hollis, Oswin, Agathe, the Kindling Tree, the King's Blade). Regular enemies wait.
+   - **A moveset of its own for each:** 8 to 12 attacks, 3 or 4 of them combos, one or two signature big moments a
+     phase, and a real change in phase two (a transformation, a new weapon, the arena changing). The borrowed move
+     sources (`js/data/bosses/godrick.js`, `maliketh.js`, `godfrey.js`, `radagon.js`, `crucible-knight.js`) retire
+     once every boss has its own.
+   - **The rules it designs to:** every attack fair on its own, the hard part a boss chaining attacks (rework item 4:
+     area attacks show their whole reach and stop tracking, leap slams stay as they are); `noParry` on about a quarter
+     of attacks at most; each deflect its own spark; each boss's idea and story from `STORY.md` its own; spectacular
+     anime effects with tells never hidden; original, never another game's names or looks.
+   - **Its look too:** a model sheet per boss (front, side, back, materials, scale) a Blender build can follow, key
+     frames of its signature attacks and combo finishers, its phase change; about 8 to 10 ChatGPT images a boss, run
+     at night like the abilities. This replaces step 3's bosses item.
+   - **Specs ready to build:** each attack as data in today's format (`js/data/bosses/`), its timing, reach, tell,
+     effect layers, sound and camera; a build order, one boss per loop pass. Design only: the loop builds it after the
+     player rework.
+   - **Shown with the abilities:** one Designs page, Abilities and Bosses, at the same tailnet-only address on Aleix's
+     phone (Homepage's card renamed Designs), and a claude.ai gallery.
 2. **The game-wide style bible** (`design/style/`): one short session after the abilities ship. The world, the
    player, the bosses, the levels, the UI and the effects on one page, with ChatGPT concept images judged against real
    references Aleix approves (art direction is his: the session asks him with a recommendation). It keeps what
@@ -498,8 +522,7 @@ ChatGPT Plus limits), never by the loop; the loop builds from their output, with
 3. **Concept sessions, one at a time**, each following the style bible, each into its own folder of `design/` with
    specs and images, shown in the same kind of private gallery:
    - **The player** (`design/player/`): the figure, its blade, its poses for the moveset, its effects.
-   - **The bosses** (`design/bosses/`), in story order: model sheets a Blender build can follow (front, side, back,
-     materials, scale), key poses of each signature attack, its effects; a boss's idea and story stay its own.
+   - **The bosses:** done by step 1b.
    - **The levels** (`design/levels/`), chapter by chapter: the look of each place, its landmarks, light and mood.
 4. **The loop builds them:** each folder's build order becomes work in its track (the player and Boss Rush's bosses
    track B and A as today's ownership says, Story's levels and bosses track A), a model rebuilt in Blender against its
