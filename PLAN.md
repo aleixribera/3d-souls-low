@@ -109,9 +109,10 @@ Aleix, 2026-11-13.
   and notes pinned to moments as feedback; kept 60 days, starred ones forever. The viewer "especially good, usable,
   no weird errors nor inconveniences" (its own bar in the section). Built now, by one pass, start to
   finish (its own section, first).
-- Counters (Aleix, 2026-11-15, from his Weekly Run's replay): a counter breaks the boss's string, every deflect opens
-  one, the third counter stays the Finishing Blow, one cue when it opens; top of the list, held until the grilling
-  ends (the section "First: counters").
+- Counters (Aleix, 2026-11-15, from his Weekly Run's replay): a counter breaks the boss's string, every string, and
+  the boss reels about half a second; every deflect opens one; the light counter is the only counter (heavy is a
+  normal heavy); the third counter stays the Finishing Blow; one cue when it opens. Top of the list, held until Aleix
+  says go (the section "First: counters").
 - The bosses' design session (Aleix, 2026-11-15): the 13 story bosses each get a moveset of their own (8 to 12
   attacks, combos, big moments, a phase-two change), a model sheet and attack key frames, designed now before the
   style bible, shown on the Designs page; the borrowed Elden Ring move sources retire (Art direction, step 1b).
@@ -150,21 +151,26 @@ From Aleix's Weekly Run (replay `2026-11-15-891a9aff71`, v7.138.0, stage 11): "t
 attacking shouldn't be compatible"; "my muscle memory expects a counter after every dash or parry, it should be made
 clearer or reworked". In that run 11 of 20 deflects opened no counter (each on a blow with more of the string to
 come), and 24 of 62 counters landed while the boss was still mid-string, some cracking the guard twice in one string.
-**Top of the list, but held** (Aleix: "don't start it, but put it on top of the priority list"): no pass starts it
-until the director's grilling on it ends and this section says it is ready.
+**Top of the list, but held** (Aleix: "don't start it, but put it on top of the priority list"): the grilling is
+done; no pass starts it until Aleix says go and this line says so.
 
-1. **A counter breaks the string** (Aleix: yes). A counter that lands while the boss is mid-string makes it reel,
-   about half a second, and the string's remaining blows never come. One crack a string follows from it.
+1. **A counter breaks the string** (Aleix: yes), every string, no exceptions (Aleix: "action, spectacle": bosses stay
+   dangerous through area attacks, blows that must be dodged, and how they chain one attack into the next, never
+   through strings a counter can't break). A counter that lands while the boss is mid-string makes it reel, about half
+   a second (Aleix: sure): room for the counter's follow-up blow, not a free combo; then it attacks at its usual pace.
+   The string's remaining blows never come. One crack a string follows from it, so the `rest` rule goes.
 2. **Every deflect opens the counter** (Aleix: sure), like a perfect dodge; the last-blow-only rule goes.
 3. **The Finishing Blow stays the third counter** (two cracks, then the blow, as today; Aleix: "keep the 3rd counter
    be the finishing blow"). In the run a blow took about four counters (62 counters, 16 blows): cracks were left on
    bosses that died first, and 4 counters fell inside the 0.6 s `rest`.
 4. **One cue when a counter opens** (Aleix: sure), the same after a dodge or a deflect: a flash on the player's weapon
    and a short sound the instant it opens, nothing when it doesn't.
-5. **Still being grilled:** the light and heavy counters (Aleix: "there is some confusion with the light and heavy
-   counters, and one is clearly weaker, but has mobility ... we need to rework this a bit"; in the run 58 light
-   counters, 4 heavy), and whether any string can't be broken (Aleix: "how will a player in a frenetic combat figure
-   that out?").
+5. **One counter: the light one** (Aleix: "Keep light the only counter, it is the only one taught in the tutorial
+   anyways, heavy attack does a normal heavy attack"; he had found the two confusing, the light one clearly weaker;
+   in the run 58 light counters, 4 heavy). The flash-step counter stays, its damage raised to about the heavy
+   counter's (36 today); a heavy pressed in the window is a normal heavy attack and opens nothing. The rising-cut
+   heavy counter (`counterHeavy`, its pose, sound and cut) goes, and the bot, the showcase script and any text naming
+   it follow.
 
 ## Now, before anything else: replays of multiplayer runs (Aleix, 2026-11-15)
 
@@ -526,7 +532,8 @@ ChatGPT Plus limits), never by the loop; the loop builds from their output, with
      phase, and a real change in phase two (a transformation, a new weapon, the arena changing). The borrowed move
      sources (`js/data/bosses/godrick.js`, `maliketh.js`, `godfrey.js`, `radagon.js`, `crucible-knight.js`) retire
      once every boss has its own.
-   - **The rules it designs to:** every attack fair on its own, the hard part a boss chaining attacks (rework item 4:
+   - **The rules it designs to:** every string breaks when a counter lands, no exceptions (section "First:
+     counters"); every attack fair on its own, the hard part a boss chaining attacks (rework item 4:
      area attacks show their whole reach and stop tracking, leap slams stay as they are); `noParry` on about a quarter
      of attacks at most; each deflect its own spark; each boss's idea and story from `STORY.md` its own; spectacular
      anime effects with tells never hidden; original, never another game's names or looks.
