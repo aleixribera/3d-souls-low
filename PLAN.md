@@ -109,6 +109,9 @@ Aleix, 2026-11-13.
   and notes pinned to moments as feedback; kept 60 days, starred ones forever. The viewer "especially good, usable,
   no weird errors nor inconveniences" (its own bar in the section). Built now, by one pass, start to
   finish (its own section, first).
+- Counters (Aleix, 2026-11-15, from his Weekly Run's replay): a counter breaks the boss's string, every deflect opens
+  one, the third counter stays the Finishing Blow, one cue when it opens; top of the list, held until the grilling
+  ends (the section "First: counters").
 - The bosses' design session (Aleix, 2026-11-15): the 13 story bosses each get a moveset of their own (8 to 12
   attacks, combos, big moments, a phase-two change), a model sheet and attack key frames, designed now before the
   style bible, shown on the Designs page; the borrowed Elden Ring move sources retire (Art direction, step 1b).
@@ -140,6 +143,28 @@ Aleix, 2026-11-13.
 
 The agent has seen it working in a preview, standing and through every attack, and judged whether it will work in the
 game; then a frame of it in its level. Both images in the pass report. Triangle counts are a soft warning, not a rule.
+
+## First: counters that never overlap the boss's string (Aleix, 2026-11-15)
+
+From Aleix's Weekly Run (replay `2026-11-15-891a9aff71`, v7.138.0, stage 11): "the counter and boss continuing
+attacking shouldn't be compatible"; "my muscle memory expects a counter after every dash or parry, it should be made
+clearer or reworked". In that run 11 of 20 deflects opened no counter (each on a blow with more of the string to
+come), and 24 of 62 counters landed while the boss was still mid-string, some cracking the guard twice in one string.
+**Top of the list, but held** (Aleix: "don't start it, but put it on top of the priority list"): no pass starts it
+until the director's grilling on it ends and this section says it is ready.
+
+1. **A counter breaks the string** (Aleix: yes). A counter that lands while the boss is mid-string makes it reel,
+   about half a second, and the string's remaining blows never come. One crack a string follows from it.
+2. **Every deflect opens the counter** (Aleix: sure), like a perfect dodge; the last-blow-only rule goes.
+3. **The Finishing Blow stays the third counter** (two cracks, then the blow, as today; Aleix: "keep the 3rd counter
+   be the finishing blow"). In the run a blow took about four counters (62 counters, 16 blows): cracks were left on
+   bosses that died first, and 4 counters fell inside the 0.6 s `rest`.
+4. **One cue when a counter opens** (Aleix: sure), the same after a dodge or a deflect: a flash on the player's weapon
+   and a short sound the instant it opens, nothing when it doesn't.
+5. **Still being grilled:** the light and heavy counters (Aleix: "there is some confusion with the light and heavy
+   counters, and one is clearly weaker, but has mobility ... we need to rework this a bit"; in the run 58 light
+   counters, 4 heavy), and whether any string can't be broken (Aleix: "how will a player in a frenetic combat figure
+   that out?").
 
 ## Now, before anything else: replays of multiplayer runs (Aleix, 2026-11-15)
 
