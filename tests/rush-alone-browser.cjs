@@ -20,7 +20,7 @@ const { config: C } = require('../js/net-protocol.js');
     page.on('pageerror', e => errors.push(e.message));
     await page.addInitScript(() => {
       localStorage.setItem('combat-arena-3d.settings', JSON.stringify({ graphics: 'bare', volume: 0 }));
-      localStorage.setItem('combatArena.onlineName', 'Ash');
+      localStorage.setItem('combatArena.onlineName', 'Ash'); localStorage.setItem('combatArena.sparring', JSON.stringify({ done: true }));
     });
     await page.goto(`http://127.0.0.1:${app.server.address().port}/combat-arena-3d.html#dev`);
     await page.waitForFunction(() => window.__arenaReady, null, { timeout: 120000 });
@@ -35,8 +35,11 @@ const { config: C } = require('../js/net-protocol.js');
       } finally { gamepad.read = read; gamepad.release(); }
     }, button);
     const focused = () => page.evaluate(() => document.activeElement.id || document.activeElement.dataset.ability || document.activeElement.dataset.padKey || '');
-    // The title chooses Boss Rush once the lobby answers; A joins it.
+    // The title chooses Boss Rush once the lobby answers; the pad moves right to Join lobby, and A joins it.
     await page.waitForFunction(() => Game.screen === 'main' && Game.menuItems[Game.titleMode]?.name === 'Boss Rush' && Game.menuItems[Game.selected]?.name === 'Boss Rush');
+    const onJoin = () => page.evaluate(() => Game.menuItems[Game.selected]?.size === 'primary' && /^Join lobby/.test(Game.menuItems[Game.selected].name));
+    await pad(15);   // right to Join lobby, Boss Rush's primary
+    assert.ok(await onJoin(), 'the pad reaches Join lobby');
     await pad(0);
     await page.waitForFunction(() => multiplayer.connected);
     // The lobby: Boss Rush by default, and nothing anywhere adds a bot.

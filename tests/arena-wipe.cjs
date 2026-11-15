@@ -27,7 +27,7 @@ async function peer(origin) {
   return { ws, send, next, id: welcome.id };
 }
 (async () => {
-  const app = createServer(), peers = [];
+  const app = createServer({ firstPick: false }), peers = [];
   await new Promise(resolve => app.server.listen(0, '127.0.0.1', resolve));
   const origin = 'http://127.0.0.1:' + app.server.address().port;
   const add = async () => { const p = await peer(origin); peers.push(p); return p; };
@@ -38,9 +38,11 @@ async function peer(origin) {
   } });
   const ready = p => { p.send({ type: 'ready', epoch: session.epoch }); pose(p); };
   const flush = async p => { p.send({ type: 'ping' }); await p.next('pong'); };
+  // Boss Rush, its first boss pinned: Ostrey.
+  const rush = p => p.send({ type: 'control', action: 'start', kind: 'calling', id: C.calling.id, opening: ['ostrey'] });
   try {
     const a = await add(), b = await add();
-    a.send({ type: 'control', action: 'start', kind: 'arena', id: 'ostrey' });
+    rush(a);
     session = (await a.next('start')).session; await b.next('start');
     assert.equal(session.teamWipeOnly, true);
     ready(a); ready(b); await flush(b);
@@ -56,9 +58,14 @@ async function peer(origin) {
     assert.equal(app.clients.get(a.id).pose.state, 'dead');
     assert.ok(share < 1 && Math.abs(duel.hp / duel.def.hp - share) < 1e-9, 'partial wipe preserves boss damage');
     pose(b, true); await flush(b);
+    const ended = await a.next('stop'); await b.next('stop');
+    assert.equal(ended.reason, 'team-wipe', 'a full wipe ends the run');
+    assert.equal(ended.summary?.reached, 1, 'with its summary');
+    assert.equal(app.session, null);
     const oldEpoch = session.epoch;
+    rush(a);
     session = (await a.next('start')).session; await b.next('start');
-    assert.ok(session.epoch > oldEpoch, 'full wipe starts a fresh shared attempt');
+    assert.ok(session.epoch > oldEpoch, 'a new run is a fresh shared attempt');
     assert.equal(session.id, 'ostrey');
     assert.equal(app.sim.inspect().Game.duel.hp, app.sim.inspect().Game.duel.def.hp, 'boss health resets');
     ready(a); ready(b); await flush(b);
@@ -69,16 +76,13 @@ async function peer(origin) {
     pose(a, true); pose(b, true); await flush(b); await wait(200);
     assert.equal(app.session.epoch, session.epoch, 'loading late join blocks a premature wipe');
     late.ws.close();
+    await a.next('stop'); await b.next('stop');
+    rush(a);
     session = (await a.next('start')).session; await b.next('start');
     ready(a); ready(b); await flush(b);
     const boss = app.sim.inspect().Game.duel; boss.hp = 0; boss.die();
     pose(a, true); pose(b, true); await flush(b); await wait(200);
     assert.equal(app.session.epoch, session.epoch, 'victory is never undone by a wipe');
-    a.send({ type: 'control', action: 'start', kind: 'level', id: 'long-hall' });
-    session = (await a.next('start')).session; await b.next('start');
-    assert.equal(session.teamWipeOnly, false);
-    ready(a); ready(b); pose(a, true); pose(a); await flush(a);
-    assert.equal(app.clients.get(a.id).pose.hp, 120, 'story levels keep personal respawns');
-    console.log('Boss arenas: partial wipe, respawn bypass, team restart, boss reset, loading/disconnected peers, victory and level respawns passed.');
+    console.log('Boss arenas: partial wipe, respawn bypass, a wipe ends the run, boss reset, loading/disconnected peers and victory passed.');
   } finally { for (const p of peers) p.ws.terminate(); await app.close(); }
 })().catch(e => { console.error(e); process.exitCode = 1; });

@@ -224,8 +224,11 @@ Object.assign(Game, {
     // A Finishing Blow: the camera leans in on it, then eases back (CONFIG.finisher.camera).
     const xk = finisher.cameraWeight(this, dt, snap);
     if (xk > 0) { dist *= 1 - CONFIG.finisher.camera.push * xk; look.y -= CONFIG.finisher.camera.lower * xk; }
+    // Its look (js/finisher-fx.js, drawing only): a slow swing round through the steps, a punch in as the cuts open.
+    const fv = typeof finisherFx !== 'undefined' ? finisherFx.view : null, swing = fv ? fv.swing : 0;
+    if (fv && fv.punch) dist *= 1 - fv.punch;
     const height = dist * (Z.heightRatio + pitch);
-    const fx = Math.sin(c.yaw), fz = Math.cos(c.yaw);
+    const fx = Math.sin(c.yaw + swing), fz = Math.cos(c.yaw + swing);
     // Keep the camera inside the walls and on the player's side of closed gates:
     // shorten the boom from the player until it fits.
     const loX = W.minX + K.wallMargin, hiX = W.maxX - K.wallMargin, limZ = W.halfZ - K.wallMargin;

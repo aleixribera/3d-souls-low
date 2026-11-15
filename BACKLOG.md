@@ -20,7 +20,7 @@ The loop's cuts and finds (`.claude/iterate.md`); the order of work is `PLAN.md`
 
 - **From the counter pass (pass 95, track A), for track B:** (1) PLAN's "deflected strings make the riposte chain a
   second time if the press comes again" is not built: a combat rule plus the server's riposte claim check
-  (server/simulation.js). (2) A counter out of a perfect dodge mid-string can still be cut short by the string's next
+  (js/lobby-sim.js). (2) A counter out of a perfect dodge mid-string can still be cut short by the string's next
   blow during its startup (the heavy's 0.24 s); counters may want i-frames through their startup. (3) The boss's gold
   hit flash on a riposte whites out the whole body for ~15 frames and hides the cut. The new counter poses
   (`counterFlash`, `counterRising`) were tuned only by eye in clips.
@@ -222,8 +222,6 @@ The loop's cuts and finds (`.claude/iterate.md`); the order of work is `PLAN.md`
 - The Antlered Hunger's hide (`beastHide`, the `bark` pattern) reads as gnarled wood more than a stag's hide (v7.49.0,
   `docs/scorecard/hunger-lab.jpg`); a hide or fur texture of its own in the same texture pass. Ysolde is 3,504
   triangles, over the 3,000 enemy budget (load warning).
-- `boss-only` (Node check) failed once with "boss activates after the grace period" and passed on the rerun, with and
-  without the v7.34.0 change: flaky (pass 2, 2026-11-13).
 - `abilities` (Node check) failed once on CI at `tests/abilities.cjs:572` (the Ember Twin pick returned false; run
   43632565109, a tooling-only commit) and passes locally 3/3: flaky (loop chat, 2026-11-14).
 - Bots lose to bosses far more since v7.13.1 by design (bisected, pass 26): companions take greedy exchanges and forward
@@ -301,7 +299,7 @@ The loop's cuts and finds (`.claude/iterate.md`); the order of work is `PLAN.md`
   `js/gilt-echo.js`; `docs/scorecard/hollis-lab.jpg`, `aurel-hollis.jpg`). Bots don't know echoes (pass 45's area):
   `js/bot.js` 357 plans a parry on an echo hit (`parryTiming` refuses it), and its reach/escape/aimedElsewhere geometry
   measures from him, not from the cut (`e.cutOf(h.echo.of)`), so a bot at the cut after Called Home's leap is hit. The
-  server's parry check (`server/simulation.js` ~540) doesn't reject a claim during an echo (honest clients never send
+  server's parry check (`js/lobby-sim.js` ~540) doesn't reject a claim during an echo (honest clients never send
   one). Block and knockback for an echo come from him, not the cut. Figure: the mantle reads as a slab from the side,
   limbs thin, collar tall. The gold gilt is pale on the bright court in `high`; the embers read well. No one has fought
   him by hand yet.

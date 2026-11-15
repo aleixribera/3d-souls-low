@@ -8,7 +8,7 @@
 // with the other bodies), so nothing is allocated per frame and no game state changes. Reduced motion: one per dash.
 const afterimage = (() => {
   const pool = [];
-  let wasDash = false, wasFlash = false, fresh = false, made = 0, lastX = 0, lastZ = 0, dodgeArmed = false, perfect = false;
+  let wasDash = false, wasFlash = false, fresh = false, stepArmed = false, stepping = false, made = 0, lastX = 0, lastZ = 0, dodgeArmed = false, perfect = false;
   function makePool() {
     if (pool.length) return;
     for (let i = 0; i < ANIM_SETTINGS.afterimage.pool; i++) {
@@ -83,23 +83,25 @@ const afterimage = (() => {
     const flash = !!(r && r.skeleton && p.phasing && game.mode === 'play');
     const dash = flash || !!(r && r.skeleton && p.state === PS.ROLL && game.mode === 'play');
     if (dash) {
-      const x = r.root.position.x, z = r.root.position.z, cap = reducedMotion() ? 1 : A.perDash[visuals.quality().fxBudget] ?? A.perDash.normal;
-      if (!wasDash || fresh || (flash && !wasFlash)) { made = 0; perfect = false; fresh = false; if (flash) { spawn(r, A); made++; lastX = x; lastZ = z; } }
+      const x = r.root.position.x, z = r.root.position.z, cap = reducedMotion() ? 1 : stepping ? A.finisher.perStep : A.perDash[visuals.quality().fxBudget] ?? A.perDash.normal;
+      if (!wasDash || fresh || (flash && !wasFlash)) { made = 0; perfect = false; stepping = stepArmed; stepArmed = false; fresh = false; if (flash) { spawn(r, stepping ? A.finisher : A); made++; lastX = x; lastZ = z; } }
       if (dodgeArmed) { dodgeArmed = false; perfect = true; spawn(r, A.dodge); made++; lastX = x; lastZ = z; }
       else if (made < cap && (made === 0 ? p.stateTime >= ANIM_SETTINGS.dash.rise : Math.hypot(x - lastX, z - lastZ) >= A.gap)) {   // the first once the lunge is struck
-        spawn(r, perfect ? A.dodge : A); made++; lastX = x; lastZ = z;
+        spawn(r, perfect ? A.dodge : stepping ? A.finisher : A); made++; lastX = x; lastZ = z;
       }
     }
-    if (!dash) dodgeArmed = false;
+    if (!dash) dodgeArmed = stepping = false;
     wasDash = dash; wasFlash = flash;
   }
-  function clear() { for (const g of pool) g.rig.root.visible = false; wasDash = wasFlash = fresh = dodgeArmed = false; }
+  function clear() { for (const g of pool) g.rig.root.visible = false; wasDash = wasFlash = fresh = dodgeArmed = stepArmed = false; }
   return {
     attach() {
       makePool();
       Game.renderHooks.push(render);
       visuals.hooks.stage.push(clear);
       events.on('dash', d => { if (d.player === Game.player) fresh = true; });   // a dash straight out of the last one starts afresh
+      // Pass 103: each flash step of a Finishing Blow starts afresh with the bright copies, a trail of them through the foe
+      events.on('finisherStep', d => { if (d.player === Game.player) { fresh = true; stepArmed = true; } });
       events.on('dodge', d => { if (d.player === Game.player && d.player.state === PS.ROLL) dodgeArmed = true; });
     },
     clear,

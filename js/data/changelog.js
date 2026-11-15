@@ -6,6 +6,14 @@
 //   title    a few words
 //   text     one to three sentences, shown under the list when the entry is selected
 const CHANGELOG = [
+  { version: 'v7.137.0', title: 'Runs are recorded', text: 'Every online Boss Rush and Weekly Run is now recorded, so it can be watched again later.' },
+  { version: 'v7.136.0', title: 'Boss Rush in the lobby', text: 'Boss Rush plays in the lobby again, with Play in private beside it. If the lobby doesn\'t answer or joining fails, Play in private starts the run on your own.' },
+  { version: 'v7.135.0', title: 'Boss Rush alone', text: 'Boss Rush plays alone with no server: Play alone on the title, or Join lobby while the lobby answers. Levels and crates count the same, and the pause holds the run.' },
+  { version: 'v7.134.0', title: 'Online is Boss Rush', text: 'The lobby now plays Boss Rush and the Weekly Run, nothing else: Single to Quad Boss and co-op Story are gone. When the whole party falls, the run ends on its end screen.' },
+  { version: 'v7.133.0', title: 'The showcase after every update', text: 'After each update the showcase plays once when you launch the game, at most once a day. It never interrupts a lobby or a run.' },
+  { version: 'v7.132.0', title: 'The opening waits for the page', text: 'The opening cinematic now starts once the game has finished loading, and plays at its real speed.' },
+  { version: 'v7.131.0', title: 'The Finishing Blow lands', text: 'Counters now crack a foe with glowing fissures that cool as they fade. The Finishing Blow stops time: the world goes grey and dark, the foe freezes mid-swing, you flash-step through it in red, and every cut opens at once in a burst, with its own sound and a camera that swings round the hit.' },
+  { version: 'v7.130.0', title: 'The showcase ends on the Finishing Blow', text: 'The showcase that opens the game now ends on the Finishing Blow: the King\'s Blade\'s guard cracks, and the third counter flash-steps through him before the title comes up.' },
   { version: 'v7.129.0', title: 'The Finishing Blow', text: 'The stagger bar and executions are gone. Every counter now cracks a foe\'s guard, and the third counter in a row becomes the Finishing Blow: time stops, you cut through it, and it takes a big chunk of health and heals you. Cracks fade if you stop countering. In a party everyone\'s counters count, and whoever lands the third gets the blow. Breaker now gives you longer to counter. The look is rough for now.' },
   { version: 'v7.128.0', title: 'The showcase', text: 'Your next launch opens on 30 seconds of the game at its best: a fighter takes on three late Boss Rush bosses, cut to its own music. Watch, on the title, plays it again.' },
   { version: 'v7.127.0', title: 'A deflect with a kick', text: 'A deflected blow now flings your sword up and rocks your shoulders back before you settle low over the blade. While dashing, your lower foot stays on the floor instead of sinking into it.' },

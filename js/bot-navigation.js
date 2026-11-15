@@ -1,30 +1,9 @@
 'use strict';
-// Idle companions: fair human assignments and walking routes over the actual collision floors.
+// Idle companions: walking routes over the actual collision floors.
 // Combat acquisition still belongs to bot.js. No movement here changes a body's position.
 const BotNavigation = (() => {
   const idle = () => ({ x: 0, z: 0, has: false });
   const distance = (a, b) => Math.hypot(a.x - b.x, a.y - b.y, a.z - b.z);
-  // Dormant/lurking enemies still mark the road ahead. Ties keep a stable player-id order.
-  function assign(people, followers, enemies, previous = new Map()) {
-    const upcoming = enemies.filter(e => e.alive() && e.state !== ES.RETREAT && e.state !== ES.GONE);
-    const ranked = people.filter(p => !p.botId && p.alive()).map(p => ({ p,
-      ahead: Math.min(Infinity, ...upcoming.map(e => distance(p, e))) }))
-      .sort((a, b) => a.ahead - b.ahead || a.p.id.localeCompare(b.p.id));
-    const result = new Map();
-    if (!ranked.length) return result;
-    const live = followers.filter(b => b.alive()), base = Math.floor(live.length / ranked.length), extra = live.length % ranked.length;
-    const slots = new Map(ranked.map(({ p }, i) => [p.id, base + (i < extra ? 1 : 0)]));
-    for (const b of live) {
-      const id = previous.get(b.id);
-      if (slots.get(id) > 0) { result.set(b.id, id); slots.set(id, slots.get(id) - 1); }
-    }
-    for (const b of live) if (!result.has(b.id)) {
-      const lead = ranked.find(({ p }) => slots.get(p.id) > 0).p;
-      result.set(b.id, lead.id); slots.set(lead.id, slots.get(lead.id) - 1);
-    }
-    return result;
-  }
-
   // A shared per-tick budget of floor samples (walkable checks). The server calls tick() once per step; searches
   // then yield when the party's bots have used it, so several searching bots cannot stack into one long tick.
   // Without tick() (a browser companion) the budget is unlimited, as before.
@@ -235,5 +214,5 @@ const BotNavigation = (() => {
     }
     return { move, reset, get leader() { return leader; }, get recovery() { return recovery; } };
   }
-  return { assign, create, route, tick };
+  return { create, route, tick };
 })();

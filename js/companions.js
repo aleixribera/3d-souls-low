@@ -4,7 +4,7 @@
 const companions = (() => {
   let label = null, health = null, labelPosition = null;
   function definition(game) {
-    if (game.kind !== 'level' || (typeof multiplayer !== 'undefined' && multiplayer.connected)) return null;
+    if (game.kind !== 'level') return null;   // online play is Boss Rush only: never a level
     const campaign = story.owner(game.level.id);
     return campaign && campaign.def.companion || null;
   }

@@ -11,16 +11,7 @@ function registerListeners() {
   });
   events.on('chargeFull', d => { if (!d.player || d.player === Game.player) Game.addShake(CONFIG.player.chargeShake.time, CONFIG.player.chargeShake.amp); });
   events.on('parry', d => { spawnBurst(chest(d.target), F.parry); if (!d.player || d.player === Game.player) Game.addShake(CONFIG.parry.shakeTime, CONFIG.parry.shakeAmp); });
-  // The Finishing Blow (js/finisher.js), stand-ins until track A's look: a burst as a counter cracks the guard (bigger
-  // each crack), a puff of embers off each flash step, blood and embers as the cuts open with a heavy jolt.
-  const X = CONFIG.finisher;
-  events.on('guardCrack', d => {
-    if (!(d.cracks > 0)) return;
-    spawnBurst({ x: d.enemy.x, y: d.enemy.y + d.enemy.height * 0.65, z: d.enemy.z }, F.guardCrack);
-    if (!d.by || d.by === Game.player) Game.addShake(CONFIG.fx.guardCrackShake.time, CONFIG.fx.guardCrackShake.amp * d.cracks);
-  });
-  events.on('finisherStep', d => spawnBurst({ x: d.to.x, y: d.player.y + 1, z: d.to.z }, X.bursts.step));
-  events.on('finisher', d => { spawnBurst(d.at, X.bursts.enter); spawnBurst(d.exit, X.bursts.exit); if (!d.player || d.player === Game.player) Game.addShake(X.shake.time, X.shake.amp); });
+  // The Finishing Blow's cracks, steps and cuts: js/finisher-fx.js (pass 103).
   events.on('land', d => { groundFx.spawn(d.x, d.z, d.fx, d.y); if (!d.player || d.player === Game.player) Game.addShake(CONFIG.groundPound.shakeTime, d.fx.shake); });
   events.on('fallDamage', d => {   // a hard landing: dust, and a jolt if it was the player
     groundFx.spawn(d.body.x, d.body.z, CONFIG.fx.hardLanding, d.body.y);
@@ -51,12 +42,14 @@ function registerListeners() {
   summonHound.attach(); // the Grave Hound summon drawn (js/summon-hound.js)
   afterimage.attach();  // the dash's afterimages (js/afterimage.js)
   counterFx.attach();   // the counter window's dim and mark, the counter's cut (js/counter-fx.js)
+  finisherFx.attach();  // the Finishing Blow's cracks, stopped time, steps and cuts (js/finisher-fx.js)
   summonFigures.attach(); // the Stone Guardian and the Lancer of Ash drawn (js/summon-figures.js)
   registerAudioListeners();
 }
 
 const isKey = (group, code) => MENU_KEYS[group].includes(code);
 window.addEventListener('keydown', ev => {
+  if (replayView.enabled) return;   // the replay viewer has its own keys (js/replay.js)
   const code = ev.code;
   if (ev.ctrlKey || ev.metaKey || ev.altKey || ev.isComposing) return;
   // The Controls screen waits for a new key: this one is it (Escape keeps the old one).
@@ -95,8 +88,9 @@ window.addEventListener('keyup', ev => input.up(ev.code));
 function suspendInput() {
   input.suspended = true;
   Game.clearControls(); gamepad.release(); gamepad.neutralRequired = true;
-  // Online combat keeps running; returning always requires a deliberate Resume in solo play.
-  if (!multiplayer.active()) Game.pause(true, true);
+  // Online combat keeps running; returning always requires a deliberate Resume in solo play (Boss Rush alone too).
+  // A replay just goes on.
+  if ((!multiplayer.active() || multiplayer.alone) && !replayView.enabled) Game.pause(true, true);
 }
 window.addEventListener('blur', suspendInput);
 window.addEventListener('focus', () => { input.suspended = document.hidden; });
@@ -105,6 +99,7 @@ canvas.addEventListener('contextmenu', ev => ev.preventDefault());
 let pointerCaptureFailed = false;
 document.addEventListener('pointerlockerror', () => { pointerCaptureFailed = true; });
 canvas.addEventListener('mousedown', ev => {
+  if (replayView.enabled) return;   // a replay's camera is dragged, never captured
   input.use('keyboard');
   if (multiplayer.spectatorMode) return;
   if (Game.mode !== 'play') return;
@@ -131,7 +126,7 @@ document.addEventListener('mousemove', ev => {
 });
 // Leaving pointer capture (the browser uses Escape for this) opens the pause menu.
 document.addEventListener('pointerlockchange', () => {
-  if (!document.pointerLockElement && Game.mode === 'play') Game.pause(true);
+  if (!document.pointerLockElement && Game.mode === 'play' && !replayView.enabled) Game.pause(true);
 });
 
 function resize() {
@@ -166,11 +161,16 @@ resize();
 autoQuality.firstRun();   // first launch only: the preset this machine should start on (js/autoquality.js)
 applySettings();
 $('version').textContent = VERSION;
+// The replay door's page (/watch) opens the viewer, never the title, the showcase or the sparring scene.
+if (replayView.enabled) replayView.boot();
+else {
 Game.showMenu('main');
 autoQuality.show();
-// A first launch plays the showcase once (js/showcase.js), then the sparring scene for a new player, or its offer for a
-// player from before it (js/sparring.js); a later launch offers that scene only.
-if (!showcase.firstLaunch(() => sparring.offerAtLaunch() || sparring.before(() => Game.showMenu('main')))) sparring.offerAtLaunch();
+// A launch on a new version plays the showcase, once a day at most (js/showcase.js). After it, the very first launch
+// goes on to the sparring scene for a new player (js/sparring.js); every launch offers that scene to a player from before.
+const toTitle = () => { if (!sparring.offerAtLaunch()) Game.showMenu('main'); };
+if (!showcase.firstLaunch(first => first ? sparring.offerAtLaunch() || sparring.before(() => Game.showMenu('main')) : toTitle())) sparring.offerAtLaunch();
+}
 
 // Fixed-step simulation, rendering at the display's native rate with interpolation.
 let lastTime = performance.now(), accumulator = 0;
@@ -181,8 +181,8 @@ function frame(now) {
   gamepad.poll(frameDt);   // in menus too: the pad navigates them
   multiplayer.heartbeat(now);
   if (Game.mode === 'pause') Game.tickPause();   // online, pause's run clock goes on (redrawn once a second)
-  document.body.classList.toggle('no-cursor', !multiplayer.panelOpen && !multiplayer.spectatorMode && !multiplayer.abilityOpen && (Game.mode === 'play' || input.device === 'pad'));   // spectator controls also accept clicks
-  if ((Game.mode !== 'play' && !(multiplayer.active() && ['pause', 'ending'].includes(Game.mode))) || Game.manualClock) { accumulator = 0; return; }   // online menus/credits keep the shared stream running
+  document.body.classList.toggle('no-cursor', !replayView.enabled && !multiplayer.panelOpen && !multiplayer.spectatorMode && !multiplayer.abilityOpen && (Game.mode === 'play' || input.device === 'pad'));   // spectator controls also accept clicks
+  if ((Game.mode !== 'play' && !(multiplayer.active() && (Game.mode === 'ending' || Game.mode === 'pause' && !multiplayer.alone))) || Game.manualClock) { accumulator = 0; return; }   // online menus/credits keep the shared stream running; alone, pause holds
   if (Game.loading > 0) { Game.tickLoading(frameDt); accumulator = 0; Game.render(0, frameDt); return; }   // the loading screen holds the world
   accumulator += frameDt * Game.timeScale * dodgeMoment.scale(frameDt);   // timeScale < 1: the F6 slow motion of developer builds; a perfect dodge's beat (js/dodge-moment.js)
   let steps = 0;
@@ -198,5 +198,6 @@ window.__arena = { Game, story, spectral, STORY, CONFIG, VERSION, PLAYER_DEF, IT
                    STORIES, realms,
                    get world() { return world; } };
 window.__arena.multiplayer = multiplayer;
+window.__arena.replay = replayView;
 window.__arenaReady = true;
 KIT.prewarm();   // bake model textures and geometry in the background while the menus are up

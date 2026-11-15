@@ -1,5 +1,5 @@
 'use strict';
-// Revive, drawn (CONFIG.revive; the server decides it in server/simulation.js reviveStep). Each fallen teammate's
+// Revive, drawn (CONFIG.revive; the server decides it in js/lobby-sim.js reviveStep). Each fallen teammate's
 // ember where they fell: sparks rising from it, and a ring on the ground at the reach a reviver stands in, filling round
 // as the revive runs; the cue over the bottom of the screen ("Reviving Ash", "Bram is reviving you"); a burst when they
 // rise. Drawing only: the list comes from the server's frames (js/multiplayer.js sets it) and nothing here changes the
@@ -90,7 +90,7 @@ const revive = (() => {
     spawnBurst({ x, y: y + 0.6, z }, { color: V.color, count: Math.round(reducedMotion() ? V.burst / 3 : V.burst), speed: V.burstSpeed });
   }
   Game.renderHooks.push(function reviveEmbers(game) {
-    const on = typeof multiplayer !== 'undefined' && multiplayer.active() && game.mode === 'play' && list.length > 0;
+    const on = (typeof multiplayer !== 'undefined' && multiplayer.active() || typeof replayView !== 'undefined' && replayView.active) && game.mode === 'play' && list.length > 0;
     if (!on) { if (drawn || shownText) hide(); return; }
     if (!slots) build();
     drawn = true;

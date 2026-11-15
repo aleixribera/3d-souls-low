@@ -1,0 +1,181 @@
+{
+  "lens": "first-time",
+  "findings": [
+    {
+      "screen": "watch-end",
+      "viewport": "desktop",
+      "rule": "NEW",
+      "severity": "high",
+      "title": "The last seconds of a run show the game's opening title card, not an ending",
+      "detail": "Near the end of the run the scene turns black and shows a large 'Boss Rush' title over 'Fight 4: Giant Skeleton'. That reads as a new run or fight starting, not as the run ending, and nothing says what happened (left, won, wiped). On phone the same card is drawn faded over the live scene behind the nameplates. New idea: the replay should hide the game's mode intro card and show its own end state.",
+      "evidence": "\"Boss Rush\" (44 px, centre) over \"Fight 4: Giant Skeleton\" at 3:56 / 4:01",
+      "fix": "Suppress the game's mode title card in replays. When playback reaches the end, show the run's ending in the viewer's own words, e.g. 'Left at fight 4', with Watch again and All replays, the same panel cut-short runs already get.",
+      "box": [832, 498, 256, 85]
+    },
+    {
+      "screen": "watch-old",
+      "viewport": "desktop",
+      "rule": "HUD-05",
+      "severity": "high",
+      "title": "An older-version run plays with a broken scene and only a grey version number to explain it",
+      "detail": "In fight 2 there is no boss name or boss health bar at the top. A nameless red bar floats over a small figure, so it looks like the replay is broken. The only hint is a grey 12 px 'v7.090.0' next to the date, which a viewer won't connect to the broken scene. Live ('Live') and damaged ('Cut short', 'Damaged') runs are also flagged only by 12 px tags beside the date, and 'Damaged' uses the same red as 'Live'.",
+      "evidence": "\"v7.090.0\" tag; \"Fight 2 0:21\" with no boss bar; same pattern: \"Live\" (watch-live), \"Cut short\" \"Damaged\" (watch-damaged)",
+      "fix": "For a run from an older version, show one plain line that stays visible, e.g. 'Recorded on an older version (7.90): bosses and attacks may look wrong.' Give live and damaged runs a sentence too ('Still being played: the end keeps growing'; 'The file is damaged after 1:18; playback stops there'). Keep red only for live.",
+      "box": [444, 23, 47, 16]
+    },
+    {
+      "screen": "watch-damaged",
+      "viewport": "phone",
+      "rule": "NEW",
+      "severity": "high",
+      "title": "On phone the 'Damaged' state is cut off to 'Da…'",
+      "detail": "The header has no room for both tags, so the one word saying the file is damaged is shown as 'Da…'. A viewer can't tell the run is damaged and will read the early end as a bug. New idea: a state label must never be truncated; it moves to its own line instead.",
+      "evidence": "\"Boss Rush  Cut short  Da…\"",
+      "fix": "Move the state off the title row on narrow screens (a line under the header or over the timeline) and show it in full, e.g. 'Damaged file: plays to 1:18'.",
+      "box": [234, 22, 54, 16]
+    },
+    {
+      "screen": "list",
+      "viewport": "desktop",
+      "rule": "ONB-03",
+      "severity": "medium",
+      "title": "Run rows don't say how the run went",
+      "detail": "Every finished row is titled 'Left the run', which sounds like someone quit, and 'Fight 4' sits in an unlabelled column, so a viewer can't tell whether that means reached, won or died at fight 4. In the viewer the Summary then says 'Left at fight 4' while fight 4 reads '0:50 · fell', so it still isn't clear whether the team beat the boss or not.",
+      "evidence": "\"Left the run\" … \"Fight 4\" \"4:01\"; Summary: \"Left at fight 4\", \"4. Giant Skeleton 0:50 · fell\"",
+      "fix": "Word the outcome as a result with its fight, e.g. 'Left after beating fight 4', 'Wiped at fight 3', 'Cleared all 4', and use the same phrase in the row, the Summary heading and the fight list ('fell' becomes 'beaten').",
+      "box": [510, 260, 795, 26]
+    },
+    {
+      "screen": "list",
+      "viewport": "phone",
+      "rule": "NEW",
+      "severity": "medium",
+      "title": "On phone the rows lose their start time and note count",
+      "detail": "Desktop rows show '01:38 AM' and '12:58 AM' and '2 notes'. On phone both 'Left the run' rows under Today show the same 'Aleix, Marc', '4:01' and 'Fight 4', so a viewer can't tell them apart or find the run with the notes. New idea: on a narrow screen the fields that tell runs apart are the last to go, not the first.",
+      "evidence": "Two identical rows: \"Left the run / Aleix, Marc / 4:01 / Fight 4\"; desktop has \"01:38 AM\", \"12:58 AM\", \"2 notes\"",
+      "fix": "Keep the time and the note count on phone, e.g. '01:38 AM · Aleix, Marc' on the second line and '2 notes' after it. Shorten 'Fight 4' to the end of the line if space is short.",
+      "box": [20, 336, 243, 153]
+    },
+    {
+      "screen": "watch-follow",
+      "viewport": "desktop",
+      "rule": "ONB-03",
+      "severity": "medium",
+      "title": "The camera buttons list four people for a two-player run, plus a bare 'Free'",
+      "detail": "The list and Summary say the players were Aleix and Marc, but the button row also offers 'Ser Quill' and 'Maren the Bold' with nothing saying who they are. The row has no label saying it switches the camera, and 'Free' alone doesn't say 'free camera', so it reads like filters or tabs.",
+      "evidence": "\"Aleix\" \"Marc\" \"Ser Quill\" \"Maren the Bold\" \"Free\"; list row: \"Aleix, Marc\"; Summary Players: Aleix, Marc",
+      "fix": "Put a small 'Camera' label before the group, and set companions apart from players (a divider, or 'Ser Quill (ally)'). Rename 'Free' to 'Free camera'.",
+      "box": [1407, 1025, 426, 44]
+    },
+    {
+      "screen": "watch-follow",
+      "viewport": "desktop",
+      "rule": "ONB-03",
+      "severity": "medium",
+      "title": "Timeline marks have no legend",
+      "detail": "The timeline shows red rings, white bars and tiny numbers 1-4 with no key anywhere on the screen or in the hint toast. A newcomer can't tell that rings are downs, bars are notes and numbers are fights, so they can't use the marks to jump to the moments they came for.",
+      "evidence": "red rings at 1:00-ish and 3:xx, white bars after 1 and 4, labels \"1\" \"2\" \"3\" \"4\" at 11 px",
+      "fix": "Give each mark a hover or press tooltip ('Aleix down, 0:52', 'Note: Hollis turns…', 'Fight 2: Hale'). Add one line to the first-visit hint: 'Rings: someone went down. Bars: notes.'",
+      "box": [17, 979, 1886, 46]
+    },
+    {
+      "screen": "watch-summary",
+      "viewport": "desktop",
+      "rule": "ONB-03",
+      "severity": "medium",
+      "title": "'Next death' on a run the Summary says had no deaths",
+      "detail": "The Summary lists '2 downs · 0 deaths' for both players, and the timeline shows only rings, yet the main button says 'Next death'. A first-time viewer doesn't know a down is different from a death, so they can't predict whether the button will go anywhere.",
+      "evidence": "\"2 downs · 0 deaths · 0 Finishing Blows\"; button \"Next death\"",
+      "fix": "If the button also jumps to downs, call it 'Next down'. Otherwise disable it, labelled 'No deaths', on runs without deaths. Either way, explain downs vs deaths once in the hint ('down: can be revived').",
+      "box": [163, 1026, 110, 42]
+    },
+    {
+      "screen": "watch-summary",
+      "viewport": "desktop",
+      "rule": "NEW",
+      "severity": "medium",
+      "title": "The Notes section is hidden below the timeline when Summary opens",
+      "detail": "Pinned notes are what the page is for, but in the Summary panel they come after the fights, the players and six boss-attack rows. They start below the timeline (Notes at y 1027), so the panel looks like it ends at 'Stamp the Stones' and nothing suggests scrolling. New idea: what people come back for goes first.",
+      "evidence": "\"Notes\" heading at y 1027 and \"0:52 Hollis turns through the roll here…\" at y 1068, under the 979 px timeline",
+      "fix": "Move Notes to the top of the panel, under the outcome heading, or at least above 'Boss attacks that landed most'. Fade the panel's bottom edge when there is more to scroll.",
+      "box": [1541, 930, 379, 45]
+    },
+    {
+      "screen": "watch-summary",
+      "viewport": "phone",
+      "rule": "COL-01",
+      "severity": "medium",
+      "title": "The phone Summary panel is see-through, and names show through its text",
+      "detail": "The boss title, 'Fight 2 0:25' and the player nameplates show through the panel. 'Maren the Bold' and 'Marc' land on top of '0:50 · fell', and 'Aleix' sits between the fight list and Players. The cut-short panel does the same ('Marc', 'Aleix' behind the buttons).",
+      "evidence": "\"Maren the Bold\" / \"Marc\" overlapping \"0:50 · fell\"; ghosted \"Hale, the Whole Castellan\" behind \"Left at fight 4\"",
+      "fix": "Make the panel opaque on phone, and hide the in-scene nameplates and boss title while it is open.",
+      "box": [0, 64, 390, 330]
+    },
+    {
+      "screen": "watch-summary",
+      "viewport": "land",
+      "rule": "HUD-01",
+      "severity": "medium",
+      "title": "The first-visit hint stays on top of panels and the action",
+      "detail": "In landscape the hint covers the middle of the scene and sits over the Summary panel's fight list ('1. The Regent Hollis' is half hidden). It has no close button, and it is still there after the viewer has used Summary or Note. Pieces of it also show around the note box on desktop ('free camera ·') and in landscape ('h to'), and behind the phone note box.",
+      "evidence": "\"Tap a player to follow them. Drag to look around, pinch to zoom.\" over \"1. The Regent Hollis\"",
+      "fix": "Hide the hint at the first input (tap, key, Summary, Note), give it a close button, and draw it under panels, never over them. In landscape, place it above the timeline at the edge, not in the centre.",
+      "box": [212, 170, 421, 58]
+    },
+    {
+      "screen": "watch-free",
+      "viewport": "desktop",
+      "rule": "NEW",
+      "severity": "medium",
+      "title": "Free camera shows an unnamed knight in the foreground",
+      "detail": "Switching to Free shows a knight with a raised sword at the bottom centre, close to the camera and with no nameplate, while all four named characters stand far away. A viewer can't tell whose body it is, or whether it's part of the run at all. New idea: everything drawn in a replay belongs to the run and is labelled, or it isn't drawn.",
+      "evidence": "foreground knight without a nameplate; nameplates \"Marc\" \"Ser Quill\" \"Maren the Bold\" \"Aleix · down\" far behind",
+      "fix": "Hide the local or placeholder player body in replays, or give it its owner's nameplate if it is a real participant.",
+      "box": [870, 670, 190, 190]
+    },
+    {
+      "screen": "watch-follow",
+      "viewport": "phone",
+      "rule": "MENU-02",
+      "severity": "low",
+      "title": "The phone header drops the run's date and the back label",
+      "detail": "On phone the header is just a chevron and 'Boss Rush'. Every run is a Boss Rush, so it doesn't say which run is open; desktop shows 'Sun, Nov 15, 12:58 AM'. The back control is a bare '<' with no 'Replays' label.",
+      "evidence": "\"Boss Rush\" alone; desktop: \"Boss Rush · Sun, Nov 15, 12:58 AM\"",
+      "fix": "On phone, show the short date in place of 'Boss Rush' ('Nov 15, 12:58 AM'), and keep the visible back icon.",
+      "box": [84, 20, 77, 23]
+    },
+    {
+      "screen": "watch-end",
+      "viewport": "desktop",
+      "rule": "NEW",
+      "severity": "low",
+      "title": "A game menu tip leaks into the replay",
+      "detail": "Faint text about controllers shows behind the timeline at the end of the run, and on phone behind the camera buttons. It's the game's own tip and means nothing to a viewer.",
+      "evidence": "\"Best played with a controller\"",
+      "fix": "Hide the game's menu and tip layer in the replay viewer.",
+      "box": [869, 987, 222, 15]
+    },
+    {
+      "screen": "list-delete",
+      "viewport": "desktop",
+      "rule": "NEW",
+      "severity": "low",
+      "title": "Arming delete shifts the whole row sideways",
+      "detail": "When 'Delete' becomes 'Delete for good?', the players, fight, time and star of that row jump left. The star moves out from under where the viewer was looking and the row stops lining up with the others, so it looks like the row changed, not just the button.",
+      "evidence": "\"Aleix, Marc\" moves from x 884 to 849 and \"Fight 4\" from 1248 to 1182 in the armed row; phone star moves from x 285 to 219",
+      "fix": "Reserve the width of 'Delete for good?' in the action column, or let the armed button grow over empty space, so nothing else in the row moves.",
+      "box": [849, 250, 651, 46]
+    },
+    {
+      "screen": "list-empty",
+      "viewport": "phone",
+      "rule": "NEW",
+      "severity": "low",
+      "title": "Filters stay on top when there is nothing to filter",
+      "detail": "With no runs, or when the server is down (list-error), the Player and When selects and Starred still take the top of the phone screen. A first-time visitor may try the filters, as if they were hiding the runs.",
+      "evidence": "\"Player Everyone\", \"When Any time\", \"Starred\" above \"No runs yet\"",
+      "fix": "Hide or disable the filters when the list is empty because there are no runs or the load failed. Show them only when they can change what is listed.",
+      "box": [20, 69, 350, 121]
+    }
+  ]
+}

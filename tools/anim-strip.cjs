@@ -1,8 +1,11 @@
 'use strict';
 // A strip of the player's motion for the animation judge (PLAN.md item 3c): the game stepped by hand in an empty arena,
 // one frame every `every` steps from a fixed camera, tiled into one JPEG.
-//   node tools/anim-strip.cjs <move> <out.jpg> [frames=14] [every=2] [zoom=1]   (zoom 2: the camera half as far)
-// Moves: dash (a dash to the right across the view), deflect (a blow turned aside, filmed from the sword side).
+//   node tools/anim-strip.cjs <move> <out.jpg> [frames=14] [every=2] [zoom=1] [width=640] [height=480]   (zoom 2: the camera half as far)
+// Moves: dash (a dash to the right across the view), deflect (a blow turned aside, filmed from the sword side),
+// finisher (pass 103: three counters on a boss, the third the Finishing Blow, through the game's own camera; `frames`
+// spread over the blow, two from each counter before it). With CLIP=<file.mp4> every step is also written as a 60 fps
+// clip (ffmpeg on PATH).
 // One headless Edge, closed at the end; idle priority. Take the browser lock (.claude/iterate.md) before running it.
 require('../tests/low-priority.cjs');
 const fs = require('node:fs');
@@ -10,31 +13,32 @@ const path = require('node:path');
 const { chromium } = require('../tests/browser.cjs');
 const { createServer } = require('../server/index.cjs');
 
-const [move = 'dash', out = '.scratch/strip.jpg', frames = '14', every = '2', zoom = '1'] = process.argv.slice(2);
+const [move = 'dash', out = '.scratch/strip.jpg', frames = '14', every = '2', zoom = '1', width = '640', height = '480'] = process.argv.slice(2);
+const CLIP = process.env.CLIP || '';
 
 (async () => {
   const app = createServer({ dev: true }); await new Promise(r => app.server.listen(0, '127.0.0.1', r));
   const browser = await chromium.launch({ channel: 'msedge', headless: true });
   try {
-    const page = await browser.newPage({ viewport: { width: 640, height: 480 } });
+    const page = await browser.newPage({ viewport: { width: +width, height: +height } });
     const errors = []; page.on('pageerror', e => errors.push(e.message));
     await page.addInitScript(() => localStorage.setItem('combat-arena-3d.settings', JSON.stringify({ graphics: 'normal', volume: 0 })));
     await page.goto(`http://127.0.0.1:${app.server.address().port}/combat-arena-3d.html#dev`);
     await page.waitForFunction(() => window.__arenaReady, null, { timeout: 120000 });
-    const data = await page.evaluate(async ([move, frames, every, zoom]) => {
+    const data = await page.evaluate(async ([move, frames, every, zoom, clip]) => {
       const STEP = CONFIG.step; let clock = 0;
       Game.manualClock = true; input.now = () => clock; gamepad.poll = () => {}; gamepad.move = { x: 0, y: 0 };
       let mv = null; Game.moveInput = () => mv ? { x: mv.x, z: mv.z, has: true } : { x: 0, z: 0, has: false };
       input.clear();
-      Game.startFight('hollow'); Game.loading = 0;
-      for (const e of Game.enemies) e.rig.dispose();
-      Game.enemies = []; for (const z of Game.zones) z.actors = [];
+      Game.startFight(move === 'finisher' ? 'pillagerCaptain' : 'hollow'); Game.loading = 0;
+      if (move !== 'finisher') { for (const e of Game.enemies) e.rig.dispose(); Game.enemies = []; for (const z of Game.zones) z.actors = []; }
       const p = Game.player;
       const cam = { pos: new THREE.Vector3(), look: new THREE.Vector3() }, at = new THREE.Vector3();
       let aim = () => {};
       // Every step is drawn, as the game draws each frame at 60 Hz: the pose's visual clocks (the deflect's, the
       // landing's, afterimages) run on the drawn frames' time, so drawing only the filmed steps slowed them (pass 102).
       const draw = () => {
+        if (move === 'finisher') { Game.render(1, STEP); return; }   // the game's own camera
         aim(); at.subVectors(cam.pos, cam.look).divideScalar(zoom).add(cam.look);
         const c = Game.cam; c.prevPos.copy(at); c.pos.copy(at); c.prevLook.copy(cam.look); c.look.copy(cam.look);
         Game.render(1, STEP);
@@ -43,6 +47,7 @@ const [move = 'dash', out = '.scratch/strip.jpg', frames = '14', every = '2', zo
       const shots = [];
       const shoot = () => shots.push(renderer.domElement.toDataURL('image/jpeg', 0.85));
       const press = a => { const code = ACTIONS[a][0]; input.down(code); input.up(code); };
+      const film = [];   // every step of the finisher move, for the clip
       // The player at the arena's middle, facing +x, at rest.
       const put = yaw => { p.x = p.px = 0; p.z = p.pz = 0; p.vx = p.vz = 0; p.yaw = p.pyaw = yaw; p.setState(PS.IDLE); };
       if (move === 'dash') {
@@ -58,6 +63,33 @@ const [move = 'dash', out = '.scratch/strip.jpg', frames = '14', every = '2', zo
         input.down(ACTIONS.block[0]); step(3); shoot();
         p.deflectedBlow = { enemy: null, key: 'strip' };
         for (let i = 1; i < frames; i++) { if (i === 4) input.up(ACTIONS.block[0]); step(every); shoot(); }
+      } else if (move === 'finisher') {
+        // A boss held still between counters, the player in front of it; each counter opened by a deflect, then pressed.
+        const e = Game.duel || Game.enemies[0];
+        p.maxHp = p.hp = 1e6;
+        Game.setLock(e);
+        const place = () => {
+          const d = e.radius + p.radius + 0.6;
+          p.x = p.px = e.x + Math.sin(e.yaw) * d; p.z = p.pz = e.z + Math.cos(e.yaw) * d; p.vx = p.vz = p.kx = p.kz = 0;
+          p.yaw = p.pyaw = Math.atan2(e.x - p.x, e.z - p.z);
+        };
+        const counter = n => { delete e.update; e.hitbox = null; e.setState(ES.PARRIED); place(); p.openCounter(1, 'deflect', e); step(1); press('light'); };
+        const roll = (n, keep) => { for (let i = 0; i < n; i++) {
+          step(1);
+          const shot = clip || (keep && keep(i)) ? renderer.domElement.toDataURL('image/jpeg', 0.85) : null;
+          if (clip) film.push(shot);
+          if (keep && keep(i)) shots.push(shot);
+        } };
+        e.update = function () {}; place(); step(60);
+        for (let c = 0; c < 2; c++) {
+          counter(c); roll(54, i => i === 8 || i === 30);
+          e.update = function () {}; roll(40);   // held still (its AI off) past the striker's rest
+        }
+        counter(2);
+        const blowSteps = 90;   // 1.5 s: the whole blow and its held pose
+        const pick = new Set(Array.from({ length: frames }, (_, k) => Math.round(k * (blowSteps - 1) / Math.max(1, frames - 1))));
+        roll(blowSteps, i => pick.has(i));
+        roll(30);
       } else throw new Error('unknown move ' + move);
       // Tile: one row, each frame cropped to the middle and numbered.
       const imgs = await Promise.all(shots.map(src => new Promise(ok => { const im = new Image(); im.onload = () => ok(im); im.src = src; })));
@@ -71,10 +103,18 @@ const [move = 'dash', out = '.scratch/strip.jpg', frames = '14', every = '2', zo
         g.drawImage(im, sx, 0, sw, im.height, (i % cols) * W + (W - dw) / 2, Math.floor(i / cols) * H + (H - dh) / 2, dw, dh);
         g.fillStyle = '#ff0'; g.font = '16px sans-serif'; g.fillText(String(i), (i % cols) * W + 4, Math.floor(i / cols) * H + 18);
       });
-      return cv.toDataURL('image/jpeg', 0.82);
-    }, [move, +frames, +every, +zoom]);
+      return { strip: cv.toDataURL('image/jpeg', 0.82), film };
+    }, [move, +frames, +every, +zoom, !!CLIP]);
     fs.mkdirSync(path.dirname(path.resolve(out)), { recursive: true });
-    fs.writeFileSync(out, Buffer.from(data.split(',')[1], 'base64'));
+    fs.writeFileSync(out, Buffer.from(data.strip.split(',')[1], 'base64'));
+    if (CLIP && data.film.length) {   // the clip: every step at 60 fps
+      const dir = fs.mkdtempSync(path.join(require('node:os').tmpdir(), 'anim-strip-'));
+      data.film.forEach((src, i) => fs.writeFileSync(path.join(dir, `f${String(i).padStart(4, '0')}.jpg`), Buffer.from(src.split(',')[1], 'base64')));
+      require('node:child_process').execFileSync('ffmpeg', ['-y', '-loglevel', 'error', '-framerate', '60', '-i', path.join(dir, 'f%04d.jpg'), '-vf', 'pad=ceil(iw/2)*2:ceil(ih/2)*2',
+        '-c:v', 'libx264', '-pix_fmt', 'yuv420p', '-crf', '20', CLIP]);
+      fs.rmSync(dir, { recursive: true, force: true });
+      console.log('wrote', CLIP, `(${data.film.length} frames)`);
+    }
     if (errors.length) console.log('page errors:\n  ' + errors.join('\n  '));
     console.log('wrote', out);
   } finally { await browser.close(); await app.close(); }

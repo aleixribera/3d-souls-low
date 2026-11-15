@@ -12,10 +12,10 @@ function validateData({ visual = true } = {}) {
   const introIds = new Set();
   for (const intro of LOBBY_INTROS) {
     need(!introIds.has(intro.id), `Duplicate lobby intro: ${intro.id}.`); introIds.add(intro.id);
-    need(ArenaNet.config.gauntlets[intro.id] || [ArenaNet.config.calling.id, ArenaNet.config.weekly.id].includes(intro.id) || STORIES.some(s => s.id === intro.id && s.lobbyName), `Unknown lobby intro: ${intro.id}.`);
+    need([ArenaNet.config.calling.id, ArenaNet.config.weekly.id].includes(intro.id), `Unknown lobby intro: ${intro.id}.`);
     for (const field of ['title', 'goal']) need(typeof intro[field] === 'string' && intro[field].trim(), `Lobby intro ${intro.id}: missing ${field}.`);
   }
-  for (const id of [ArenaNet.config.calling.id, ArenaNet.config.weekly.id, ...Object.keys(ArenaNet.config.gauntlets), ...STORIES.filter(s => s.lobbyName).map(s => s.id)]) need(introIds.has(id), `Missing lobby intro: ${id}.`);
+  for (const id of [ArenaNet.config.calling.id, ArenaNet.config.weekly.id]) need(introIds.has(id), `Missing lobby intro: ${id}.`);
   // The player's look (pass 91, js/player-pose.js, Rig.settle): blend times, the deflect's pose, the player's easings.
   if (visual) {
     const A = ANIM_SETTINGS, num = v => typeof v === 'number' && v > 0 && v < 1, rot = P => P && typeof P === 'object' && Object.values(P).every(v => Array.isArray(v) && v.length === 3 && v.every(Number.isFinite));
@@ -48,14 +48,24 @@ function validateData({ visual = true } = {}) {
       && Cf.aura.pulse > 0 && Cf.aura.pulse < 3 && Cf.aura.body >= 0 && Cf.aura.body <= 1 && num(Cf.aura.in) && num(Cf.aura.out)
       && Cf.aura.ring && hex(Cf.aura.ring.color) && pos(Cf.aura.ring.from) && pos(Cf.aura.ring.to) && Cf.aura.ring.to < Cf.aura.ring.from,
       'ANIM_SETTINGS.counterFx: dim (peak 0 to 0.8, in and out s), mark (size m, time s, colour), trail (colour, boost, life at least 1), cut (length, thin < wide m, show s, colour, sparks and arcSparks counts, tilt rad), aura (colour, size, boost, min 0 to 1, breath under 0.5, pulse under 3 Hz, body 0 to 1, in and out s, ring colour and from > to m).');
+    const Ff = A.finisherFx, Fk = Ff && Ff.crack, Fz = Ff && Ff.freeze, Fc = Ff && Ff.cut, unit = v => typeof v === 'number' && v >= 0 && v <= 1;
+    need(Fk && pos(Fk.size) && unit(Fk.depth) && pos(Fk.boost) && [Fk.color, Fk.hot, Fk.cold].every(hex) && num(Fk.pop) && Fk.breath >= 0 && Fk.breath < 0.5
+      && Fk.pulse > 0 && Fk.pulse < 3 && unit(Fk.cool) && Fk.cool > 0 && pos(Fk.out) && pos(Fk.burstTime)
+      && Fz && unit(Fz.sat) && unit(Fz.vignette) && unit(Fz.dark) && Fz.dark < 1 && unit(Fz.hold) && num(Fz.in) && num(Fz.out) && unit(Fz.kick) && unit(Fz.flash)
+      && Ff.streak && pos(Ff.streak.width) && num(Ff.streak.life) && unit(Ff.streak.held) && hex(Ff.streak.color)
+      && Fc && pos(Fc.length) && num(Fc.thin) && Fc.wide > Fc.thin && unit(Fc.held) && num(Fc.show) && hex(Fc.color) && hex(Fc.glow) && Fc.delay >= 0
+      && Array.isArray(Fc.heights) && Fc.heights.length > 0 && Fc.heights.every(unit) && Array.isArray(Fc.tilts) && Fc.tilts.length > 0 && Fc.tilts.every(Number.isFinite)
+      && Ff.burst && pos(Ff.burst.size) && num(Ff.burst.time) && hex(Ff.burst.color) && Number.isInteger(Ff.burst.sparks) && unit(Ff.burst.flash)
+      && Ff.camera && Ff.camera.swing >= 0 && Ff.camera.swing < 1.2 && num(Ff.camera.back) && unit(Ff.camera.punch) && pos(Ff.camera.punchRate),
+      'ANIM_SETTINGS.finisherFx: crack (size, depth 0 to 1, boost, colour, hot and cold colours, pop s, breath under 0.5, pulse under 3 Hz, cool 0 to 1, out and burstTime s), freeze (sat, vignette, hold, kick and flash 0 to 1, dark 0 to under 1, in and out s), streak (width, life s, held 0 to 1, colour), cut (length, thin < wide m, held 0 to 1, show and delay s, colour, glow colour, heights 0 to 1, tilts rad), burst (size, time s, colour, sparks, flash 0 to 1) and camera (swing under 1.2 rad, back s, punch 0 to 1, punchRate 1/s).');
     const Gd = A.guard;
     need(Gd && Gd.drop >= 0 && Gd.drop < 0.3 && rot(Gd.pose), 'ANIM_SETTINGS.guard: drop (0 to 0.3 m) and a pose of [x, y, z] per bone.');
     need(L && num(L.rise) && num(L.hold) && num(L.fall) && num(L.drop) && num(L.min) && L.ref > 0 && Number.isFinite(L.lean), 'ANIM_SETTINGS.land: rise, hold and fall (s), drop (m), min (0 to 1), ref (m/s) and lean (rad).');
     need(Object.entries(A.playerEase || {}).every(([ph, e]) => MARKER_PHASES.includes(ph) && e in EASE), `ANIM_SETTINGS.playerEase: phases ${MARKER_PHASES.join(', ')}, easings from EASE.`);
     const G = A.afterimage, look = g => g && num(g.life) && num(g.opacity) && Number.isInteger(g.color) && g.color >= 0 && g.color <= 0xffffff;
-    need(G && look(G) && look(G.dodge) && num(G.core) && num(G.inLine) && G.cover > 0 && Array.isArray(G.clear) && G.clear.length === 2 && G.clear[0] >= 0 && G.clear[1] > G.clear[0] && Number.isInteger(G.pool) && G.pool >= 1 && G.pool <= 12 && G.gap > 0
+    need(G && look(G) && look(G.dodge) && look(G.finisher) && Number.isInteger(G.finisher.perStep) && G.finisher.perStep >= 1 && G.finisher.perStep <= G.pool && num(G.core) && num(G.inLine) && G.cover > 0 && Array.isArray(G.clear) && G.clear.length === 2 && G.clear[0] >= 0 && G.clear[1] > G.clear[0] && Number.isInteger(G.pool) && G.pool >= 1 && G.pool <= 12 && G.gap > 0
       && Object.keys(CONFIG.VISUALS.fxBudgets).every(b => Number.isInteger(G.perDash && G.perDash[b]) && G.perDash[b] >= 1 && G.perDash[b] <= G.pool),
-      'ANIM_SETTINGS.afterimage: pool (1 to 12 figures), gap (m), core and inLine (0 to 1), cover (m), clear ([from, to] m), life and opacity (0 to 1), a colour, perDash per effect budget (1 to pool), and the same look for `dodge`.');
+      'ANIM_SETTINGS.afterimage: pool (1 to 12 figures), gap (m), core and inLine (0 to 1), cover (m), clear ([from, to] m), life and opacity (0 to 1), a colour, perDash per effect budget (1 to pool), and the same look for `dodge` and `finisher` (its perStep: copies a flash step, 1 to pool).');
   }
   // The changelog in the game (js/data/changelog.js): newest first, starting at the running version.
   need(Array.isArray(CHANGELOG) && CHANGELOG.length && CHANGELOG[0].version === VERSION, `Changelog: the first entry must be the running version ${VERSION} (js/data/changelog.js).`);
@@ -98,7 +108,6 @@ function validateData({ visual = true } = {}) {
   for (const [key, value] of Object.entries(CONFIG.companion)) need(num(value) && value > 0, `Companion ${key} must be positive.`);
   need(CONFIG.companion.separationShare <= 1, 'Companion separationShare must be at most 1.');
   const botConfig = CONFIG.bot, nav = botConfig.navigation || {};
-  need(num(botConfig.assignmentTime) && botConfig.assignmentTime > 0, 'Bot assignmentTime must be positive.');
   need(Array.isArray(botConfig.follow) && botConfig.follow.length === 2 && botConfig.follow.every(num) && botConfig.follow[0] > 0 && botConfig.follow[1] > botConfig.follow[0],
     'Bot follow needs ordered positive inner/outer distances.');
   for (const key of ['cell', 'sample', 'tile', 'clearance', 'heightTolerance', 'maxDrop', 'anchor', 'anchors', 'maxNodes', 'searchSteps', 'waypoint', 'lookAhead',
@@ -621,10 +630,10 @@ function validateData({ visual = true } = {}) {
       && num(F.heal) && F.heal >= 0 && F.heal < 1 && num(F.camera.rate) && F.camera.rate > 0,
       'CONFIG.finisher: cracks and steps whole numbers 1 or more, fade above rest, the other numbers 0 or more, damage above 0 with bossCap at most 0.5, heal under 1.');
     const GS = CONFIG.fx && CONFIG.fx.guardCrackShake, burst = b => b && num(b.color) && Number.isInteger(b.count) && b.count >= 0 && num(b.speed) && b.speed >= 0;
-    need(num(F.glow) && F.glow >= 0 && F.shake && num(F.shake.time) && F.shake.time >= 0 && num(F.shake.amp) && F.shake.amp >= 0
+    need(F.shake && num(F.shake.time) && F.shake.time >= 0 && num(F.shake.amp) && F.shake.amp >= 0
       && num(F.camera.push) && F.camera.push >= 0 && F.camera.push < 1 && num(F.camera.lower) && F.bursts && ['enter', 'exit', 'step'].every(k => burst(F.bursts[k]))
       && GS && num(GS.time) && GS.time >= 0 && num(GS.amp) && GS.amp >= 0,
-      'CONFIG.finisher: glow, shake { time, amp } and camera.push (under 1) 0 or more, camera.lower a number, bursts enter, exit and step each { color, count, speed }; CONFIG.fx.guardCrackShake { time, amp } 0 or more.'); }
+      'CONFIG.finisher: shake { time, amp } and camera.push (under 1) 0 or more, camera.lower a number, bursts enter, exit and step each { color, count, speed }; CONFIG.fx.guardCrackShake { time, amp } 0 or more.'); }
   for (const group of ['ground', 'air', 'dash', 'counter'])
     for (const [action, id] of Object.entries(M[group] || {})) need(id in M.attacks && action in M.ground, `Player moveset "${group}.${action}": no attack "${id}", or not a ground action.`);
   for (const it of PLAYER_DEF.inventory) need(it.item in ITEMS, `Player inventory: unknown item "${it.item}".`);
@@ -908,6 +917,7 @@ function validateBonfireGuidance() {
 function validateShowcase(S, need) {
   const tag = 'SHOWCASE', num = v => Number.isFinite(v), len = S.length, fights = Array.isArray(S.fights) ? S.fights : [];
   need(num(S.bpm) && S.bpm >= 60 && S.bpm <= 200 && num(len) && len > 0 && num(S.preroll) && S.preroll >= 0 && Number.isInteger(S.seed), `${tag}: bpm 60-200, length > 0 beats, preroll >= 0 s and an integer seed.`);
+  need(num(S.again) && S.again > 0, `${tag}: again is the hours between two showings at launch, > 0.`);
   need(!!S.pace && Number.isInteger(S.pace.won) && S.pace.won >= 0 && Array.isArray(S.pace.modifiers) && S.pace.modifiers.every(id => id in RUSH_MODIFIER_BY_ID), `${tag}: pace needs won (fights) and known RUSH modifiers.`);
   need(Array.isArray(S.kit) && S.kit.every(id => id in ABILITY_BY_ID), `${tag}: kit must list known abilities.`);
   need(BOT_PROFILES.some(p => p.id === S.profile), `${tag}: unknown bot profile "${S.profile}".`);
@@ -917,6 +927,7 @@ function validateShowcase(S, need) {
     need(!!d && isBossDef(d), `${tag}: fight from beat ${f.from}: "${f.boss}" is not a boss.`);
     if (d) need(f.phase === undefined || (d.phases && f.phase in d.phases && (d.defaultPhases || []).includes(f.phase)), `${tag}: ${f.boss} has no phase "${f.phase}" it fights through.`);
     need(num(f.health) && f.health > 0 && f.health <= 1, `${tag}: ${f.boss}'s health is a share of its bar, 0-1.`);
+    need(f.cracks === undefined || (Number.isInteger(f.cracks) && f.cracks >= 0 && f.cracks < CONFIG.finisher.cracks), `${tag}: ${f.boss}'s cracks: 0 to ${CONFIG.finisher.cracks - 1} (its guard as the fight is joined).`);
   }
   const fightAt = b => fights.filter(f => f.from <= b).pop();
   const keyOf = id => ABILITY_BY_ID[id] && ABILITY_BY_ID[id].key;
@@ -926,6 +937,9 @@ function validateShowcase(S, need) {
     need(typeof b.id === 'string' && !ids.has(b.id), `${t}: needs a unique id.`); ids.add(b.id);
     need(num(b.at) && b.at > prev && b.at < (S.title ? S.title.at : len), `${t}: at must be after the beat before it and before the title.`); prev = b.at;
     need(['dodge', 'deflect', 'ability'].includes(b.kind), `${t}: kind is dodge, deflect or ability.`);
+    // The blow's cuts (up to half a bar) would kill a boss the script keeps up, so a Finishing Blow is always the kill.
+    need(!b.finisher || (b.kill && b.counter), `${t}: a Finishing Blow needs its counter and ends the fight (kill).`);
+    need(b.kind !== 'ability' || (!b.kill && !b.finisher && !b.counter), `${t}: an ability beat has no counter, kill or Finishing Blow.`);
     if (b.kind === 'ability') need(Number.isInteger(b.key) && b.key >= 1 && b.key <= ABILITY_KEYS.length && (S.kit || []).some(id => keyOf(id) === ABILITY_KEYS[b.key - 1]), `${t}: key ${b.key} is not one the kit holds.`);
     else {
       const f = fightAt(b.at), d = f && ENEMY_BY_ID[f.boss], P = d && d.phases && f.phase ? d.phases[f.phase] : null;
@@ -934,6 +948,18 @@ function validateShowcase(S, need) {
       if (a && b.kind === 'deflect') need(a.hits.some((h, i) => canParryHit(a, i)), `${t}: "${b.attack}" has no blow a deflect can take.`);
       need(b.counter === undefined || b.counter in PLAYER_DEF.moveset.counter, `${t}: counter is an action with a counter (${Object.keys(PLAYER_DEF.moveset.counter).join(', ')}).`);
       need(!b.kill || b.counter, `${t}: a kill needs its counter.`);
+      // The Finishing Blow (js/finisher.js): the fight's cracks and its earlier counters crack the guard to the last
+      // exactly by a `finisher` beat's counter, and no sooner; each counter lands within the cracks' `fade` of the last.
+      if (b.counter && f) {
+        const C = CONFIG.finisher, sec = beats => beats * 60 / S.bpm;
+        const before = (S.beats || []).filter(x => x !== b && x.counter && x.at < b.at && fightAt(x.at) === f);
+        const cracks = (f.cracks || 0) + before.length, from = before.length ? before[before.length - 1].at : f.from;
+        need(b.finisher ? cracks === C.cracks : cracks < C.cracks, b.finisher
+          ? `${t}: its counter is the Finishing Blow only on a guard cracked ${C.cracks} times; ${f.boss}'s cracks and earlier counters make ${cracks}.`
+          : `${t}: ${f.boss}'s guard is cracked ${cracks} times by then, so this counter would be a Finishing Blow: mark it finisher.`);
+        // From one string's first blow to the next's: its string and its counter take up to about 3 s more.
+        need(!cracks || sec(b.at - from) + 3 < C.fade, `${t}: its counter comes about ${(sec(b.at - from) + 3).toFixed(1)} s after the last crack; they fade after ${C.fade} s.`);
+      }
     }
   }
   const shots = S.shots || {};
@@ -943,7 +969,7 @@ function validateShowcase(S, need) {
   const cuts = S.cuts || [];
   need(cuts.length > 0 && cuts[0].at === 0 && cuts.every((c, i) => c.shot in shots && num(c.at) && c.at < len && (i === 0 || c.at > cuts[i - 1].at)), `${tag}: cuts start at beat 0, in order, each naming a shot.`);
   for (const k of S.keys || []) need((S.beats || []).some(b => b.kind === 'ability' && b.key === k.key && b.at === k.at) && num(k.for) && k.for > 0, `${tag}: the key cap at beat ${k.at} must match an ability beat.`);
-  need(!!S.title && num(S.title.at) && S.title.at < len, `${tag}: the title comes before the end.`);
+  need(!!S.title && num(S.title.at) && S.title.at < len && S.title.at % 4 === 0, `${tag}: the title comes before the end, on a bar line (a multiple of 4 beats: the music holds its chord from there).`);
 }
 const GATE_STYLES = ['portcullis', 'barricade'];
 const HOUSE_KINDS = ['house', 'tower'];

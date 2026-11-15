@@ -10,8 +10,10 @@ agents: a draft, changed whenever the code changes.
   and no runtime npm dependency: open `combat-arena-3d.html`.
 - Scripts load in the order of `GAME_FILES` in `combat-arena-3d.html` (data, then validation, engine, presentation,
   modes, `boot.js`), each with a `?v=LOAD_STAMP` cache key.
-- `server/`: the optional multiplayer server, Node 22.8+ with one dependency (`ws`). `server/headless.cjs` runs the
-  engine half of `GAME_FILES`; a new file the server needs goes in its engine set.
+- Boss Rush's run is the lobby's: its session `js/lobby-host.js` and simulation `js/lobby-sim.js`, on the engine half
+  of `GAME_FILES` (`ArenaNet.engineScript`; a new file the simulation needs goes in that set). Two hosts run them:
+  `server/` (the optional multiplayer server, Node 22.8+ with one dependency, `ws`; `server/headless.cjs` loads them in
+  a VM) and the page alone (`js/alone.js`, a hidden frame), so a run alone is the run online.
 - Blender models: `tools/blender/<name>.py`, built with
   `blender -b --factory-startup -P tools/blender/run_asset.py -- <stem> --export`, packed into `js/baked/` by
   `node tools/pack-baked.cjs <stem>`.
@@ -26,9 +28,10 @@ agents: a draft, changed whenever the code changes.
 5. The simulation runs at a fixed 1/60 s step. Rendering interpolates and never changes game state. Combat emits
    events (`js/events.js`); visuals, camera, HUD and audio only listen.
 6. Every death goes through `Player.die()` and `Game.onPlayerDeath`.
-7. Multiplayer: the server owns shared enemies, gates and traps; each client owns its own player's movement, health
-   and defence; the server range- and rate-checks every claim (hits, executions, parries, rests). The server runs
-   `validateData({ visual: false })` at startup, so browser-only checks sit behind `visual`.
+7. Multiplayer: online play is Boss Rush and the Weekly Run. The server owns the shared enemies; each client owns its own
+   player's movement, health and defence; the server range- and rate-checks every claim (hits, executions, parries).
+   The server runs `validateData({ visual: false })` at startup, so browser-only checks sit behind `visual`. Boss Rush
+   alone is the same session in the page (`js/alone.js`): a change to the run reaches both, through `js/lobby-host.js`.
 8. Every storage access is wrapped in try/catch. A change to the save format bumps `CONFIG.story.saveVersion`.
 9. Drawing allocates nothing per frame in hot paths. Screen flashes stay under 3 Hz and follow `reducedMotion()`.
 10. An ability's card text is only its trigger and its effect, in the fewest plain words ("Parry: a hound hunts the boss

@@ -100,6 +100,9 @@ node tools/pack-baked.cjs <stem>
 ## Feedback
 
 Aleix's messages to a pass, and `.claude/feedback.md` (append-only; each entry dated). Commit new entries in step 1.
+Replays: `node tools/replays.cjs` in step 1 appends Aleix's new replay notes (pinned at moments of recorded
+multiplayer runs) to `.claude/feedback.md` and prints the last week's run summaries (what downs players, which boss
+attacks land most, picks, time per fight): read it when choosing balance or boss work.
 
 ## Machine rules
 

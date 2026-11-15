@@ -441,7 +441,7 @@ async function peer(origin, name) {
   const flush = async p => { p.send({ type: 'ping' }); await p.next('pong'); };
   const finishFight = () => {
     for (const e of app.sim.inspect().Game.enemies) { e.hp = 0; e.die(); }
-    app.sim.tick(Math.max(C.bossVictoryDelay, C.leaderboardDelay + C.leaderboardTime));
+    app.sim.tick(C.rushKillTime + 0.1);
   };
   // Each player's offer is set to known abilities (the draw itself is covered above).
   const forced = new Map(), offer = app.sim.offerAbilities;

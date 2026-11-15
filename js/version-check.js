@@ -8,7 +8,7 @@
 // reload (js/game-menus.js). It never reloads by itself. A page with no server behind it (a file, a static host) asks
 // once at most and never shows anything.
 const versionCheck = (() => {
-  let newer = null, timer = null, busy = false, absent = !/^https?:$/.test(location.protocol);
+  let newer = null, timer = null, busy = false, absent = !/^https?:$/.test(location.protocol) || !!document.querySelector('meta[name="arena-replay"]');   // the replay door has no lobby to ask
   const pageBuild = () => document.querySelector('meta[name="arena-build"]')?.content || null;
   // One answer from /api/lobby. A build is compared only when both sides have one.
   function note(info) {

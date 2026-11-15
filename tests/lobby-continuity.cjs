@@ -50,7 +50,8 @@ const until = async (test, message, limit = 4000) => {
 }
 (async () => {
   let loadingClock = 0;
-  const app = createServer({ loadNow: () => loadingClock }), peers = [];
+  const app = createServer({ loadNow: () => loadingClock, firstPick: false }), peers = [];
+  const rush = boss => ({ type: 'control', action: 'start', kind: 'calling', id: C.calling.id, opening: [boss] });   // Boss Rush, its first boss pinned
   await new Promise(resolve => app.server.listen(0, '127.0.0.1', resolve));
   const origin = 'http://127.0.0.1:' + app.server.address().port;
   const add = async (name, token) => { const p = await join(origin, name, token); peers.push(p); return p; };
@@ -61,14 +62,11 @@ const until = async (test, message, limit = 4000) => {
   };
   try {
     const a = await add('Leader'), b = await add('Friend');
-    a.send({ type: 'control', action: 'start', kind: 'level', id: 'windward-moor' });
+    a.send(rush('ostrey'));
     const { session } = await a.next('start');
     ready(a, session); ready(b, session); await b.next('frame', m => m.frame.time > 0);
-    const { Game, world } = app.sim.inspect(), zone = Game.zones.find(z => z.id === 'zone-moor');
-    for (const e of zone.actors) { e.hp = 0; e.die(); }
-    const boss = Game.enemies.find(e => e.baseDef.id === 'ostrey');
-    boss.hp -= 24; const bossShare = boss.hp / boss.def.hp;   // her share of a bar that grows with the group (v7.35.0)
-    await b.next('frame', m => m.frame.gates.some(g => g.id === zone.id && g.open));
+    const boss = app.sim.inspect().Game.duel;
+    boss.hp -= 24; const bossShare = boss.hp / boss.def.hp;
 
     a.send({ type: 'presence', foreground: false }); await a.activity();
     await b.next('roster', m => m.leader === b.id);
@@ -89,9 +87,8 @@ const until = async (test, message, limit = 4000) => {
     await until(() => app.clients.size === 0, 'the party left');
     const emptyTime = app.sim.state.time;
     await until(() => app.sim.state.time > emptyTime + 0.15, 'the empty run continues ticking');
-    assert.equal(app.session.epoch, session.epoch, 'an intentional empty lobby retains the adventure');
+    assert.equal(app.session.epoch, session.epoch, 'an intentional empty lobby retains the run');
     assert.ok(bossShare < 1 && Math.abs(boss.hp / boss.def.hp - bossShare) < 1e-9, 'boss health survives the whole party leaving');
-    assert.ok(world.gates.find(g => g.id === zone.id).open, 'won gates remain open');
 
     const rejoined = await add('', token), resumed = await rejoined.next('start');
     assert.equal(rejoined.id, id, 'the browser recovers its identity');
@@ -115,7 +112,7 @@ const until = async (test, message, limit = 4000) => {
     await replacement.activity();
     assert.equal(app.clients.get(id).pose.flasks, 1);
     replacement.send({ type: 'control', action: 'transfer', player: impostor.id }); await replacement.activity();
-    impostor.send({ type: 'control', action: 'start', kind: 'gauntlet', id: 'boss-only' });
+    impostor.send(rush('giant'));
     const run = (await impostor.next('start')).session;
     app.sim.addBot();   // a test player (no party gets a bot since pass 52)
     assert.equal(app.sim.botList().length, 1);
@@ -130,7 +127,7 @@ const until = async (test, message, limit = 4000) => {
     await until(() => app.clients.size === 0, 'all sockets left the bot run');
     await until(() => enemy.hp < aloneHp, 'a bot deals real damage after every human leaves', 16000);
     assert.ok(body.alive()); assert.equal(app.session.epoch, run.epoch); assert.equal(app.sim.botList().length, 1);
-    // A new chapter/attempt gets its normal spawn and refills, never coordinates from an old map.
+    // A new run gets its normal spawn and refills, never coordinates from an old arena.
     const later = await add('', token), current = await later.next('start');
     assert.equal(current.session.epoch, run.epoch); assert.equal(current.resume, null);
     assert.equal(later.welcome.players.find(p => p.id === id).name, 'Returning knight');

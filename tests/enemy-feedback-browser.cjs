@@ -13,9 +13,9 @@ const { createServer } = require('../server/index.cjs');
     await page.addInitScript(() => { localStorage.setItem('combat-arena-3d.settings', JSON.stringify({ graphics: 'bare', volume: 0 })); localStorage.setItem('combatArena.sparring', JSON.stringify({ done: true })); localStorage.setItem('combatArena.onlineName', 'Tester'); });
     await page.goto(`http://127.0.0.1:${app.server.address().port}/combat-arena-3d.html#dev`);
     await page.waitForFunction(() => window.__arenaReady, null, { timeout: 120000 });
-    await page.getByRole('button', { name: 'Join public lobby', exact: false }).click();
+    await page.getByRole('button', { name: 'Join lobby', exact: false }).click();
     await page.waitForFunction(() => multiplayer.connected);
-    await page.locator('#lobbyAdventure').selectOption('gauntlet/boss-only');
+    await page.locator('#lobbyAdventure').selectOption('calling/boss-rush');
     await page.locator('#lobbyStart').click();
     await page.waitForFunction(() => multiplayer.info.ready && multiplayer.info.receivedFrames > 2, null, { timeout: 90000 });
     const results = await page.evaluate(() => {

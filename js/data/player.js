@@ -114,8 +114,8 @@ const PLAYER_DEF = {
       // The Finishing Blow (pass 100, js/finisher.js): the counter that lands on a guard cracked twice. No hitbox: the
       // damage is its own (CONFIG.finisher.damage), dealt as the active phase opens. Wind-up: time stops for the foe and
       // the player flash-steps through it (CONFIG.finisher.steps); active: every cut opens at once; follow and recovery:
-      // the held pose. About 1.2 s in all. Its pose is a stand-in (the light counter's) until track A draws its own.
-      finisher: { id: 'finisher', anim: 'sweep', pose: 'counterFlash', hits: [{ startup: 0.5, active: 0.08, follow: 0.2 }], recovery: 0.28,
+      // the held pose. About 1.2 s in all. Its look: js/finisher-fx.js (pass 103).
+      finisher: { id: 'finisher', anim: 'sweep', pose: 'finisherStrike', hits: [{ startup: 0.5, active: 0.08, follow: 0.2 }], recovery: 0.28,
                   markers: [{ at: 'windup', t: 0, event: 'sound', sound: 'counterFlash', vel: 1 }, { at: 'active', t: 0, event: 'glint' },
                             { at: 'active', t: 0, event: 'sound', sound: 'hitFlesh', vel: 1 }],
                   damage: 0, poise: 0, knock: 0, lunge: 0, box: { w: 0.6, h: 0.6, d: 1.6, fwd: 1.0, y: 1.1 } },

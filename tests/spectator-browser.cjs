@@ -1,11 +1,12 @@
 'use strict';
 const assert = require('node:assert/strict');
-const { selectAdventure } = require('./browser-adventure.cjs');
+const { pinRush, selectRush } = require('./browser-adventure.cjs');
 const fs = require('node:fs');
 const { chromium } = require('./browser.cjs');
 const { createServer } = require('../server/index.cjs');
 (async () => {
-  const app = createServer({ dev: true });
+  const app = createServer({ dev: true, firstPick: false });
+  pinRush(app, ['ostrey']);
   await new Promise(resolve => app.server.listen(0, '127.0.0.1', resolve));
   const browser = await chromium.launch({ channel: 'msedge', headless: true }), errors = [];
   async function player(name) {
@@ -13,11 +14,11 @@ const { createServer } = require('../server/index.cjs');
     const page = await context.newPage(); page.on('pageerror', e => errors.push(e.message));
     await page.addInitScript(name => {
       localStorage.setItem('combat-arena-3d.settings', JSON.stringify({ graphics: 'bare', volume: 0 }));
-      localStorage.setItem('combatArena.onlineName', name);
+      localStorage.setItem('combatArena.onlineName', name); localStorage.setItem('combatArena.sparring', JSON.stringify({ done: true }));
     }, name);
     await page.goto(`http://127.0.0.1:${app.server.address().port}/combat-arena-3d.html#dev`);
     await page.waitForFunction(() => window.__arenaReady, null, { timeout: 120000 });
-    await page.getByRole('button', { name: 'Join public lobby', exact: false }).click();
+    await page.getByRole('button', { name: 'Join lobby', exact: false }).click();
     await page.waitForFunction(() => multiplayer.connected);
     return page;
   }
@@ -46,7 +47,7 @@ const { createServer } = require('../server/index.cjs');
   }, index);
   try {
     const a = await player('Observer'), b = await player('Knight'), c = await player('Tarnished');
-    await selectAdventure(a, 'arena/ostrey'); await a.locator('#lobbyStart').click();
+    await selectRush(a); await a.locator('#lobbyStart').click();
     await Promise.all([ready(a), ready(b), ready(c)]);
     for (const e of app.sim.inspect().Game.enemies) e.update = () => {};
     const bId = await b.evaluate(() => multiplayer.info.self), cId = await c.evaluate(() => multiplayer.info.self);
@@ -93,21 +94,13 @@ const { createServer } = require('../server/index.cjs');
     assert.equal(await a.locator('#spectatorNext').isDisabled(), true, 'dead teammates are excluded');
     await b.evaluate(() => multiplayer.leave());
     await a.waitForFunction(() => multiplayer.info.spectatorTarget === null);
-    const epoch = app.session.epoch;
     await c.evaluate(() => { Game.manualClock = false; });
-    await a.waitForFunction(epoch => multiplayer.info.session.epoch > epoch, epoch, { timeout: 20000 });
-    await Promise.all([ready(a), ready(c)]);
-    assert.equal(await a.locator('#onlineSpectator').isVisible(), false, 'fresh attempt exits spectator mode');
+    // Everyone left is down: the run ends on its summary, out of spectator mode.
+    await a.locator('#runSummary').waitFor({ timeout: 20000 });
+    assert.equal(await a.locator('#onlineSpectator').isVisible(), false, 'the end of the run exits spectator mode');
     assert.equal(await a.evaluate(() => multiplayer.spectating), false);
-    assert.equal(await a.evaluate(() => Game.player.alive()), true);
     assert.equal(await a.evaluate(() => camera.fov), await a.evaluate(() => CONFIG.camera.fov));
-    await a.evaluate(() => multiplayer.show());
-    await selectAdventure(a, 'level/long-hall'); await a.locator('#lobbyStart').click();
-    await Promise.all([ready(a), ready(c)]);
-    for (const e of app.sim.inspect().Game.enemies) e.update = () => {};
-    await die(a);
-    assert.equal(await a.evaluate(() => multiplayer.spectatorMode), false, 'normal level deaths keep their personal respawn');
     assert.deepEqual(errors, []);
-    console.log('Spectator browsers: exact relayed camera, automatic entry, clicks, keyboard, controller, bar toggle, narrow layout, target death/disconnect, team reset and normal level deaths passed.');
+    console.log('Spectator browsers: exact relayed camera, automatic entry, clicks, keyboard, controller, bar toggle, narrow layout, target death/disconnect and the end of the run passed.');
   } finally { await browser.close(); await app.close(); }
 })().catch(e => { console.error(e); process.exitCode = 1; });

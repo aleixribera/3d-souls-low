@@ -3,27 +3,19 @@
 // Timing/bandwidth limits are data, rather than constants scattered through the transport.
 (function (root) {
   const config = Object.freeze({
-    protocol: 2, path: '/lobby', tickRate: 60, snapshotRate: 30, playerRate: 30,
+    protocol: 3, path: '/lobby', tickRate: 60, snapshotRate: 30, playerRate: 30,
     defaultCapacity: 16, maxCapacity: 64, maxMessage: 16384, maxBuffered: 262144,
     interpolation: 1 / 30, maxHistory: 240, historySeconds: 3, stalePlayer: 3,
     heartbeat: 15000, idleTimeout: 45000, connectTimeout: 10000,
     messagesPerSecond: 100, maxName: 24, maxCoordinate: 100000,
-    maxCharge: 1, respawnSpread: 0.85, remoteRange: 100, maxClaims: 2048, claimWait: 0.4, maxPendingClaims: 64,
+    maxCharge: 1, remoteRange: 100, maxClaims: 2048, claimWait: 0.4, maxPendingClaims: 64,
     targetHysteresis: 0.8, maxBots: 3, contactTolerance: 1.5,
     wirePrecision: 1000, compressionThreshold: 512, compressionLevel: 3, compressionConcurrency: 2,
     metricsInterval: 1000, pingInterval: 2000, metricsSamples: 120,
     leaderIdle: 5 * 60 * 1000, activityInterval: 1000, leaderInputGrace: 2000,
     reconnectDelay: 1000, reconnectMaxDelay: 10000, reconnectBackoffSteps: 4,
     loadTimeout: 30 * 1000, rememberedPlayers: 1024,
-    defaultCampaign: 'ashmere',
-    defaultAdventure: Object.freeze({ kind: 'calling', id: 'boss-rush' }),
-    // Boss runs: `size` bosses fought together per encounter, in catalog order; `then` follows a full victory.
-    gauntlets: Object.freeze({
-      'boss-only': Object.freeze({ name: 'SINGLE BOSS', size: 1, then: 'boss-pairs' }),
-      'boss-pairs': Object.freeze({ name: 'DOUBLE BOSS', size: 2, then: 'boss-triples' }),
-      'boss-triples': Object.freeze({ name: 'TRIPLE BOSS', size: 3, then: 'boss-quads' }),
-      'boss-quads': Object.freeze({ name: 'QUAD BOSS', size: 4, then: null }),
-    }),
+    // Online play is Boss Rush and the weekly run only (Aleix, 2026-11-14; PLAN.md track B item 1).
     // Boss Rush (v7.35.0 as The Calling; the lobby's default since v7.60.0; endless since pass 65, CONFIG.endless): a
     // co-op run of bosses that goes on until everyone falls. No bot joins: it is the party against the bosses, alone or
     // with friends (pass 52).
@@ -31,12 +23,11 @@
     // The weekly run (PLAN.md track B item 8): Boss Rush on one seed per week (ISO week, UTC), the same bosses,
     // modifiers and ability offers for everyone; the server keeps the week's board (`board` runs and kills).
     weekly: Object.freeze({ id: 'weekly', name: 'WEEKLY RUN', board: 3 }),
-    bossLoadGrace: 3, bossVictoryDelay: 5, teamWipeScreenTime: 4,
+    bossLoadGrace: 3,
     // Boss Rush between fights (v7.69.0): the kill moment plays `rushKillTime` s in the arena, then the ability pick
     // opens there; the next boss drops straight in, with no loading card, after only `rushDropGrace` s of the party loading.
     rushKillTime: 2.5, rushDropGrace: 1,
     runIntroScreenTime: 5,
-    leaderboardDelay: 1, leaderboardTime: 6,
     spectatorFov: [10, 150],
     // Admission: sockets that have not said hello hold no player slot. Each address (the socket's, or the
     // last X-Forwarded-For entry a loopback/private proxy adds) has its own connection and hello budget.
@@ -111,11 +102,10 @@
         this.groups[kind] = next;
         return { patches, removed };
       };
-      const enemies = changes('enemies', frame.enemies), gates = changes('gates', frame.gates), traps = changes('traps', frame.traps), people = changes('players', players);
-      return { type: 'frame', full, frame: { epoch: frame.epoch, time: frame.time, complete: frame.complete, fought: frame.fought, results: frame.results,
-        checkpoint: frame.checkpoint, enemies: enemies.patches, gates: gates.patches, traps: traps.patches,
-        events: frame.events, shots: frame.shots, embers: (frame.embers || []).map(wire), server: frame.server }, players: people.patches,
-        removed: { enemies: enemies.removed, gates: gates.removed, traps: traps.removed, players: people.removed } };
+      const enemies = changes('enemies', frame.enemies), people = changes('players', players);
+      return { type: 'frame', full, frame: { epoch: frame.epoch, time: frame.time, complete: frame.complete, fought: frame.fought,
+        enemies: enemies.patches, events: frame.events, shots: frame.shots, embers: (frame.embers || []).map(wire), server: frame.server }, players: people.patches,
+        removed: { enemies: enemies.removed, players: people.removed } };
     }
   }
   class FrameDecoder {
@@ -130,8 +120,7 @@
         for (const p of patches) state.set(p.id, { ...state.get(p.id), ...p });
         return [...state.values()];
       };
-      return { ...message, players: merge('players', message.players), frame: { ...message.frame,
-        enemies: merge('enemies', message.frame.enemies), gates: merge('gates', message.frame.gates), traps: merge('traps', message.frame.traps) } };
+      return { ...message, players: merge('players', message.players), frame: { ...message.frame, enemies: merge('enemies', message.frame.enemies) } };
     }
   }
   // Each enemy owns a presentation clock. Recover idle/recovery delay without
@@ -170,7 +159,12 @@
       return { a, b, time, alpha, crossed };
     }
   }
-  const api = { config, finite, id, own, pose, bodyPose, name, cameraView, FrameEncoder, FrameDecoder, EnemyTrack };
+  // The game's files the lobby's simulation runs (server/headless.cjs, and the page alone in js/alone.js): the engine,
+  // every data/ and levels/ file, in GAME_FILES order; then hostFiles, which only the simulation loads.
+  const engine = new Set(['config.js', 'net-protocol.js', 'helpers.js', 'terrain.js', 'states.js', 'registries.js', 'events.js', 'world.js', 'character.js', 'player.js', 'enemy.js', 'crowd.js', 'combat.js', 'finisher.js', 'abilities.js', 'bot-navigation.js', 'bot.js', 'companions.js', 'game.js', 'game-menus.js', 'game-view.js', 'game-level.js', 'attack-anim.js']);
+  const engineScript = file => engine.has(file) || file.startsWith('data/') || file.startsWith('levels/');
+  const hostFiles = Object.freeze(['lobby-sim.js', 'lobby-host.js']);
+  const api = { engineScript, hostFiles, config, finite, id, own, pose, bodyPose, name, cameraView, FrameEncoder, FrameDecoder, EnemyTrack };
   if (typeof module === 'object' && module.exports) module.exports = api;
   else root.ArenaNet = api;
 })(globalThis);

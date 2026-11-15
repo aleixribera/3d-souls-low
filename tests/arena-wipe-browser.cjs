@@ -1,10 +1,11 @@
 'use strict';
 const assert = require('node:assert/strict');
-const { selectAdventure } = require('./browser-adventure.cjs');
+const { pinRush, selectRush } = require('./browser-adventure.cjs');
 const { chromium } = require('./browser.cjs');
 const { createServer } = require('../server/index.cjs');
 (async () => {
-  const app = createServer({ dev: true });
+  const app = createServer({ dev: true, firstPick: false });
+  pinRush(app, ['ostrey']);
   await new Promise(resolve => app.server.listen(0, '127.0.0.1', resolve));
   const browser = await chromium.launch({ channel: 'msedge', headless: true }), errors = [];
   async function player() {
@@ -13,7 +14,7 @@ const { createServer } = require('../server/index.cjs');
     await page.addInitScript(() => { localStorage.setItem('combat-arena-3d.settings', JSON.stringify({ graphics: 'bare', volume: 0 })); localStorage.setItem('combatArena.sparring', JSON.stringify({ done: true })); localStorage.setItem('combatArena.onlineName', 'Tester'); });
     await page.goto(`http://127.0.0.1:${app.server.address().port}/combat-arena-3d.html#dev`);
     await page.waitForFunction(() => window.__arenaReady, null, { timeout: 120000 });
-    await page.getByRole('button', { name: 'Join public lobby', exact: false }).click();
+    await page.getByRole('button', { name: 'Join lobby', exact: false }).click();
     await page.waitForFunction(() => multiplayer.connected);
     return page;
   }
@@ -22,7 +23,7 @@ const { createServer } = require('../server/index.cjs');
   const die = p => p.evaluate(() => { Game.player.hp = 0; Game.player.setState(PS.DEAD); Game.onPlayerDeath(); });
   try {
     const a = await player(), b = await player();
-    await selectAdventure(a, 'arena/ostrey'); await a.locator('#lobbyStart').click();
+    await selectRush(a); await a.locator('#lobbyStart').click();
     await Promise.all([ready(a), ready(b)]);
     // Hold the boss still so this fixture controls each player's death.
     for (const e of app.sim.inspect().Game.enemies) e.update = () => {};
@@ -37,14 +38,11 @@ const { createServer } = require('../server/index.cjs');
     assert.equal(app.session.epoch, epoch);
     assert.ok(share < 1 && Math.abs(duel.hp / duel.def.hp - share) < 1e-9, 'a partial wipe keeps her damage');
     await die(b);
-    await a.waitForFunction(epoch => multiplayer.info.session.epoch > epoch, epoch, { timeout: 20000 });
-    await Promise.all([ready(a), ready(b)]);
-    for (const p of [a, b]) {
-      assert.equal(await p.evaluate(() => Game.player.alive()), true);
-      assert.equal(await p.evaluate(() => Game.player.hp === Game.player.maxHp), true);
-      assert.equal(await p.evaluate(() => Game.duel.hp === Game.duel.def.hp), true, 'the boss is back to a full bar');
-    }
+    // A full wipe ends the run: both see its summary in the lobby.
+    for (const p of [a, b]) await p.locator('#runSummary').waitFor({ timeout: 20000 });
+    assert.equal(await a.locator('#runSummaryTitle').textContent(), 'Reached fight 1');
+    assert.equal(app.session, null);
     assert.deepEqual(errors, []);
-    console.log('Boss arena browsers: defeated player waits beyond respawn delay; full team wipe restores both players and boss.');
+    console.log('Boss arena browsers: defeated player waits beyond respawn delay; a full team wipe ends the run on its summary.');
   } finally { await browser.close(); await app.close(); }
 })().catch(e => { console.error(e); process.exitCode = 1; });

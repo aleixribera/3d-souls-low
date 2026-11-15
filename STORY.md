@@ -23,12 +23,8 @@ one into the next chapter's loading screen.
 
 These gold title cards introduce a new shared run; they do not replace chapter loading lines or change the story.
 
-- **STORY · ASHMERE** — “Defeat the Gaoler King.”
 - **BOSS RUSH** — “Answer every boss that comes, until the last of you falls.”
-- **SINGLE BOSS** — “Defeat every boss.”
-- **DOUBLE BOSS** — “Defeat every boss, two at a time.”
-- **TRIPLE BOSS** — “Defeat every boss, three at a time.”
-- **QUAD BOSS** — “Defeat every boss, four at a time.”
+- **WEEKLY RUN** — “The same bosses for everyone this week. Go further than the rest.”
 
 ---
 
