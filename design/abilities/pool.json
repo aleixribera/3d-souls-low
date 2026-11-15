@@ -1,0 +1,3169 @@
+{
+ "stats": {
+  "total": 110,
+  "story": 4,
+  "rarity": {
+   "common": 26,
+   "rare": 59,
+   "legendary": 25
+  },
+  "keys": {
+   "strike": 13,
+   "guard": 13,
+   "summon": 13,
+   "ultimate": 13
+  },
+  "triggered": 58,
+  "summons": 16,
+  "plainCommons": 8,
+  "origin": {
+   "kept": 36,
+   "new": 74
+  }
+ },
+ "pool": [
+  {
+   "id": "keen-edge",
+   "from": "keen-edge",
+   "name": "Keen Edge",
+   "rarity": "common",
+   "kind": "mods",
+   "when": null,
+   "then": "damage",
+   "plain": true,
+   "text": "{damage} more damage.",
+   "levels": [
+    {
+     "damage": 0.08
+    },
+    {
+     "damage": 0.16
+    },
+    {
+     "damage": 0.24
+    },
+    {
+     "damage": 0.32
+    }
+   ],
+   "idea": "The plain damage pick, kept because a run needs one honest number. Its touch: the blade edge catches a thin white glint on every swing, brighter with each level.",
+   "look": "A hair-thin white line runs along the blade edge on each swing; level IV adds a faint bone-ink after-streak.",
+   "img": "the swordsman mid-swing, a razor-thin white glint racing along the edge of the blade, a faint bone-coloured ink streak trailing it"
+  },
+  {
+   "id": "iron-blood",
+   "from": "iron-blood",
+   "name": "Iron Blood",
+   "rarity": "common",
+   "kind": "mods",
+   "when": null,
+   "then": "maxHp",
+   "plain": true,
+   "text": "{maxHp} more health.",
+   "levels": [
+    {
+     "maxHp": 0.08
+    },
+    {
+     "maxHp": 0.16
+    },
+    {
+     "maxHp": 0.24
+    },
+    {
+     "maxHp": 0.32
+    }
+   ],
+   "idea": "More health, trimmed a little (PLAN item 11: health picks carried runs further than damage). Its touch: the health bar gains a dark iron rim and a heavy clank when taken.",
+   "look": "Veins of dark iron grey show under the skin of the forearm for a breath when the pick is taken; the health bar gains an iron rim.",
+   "img": "close on the swordsman's gauntleted forearm, dark iron-grey veins spreading under the skin like cooling metal, bone-white sparks"
+  },
+  {
+   "id": "light-step",
+   "from": "light-step",
+   "name": "Light Step",
+   "rarity": "common",
+   "kind": "mods",
+   "when": null,
+   "then": "dashRefill",
+   "plain": true,
+   "text": "Dashes refill {dashRefill} faster.",
+   "levels": [
+    {
+     "dashRefill": 0.12
+    },
+    {
+     "dashRefill": 0.24
+    },
+    {
+     "dashRefill": 0.36
+    },
+    {
+     "dashRefill": 0.48
+    }
+   ],
+   "idea": "Faster dash refill: the newcomer's favourite, it buys mistakes. Its touch: each refilled charge chimes and a feather of bone ink flicks off the heel.",
+   "look": "A single ink feather flicks from the heel as each dash charge returns.",
+   "img": "the swordsman landing from a dash, three slim white bars of light at their feet refilling, a single ink-brush feather flicking off the heel"
+  },
+  {
+   "id": "quick-draught",
+   "from": "quick-draught",
+   "name": "Quick Draught",
+   "rarity": "common",
+   "kind": "mods",
+   "when": null,
+   "then": "flaskSpeed",
+   "plain": true,
+   "text": "Drink flasks {flaskSpeed} faster.",
+   "levels": [
+    {
+     "flaskSpeed": 0.2
+    },
+    {
+     "flaskSpeed": 0.35
+    },
+    {
+     "flaskSpeed": 0.5
+    },
+    {
+     "flaskSpeed": 0.6
+    }
+   ],
+   "idea": "Faster flasks, kept small (Aleix: flask picks made runs too easy). Its touch: the flask's glow snaps on brighter and a quick gulp sound.",
+   "look": "The flask flares warm amber for a frame as it is drunk on the move.",
+   "img": "the swordsman drinking from a small glowing amber flask while running, a quick bone-ink motion smear around the flask"
+  },
+  {
+   "id": "breaker",
+   "from": "breaker",
+   "name": "Breaker",
+   "rarity": "common",
+   "kind": "mods",
+   "when": null,
+   "then": "counterWindow",
+   "plain": true,
+   "text": "Counter window {counterWindow} longer.",
+   "levels": [
+    {
+     "counterWindow": 0.15
+    },
+    {
+     "counterWindow": 0.3
+    },
+    {
+     "counterWindow": 0.45
+    },
+    {
+     "counterWindow": 0.6
+    }
+   ],
+   "idea": "A longer counter window: PLAN asks abilities that fed posture to feed counters instead. Its touch: the counter glow on the blade dims more slowly, so you see the extra time.",
+   "look": "The blade's counter glow fades along a longer bone-white tail.",
+   "img": "the swordsman after a perfect dodge, the blade glowing with a long, slowly fading white aura while the boss recovers, time feeling stretched"
+  },
+  {
+   "id": "keen-eye",
+   "from": "keen-eye",
+   "name": "Keen Eye",
+   "rarity": "common",
+   "kind": "mods",
+   "when": null,
+   "then": "parryWindow",
+   "plain": true,
+   "text": "Deflect window {parryWindow} wider.",
+   "levels": [
+    {
+     "parryWindow": 0.15
+    },
+    {
+     "parryWindow": 0.3
+    },
+    {
+     "parryWindow": 0.45
+    },
+    {
+     "parryWindow": 0.6
+    }
+   ],
+   "idea": "A wider deflect window, for friends new to the genre. Its touch: a faint ring shows round the player at the start of each boss wind-up while the window is open.",
+   "look": "A thin bone ring flickers once round the feet as a boss blow comes into the window.",
+   "img": "the swordsman raising the blade to deflect a huge falling blow, a thin bone-white ring of focus around them, the moment just before impact"
+  },
+  {
+   "id": "cold-riposte",
+   "from": "cold-riposte",
+   "name": "Cold Riposte",
+   "rarity": "common",
+   "kind": "mods",
+   "when": null,
+   "then": "riposte",
+   "plain": true,
+   "text": "Counters: {riposte} more damage.",
+   "levels": [
+    {
+     "riposte": 0.15
+    },
+    {
+     "riposte": 0.3
+    },
+    {
+     "riposte": 0.45
+    },
+    {
+     "riposte": 0.6
+    }
+   ],
+   "idea": "Counters hit harder (the counters are the skill the fight is about). Its touch: frost rime forms along the counter's cut line.",
+   "look": "A pale frost line crusts along the counter cut and flakes away.",
+   "img": "the swordsman frozen in a counter slash past the boss, the cut line in the air crusted with pale frost and flaking ice"
+  },
+  {
+   "id": "headsman",
+   "from": "headsman",
+   "name": "Headsman",
+   "rarity": "common",
+   "kind": "mods",
+   "when": null,
+   "then": "finisher",
+   "plain": true,
+   "text": "Finishing Blow: {finisher} more damage.",
+   "levels": [
+    {
+     "finisher": 0.15
+    },
+    {
+     "finisher": 0.3
+    },
+    {
+     "finisher": 0.45
+    },
+    {
+     "finisher": 0.6
+    }
+   ],
+   "idea": "The Finishing Blow hits harder. Its touch: the frozen frame of the Finishing Blow gains one extra heavy black ink stroke.",
+   "look": "During the Finishing Blow's frozen frame, one thick black brush stroke crosses the screen behind the cuts.",
+   "img": "a frozen moment of a multi-cut flash step through a boss, many white cut lines hanging in the air, one thick black calligraphy brush stroke behind them"
+  },
+  {
+   "id": "spark-step",
+   "name": "Spark Step",
+   "rarity": "common",
+   "kind": "power",
+   "when": "dashPast",
+   "then": "spark",
+   "text": "Dash past the boss: a spark cuts it.",
+   "levels": [
+    {
+     "damage": 10,
+     "cooldown": 1
+    },
+    {
+     "damage": 13,
+     "cooldown": 1
+    },
+    {
+     "damage": 16,
+     "cooldown": 1
+    },
+    {
+     "damage": 19,
+     "cooldown": 1
+    }
+   ],
+   "idea": "Dashing close past or through the boss leaves a crackling line that snaps shut on it. Rewards the brave dash instead of the safe one.",
+   "look": "A hard white-and-bone zigzag line drawn along the dash path, snapping into a small star where it crosses the boss.",
+   "img": "the swordsman dashing past a towering boss in a blur, a crackling zigzag line of bone-white electricity drawn along the dash path snapping on the boss"
+  },
+  {
+   "id": "ember-lick",
+   "name": "Ember Lick",
+   "rarity": "common",
+   "kind": "power",
+   "when": "stringEnd",
+   "then": "lick",
+   "text": "Fourth light hit: a lick of flame.",
+   "levels": [
+    {
+     "damage": 10
+    },
+    {
+     "damage": 13
+    },
+    {
+     "damage": 16
+    },
+    {
+     "damage": 19
+    }
+   ],
+   "idea": "The last cut of a full light string bursts into a short tongue of fire. Teaches finishing the string.",
+   "look": "One flat, hard-edged flame tongue follows the fourth cut's arc, dark red inner lines, gone in a quarter second.",
+   "img": "the swordsman finishing a four-hit sword string, the final arc followed by a single hard-edged tongue of flame with dark red inner lines"
+  },
+  {
+   "id": "hot-iron",
+   "name": "Hot Iron",
+   "rarity": "common",
+   "kind": "power",
+   "when": "fullHeavy",
+   "then": "molten",
+   "text": "Full heavy: molten sparks spray the boss.",
+   "levels": [
+    {
+     "damage": 16
+    },
+    {
+     "damage": 21
+    },
+    {
+     "damage": 26
+    },
+    {
+     "damage": 31
+    }
+   ],
+   "idea": "A fully charged heavy that lands sprays a fan of molten drops. Makes the charge feel hot.",
+   "look": "A fan of short streaked molten drops (line sparks, not dots) from the impact point, cooling from yellow to dark red.",
+   "img": "a fully charged overhead sword blow landing on a boss, a fan of molten streak sparks spraying from the impact, glowing orange cooling to dark red"
+  },
+  {
+   "id": "ringing-steel",
+   "name": "Ringing Steel",
+   "rarity": "common",
+   "kind": "perk",
+   "when": "parry",
+   "then": "freeDash",
+   "text": "Deflect: your next dash is free.",
+   "levels": [
+    {
+     "cooldown": 6
+    },
+    {
+     "cooldown": 5
+    },
+    {
+     "cooldown": 4
+    },
+    {
+     "cooldown": 3
+    }
+   ],
+   "idea": "Each deflect rings and banks a free dash: deflect, then dash round the boss for the counter.",
+   "look": "A clear bone-white ring of sound expands from the deflect; the next dash leaves a ringing echo trail.",
+   "img": "the swordsman deflecting a blow with a bright clash, a crisp ring of sound waves expanding from the blade, then dashing away leaving an echoing trail"
+  },
+  {
+   "id": "echo-step",
+   "name": "Echo Step",
+   "rarity": "common",
+   "kind": "power",
+   "when": "dodge",
+   "then": "afterimage",
+   "text": "Perfect dodge: your afterimage strikes once.",
+   "levels": [
+    {
+     "damage": 14
+    },
+    {
+     "damage": 18
+    },
+    {
+     "damage": 22
+    },
+    {
+     "damage": 26
+    }
+   ],
+   "idea": "The afterimage the perfect dodge leaves behind swings once at the boss before it fades: the dodge itself hits back.",
+   "look": "A grey ink silhouette of the player, left where they dodged, swings one brush-stroke slash and dissolves into ink flakes.",
+   "img": "the swordsman dodging aside while a grey ink afterimage of them, left behind, swings a brush-stroke slash at the boss and flakes away"
+  },
+  {
+   "id": "petal-cut",
+   "name": "Petal Cut",
+   "rarity": "common",
+   "kind": "power",
+   "when": "dashStrike",
+   "then": "lateCut",
+   "text": "Dash attack: the cut opens again a beat later.",
+   "levels": [
+    {
+     "damage": 12
+    },
+    {
+     "damage": 15
+    },
+    {
+     "damage": 18
+    },
+    {
+     "damage": 21
+    }
+   ],
+   "idea": "The dash attack's cut line hangs in the air and opens a second time a beat later, the anime delayed cut in miniature.",
+   "look": "The cut line stays as a thin bone stroke, then splits open with a few pale petals.",
+   "img": "the swordsman finishing a dash attack past a boss, a thin cut line hanging in the air behind them splitting open with a few pale petals"
+  },
+  {
+   "id": "thorn-guard",
+   "name": "Thorn Guard",
+   "rarity": "common",
+   "kind": "power",
+   "when": "block",
+   "then": "thorns",
+   "text": "Block: thorns hit the attacker.",
+   "levels": [
+    {
+     "damage": 8,
+     "cooldown": 0.8
+    },
+    {
+     "damage": 11,
+     "cooldown": 0.8
+    },
+    {
+     "damage": 14,
+     "cooldown": 0.8
+    },
+    {
+     "damage": 17,
+     "cooldown": 0.8
+    }
+   ],
+   "idea": "A blocked blow drives black ink thorns out of the shield into the attacker: blocking is no longer only waiting.",
+   "look": "Three to five black ink thorns jab out of the round shield's face toward the attacker and retract.",
+   "img": "the swordsman blocking a heavy blow with a round shield, sharp black ink thorns stabbing out of the shield face into the attacker"
+  },
+  {
+   "id": "ash-veil",
+   "name": "Ash Veil",
+   "rarity": "common",
+   "kind": "perk",
+   "when": "low",
+   "then": "veil",
+   "once": true,
+   "text": "Low health: the next blow does {cut} less.",
+   "levels": [
+    {
+     "below": 0.33,
+     "cut": 0.4
+    },
+    {
+     "below": 0.33,
+     "cut": 0.5
+    },
+    {
+     "below": 0.33,
+     "cut": 0.6
+    },
+    {
+     "below": 0.33,
+     "cut": 0.7
+    }
+   ],
+   "idea": "Once a fight, falling under a third wraps you in a veil of ash that eats most of the next blow. A second chance you see coming.",
+   "look": "A grey ash veil swirls round the body; when the blow lands it bursts into a cloud of ash flakes.",
+   "img": "a wounded swordsman wrapped in a swirling veil of grey ash, a boss blow landing and the veil bursting into flakes that absorb it"
+  },
+  {
+   "id": "bitter-draught",
+   "name": "Bitter Draught",
+   "rarity": "common",
+   "kind": "power",
+   "when": "flask",
+   "then": "burnHits",
+   "text": "Flask: your next {hits} hits burn.",
+   "levels": [
+    {
+     "hits": 3,
+     "damage": 9
+    },
+    {
+     "hits": 4,
+     "damage": 9
+    },
+    {
+     "hits": 5,
+     "damage": 9
+    },
+    {
+     "hits": 6,
+     "damage": 9
+    }
+   ],
+   "idea": "Drinking a flask lights the blade for a few hits: healing becomes a reason to attack again at once.",
+   "look": "The blade catches small flat flames along its length, one going out with each hit.",
+   "img": "the swordsman lowering a flask as small flat flames catch along the length of the sword, ready to strike again"
+  },
+  {
+   "id": "grit",
+   "name": "Grit",
+   "rarity": "common",
+   "kind": "perk",
+   "when": "hurt",
+   "then": "ironSkin",
+   "text": "Get hit: take {cut} less for {time}.",
+   "levels": [
+    {
+     "cut": 0.2,
+     "time": 1.5
+    },
+    {
+     "cut": 0.25,
+     "time": 1.5
+    },
+    {
+     "cut": 0.3,
+     "time": 1.5
+    },
+    {
+     "cut": 0.35,
+     "time": 1.5
+    }
+   ],
+   "idea": "After a hit the skin turns iron grey for a moment, so a boss's follow-up hurts less. Softens combos for newcomers.",
+   "look": "The body flashes to a dull iron-grey shade with a clank, fading back over 1.5 s.",
+   "img": "the swordsman taking a hit and staggering, their body flashing to dull iron grey, sparks glancing off as a follow-up blow comes"
+  },
+  {
+   "id": "kindling",
+   "name": "Kindling",
+   "rarity": "common",
+   "kind": "perk",
+   "when": "parry",
+   "then": "keys",
+   "text": "Deflect: every key gains {charge} charge.",
+   "levels": [
+    {
+     "charge": 1
+    },
+    {
+     "charge": 2
+    },
+    {
+     "charge": 3
+    },
+    {
+     "charge": 4
+    }
+   ],
+   "idea": "Deflects feed the four ability keys more: a deflect player fires techniques sooner.",
+   "look": "A spark jumps from the deflect to the four key caps on the HUD, each flaring once.",
+   "img": "a sword deflect throwing a spark that splits into four small glowing threads flying upward, each lighting a numbered rune"
+  },
+  {
+   "id": "tithe",
+   "name": "Tithe",
+   "rarity": "common",
+   "kind": "perk",
+   "when": "finisher",
+   "then": "keys",
+   "text": "Finishing Blow: every key gains {charge} charge.",
+   "levels": [
+    {
+     "charge": 4
+    },
+    {
+     "charge": 6
+    },
+    {
+     "charge": 8
+    },
+    {
+     "charge": 10
+    }
+   ],
+   "idea": "The Finishing Blow pays into every key, so a big moment chains into a technique.",
+   "look": "After the Finishing Blow's cuts open, four bone-white motes rise from the boss into the player.",
+   "img": "after a multi-cut finishing blow, four bone-white glowing motes rising from the staggered boss and flowing into the swordsman"
+  },
+  {
+   "id": "kindred-ember",
+   "name": "Kindred Ember",
+   "rarity": "common",
+   "kind": "perk",
+   "when": "revive",
+   "then": "reviveHeal",
+   "party": true,
+   "text": "Revive a friend: they rise with {heal} more health.",
+   "levels": [
+    {
+     "heal": 0.1
+    },
+    {
+     "heal": 0.15
+    },
+    {
+     "heal": 0.2
+    },
+    {
+     "heal": 0.25
+    }
+   ],
+   "idea": "The co-op common: a friend you revive gets up stronger. Only offered in a party.",
+   "look": "The revive ember flares larger and warmer as the friend rises; a ring of bone-white ash sweeps out.",
+   "img": "one warrior kneeling to raise a fallen friend from a glowing ember on the ground, a warm ring of light and ash sweeping out"
+  },
+  {
+   "id": "glint",
+   "name": "Glint",
+   "rarity": "common",
+   "kind": "perk",
+   "when": "ready",
+   "then": "empower",
+   "text": "A key fills: your next hit does {damage} more.",
+   "levels": [
+    {
+     "damage": 0.4
+    },
+    {
+     "damage": 0.55
+    },
+    {
+     "damage": 0.7
+    },
+    {
+     "damage": 0.85
+    }
+   ],
+   "idea": "Each time an ability key fills, the blade glints and the next hit is heavier: a cue and a reward in one.",
+   "look": "A four-point star glint slides down the blade and sits at its tip until the next hit.",
+   "img": "close on a sword held ready, a sharp four-point star glint sliding down the blade to sit at its tip"
+  },
+  {
+   "id": "hunters-pace",
+   "name": "Hunter's Pace",
+   "rarity": "common",
+   "kind": "perk",
+   "when": "fightStart",
+   "then": "freeDash",
+   "text": "Fight start: free dashes for {time}.",
+   "levels": [
+    {
+     "time": 4
+    },
+    {
+     "time": 5
+    },
+    {
+     "time": 6
+    },
+    {
+     "time": 7
+    }
+   ],
+   "idea": "The first seconds of every fight, dashes cost nothing: open with a rush.",
+   "look": "Bone-white speed lines streak off the body on each dash while it lasts; the dash bars glow white.",
+   "img": "the swordsman rushing toward a boss at the start of a fight, multiple dashes chained with bone-white speed lines streaking behind"
+  },
+  {
+   "id": "mirror-shard",
+   "name": "Mirror Shard",
+   "rarity": "common",
+   "kind": "power",
+   "when": "parryShot",
+   "then": "reflect",
+   "text": "Deflect a shot: it flies back.",
+   "levels": [
+    {
+     "damage": 30
+    },
+    {
+     "damage": 40
+    },
+    {
+     "damage": 50
+    },
+    {
+     "damage": 60
+    }
+   ],
+   "idea": "A deflected bolt or thrown thing flies straight back into whoever shot it. A deflect you can aim.",
+   "look": "The shot turns bone-white on contact and flies back along its path with a mirror-shard trail.",
+   "img": "the swordsman deflecting an incoming fiery projectile, the projectile turning white and flying back toward the boss with a trail of mirror shards"
+  },
+  {
+   "id": "shatter-guard",
+   "name": "Shatter Guard",
+   "rarity": "common",
+   "kind": "power",
+   "when": "crack",
+   "then": "shards",
+   "text": "Crack a guard: its shards cut the boss.",
+   "levels": [
+    {
+     "damage": 22
+    },
+    {
+     "damage": 28
+    },
+    {
+     "damage": 34
+    },
+    {
+     "damage": 40
+    }
+   ],
+   "idea": "Each counter that cracks the boss's guard throws shards of that guard back into it. Makes the cracks feel physical.",
+   "look": "Bone-white glassy shards burst off the crack mark on the boss's body and swing back into it.",
+   "img": "a counter slash cracking the guard of an armoured boss, glassy white shards bursting off the crack and curving back into it"
+  },
+  {
+   "id": "dust-devil",
+   "name": "Dust Devil",
+   "rarity": "common",
+   "kind": "power",
+   "when": "jump",
+   "then": "whirl",
+   "text": "Jump: a dust whirl cuts around you.",
+   "levels": [
+    {
+     "damage": 10,
+     "cooldown": 2
+    },
+    {
+     "damage": 13,
+     "cooldown": 2
+    },
+    {
+     "damage": 16,
+     "cooldown": 2
+    },
+    {
+     "damage": 19,
+     "cooldown": 2
+    }
+   ],
+   "idea": "Leaving the ground near the boss kicks up a cutting whirl of dust: jumping in becomes an attack.",
+   "look": "A short spiral of dust with hard bone-white cut lines in it, round the player's feet as they jump.",
+   "img": "the swordsman leaping upward from the arena floor, a spiral whirl of dust with sharp white cut lines spinning around their feet"
+  },
+  {
+   "id": "counterstep",
+   "from": "counterstep",
+   "name": "Counterstep",
+   "rarity": "rare",
+   "kind": "perk",
+   "when": "dodge",
+   "then": "flashBehind",
+   "text": "Perfect dodge: flash-step behind the boss.",
+   "levels": [
+    {
+     "window": 1,
+     "cooldown": 3
+    },
+    {
+     "window": 1.2,
+     "cooldown": 2.5
+    },
+    {
+     "window": 1.4,
+     "cooldown": 2
+    }
+   ],
+   "idea": "The perfect dodge already opens a counter; Counterstep puts you behind the boss for it, in a blue blur with afterimages. The counter is now always a back-stab angle.",
+   "look": "A blue streak and three fading afterimages from the dodge point round to the boss's back, a blue ring where you land.",
+   "img": "the swordsman flash-stepping from in front of a boss to behind it in a blue blur, three fading afterimages along a curved path, blue ring at the landing"
+  },
+  {
+   "id": "vengeance",
+   "from": "vengeance",
+   "name": "Vengeance",
+   "rarity": "rare",
+   "kind": "perk",
+   "when": "hurt",
+   "then": "empower",
+   "text": "Get hit: next hit in {window} does {damage} more.",
+   "levels": [
+    {
+     "window": 3,
+     "damage": 0.3
+    },
+    {
+     "window": 3,
+     "damage": 0.4
+    },
+    {
+     "window": 3,
+     "damage": 0.5
+    }
+   ],
+   "idea": "Getting hit charges the blade with cold fury: answer at once for a heavy blow.",
+   "look": "Blue-black flame crawls up the blade and the eyes glint blue; the answering hit lands with a blue impact star.",
+   "img": "a wounded swordsman rising from a hit, blue-black flame crawling up the blade, eyes glinting blue, ready to strike back"
+  },
+  {
+   "id": "bloodthirst",
+   "from": "bloodthirst",
+   "name": "Bloodthirst",
+   "rarity": "rare",
+   "kind": "perk",
+   "when": "streak",
+   "then": "heal",
+   "text": "{hits} hits unhurt: heal {heal}.",
+   "levels": [
+    {
+     "hits": 5,
+     "heal": 0.08
+    },
+    {
+     "hits": 5,
+     "heal": 0.11
+    },
+    {
+     "hits": 5,
+     "heal": 0.14
+    }
+   ],
+   "idea": "A clean streak drinks back health: the reward for playing well rather than a flask.",
+   "look": "Each hit of the streak pulls a blue-red mote off the boss; on the last they spiral into the player.",
+   "img": "five glowing motes torn from a boss by consecutive sword hits spiralling back into the swordsman, cool blue with a thread of red"
+  },
+  {
+   "id": "last-breath",
+   "from": "last-breath",
+   "name": "Last Breath",
+   "rarity": "rare",
+   "kind": "perk",
+   "when": "low",
+   "then": "freeDash",
+   "text": "Below {below} health: endless dashes.",
+   "levels": [
+    {
+     "below": 0.25
+    },
+    {
+     "below": 0.3
+    },
+    {
+     "below": 0.35
+    }
+   ],
+   "idea": "Near death the dash stops costing: the comeback is all footwork.",
+   "look": "Every dash leaves a chain of blue afterimages and the breath shows as blue mist.",
+   "img": "a badly wounded swordsman dashing again and again around a boss, a chain of blue afterimages, cold blue breath mist"
+  },
+  {
+   "id": "opportunist",
+   "from": "opportunist",
+   "name": "Opportunist",
+   "rarity": "rare",
+   "kind": "perk",
+   "when": "cracked",
+   "then": "damage",
+   "text": "Cracked guard: your hits do {damage} more.",
+   "levels": [
+    {
+     "damage": 0.25
+    },
+    {
+     "damage": 0.35
+    },
+    {
+     "damage": 0.45
+    }
+   ],
+   "idea": "While the boss's guard shows a crack, every hit does more: press the opening before the cracks fade.",
+   "look": "The cracks on the boss glow blue while it lasts; your hits on it leave blue splinters.",
+   "img": "an armoured boss whose guard is covered in glowing blue cracks, the swordsman hammering hits into it with blue splinters flying"
+  },
+  {
+   "id": "bastion",
+   "from": "bastion",
+   "name": "Bastion",
+   "rarity": "rare",
+   "kind": "perk",
+   "when": "block",
+   "then": "charge",
+   "text": "Block: next heavy in {window} is fully charged.",
+   "levels": [
+    {
+     "window": 3
+    },
+    {
+     "window": 4
+    },
+    {
+     "window": 5
+    }
+   ],
+   "idea": "A blocked blow's force goes into the blade: block, then answer with a full heavy at once.",
+   "look": "The blocked impact's blue shock runs from the shield along the arm into the blade, which hums blue.",
+   "img": "the swordsman blocking with a round shield, a blue shockwave running from the shield up the arm into the sword which hums with charged light"
+  },
+  {
+   "id": "patience",
+   "from": "patience",
+   "name": "Patience",
+   "rarity": "rare",
+   "kind": "perk",
+   "when": "unhurt",
+   "then": "empower",
+   "text": "{after} unhurt: next hit does double.",
+   "levels": [
+    {
+     "after": 8,
+     "damage": 1
+    },
+    {
+     "after": 6.5,
+     "damage": 1
+    },
+    {
+     "after": 5,
+     "damage": 1
+    }
+   ],
+   "idea": "Untouched for a while, the blade stills and the next hit lands double, with one calligraphy stroke.",
+   "look": "The blade's edge goes still and pale blue; the doubled hit draws a single thick blue brush stroke across the screen.",
+   "img": "a calm swordsman in a still stance, the blade edge glowing pale blue, then a single thick blue calligraphy brush stroke cutting across a boss"
+  },
+  {
+   "id": "counterflame",
+   "from": "counterflame",
+   "name": "Counterflame",
+   "rarity": "rare",
+   "kind": "power",
+   "when": "parry",
+   "then": "flare",
+   "text": "Deflect: fire bursts on the boss.",
+   "levels": [
+    {
+     "damage": 40,
+     "cooldown": 1
+    },
+    {
+     "damage": 55,
+     "cooldown": 1
+    },
+    {
+     "damage": 70,
+     "cooldown": 1
+    }
+   ],
+   "idea": "Every deflect throws a burst of blue-white fire into the attacker: the deflect is the attack.",
+   "look": "A flat-shaded burst of blue flame with white core blooms on the boss at the deflect point, hard-edged tongues.",
+   "img": "a sword deflect against a boss's blade, a hard-edged burst of blue-white fire blooming on the boss at the point of contact"
+  },
+  {
+   "id": "stone-guardian",
+   "from": "stone-guardian",
+   "name": "Stone Guardian",
+   "rarity": "rare",
+   "kind": "power",
+   "when": "low",
+   "then": "guardian",
+   "once": true,
+   "summon": true,
+   "text": "Low health: a guardian holds the boss for {draw}.",
+   "levels": [
+    {
+     "below": 0.33,
+     "time": 9,
+     "every": 2,
+     "damage": 14,
+     "draw": 4
+    },
+    {
+     "below": 0.33,
+     "time": 11,
+     "every": 1.8,
+     "damage": 18,
+     "draw": 5
+    },
+    {
+     "below": 0.33,
+     "time": 13,
+     "every": 1.6,
+     "damage": 22,
+     "draw": 6
+    }
+   ],
+   "idea": "Once a fight, nearly down, a guardian of stone rises between you and the boss and takes its attention: the breather to drink.",
+   "look": "A hulking stone figure with a tower shield breaks up out of the floor, blue runes in its seams; it bashes with the shield.",
+   "img": "a hulking stone guardian with a tower shield erupting from the arena floor between a wounded swordsman and a boss, blue runes glowing in its seams"
+  },
+  {
+   "id": "static-edge",
+   "from": "static-edge",
+   "name": "Static Edge",
+   "rarity": "rare",
+   "kind": "power",
+   "when": "hits",
+   "then": "spark",
+   "text": "Every {hits}th hit: a spark strikes the boss.",
+   "levels": [
+    {
+     "hits": 5,
+     "damage": 30
+    },
+    {
+     "hits": 4,
+     "damage": 34
+    },
+    {
+     "hits": 4,
+     "damage": 44
+    }
+   ],
+   "idea": "The blade gathers static as it hits; every few hits a short bolt jumps from it to the boss.",
+   "look": "Blue static crawls on the blade, then a short hard zigzag bolt jumps to the boss with a small blue impact star.",
+   "img": "blue static crawling along a sword in mid-combo, a short jagged bolt leaping from the blade into the boss with a star-shaped impact"
+  },
+  {
+   "id": "grave-feast",
+   "from": "grave-feast",
+   "name": "Grave Feast",
+   "rarity": "rare",
+   "kind": "perk",
+   "when": "finisher",
+   "then": "heal",
+   "crate": true,
+   "text": "Finishing Blow: heal {heal}.",
+   "levels": [
+    {
+     "heal": 0.25
+    },
+    {
+     "heal": 0.35
+    },
+    {
+     "heal": 0.45
+    }
+   ],
+   "idea": "A crate reward: the Finishing Blow heals big. The boss's cut lines bleed blue light back into you.",
+   "look": "When the Finishing Blow's lines open, blue light streams from every cut into the player.",
+   "img": "the cut lines of a multi-cut finishing blow on a boss bleeding streams of blue light that flow back into the swordsman"
+  },
+  {
+   "id": "iron-mercy",
+   "from": "iron-mercy",
+   "name": "Iron Mercy",
+   "rarity": "rare",
+   "kind": "perk",
+   "when": "parry",
+   "then": "heal",
+   "crate": true,
+   "text": "Deflect: heal {heal}, once per {cooldown}.",
+   "levels": [
+    {
+     "heal": 0.06,
+     "cooldown": 3
+    },
+    {
+     "heal": 0.09,
+     "cooldown": 2.5
+    },
+    {
+     "heal": 0.12,
+     "cooldown": 2
+    }
+   ],
+   "idea": "A crate reward: deflects heal a little. A deflect build can live without flasks.",
+   "look": "A blue cross-shaped glint flashes in the deflect's sparks and sinks into the chest.",
+   "img": "a deflect's burst of sparks with a cool blue cross-shaped glint in its centre sinking into the swordsman's chest"
+  },
+  {
+   "id": "riptide",
+   "name": "Riptide",
+   "rarity": "rare",
+   "kind": "power",
+   "when": "counter",
+   "then": "wave",
+   "text": "Counter: a wave follows the cut.",
+   "levels": [
+    {
+     "damage": 40,
+     "reach": 8,
+     "width": 2
+    },
+    {
+     "damage": 55,
+     "reach": 9,
+     "width": 2.2
+    },
+    {
+     "damage": 70,
+     "reach": 10,
+     "width": 2.4
+    }
+   ],
+   "idea": "Every counter drags a wave of water through its arc and on: the counter reaches further than the blade.",
+   "look": "A flat-shaded water crescent, deep blue with white foam claws and ink outlines, follows the counter's arc and runs on.",
+   "img": "a swordsman's counter slash followed by a crescent of flat-shaded deep blue water with white foam claws, painted-wave style, crashing through a boss"
+  },
+  {
+   "id": "petal-storm",
+   "name": "Petal Storm",
+   "rarity": "rare",
+   "kind": "power",
+   "when": "finisher",
+   "then": "petals",
+   "text": "Finishing Blow: a storm of petals cuts all near.",
+   "levels": [
+    {
+     "damage": 80,
+     "radius": 5
+    },
+    {
+     "damage": 110,
+     "radius": 5.5
+    },
+    {
+     "damage": 140,
+     "radius": 6
+    }
+   ],
+   "idea": "When the Finishing Blow's lines open, a storm of blade-sharp petals bursts out: big on a two-boss fight.",
+   "look": "Dozens of pale blue petal blades whirl out from the boss in a spiral, each a hard little sliver.",
+   "img": "an explosion of pale blue blade-sharp petals spiralling outward from a boss as a finishing blow lands, the swordsman in a held pose"
+  },
+  {
+   "id": "ironclad",
+   "name": "Ironclad",
+   "rarity": "rare",
+   "kind": "perk",
+   "when": "flask",
+   "then": "unshaken",
+   "text": "Flask: no blow staggers you for {time}.",
+   "levels": [
+    {
+     "time": 3
+    },
+    {
+     "time": 4
+    },
+    {
+     "time": 5
+    }
+   ],
+   "idea": "Drinking turns the skin to blued steel: heavy blows can no longer stagger you while you heal and strike back.",
+   "look": "Blue-steel plates ripple over the skin from the flask hand outward, and blows on it throw blue sparks.",
+   "img": "the swordsman drinking a flask as plates of blued steel ripple across their skin, a boss's heavy blow glancing off in blue sparks"
+  },
+  {
+   "id": "overcharge",
+   "name": "Overcharge",
+   "rarity": "rare",
+   "kind": "perk",
+   "when": "ready",
+   "then": "overcharge",
+   "text": "A full key overcharges: up to {damage} stronger.",
+   "levels": [
+    {
+     "damage": 0.3
+    },
+    {
+     "damage": 0.45
+    },
+    {
+     "damage": 0.6
+    }
+   ],
+   "idea": "A full key keeps charging past full, and its technique comes out stronger the longer you hold it: risk for size.",
+   "look": "The key cap on the HUD grows a blue crackling rim; the technique itself fires with blue arcs around it.",
+   "img": "the swordsman holding a glowing technique back, crackling blue arcs building around their sword hand, energy overflowing"
+  },
+  {
+   "id": "echoing-blade",
+   "name": "Echoing Blade",
+   "rarity": "rare",
+   "kind": "power",
+   "when": "cast",
+   "then": "ghostBlade",
+   "text": "After a key fires: next {hits} hits echo.",
+   "levels": [
+    {
+     "hits": 3,
+     "damage": 12
+    },
+    {
+     "hits": 4,
+     "damage": 14
+    },
+    {
+     "hits": 5,
+     "damage": 16
+    }
+   ],
+   "idea": "Firing any key leaves ghost blades on you: your next few hits each land again a beat later.",
+   "look": "A translucent blue ghost blade shadows each swing and repeats it 0.15 s later.",
+   "img": "a swordsman striking a boss while a translucent blue ghost copy of the sword repeats the same slash a moment later"
+  },
+  {
+   "id": "hunting-call",
+   "name": "Hunting Call",
+   "rarity": "rare",
+   "kind": "perk",
+   "when": "summonHit",
+   "then": "empower",
+   "text": "Summon strikes: your next hit does {damage} more.",
+   "levels": [
+    {
+     "damage": 0.2
+    },
+    {
+     "damage": 0.3
+    },
+    {
+     "damage": 0.4
+    }
+   ],
+   "idea": "Each blow your summon lands marks the boss for you: fight with your summon, not beside it.",
+   "look": "A blue hunter's mark (a sharp chevron) appears where the summon struck; hitting it bursts it.",
+   "img": "a spectral hound biting a boss leaving a glowing blue chevron mark, the swordsman lunging to strike the mark"
+  },
+  {
+   "id": "moonfall-cut",
+   "name": "Moonfall Cut",
+   "rarity": "rare",
+   "kind": "power",
+   "when": "land",
+   "then": "crescent",
+   "action": "light",
+   "text": "Light jump attack: a moon crescent cuts down.",
+   "levels": [
+    {
+     "damage": 45,
+     "cooldown": 4
+    },
+    {
+     "damage": 60,
+     "cooldown": 4
+    },
+    {
+     "damage": 75,
+     "cooldown": 4
+    }
+   ],
+   "idea": "At the top of a light jump attack a pale crescent moon forms behind you and falls with the cut.",
+   "look": "A tall pale-blue crescent appears behind the player in the air and slices down through the boss with the blade.",
+   "img": "the swordsman in the air at the top of a jump, a tall pale blue crescent moon blade forming behind them and slicing down onto a boss"
+  },
+  {
+   "id": "iron-cyclone",
+   "name": "Iron Cyclone",
+   "rarity": "rare",
+   "kind": "power",
+   "when": "comboHeavy",
+   "then": "cyclone",
+   "text": "Heavy finisher: you spin a ring of steel.",
+   "levels": [
+    {
+     "damage": 50,
+     "radius": 3,
+     "cooldown": 4
+    },
+    {
+     "damage": 65,
+     "radius": 3.3,
+     "cooldown": 4
+    },
+    {
+     "damage": 80,
+     "radius": 3.6,
+     "cooldown": 4
+    }
+   ],
+   "idea": "The heavy finisher out of a light string becomes a spin that throws a ring of steel ribbons.",
+   "look": "A flat ring of blue-steel ribbon blades whips round the player at waist height, hard-edged, with speed lines.",
+   "img": "the swordsman spinning at the end of a combo, a flat ring of blue-steel ribbon blades whipping around them, speed lines"
+  },
+  {
+   "id": "fire-burst",
+   "from": "fire-burst",
+   "name": "Fire Burst",
+   "rarity": "rare",
+   "key": "strike",
+   "kind": "power",
+   "when": "press",
+   "then": "flare",
+   "text": "Fire bursts on the boss.",
+   "levels": [
+    {
+     "charge": 14,
+     "damage": 70
+    },
+    {
+     "charge": 13,
+     "damage": 90
+    },
+    {
+     "charge": 12,
+     "damage": 110
+    }
+   ],
+   "idea": "The first key-1 technique: a lotus of fire opens under the boss and snaps shut on it. Instant, sure, satisfying.",
+   "look": "Six hard-edged flame petals rise round the boss's feet, blue-white at the tips and ember inside, and fold inward into a burst.",
+   "img": "a lotus of six hard-edged flame petals blooming under a boss and snapping shut on it, blue-white tips and ember core, the swordsman with an outstretched hand"
+  },
+  {
+   "id": "wind-blade",
+   "from": "wind-blade",
+   "name": "Wind Blade",
+   "rarity": "rare",
+   "key": "strike",
+   "kind": "power",
+   "when": "press",
+   "then": "gale",
+   "text": "A wind blade cuts all in its path.",
+   "levels": [
+    {
+     "charge": 16,
+     "damage": 80,
+     "reach": 12,
+     "width": 1.4
+    },
+    {
+     "charge": 15,
+     "damage": 100,
+     "reach": 14,
+     "width": 1.6
+    },
+    {
+     "charge": 14,
+     "damage": 120,
+     "reach": 16,
+     "width": 1.8
+    }
+   ],
+   "idea": "One horizontal slash throws a crescent of wind that flies on through everything in a line.",
+   "look": "A pale blue crescent with white speed streaks inside, flat-shaded with an ink edge, ripping the ground dust as it flies.",
+   "img": "the swordsman finishing a horizontal slash that throws a huge flying crescent of pale blue wind with white speed streaks, tearing dust from the floor toward a boss"
+  },
+  {
+   "id": "sparrow-flurry",
+   "name": "Sparrow Flurry",
+   "rarity": "rare",
+   "key": "strike",
+   "kind": "power",
+   "when": "press",
+   "then": "flurry",
+   "text": "A flurry of {hits} thrusts.",
+   "levels": [
+    {
+     "charge": 15,
+     "hits": 10,
+     "damage": 9
+    },
+    {
+     "charge": 14,
+     "hits": 12,
+     "damage": 10
+    },
+    {
+     "charge": 13,
+     "hits": 14,
+     "damage": 10
+    }
+   ],
+   "idea": "The blade blurs into a hundred-arm flurry of thrusts in one second, standing your ground in front of the boss.",
+   "look": "Dozens of blue thrust lines and blade-tip afterimages fan out in front of the player, like a sparrow's wings.",
+   "img": "the swordsman unleashing a blur of countless rapid sword thrusts, dozens of blue thrust-line afterimages fanning out like wings against a boss"
+  },
+  {
+   "id": "rising-fang",
+   "name": "Rising Fang",
+   "rarity": "rare",
+   "key": "strike",
+   "kind": "power",
+   "when": "press",
+   "then": "risingFire",
+   "text": "A rising slash throws up blue fire.",
+   "levels": [
+    {
+     "charge": 15,
+     "damage": 85
+    },
+    {
+     "charge": 14,
+     "damage": 105
+    },
+    {
+     "charge": 13,
+     "damage": 125
+    }
+   ],
+   "idea": "An upward slash from the ground that tears a fang-shaped pillar of blue fire up through the boss.",
+   "look": "A tall curved fang of blue flame with white core erupts upward along the slash, hard edges, embers falling.",
+   "img": "the swordsman in a low-to-high rising slash, a tall curved fang-shaped pillar of blue flame erupting up through the boss"
+  },
+  {
+   "id": "whirl-drill",
+   "name": "Whirl Drill",
+   "rarity": "rare",
+   "key": "strike",
+   "kind": "power",
+   "when": "press",
+   "then": "drill",
+   "text": "A drill of wind grinds the boss.",
+   "levels": [
+    {
+     "charge": 16,
+     "time": 1.2,
+     "every": 0.1,
+     "damage": 8
+    },
+    {
+     "charge": 15,
+     "time": 1.3,
+     "every": 0.1,
+     "damage": 9
+    },
+    {
+     "charge": 14,
+     "time": 1.4,
+     "every": 0.1,
+     "damage": 10
+    }
+   ],
+   "idea": "A spiral of tiny wind blades formed at the sword tip and driven into the boss, grinding for a second.",
+   "look": "A cone-shaped spiral of blue wind blades, tightly wound, shrieking into the boss with sparks spitting off.",
+   "img": "the swordsman driving a cone-shaped spiral drill of tightly wound blue wind blades from their sword tip into a boss, sparks spitting off"
+  },
+  {
+   "id": "tidal-arc",
+   "name": "Tidal Arc",
+   "rarity": "rare",
+   "key": "strike",
+   "kind": "power",
+   "when": "press",
+   "then": "wave",
+   "text": "A wave crashes through all in front.",
+   "levels": [
+    {
+     "charge": 16,
+     "damage": 80,
+     "reach": 10,
+     "width": 3
+    },
+    {
+     "charge": 15,
+     "damage": 100,
+     "reach": 11,
+     "width": 3.2
+    },
+    {
+     "charge": 14,
+     "damage": 120,
+     "reach": 12,
+     "width": 3.4
+    }
+   ],
+   "idea": "A wide sweep draws a whole breaking wave out of the blade that crashes over everything in front.",
+   "look": "A painted-style breaking wave, deep blue with white foam claws curling over, ink outlines, flat tones.",
+   "img": "the swordsman sweeping the blade wide as a painted-style breaking wave of deep blue water with white foam claws curls over and crashes down on a boss"
+  },
+  {
+   "id": "frost-spike",
+   "name": "Frost Spike",
+   "rarity": "rare",
+   "key": "strike",
+   "kind": "power",
+   "when": "press",
+   "then": "spikes",
+   "text": "A line of ice spikes erupts forward.",
+   "levels": [
+    {
+     "charge": 15,
+     "damage": 75,
+     "reach": 12
+    },
+    {
+     "charge": 14,
+     "damage": 95,
+     "reach": 13
+    },
+    {
+     "charge": 13,
+     "damage": 115,
+     "reach": 14
+    }
+   ],
+   "idea": "Stab the ground: a line of ice spikes races out and bursts up through the boss.",
+   "look": "Jagged pale-blue crystal spikes erupt in a racing line, each bigger than the last, frost mist rolling off.",
+   "img": "the swordsman stabbing the sword into the ground, a racing line of jagged pale blue ice spikes erupting toward and through a boss, frost mist"
+  },
+  {
+   "id": "shadow-stitch",
+   "name": "Shadow Stitch",
+   "rarity": "rare",
+   "key": "strike",
+   "kind": "power",
+   "when": "press",
+   "then": "stitch",
+   "text": "The boss's own shadow stabs it.",
+   "levels": [
+    {
+     "charge": 14,
+     "hits": 3,
+     "damage": 24
+    },
+    {
+     "charge": 13,
+     "hits": 3,
+     "damage": 30
+    },
+    {
+     "charge": 12,
+     "hits": 4,
+     "damage": 30
+    }
+   ],
+   "idea": "Stab your own shadow; the boss's shadow rises off the floor in spikes and stabs it from below.",
+   "look": "Black ink spikes with blue rims rise out of the boss's shadow on the floor and pierce it, then sink back.",
+   "img": "the swordsman stabbing their own shadow while black ink spikes with glowing blue rims rise out of the boss's shadow and pierce it from below"
+  },
+  {
+   "id": "stone-fist",
+   "name": "Stone Fist",
+   "rarity": "rare",
+   "key": "strike",
+   "kind": "power",
+   "when": "press",
+   "then": "fist",
+   "text": "A stone fist erupts under the boss.",
+   "levels": [
+    {
+     "charge": 17,
+     "damage": 100
+    },
+    {
+     "charge": 16,
+     "damage": 125
+    },
+    {
+     "charge": 15,
+     "damage": 150
+    }
+   ],
+   "idea": "Slam the fist down; a giant fist of rock punches up out of the floor under the boss.",
+   "look": "A huge rough stone fist with blue-glowing knuckle cracks bursts up through the floor slabs, rubble and dust.",
+   "img": "a giant rough stone fist with blue glowing cracks bursting up out of the arena floor under a boss, rubble flying, the swordsman punching the ground"
+  },
+  {
+   "id": "spinning-blade",
+   "name": "Spinning Blade",
+   "rarity": "rare",
+   "key": "strike",
+   "kind": "power",
+   "when": "press",
+   "then": "boomerang",
+   "text": "A ghost blade cuts through the boss twice.",
+   "levels": [
+    {
+     "charge": 15,
+     "damage": 45,
+     "hits": 2
+    },
+    {
+     "charge": 14,
+     "damage": 55,
+     "hits": 2
+    },
+    {
+     "charge": 13,
+     "damage": 65,
+     "hits": 2
+    }
+   ],
+   "idea": "Throw a spinning ghost copy of your sword; it cuts through the boss and comes back through it.",
+   "look": "A spinning translucent blue sword makes a disc of light, flies out and curves back, leaving a ring trail.",
+   "img": "a spinning translucent blue ghost sword forming a disc of light, cutting through a boss and curving back toward the swordsman, a ring-shaped trail"
+  },
+  {
+   "id": "three-shadows",
+   "name": "Three Shadows",
+   "rarity": "rare",
+   "key": "strike",
+   "kind": "power",
+   "when": "press",
+   "then": "clones",
+   "text": "Shadow clones strike together.",
+   "levels": [
+    {
+     "charge": 16,
+     "hits": 3,
+     "damage": 30
+    },
+    {
+     "charge": 15,
+     "hits": 3,
+     "damage": 36
+    },
+    {
+     "charge": 14,
+     "hits": 3,
+     "damage": 42
+    }
+   ],
+   "idea": "Three shadow copies of you flash in round the boss and cut at the same instant, then vanish: the clones that strike together.",
+   "look": "Three ink-black silhouettes with blue rims appear around the boss in held poses, cross-cut in one frame, and burst into ink.",
+   "img": "three ink-black shadow clones of the swordsman with glowing blue rims appearing around a boss and cutting it at the same instant, held poses"
+  },
+  {
+   "id": "quick-draw",
+   "name": "Quick Draw",
+   "rarity": "rare",
+   "key": "strike",
+   "kind": "power",
+   "when": "press",
+   "then": "iai",
+   "text": "Sheathe, then one cut splits all in front.",
+   "levels": [
+    {
+     "charge": 18,
+     "damage": 120,
+     "reach": 10
+    },
+    {
+     "charge": 17,
+     "damage": 145,
+     "reach": 11
+    },
+    {
+     "charge": 16,
+     "damage": 170,
+     "reach": 12
+    }
+   ],
+   "idea": "A held sheathed stance, a single horizontal draw too fast to see, and a beat later the line across the world opens.",
+   "look": "Stillness, then one perfectly straight blue-white line across the screen; a beat later it splits with a hard blue flare along the line.",
+   "img": "the swordsman frozen just after a lightning-fast sword draw, a single perfectly straight blue-white line across the whole scene through the boss, about to split"
+  },
+  {
+   "id": "thunderclap",
+   "name": "Thunderclap",
+   "rarity": "rare",
+   "key": "strike",
+   "kind": "power",
+   "when": "press",
+   "then": "clap",
+   "text": "A clap of thunder blasts the front.",
+   "levels": [
+    {
+     "charge": 15,
+     "damage": 70,
+     "reach": 7
+    },
+    {
+     "charge": 14,
+     "damage": 90,
+     "reach": 7.5
+    },
+    {
+     "charge": 13,
+     "damage": 110,
+     "reach": 8
+    }
+   ],
+   "idea": "Slam the flat of the blade on the shield: a cone of visible sound blasts in front.",
+   "look": "Hard concentric arcs of visible sound in pale blue, a white shock cone, dust blown flat.",
+   "img": "the swordsman slamming the flat of the sword onto a round shield, a cone of hard concentric pale blue sound arcs blasting toward a boss, dust blown flat"
+  },
+  {
+   "id": "mending",
+   "from": "mending",
+   "name": "Mending",
+   "rarity": "rare",
+   "key": "guard",
+   "kind": "perk",
+   "when": "press",
+   "then": "heal",
+   "text": "Heal {heal}.",
+   "levels": [
+    {
+     "charge": 14,
+     "heal": 0.2
+    },
+    {
+     "charge": 13,
+     "heal": 0.25
+    },
+    {
+     "charge": 12,
+     "heal": 0.3
+    }
+   ],
+   "idea": "The quick heal on a key, without the flask's drink: a ring of blue light rises through you.",
+   "look": "A ring of blue light with thin calligraphy strokes rises from the feet to the head, motes falling.",
+   "img": "a ring of cool blue light with thin calligraphy strokes rising up around the swordsman from feet to head, falling motes, mid-fight"
+  },
+  {
+   "id": "iron-stance",
+   "from": "iron-stance",
+   "name": "Iron Stance",
+   "rarity": "rare",
+   "key": "guard",
+   "kind": "perk",
+   "when": "press",
+   "then": "stance",
+   "text": "Deflect blows for {time}, no timing needed.",
+   "levels": [
+    {
+     "charge": 12,
+     "time": 2.5
+    },
+    {
+     "charge": 12,
+     "time": 3
+    },
+    {
+     "charge": 12,
+     "time": 3.5
+    }
+   ],
+   "idea": "A planted stance that deflects every blow that can be deflected, no timing: weather a whole combo with sparks.",
+   "look": "A blue outline aura in a hard shape round the body; every blow throws a starburst of blue sparks.",
+   "img": "the swordsman in a planted stance with a hard blue outline aura, deflecting a flurry of boss blows that burst into starbursts of blue sparks"
+  },
+  {
+   "id": "mirror-ward",
+   "name": "Mirror Ward",
+   "rarity": "rare",
+   "key": "guard",
+   "kind": "perk",
+   "when": "press",
+   "then": "reflect",
+   "text": "The next blow bounces back at the boss.",
+   "levels": [
+    {
+     "charge": 14,
+     "time": 1.5,
+     "share": 0.6
+    },
+    {
+     "charge": 13,
+     "time": 1.5,
+     "share": 0.8
+    },
+    {
+     "charge": 12,
+     "time": 1.5,
+     "share": 1
+    }
+   ],
+   "idea": "A pane of blue glass forms in front; the next blow is stopped and a share of it flies back into the boss.",
+   "look": "A tall pane of blue glass with a hexagon-free, cracked-ice texture; on the hit it shatters outward into the boss.",
+   "img": "a tall pane of blue glass forming in front of the swordsman stopping a boss blow, cracking and shattering outward into the boss"
+  },
+  {
+   "id": "ash-husk",
+   "name": "Ash Husk",
+   "rarity": "rare",
+   "key": "guard",
+   "kind": "power",
+   "when": "press",
+   "then": "husk",
+   "text": "Leave a husk that explodes when struck.",
+   "levels": [
+    {
+     "charge": 13,
+     "time": 3,
+     "damage": 40
+    },
+    {
+     "charge": 12,
+     "time": 3,
+     "damage": 55
+    },
+    {
+     "charge": 11,
+     "time": 3,
+     "damage": 70
+    }
+   ],
+   "idea": "You slip a step back and leave an ash husk of yourself; the boss's next blow on it blows it up in its face.",
+   "look": "A grey ash statue of the player in their stance; struck, it bursts in a blue-cored ash explosion.",
+   "img": "a grey ash statue of the swordsman left standing in a guard pose being struck by a boss and bursting in a blue-cored ash explosion, the real swordsman stepping aside"
+  },
+  {
+   "id": "moon-dome",
+   "name": "Moon Dome",
+   "rarity": "rare",
+   "key": "guard",
+   "kind": "perk",
+   "when": "press",
+   "then": "dome",
+   "text": "A dome stops shots and blasts for {time}.",
+   "levels": [
+    {
+     "charge": 16,
+     "time": 4,
+     "radius": 3
+    },
+    {
+     "charge": 15,
+     "time": 4.5,
+     "radius": 3.2
+    },
+    {
+     "charge": 14,
+     "time": 5,
+     "radius": 3.4
+    }
+   ],
+   "idea": "A pale dome of moonlight stops shots and area blasts from outside it, for you and any friend inside: a co-op shelter.",
+   "look": "A half-sphere of pale blue light with thin crescent lines, ripples where things hit it.",
+   "img": "a half-sphere dome of pale blue moonlight with thin crescent lines around the swordsman, a boss's fiery blast breaking against it in ripples"
+  },
+  {
+   "id": "waiting-blade",
+   "name": "Waiting Blade",
+   "rarity": "rare",
+   "key": "guard",
+   "kind": "power",
+   "when": "press",
+   "then": "counterStance",
+   "text": "Stance: the next blow is answered with a cut.",
+   "levels": [
+    {
+     "charge": 14,
+     "time": 1.2,
+     "damage": 120
+    },
+    {
+     "charge": 13,
+     "time": 1.3,
+     "damage": 145
+    },
+    {
+     "charge": 12,
+     "time": 1.4,
+     "damage": 170
+    }
+   ],
+   "idea": "A counter stance: hand on the hilt, eyes closed. Any blow in the next breath is answered by one enormous cut before it lands.",
+   "look": "A still pose, a blue ring on the floor; when struck, the world dims for a breath and one huge arc cuts.",
+   "img": "the swordsman in a still counter stance with eyes closed and hand on the hilt, a boss blow arriving, a single enormous blue arc cutting it first"
+  },
+  {
+   "id": "ember-mail",
+   "name": "Ember Mail",
+   "rarity": "rare",
+   "key": "guard",
+   "kind": "perk",
+   "when": "press",
+   "then": "armour",
+   "text": "Ember armour takes {hits} blows for you.",
+   "levels": [
+    {
+     "charge": 15,
+     "hits": 1,
+     "time": 8
+    },
+    {
+     "charge": 14,
+     "hits": 2,
+     "time": 8
+    },
+    {
+     "charge": 13,
+     "hits": 2,
+     "time": 10
+    }
+   ],
+   "idea": "Spectral plates of blue-hot embers lock onto you and take the next blows whole, cracking off one plate at a time.",
+   "look": "Overlapping spectral armour plates of glowing blue ember, each shattering off with a hit.",
+   "img": "spectral armour plates of glowing blue embers locking onto the swordsman, one plate shattering off as a boss blow lands"
+  },
+  {
+   "id": "iron-root",
+   "name": "Iron Root",
+   "rarity": "rare",
+   "key": "guard",
+   "kind": "perk",
+   "when": "press",
+   "then": "root",
+   "text": "For {time}, nothing staggers you; take {cut} less.",
+   "levels": [
+    {
+     "charge": 13,
+     "time": 4,
+     "cut": 0.3
+    },
+    {
+     "charge": 12,
+     "time": 4.5,
+     "cut": 0.35
+    },
+    {
+     "charge": 11,
+     "time": 5,
+     "cut": 0.4
+    }
+   ],
+   "idea": "Iron roots grow from your feet into the floor: you trade blows with the boss without flinching.",
+   "look": "Dark iron roots with blue veins spread from the feet over the floor; the body gets a steel sheen.",
+   "img": "dark iron roots with glowing blue veins spreading from the swordsman's feet across the stone floor as they trade blows with a boss without flinching"
+  },
+  {
+   "id": "vanishing-step",
+   "name": "Vanishing Step",
+   "rarity": "rare",
+   "key": "guard",
+   "kind": "perk",
+   "when": "press",
+   "then": "vanish",
+   "text": "Refill all dashes; vanish for {time}.",
+   "levels": [
+    {
+     "charge": 12,
+     "time": 0.6
+    },
+    {
+     "charge": 11,
+     "time": 0.7
+    },
+    {
+     "charge": 10,
+     "time": 0.8
+    }
+   ],
+   "idea": "An instant escape: you blink out in a swirl of blue petals, untouchable for a moment, with every dash back.",
+   "look": "The body breaks into a swirl of blue petals and reforms; the dash bars flash full.",
+   "img": "the swordsman dissolving into a swirl of blue petals as a boss attack passes through empty air"
+  },
+  {
+   "id": "still-water",
+   "name": "Still Water",
+   "rarity": "rare",
+   "key": "guard",
+   "kind": "perk",
+   "when": "press",
+   "then": "pool",
+   "text": "A pool heals {heal} over {time}.",
+   "levels": [
+    {
+     "charge": 16,
+     "time": 5,
+     "heal": 0.25,
+     "radius": 2.5
+    },
+    {
+     "charge": 15,
+     "time": 5,
+     "heal": 0.3,
+     "radius": 2.7
+    },
+    {
+     "charge": 14,
+     "time": 5,
+     "heal": 0.35,
+     "radius": 2.9
+    }
+   ],
+   "idea": "A pool of still water spreads on the floor; standing in it heals over time, and a friend in it heals a little too.",
+   "look": "A mirror-still circle of water with blue light under it and slow rings; reflections of the sky in it.",
+   "img": "a mirror-still circle of glowing blue water spreading on a dark stone floor around the swordsman, slow rings, a reflection of the sky in it"
+  },
+  {
+   "id": "hourglass",
+   "name": "Hourglass",
+   "rarity": "rare",
+   "key": "guard",
+   "kind": "perk",
+   "when": "press",
+   "then": "rewind",
+   "text": "Rewind place and health to {time} ago.",
+   "levels": [
+    {
+     "charge": 18,
+     "time": 3
+    },
+    {
+     "charge": 17,
+     "time": 3.5
+    },
+    {
+     "charge": 16,
+     "time": 4
+    }
+   ],
+   "idea": "Time unwinds for you alone: you snap back along your path to where you stood seconds ago, with the health you had then.",
+   "look": "A blue ribbon of your recent path rewinds with clock-hand ticks, afterimages running backwards.",
+   "img": "the swordsman snapping backward along their recent path, a ribbon of blue afterimages running in reverse with clock-hand tick marks"
+  },
+  {
+   "id": "binding-seal",
+   "name": "Binding Seal",
+   "rarity": "rare",
+   "key": "guard",
+   "kind": "power",
+   "when": "press",
+   "then": "seal",
+   "text": "Seal the boss's next attack.",
+   "levels": [
+    {
+     "charge": 16,
+     "time": 6
+    },
+    {
+     "charge": 15,
+     "time": 7
+    },
+    {
+     "charge": 14,
+     "time": 8
+    }
+   ],
+   "idea": "Slap a paper seal of light onto the boss: its next attack (within the time) shows its wind-up, then fizzles out.",
+   "look": "A long paper strip of blue light with brush marks sticks to the boss; on its next wind-up it burns away and the attack sputters.",
+   "img": "a long strip of glowing blue paper seal with brush marks stuck on a boss mid wind-up, burning away as the attack fizzles"
+  },
+  {
+   "id": "unbroken",
+   "name": "Unbroken",
+   "rarity": "rare",
+   "key": "guard",
+   "kind": "perk",
+   "when": "press",
+   "then": "undying",
+   "text": "For {time}, no blow can kill you.",
+   "levels": [
+    {
+     "charge": 18,
+     "time": 3
+    },
+    {
+     "charge": 17,
+     "time": 4
+    },
+    {
+     "charge": 16,
+     "time": 5
+    }
+   ],
+   "idea": "A blue flame of will: for a few seconds nothing takes you below a sliver. The all-in moment.",
+   "look": "A tall blue flame burns over the head; a killing blow leaves you on one knee and the flame flares.",
+   "img": "a battered swordsman refusing to fall, a tall blue flame of will burning above their head as a killing blow lands"
+  },
+  {
+   "id": "grave-hound",
+   "from": "grave-hound",
+   "name": "Grave Hound",
+   "rarity": "rare",
+   "key": "summon",
+   "kind": "power",
+   "when": "press",
+   "then": "hound",
+   "summon": true,
+   "text": "A hound hunts the boss for {time}.",
+   "levels": [
+    {
+     "charge": 20,
+     "time": 8,
+     "every": 1.2,
+     "damage": 16,
+     "draw": 2
+    },
+    {
+     "charge": 18,
+     "time": 10,
+     "every": 1.1,
+     "damage": 20,
+     "draw": 2.5
+    },
+    {
+     "charge": 16,
+     "time": 12,
+     "every": 1,
+     "damage": 24,
+     "draw": 3
+    }
+   ],
+   "idea": "A gaunt spectral hound of the grave leaps out of your shadow and hunts the boss's flank.",
+   "look": "A lean hound of black ink and blue fire, ribs showing, eyes blue; its bites leave blue tooth-marks.",
+   "img": "a lean spectral hound of black ink and blue fire leaping out of the swordsman's shadow toward a boss, ribs showing, eyes glowing blue"
+  },
+  {
+   "id": "ash-lancer",
+   "from": "ash-lancer",
+   "name": "Lancer of Ash",
+   "rarity": "rare",
+   "key": "summon",
+   "kind": "power",
+   "when": "press",
+   "then": "lancer",
+   "summon": true,
+   "text": "A lancer charges the boss for {time}.",
+   "levels": [
+    {
+     "charge": 18,
+     "time": 6,
+     "every": 0.9,
+     "damage": 18,
+     "draw": 1
+    },
+    {
+     "charge": 16,
+     "time": 7,
+     "every": 0.8,
+     "damage": 22,
+     "draw": 1.2
+    },
+    {
+     "charge": 14,
+     "time": 8,
+     "every": 0.7,
+     "damage": 26,
+     "draw": 1.5
+    }
+   ],
+   "idea": "A lancer of ash charges in from the edge of the arena and thrusts at the boss again and again.",
+   "look": "A tall figure of grey ash in a plumed helm with a long lance, blue embers in the cracks, charge trail of ash.",
+   "img": "a tall spectral lancer made of grey ash with blue embers in the cracks charging with a long lance at a boss, a trail of ash behind"
+  },
+  {
+   "id": "ink-crows",
+   "name": "Ink Crows",
+   "rarity": "rare",
+   "key": "summon",
+   "kind": "power",
+   "when": "press",
+   "then": "crows",
+   "summon": true,
+   "text": "Ink crows swarm the boss for {time}.",
+   "levels": [
+    {
+     "charge": 18,
+     "time": 7,
+     "every": 0.25,
+     "damage": 5,
+     "draw": 1.5
+    },
+    {
+     "charge": 16,
+     "time": 8,
+     "every": 0.25,
+     "damage": 6,
+     "draw": 1.8
+    },
+    {
+     "charge": 15,
+     "time": 9,
+     "every": 0.25,
+     "damage": 7,
+     "draw": 2
+    }
+   ],
+   "idea": "A murder of crows made of brush ink pours from your coat and swarms the boss's head, many small pecks.",
+   "look": "Two dozen black brush-ink crows with blue eyes, splattering ink drops; they swirl in a ring round the boss's head.",
+   "img": "a swarm of black brush-ink crows with glowing blue eyes pouring from the swordsman's coat and swirling around a boss's head, ink drops splattering"
+  },
+  {
+   "id": "ronin-shade",
+   "name": "Ronin Shade",
+   "rarity": "rare",
+   "key": "summon",
+   "kind": "power",
+   "when": "press",
+   "then": "ronin",
+   "summon": true,
+   "text": "A ghost swordsman duels the boss for {time}.",
+   "levels": [
+    {
+     "charge": 20,
+     "time": 9,
+     "every": 1.4,
+     "damage": 22,
+     "draw": 3
+    },
+    {
+     "charge": 18,
+     "time": 10,
+     "every": 1.3,
+     "damage": 26,
+     "draw": 3.5
+    },
+    {
+     "charge": 16,
+     "time": 11,
+     "every": 1.2,
+     "damage": 30,
+     "draw": 4
+    }
+   ],
+   "idea": "A wandering ghost swordsman in a straw hat steps in and duels the boss, deflecting its first blow with a spark.",
+   "look": "A translucent blue swordsman in a wide straw hat and tattered cloak, long blade, fighting with sharp held poses.",
+   "img": "a translucent blue ghost swordsman in a wide straw hat and tattered cloak deflecting a boss blow with sparks, the player swordsman beside"
+  },
+  {
+   "id": "cinder-fox",
+   "name": "Cinder Fox",
+   "rarity": "rare",
+   "key": "summon",
+   "kind": "power",
+   "when": "press",
+   "then": "fox",
+   "summon": true,
+   "text": "A fire fox circles the boss for {time}.",
+   "levels": [
+    {
+     "charge": 16,
+     "time": 8,
+     "every": 1,
+     "damage": 12,
+     "draw": 1
+    },
+    {
+     "charge": 15,
+     "time": 9,
+     "every": 0.9,
+     "damage": 14,
+     "draw": 1.2
+    },
+    {
+     "charge": 14,
+     "time": 10,
+     "every": 0.8,
+     "damage": 16,
+     "draw": 1.4
+    }
+   ],
+   "idea": "A quick fox of blue fire runs rings round the boss, slashing its legs, leaving a ring of flame.",
+   "look": "A small sleek fox of blue-white flame with one long tail, leaving a burning ring trail on the floor.",
+   "img": "a small sleek fox made of blue-white flame with a single long tail running a burning ring around a boss's legs"
+  },
+  {
+   "id": "lantern-spirit",
+   "name": "Lantern Spirit",
+   "rarity": "rare",
+   "key": "summon",
+   "kind": "power",
+   "when": "press",
+   "then": "lantern",
+   "summon": true,
+   "text": "A lantern burns the boss and heals you.",
+   "levels": [
+    {
+     "charge": 18,
+     "time": 10,
+     "every": 1.5,
+     "damage": 10,
+     "heal": 0.02
+    },
+    {
+     "charge": 17,
+     "time": 11,
+     "every": 1.4,
+     "damage": 12,
+     "heal": 0.025
+    },
+    {
+     "charge": 16,
+     "time": 12,
+     "every": 1.3,
+     "damage": 14,
+     "heal": 0.03
+    }
+   ],
+   "idea": "A paper lantern spirit floats at your shoulder, spitting little blue fireballs at the boss and warming you a sliver each time.",
+   "look": "A floating paper lantern with a single eye-shaped flame inside, paper streamers, blue light.",
+   "img": "a floating paper lantern spirit with a single eye-shaped blue flame inside hovering at the swordsman's shoulder, spitting a small fireball at a boss"
+  },
+  {
+   "id": "bone-archer",
+   "name": "Bone Archer",
+   "rarity": "rare",
+   "key": "summon",
+   "kind": "power",
+   "when": "press",
+   "then": "archer",
+   "summon": true,
+   "text": "A bone archer shoots the boss for {time}.",
+   "levels": [
+    {
+     "charge": 17,
+     "time": 9,
+     "every": 0.9,
+     "damage": 14,
+     "draw": 0.5
+    },
+    {
+     "charge": 16,
+     "time": 10,
+     "every": 0.85,
+     "damage": 16,
+     "draw": 0.6
+    },
+    {
+     "charge": 15,
+     "time": 11,
+     "every": 0.8,
+     "damage": 18,
+     "draw": 0.7
+    }
+   ],
+   "idea": "A skeleton archer climbs out of the floor at range and looses glowing arrows; it barely draws the boss, so it lives long.",
+   "look": "A tall skeleton in a torn hood with a great bow; arrows of blue light leave streaks.",
+   "img": "a tall skeleton archer in a torn hood rising from the floor at the edge of the arena, drawing a great bow and loosing arrows of blue light at a boss"
+  },
+  {
+   "id": "thunder-hawk",
+   "name": "Thunder Hawk",
+   "rarity": "rare",
+   "key": "summon",
+   "kind": "power",
+   "when": "press",
+   "then": "hawk",
+   "summon": true,
+   "text": "A thunder hawk dives on the boss for {time}.",
+   "levels": [
+    {
+     "charge": 18,
+     "time": 8,
+     "every": 1.6,
+     "damage": 26,
+     "draw": 1
+    },
+    {
+     "charge": 17,
+     "time": 9,
+     "every": 1.5,
+     "damage": 30,
+     "draw": 1.2
+    },
+    {
+     "charge": 16,
+     "time": 10,
+     "every": 1.4,
+     "damage": 34,
+     "draw": 1.4
+    }
+   ],
+   "idea": "A hawk of crackling lightning circles high and stoops on the boss over and over, each dive a bolt.",
+   "look": "A hawk made of blue-white lightning lines, wings swept back in a dive, a bolt trail to the impact.",
+   "img": "a hawk made of crackling blue-white lightning diving with wings swept back onto a boss, a bolt trail from the sky to the impact"
+  },
+  {
+   "id": "mire-serpent",
+   "name": "Mire Serpent",
+   "rarity": "rare",
+   "key": "summon",
+   "kind": "power",
+   "when": "press",
+   "then": "serpent",
+   "summon": true,
+   "text": "A serpent coils round the boss for {time}.",
+   "levels": [
+    {
+     "charge": 20,
+     "time": 6,
+     "every": 0.5,
+     "damage": 9,
+     "draw": 2
+    },
+    {
+     "charge": 18,
+     "time": 7,
+     "every": 0.5,
+     "damage": 10,
+     "draw": 2.3
+    },
+    {
+     "charge": 16,
+     "time": 8,
+     "every": 0.5,
+     "damage": 11,
+     "draw": 2.6
+    }
+   ],
+   "idea": "A long serpent of black water rises from a pool under the boss and coils round it, crushing (the boss still moves).",
+   "look": "A long eel-like serpent of black water with blue-glowing spines and fins, coiled around the boss's body.",
+   "img": "a long eel-like serpent of black water with glowing blue spines rising from a pool and coiling around a boss's body"
+  },
+  {
+   "id": "puppet-knight",
+   "name": "Puppet Knight",
+   "rarity": "rare",
+   "key": "summon",
+   "kind": "power",
+   "when": "press",
+   "then": "puppet",
+   "summon": true,
+   "text": "A puppet knight fights the boss for {time}.",
+   "levels": [
+    {
+     "charge": 20,
+     "time": 10,
+     "every": 1.3,
+     "damage": 20,
+     "draw": 3
+    },
+    {
+     "charge": 18,
+     "time": 11,
+     "every": 1.2,
+     "damage": 24,
+     "draw": 3.5
+    },
+    {
+     "charge": 16,
+     "time": 12,
+     "every": 1.1,
+     "damage": 28,
+     "draw": 4
+    }
+   ],
+   "idea": "A wooden knight marionette drops from above on glowing strings that run up to your hand; you see it fight on its strings.",
+   "look": "A jointed wooden knight with a cracked helm, blue light strings running up into the dark and down to the player's fingers.",
+   "img": "a jointed wooden knight marionette with a cracked helm fighting a boss, glowing blue strings running from its joints up into the dark and to the swordsman's raised fingers"
+  },
+  {
+   "id": "ash-bear",
+   "name": "Ash Bear",
+   "rarity": "rare",
+   "key": "summon",
+   "kind": "power",
+   "when": "press",
+   "then": "bear",
+   "summon": true,
+   "text": "An ash bear mauls the boss for {time}.",
+   "levels": [
+    {
+     "charge": 22,
+     "time": 8,
+     "every": 2,
+     "damage": 36,
+     "draw": 3
+    },
+    {
+     "charge": 20,
+     "time": 9,
+     "every": 1.9,
+     "damage": 42,
+     "draw": 3.5
+    },
+    {
+     "charge": 18,
+     "time": 10,
+     "every": 1.8,
+     "damage": 48,
+     "draw": 4
+    }
+   ],
+   "idea": "A huge bear of grey ash and embers rears up and mauls the boss with slow, heavy swipes.",
+   "look": "A massive bear of packed grey ash with blue embers glowing between plates, rearing on hind legs, ash trailing from its claws.",
+   "img": "a massive bear made of packed grey ash with blue embers glowing between its plates rearing up and mauling a boss, ash trailing from its claws"
+  },
+  {
+   "id": "glass-mantis",
+   "name": "Glass Mantis",
+   "rarity": "rare",
+   "key": "summon",
+   "kind": "power",
+   "when": "press",
+   "then": "mantis",
+   "summon": true,
+   "text": "A glass mantis slices the boss for {time}.",
+   "levels": [
+    {
+     "charge": 18,
+     "time": 7,
+     "every": 0.8,
+     "damage": 16,
+     "draw": 1.5
+    },
+    {
+     "charge": 17,
+     "time": 8,
+     "every": 0.75,
+     "damage": 18,
+     "draw": 1.7
+    },
+    {
+     "charge": 16,
+     "time": 9,
+     "every": 0.7,
+     "damage": 20,
+     "draw": 1.9
+    }
+   ],
+   "idea": "A tall mantis of blue glass unfolds its scythe arms and slices the boss in fast scissor cuts.",
+   "look": "A slender mantis of clear blue glass with light refracting through it, scythe arms leaving sharp cut lines.",
+   "img": "a tall slender mantis of clear blue glass unfolding scythe arms and slicing a boss in a fast scissor cut, light refracting through its body"
+  },
+  {
+   "id": "night-owl",
+   "name": "Night Owl",
+   "rarity": "rare",
+   "key": "summon",
+   "kind": "power",
+   "when": "press",
+   "then": "owl",
+   "summon": true,
+   "text": "An owl marks the boss; marks take {mark} more.",
+   "levels": [
+    {
+     "charge": 16,
+     "time": 10,
+     "every": 2,
+     "mark": 0.7
+    },
+    {
+     "charge": 15,
+     "time": 11,
+     "every": 1.8,
+     "mark": 0.85
+    },
+    {
+     "charge": 14,
+     "time": 12,
+     "every": 1.6,
+     "mark": 1
+    }
+   ],
+   "idea": "A great pale owl circles above and drops glowing marks on the boss's body; your hits on a mark do more. A summon you fight together with.",
+   "look": "A great pale owl with blue-glowing eyes circling overhead; marks are blue rune circles on the boss that burst when hit.",
+   "img": "a great pale owl with blue glowing eyes circling above a boss, glowing blue rune circles marked on the boss's body, the swordsman striking one"
+  },
+  {
+   "id": "thunder-call",
+   "from": "thunder-call",
+   "name": "Thunder Call",
+   "rarity": "legendary",
+   "key": "ultimate",
+   "kind": "power",
+   "when": "press",
+   "then": "dragon",
+   "text": "A lightning dragon strikes the boss {strikes} times.",
+   "levels": [
+    {
+     "charge": 40,
+     "strikes": 7,
+     "lead": 0.75,
+     "every": 0.3,
+     "damage": 48
+    }
+   ],
+   "idea": "The floor of the legendaries: the sword is raised, the sky splits, and a dragon of lightning pours down, coils round the boss and strikes again and again.",
+   "look": "A long serpentine dragon of white-violet lightning edged in ember orange, coiling round the boss; each strike a hard bolt and an ember impact frame.",
+   "img": "a long serpentine dragon made of white-violet lightning edged with ember orange pouring down from a split sky and coiling around a boss, the swordsman raising the blade",
+   "img2": "the impact frame of a lightning dragon striking a boss: the whole frame inverted to black and white with ember orange accents, hard bolt shapes"
+  },
+  {
+   "id": "cataclysm",
+   "from": "cataclysm",
+   "name": "Cataclysm",
+   "rarity": "legendary",
+   "key": "ultimate",
+   "kind": "power",
+   "when": "press",
+   "then": "blast",
+   "text": "A blast hits all within {radius}.",
+   "levels": [
+    {
+     "charge": 42,
+     "radius": 8,
+     "damage": 360
+    }
+   ],
+   "idea": "The blade driven into the ground: the floor cracks in a ring of ember light, then a dome of white fire rises and bursts.",
+   "look": "Ember cracks race out in a ring, then a white-hot dome swells and bursts into a shock ring and falling slabs.",
+   "img": "the swordsman driving the blade into the ground as glowing ember cracks race outward in a ring and a white-hot dome of fire swells and bursts around a boss",
+   "img2": "aerial view of a ring-shaped shockwave of ember fire bursting outward over a dark arena, floor slabs thrown up"
+  },
+  {
+   "id": "world-of-ink",
+   "name": "World of Ink",
+   "rarity": "legendary",
+   "key": "ultimate",
+   "kind": "power",
+   "when": "press",
+   "then": "inkWorld",
+   "text": "For {time}, every hit lands twice in ink.",
+   "levels": [
+    {
+     "charge": 44,
+     "time": 8,
+     "share": 1
+    }
+   ],
+   "idea": "You open your hand and the arena turns into an ink painting: the boss is inside your world, and every hit you land is painted again by a brush a beat later.",
+   "look": "The world desaturates to black ink on rice-paper white within a radius, with ember-orange brush strokes for every hit; a giant ink circle (ensō) frames it.",
+   "img": "a whole battle arena turned into a black ink-wash painting on pale paper inside a giant brushed ink circle, the boss trapped inside, ember orange brush strokes painting each sword hit",
+   "img2": "the moment the world turns to ink: a wave of ink-wash spreading from the swordsman's open hand across the arena, colour draining from everything"
+  },
+  {
+   "id": "heavens-lance",
+   "name": "Heaven's Lance",
+   "rarity": "legendary",
+   "key": "ultimate",
+   "kind": "power",
+   "when": "press",
+   "then": "beam",
+   "text": "A pillar of light pins the boss for {time}.",
+   "levels": [
+    {
+     "charge": 40,
+     "time": 2,
+     "every": 0.2,
+     "damage": 30
+    }
+   ],
+   "idea": "Point the blade at the sky; a pillar of white-gold light lances down onto the boss and holds there for two seconds, burning.",
+   "look": "A tall white-gold beam with ember edges from a hole in the clouds, a sigil ring on the ground, the boss silhouetted inside.",
+   "img": "a colossal pillar of white-gold light with ember orange edges lancing down from a hole in the dark clouds onto a boss, a glowing ring on the ground, the swordsman pointing the blade skyward",
+   "img2": "the boss silhouetted black inside a column of blinding white-gold light, ash swirling around the column"
+  },
+  {
+   "id": "phoenix-dive",
+   "name": "Phoenix Dive",
+   "rarity": "legendary",
+   "key": "ultimate",
+   "kind": "power",
+   "when": "press",
+   "then": "phoenix",
+   "text": "Dive through the boss {strikes} times in fire.",
+   "levels": [
+    {
+     "charge": 42,
+     "strikes": 3,
+     "damage": 120
+    }
+   ],
+   "idea": "You burst into a bird of fire and dive through the boss three times from three angles, then land in a held pose as it burns.",
+   "look": "A great ember-orange firebird with white-hot core and long trailing tail feathers, three fiery X-shaped trails through the boss.",
+   "img": "the swordsman transformed into a great ember orange firebird with a white-hot core and long tail feathers diving through a boss, earlier fiery trails crossing in the air",
+   "img2": "the swordsman landing in a held pose with burning feathers drifting down while three crossing fire trails burn across the boss behind them"
+  },
+  {
+   "id": "severance",
+   "name": "Severance",
+   "rarity": "legendary",
+   "key": "ultimate",
+   "kind": "power",
+   "when": "press",
+   "then": "worldCut",
+   "text": "One arena-wide cut hits all on its line.",
+   "levels": [
+    {
+     "charge": 46,
+     "damage": 360
+    }
+   ],
+   "idea": "A single cut through space itself: a line across the whole screen, the two halves of the world slide apart for a moment, then snap back with the boss cut.",
+   "look": "One razor line across the frame; the halves offset by a few pixels with an ember glow in the gap, background showing white void.",
+   "img": "a single razor-straight cut across the entire scene, the two halves of the world sliding apart with a blinding ember-white gap, the boss split along the line, the swordsman sheathing the blade",
+   "img2": "close on the swordsman in a held pose after a single draw, the world behind them cut in half along a glowing line"
+  },
+  {
+   "id": "great-wave",
+   "name": "Great Wave",
+   "rarity": "legendary",
+   "key": "ultimate",
+   "kind": "power",
+   "when": "press",
+   "then": "greatWave",
+   "text": "A wave crashes over all in front.",
+   "levels": [
+    {
+     "charge": 42,
+     "damage": 340,
+     "width": 10,
+     "reach": 16
+    }
+   ],
+   "idea": "The blade raised like a conductor's: a wave taller than the boss rises behind you, curls over in painted claws and crashes down.",
+   "look": "A towering wave in deep indigo with white foam claws and ember-lit spray, painted flat tones with ink lines, dwarfing the boss.",
+   "img": "a towering painted-style wave of deep indigo water with white foam claws and ember-lit spray rising behind the swordsman and curling over a boss",
+   "img2": "the great wave crashing down on the boss, foam claws and spray filling the frame"
+  },
+  {
+   "id": "black-star",
+   "name": "Black Star",
+   "rarity": "legendary",
+   "key": "ultimate",
+   "kind": "power",
+   "when": "press",
+   "then": "blackStar",
+   "text": "Holds the boss for {time}, then implodes.",
+   "levels": [
+    {
+     "charge": 44,
+     "time": 1.5,
+     "damage": 320,
+     "radius": 5
+    }
+   ],
+   "idea": "A tiny black sun forms in your palm and is thrown at the boss: it swells, holds it in its pull, then collapses with a deafening silence.",
+   "look": "A black sphere with an ember-orange corona and a ring of bent light; ash and debris spiral in, then a white implosion flash.",
+   "img": "a black sphere with an ember orange corona and a ring of bent light swallowing a boss, ash and debris spiralling inward, the swordsman with an outstretched palm",
+   "img2": "the implosion of a black star: a white flash collapsing to a point over the arena, shockwave lines"
+  },
+  {
+   "id": "colossus",
+   "name": "Colossus",
+   "rarity": "legendary",
+   "key": "ultimate",
+   "kind": "power",
+   "when": "press",
+   "then": "colossus",
+   "text": "A giant of embers swings its sword once.",
+   "levels": [
+    {
+     "charge": 46,
+     "damage": 340,
+     "reach": 14
+    }
+   ],
+   "idea": "A giant warrior of embers, twenty metres tall, rises behind you, mirrors your stance and swings one enormous sword through the boss.",
+   "look": "A towering armoured figure of molten ember lines and dark ash, empty glowing eyes, a sword of fire as long as the arena.",
+   "img": "a twenty-metre giant warrior made of molten ember lines and dark ash rising behind the swordsman and swinging an enormous fire sword through a boss",
+   "img2": "low angle of the ember giant mirroring the swordsman's stance, both blades raised, the boss tiny before it"
+  },
+  {
+   "id": "frozen-lotus",
+   "name": "Frozen Lotus",
+   "rarity": "legendary",
+   "key": "ultimate",
+   "kind": "power",
+   "when": "press",
+   "then": "iceLotus",
+   "text": "Ice spears the boss for {time}.",
+   "levels": [
+    {
+     "charge": 42,
+     "time": 3,
+     "every": 0.3,
+     "damage": 36
+    }
+   ],
+   "idea": "An enormous lotus of ice blooms under the boss; petal after petal spears up through it for three seconds, then the whole flower shatters.",
+   "look": "A giant translucent ice lotus with ember-lit edges, petals spearing upward one by one, frost fog, then shattering into glittering shards.",
+   "img": "an enormous translucent ice lotus with ember-lit edges blooming under a boss, its petals spearing up through it one after another, frost fog",
+   "img2": "the ice lotus shattering into thousands of glittering shards around the boss, ember light refracting"
+  },
+  {
+   "id": "ash-legion",
+   "name": "Ash Legion",
+   "rarity": "legendary",
+   "key": "ultimate",
+   "kind": "power",
+   "when": "press",
+   "then": "legion",
+   "text": "A phantom army charges through the boss.",
+   "levels": [
+    {
+     "charge": 44,
+     "time": 2.5,
+     "every": 0.1,
+     "damage": 15
+    }
+   ],
+   "idea": "Behind you a phantom army of ash riders and spearmen rises from the floor and charges straight through the boss in a two-second stampede.",
+   "look": "Rows of grey ash riders and spearmen with ember eyes and ember-lit spear points, dust and ash, passing through the boss.",
+   "img": "a phantom army of grey ash riders and spearmen with ember eyes charging past the swordsman straight through a boss in a stampede of ash and dust",
+   "img2": "close on ash cavalry passing through the boss, spear points glowing ember orange, the boss staggered in the middle of the flood"
+  },
+  {
+   "id": "tempest",
+   "name": "Tempest",
+   "rarity": "legendary",
+   "key": "ultimate",
+   "kind": "power",
+   "when": "press",
+   "then": "tempest",
+   "text": "A storm whirls round the boss for {time}.",
+   "levels": [
+    {
+     "charge": 42,
+     "time": 5,
+     "every": 0.25,
+     "damage": 18,
+     "radius": 6
+    }
+   ],
+   "idea": "A cyclone of wind, rain and lightning spins up round the boss, shredding it for five seconds while you fight inside the eye.",
+   "look": "A tall funnel of dark wind with ember-lit lightning inside and rain streaks, the boss at its heart.",
+   "img": "a tall funnel of dark wind with ember-lit lightning and rain streaks spinning around a boss, the swordsman fighting inside the calm eye",
+   "img2": "aerial view of the storm funnel over the arena, lightning flashing inside it"
+  },
+  {
+   "id": "sky-blade",
+   "name": "Sky Blade",
+   "rarity": "legendary",
+   "key": "ultimate",
+   "kind": "power",
+   "when": "press",
+   "then": "skyBlade",
+   "text": "A sword as tall as a tower falls.",
+   "levels": [
+    {
+     "charge": 46,
+     "damage": 380
+    }
+   ],
+   "idea": "A shape in the clouds: a sword the size of a tower forms point-down above the boss and drops into it, shaking the arena.",
+   "look": "A colossal sword of ember-gold light and dark steel forming in the clouds, falling point-down; impact crater and shock ring.",
+   "img": "a colossal sword of ember-gold light and dark steel as tall as a tower falling point-down from the clouds onto a boss, the swordsman pointing upward",
+   "img2": "the giant sword planted in the arena floor after impact, a crater and shock ring, the boss crushed at its foot, ember light"
+  },
+  {
+   "id": "meteor-fall",
+   "from": "meteor-fall",
+   "name": "Meteor Fall",
+   "rarity": "legendary",
+   "kind": "power",
+   "when": "land",
+   "then": "blast",
+   "action": "heavy",
+   "text": "Jump heavy: a blast hits all within {radius}.",
+   "levels": [
+    {
+     "radius": 6,
+     "damage": 140,
+     "cooldown": 5
+    }
+   ],
+   "idea": "The heavy jump attack comes down as a meteor: a column of fire falls with you and a molten crater opens where you land.",
+   "look": "A column of ember fire trailing the falling player, a white-hot burst, a shock ring and a cooling molten crater.",
+   "img": "the swordsman plunging down from the sky in a column of ember fire like a meteor onto a boss, a white-hot burst and shock ring",
+   "img2": "a cooling molten crater with glowing cracks after a meteor impact, the swordsman rising from its centre"
+  },
+  {
+   "id": "storm-king",
+   "from": "storm-king",
+   "name": "Storm King",
+   "rarity": "legendary",
+   "kind": "power",
+   "when": "fullHeavy",
+   "then": "boltCrown",
+   "text": "Full heavy hit: a crown of {strikes} bolts falls.",
+   "levels": [
+    {
+     "strikes": 6,
+     "lead": 0.5,
+     "every": 0.12,
+     "damage": 34,
+     "cooldown": 6
+    }
+   ],
+   "idea": "A fully charged heavy that lands calls a crown of lightning: six bolts slam down in a ring round the boss, then converge into one.",
+   "look": "Six white-violet bolts edged with ember fall in a ring like the points of a crown, then bend inward to one central strike.",
+   "img": "six white-violet lightning bolts edged with ember orange slamming down in a ring around a boss like the points of a crown after a charged heavy blow",
+   "img2": "the six bolts bending inward and converging into one central strike on the boss, a crown-shaped scorch ring on the floor"
+  },
+  {
+   "id": "time-rift",
+   "from": "time-rift",
+   "name": "Time Rift",
+   "rarity": "legendary",
+   "kind": "power",
+   "when": "dodge",
+   "then": "freeze",
+   "text": "Perfect dodge: the boss freezes for {time}.",
+   "levels": [
+    {
+     "time": 2.5,
+     "radius": 9,
+     "cooldown": 14
+    }
+   ],
+   "idea": "A perfect dodge tears a rift in time: everything near stops dead inside a bubble of slow light while you move.",
+   "look": "A wave of ember-tinted light, then each frozen enemy in a bubble with a clock face turning backwards under it; grey colour inside.",
+   "img": "a boss frozen mid-attack inside a bubble of slow ember-tinted light with a giant clock face turning backwards beneath it, the swordsman moving freely past",
+   "img2": "the frozen bubble shattering like glass as time resumes"
+  },
+  {
+   "id": "thousand-blades",
+   "from": "thousand-blades",
+   "name": "Thousand Blades",
+   "rarity": "legendary",
+   "kind": "power",
+   "when": "parry",
+   "then": "blades",
+   "text": "Deflect: swords rain on the boss for {time}.",
+   "levels": [
+    {
+     "time": 4.5,
+     "every": 0.15,
+     "damage": 6,
+     "cooldown": 10
+    }
+   ],
+   "idea": "A deflect opens the sky: ghost copies of your sword rain down on the boss for seconds.",
+   "look": "Dozens of ember-edged ghost swords falling point-down in streaks, sticking in the boss and floor, then fading.",
+   "img": "dozens of ember-edged ghost swords raining point-down from the sky onto a boss after a deflect, streaks of light, swords stuck in the floor",
+   "img2": "a ring of ghost swords stuck in the floor around the boss, glowing and fading"
+  },
+  {
+   "id": "blood-moon",
+   "from": "blood-moon",
+   "name": "Blood Moon",
+   "rarity": "legendary",
+   "kind": "power",
+   "when": "low",
+   "then": "bloodMoon",
+   "once": true,
+   "text": "Low health: for {time}, hits do more and heal.",
+   "levels": [
+    {
+     "below": 0.33,
+     "time": 12,
+     "damage": 0.45,
+     "drain": 0.35
+    }
+   ],
+   "idea": "Near death a red moon rises over you: for twelve seconds your hits cut deeper and drink back health.",
+   "look": "A huge red moon rising behind the player, the arena tinted crimson, a red aura and red-ember slashes on each hit.",
+   "img": "a huge blood-red moon rising behind a wounded swordsman, the arena tinted crimson, a red aura, red ember slashes on a boss",
+   "img2": "silhouette of the swordsman against the enormous red moon"
+  },
+  {
+   "id": "gale-crescent",
+   "from": "gale-crescent",
+   "name": "Gale Crescent",
+   "rarity": "legendary",
+   "kind": "power",
+   "when": "hits",
+   "then": "bladeCage",
+   "text": "Every {hits}th hit: blades whirl round the boss.",
+   "levels": [
+    {
+     "hits": 8,
+     "time": 2,
+     "every": 0.2,
+     "damage": 12
+    }
+   ],
+   "idea": "Every eighth hit, a cage of wind crescents spins up round the boss and shreds it for two seconds.",
+   "look": "Many pale crescents with ember edges spinning in a tight cylinder round the boss, a whistling vortex.",
+   "img": "a tight cylinder of many pale wind crescents with ember edges spinning around a boss like a cage, a whistling vortex",
+   "img2": "top-down view of the crescent cage spinning round the boss"
+  },
+  {
+   "id": "pyre",
+   "from": "pyre",
+   "name": "Pyre",
+   "rarity": "legendary",
+   "kind": "power",
+   "when": "counter",
+   "then": "pyre",
+   "text": "Counter: fire burns the foe for {time}.",
+   "levels": [
+    {
+     "time": 4,
+     "every": 0.35,
+     "damage": 17,
+     "cooldown": 2
+    }
+   ],
+   "idea": "A counter lights a pillar of fire under the boss that burns for seconds.",
+   "look": "A tall hard-edged column of ember fire with dark red inner lines under the boss, motes rising.",
+   "img": "a tall hard-edged pillar of ember fire with dark red inner lines erupting under a boss after a counter slash, motes rising",
+   "img2": "the pillar of fire seen from far, lighting the dark arena"
+  },
+  {
+   "id": "ember-twin",
+   "from": "ember-twin",
+   "name": "Ember Twin",
+   "rarity": "legendary",
+   "kind": "power",
+   "when": "flask",
+   "then": "twin",
+   "summon": true,
+   "text": "Flask: a twin fights with you for {time}.",
+   "levels": [
+    {
+     "time": 12,
+     "share": 0.55,
+     "draw": 3,
+     "cooldown": 20
+    }
+   ],
+   "idea": "Drinking calls an ember copy of yourself at the boss's far side; every blow you land, it lands too.",
+   "look": "A figure of the player made of ember cracks and dark ash, mirroring the player's swings with ember slashes.",
+   "img": "an ember copy of the swordsman made of glowing cracks and dark ash on the far side of a boss, both striking at once in a pincer",
+   "img2": "the ember twin burning away into sparks as its time ends"
+  },
+  {
+   "id": "hundred-suns",
+   "name": "Hundred Suns",
+   "rarity": "legendary",
+   "kind": "power",
+   "when": "finisher",
+   "then": "sunLines",
+   "text": "Finishing Blow: every cut erupts in sunfire.",
+   "levels": [
+    {
+     "strikes": 6,
+     "damage": 45
+    }
+   ],
+   "idea": "When the Finishing Blow's cut lines open, each one erupts in a blade of sun fire: the biggest moment of the fight gets bigger.",
+   "look": "Every cut line becomes a sheet of white-gold fire with ember edges, bursting outward in a star pattern.",
+   "img": "many white-gold sheets of sun fire with ember edges erupting from the cut lines of a multi-cut finishing blow on a boss, a star pattern",
+   "img2": "the swordsman in a held pose with their back to the boss as the sun fire erupts behind them"
+  },
+  {
+   "id": "thunder-god-step",
+   "name": "Thunder God Step",
+   "rarity": "legendary",
+   "kind": "power",
+   "when": "dash",
+   "then": "lightningDash",
+   "text": "Dashes become lightning that cuts all you pass.",
+   "levels": [
+    {
+     "damage": 30,
+     "cooldown": 0.6
+    }
+   ],
+   "idea": "Every dash is a bolt of lightning: you vanish and reappear at the end of a jagged white line that cuts whatever it crossed.",
+   "look": "A jagged white-violet lightning line with ember fringes along each dash path, a thunderclap at both ends.",
+   "img": "the swordsman reappearing at the end of a jagged white-violet lightning line with ember fringes that cuts through a boss, a thunderclap burst at both ends",
+   "img2": "several jagged lightning dash lines criss-crossing around a boss, the swordsman crouched"
+  },
+  {
+   "id": "fourfold",
+   "name": "Fourfold",
+   "rarity": "legendary",
+   "kind": "perk",
+   "when": "castUltimate",
+   "then": "refillKeys",
+   "text": "Your Ultimate refills your other keys.",
+   "levels": [
+    {
+     "share": 1
+    }
+   ],
+   "idea": "Firing the Ultimate refills keys 1, 2 and 3: four techniques back to back, the anime combo.",
+   "look": "The Ultimate's light splits into three ember threads that slam into the other three key caps; the player's silhouette flares.",
+   "img": "the swordsman firing a huge technique while three ember orange threads of light split off from it and wrap around their arms, ready for the next three techniques",
+   "img2": "four techniques chained back to back: a strike, a guard, a summon and an ultimate in one sweeping panel"
+  },
+  {
+   "id": "shade-host",
+   "name": "Shade Host",
+   "rarity": "legendary",
+   "kind": "power",
+   "when": "dodge",
+   "then": "shadeClone",
+   "summon": true,
+   "text": "Perfect dodge: a shadow clone joins for {time}.",
+   "levels": [
+    {
+     "time": 6,
+     "share": 0.35,
+     "most": 3,
+     "cooldown": 2
+    }
+   ],
+   "idea": "Each perfect dodge leaves a shadow clone that stays and fights for six seconds, up to three at once: dodge well and you fight as an army.",
+   "look": "Black ink clones of the player with ember-orange eyes and rims, each copying the player's attacks from its own side.",
+   "img": "three black ink shadow clones of the swordsman with ember orange eyes and rims surrounding a boss and attacking with the real swordsman",
+   "img2": "a shadow clone stepping out of the swordsman's afterimage after a perfect dodge"
+  },
+  {
+   "id": "scarlet-draw",
+   "name": "Scarlet Draw",
+   "rarity": "story",
+   "key": "strike",
+   "kind": "power",
+   "when": "press",
+   "then": "scarfBlade",
+   "story": {
+    "chapter": 2,
+    "place": "The Sunken Keep, the Seven's oath hall"
+   },
+   "text": "Your scarf lashes out as a blade.",
+   "levels": [
+    {
+     "charge": 14,
+     "damage": 120,
+     "reach": 12
+    }
+   ],
+   "idea": "In the hall where kings swore the Oath, a wind from nowhere lifts the prisoner's red scarf, and the body remembers a technique the mind does not: the scarf streams out twelve metres as a crimson ribbon blade and draws through the boss.",
+   "look": "The red scarf unrolls into a long crimson ribbon edged with ember gold, cutting in a flowing S-curve; the cut line glows crimson then opens.",
+   "img": "the swordsman's red scarf unrolling into a twelve-metre crimson ribbon blade edged with ember gold, cutting through a boss in a flowing S-curve, in an ancient sunken hall",
+   "img2": "close on the red scarf lifting in a wind from nowhere in a dark stone oath hall, the prisoner's face hidden",
+   "img3": "the crimson ribbon blade wrapping around the boss in a spiral before tightening into the cut"
+  },
+  {
+   "id": "oath-guard",
+   "name": "Oath Guard",
+   "rarity": "story",
+   "key": "guard",
+   "kind": "power",
+   "when": "press",
+   "then": "oathShield",
+   "story": {
+    "chapter": 5,
+    "place": "The Final Castle's chapel, the defaced statue"
+   },
+   "text": "A great shield turns and answers every blow.",
+   "levels": [
+    {
+     "charge": 16,
+     "time": 3,
+     "damage": 40
+    }
+   ],
+   "idea": "At the defaced statue of a hooded champion with a round shield, the player's own round shield answers: it blooms into a great round shield of red-gold light that turns every blow for three seconds and answers each with a bash. The same guard the last boss will use against you.",
+   "look": "A great round shield of translucent red-gold light with a worn boss in its centre, an oath ring of old script round its rim; each blow turned throws a red-gold shock.",
+   "img": "the swordsman's round shield blooming into a huge translucent round shield of red-gold light with an oath ring of old script around its rim, turning a boss blow into a shockwave",
+   "img2": "a defaced stone statue of a hooded champion with a round shield and a red-painted scarf in a dark castle chapel, the prisoner standing before it",
+   "img3": "the great shield bashing forward into the boss with a red-gold shock ring"
+  },
+  {
+   "id": "the-seven",
+   "name": "The Seven",
+   "rarity": "story",
+   "key": "summon",
+   "kind": "power",
+   "when": "press",
+   "then": "seven",
+   "summon": true,
+   "story": {
+    "chapter": 6,
+    "place": "The Church in the Pass, the painted faces"
+   },
+   "text": "The Seven rise and strike the boss.",
+   "levels": [
+    {
+     "charge": 24,
+     "time": 9,
+     "every": 1,
+     "damage": 24,
+     "draw": 3
+    }
+   ],
+   "idea": "In the log church where the Seven painted their own faces, the faces turn to watch. Pressed, seven hooded founders of painted light rise in a ring round the boss and strike in turn with open hands, then all together.",
+   "look": "Seven tall hooded figures with flat painted faces (simple folk-art faces), robes of ember-gold light; their open palms strike with golden shock rings.",
+   "img": "seven tall hooded figures with flat painted folk-art faces and robes of ember-gold light rising in a ring around a boss in the snow, raising open palms",
+   "img2": "a dark log church in a snowy mountain pass with seven painted faces on its wall, faintly glowing",
+   "img3": "the Seven striking all together, seven golden open-hand shock rings converging on the boss"
+  },
+  {
+   "id": "bell-of-waking",
+   "name": "Bell of Waking",
+   "rarity": "story",
+   "key": "ultimate",
+   "kind": "power",
+   "when": "press",
+   "then": "bellToll",
+   "story": {
+    "chapter": 14,
+    "place": "The Still Mere, given by Ysolde"
+   },
+   "text": "The Bell falls, tolls, and calls the boss down.",
+   "levels": [
+    {
+     "charge": 48,
+     "time": 2,
+     "damage": 480
+    }
+   ],
+   "idea": "Before the last fight, Ysolde gives the prisoner the one thing a bellwright's daughter can: the ringing. Pressed, the ghost of the cracked Bell of Waking falls from the sky over the boss and tolls once. The world drains to ink except the bell's gold and the red scarf, falling ash stops in the air, and the boss is called down to one knee; the second toll shatters.",
+   "look": "A colossal cracked bronze bell of ghostly gold light descending over the boss; a white toll ring rolling across the whole arena; colour drained to ink but for gold and the red scarf; ash frozen mid-air.",
+   "img": "a colossal ghostly cracked bronze bell of gold light descending from the sky over a kneeling boss on a frozen lake, a white toll ring rolling across the world, everything drained to ink except the gold bell and the swordsman's red scarf",
+   "img2": "falling ash frozen in mid-air around the swordsman as a toll ring passes, the world drained of colour, only the red scarf in colour",
+   "img3": "the second toll: the giant bell shattering into gold fragments over the boss, a white shockwave across the frozen lake"
+  }
+ ]
+}

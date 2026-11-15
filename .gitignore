@@ -6,3 +6,4 @@ server/node_modules/
 node_modules/
 tools/blender/out/
 __pycache__/
+design/abilities/originals/
