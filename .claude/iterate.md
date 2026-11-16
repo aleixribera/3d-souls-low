@@ -1,5 +1,7 @@
 # Iterate: Combat Arena 3D
 
+Model: opus, effort medium
+
 The loop file for the `iterate` skill. Where it differs from the skill, this file wins.
 
 ## Active repair run (Aleix, 2026-11-16)
