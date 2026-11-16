@@ -4,7 +4,9 @@ The iterate loop's working note (`.claude/iterate.md`). Cap: 8,000 characters.
 
 ## Now
 
-Paused by Aleix, 2026-11-14 (after pass 103, v7.131.0). No pass until the loop chat resumes it (Friday 2026-11-20, 21:05).
+Model change: Opus 5.5 -> Astra, 2026-11-16; baseline cd8eb50. Aleix resumed work now.
+Repair pass 105: audit 1 counters; attempt 1. Check: every deflect opens a light counter; it cancels the string, including online.
+Scope and evidence: docs/audit-repairs.md (repair-only; overrides Friday hold and content tracks).
 - v7.134.0: online is Boss Rush and the Weekly Run only. Single-Quad Boss, co-op Story, rests, gates and the old wipe
   screens went (code too); a wipe ends the run on its summary. Protocol 3.
 - v7.135.0: Boss Rush alone, no server (`js/alone.js` hosts `js/lobby-host.js` in a frame).
@@ -76,24 +78,4 @@ None (read the newest CI run).
 
 ## Needs Aleix
 
-- (overridable) Sparring: a pale teacher shows each of 9 drills, you copy it; skippable.
-- (overridable) The skilled player is the bot with a quarter of its mistimed rolls (`SKILLED=1`).
-- (overridable) Revive: 3 s in a 1.5 m ring, up with a third of the bar, in every party boss fight; titles' wording.
-- (overridable) Endless: modifiers from fight 8, pairs from 9; warm-up bosses at 55-85% health; legendaries a third weaker.
-- (overridable) Pass 93: Aldric's Gaoler's Stamp is gone; each phase keeps 2 undeflectable big moments. A quarter
-  can't hold while area hits and leaps stay undeflectable (92 of 197 boss attacks).
-- (overridable) Ember Twin is an ember copy of your own figure, not a model of its own.
-- (overridable) Practice groups hold up to 6 (`CONFIG.practice.maxGroup`).
-- (overridable) Story's bosses 0.8x pace, 0.75x health in chapter 1 to 1.1x / 1x; 5 flasks found (ch. 2, 4, 6, 9,
-  12), a warm light at a corpse, taken on touch.
-- (overridable) Boss health is now set by a lone bot's time (about 3 min, a skilled person's minute), not a ladder:
-  the Kindling Tree (2,500) and the King's Blade (3,000) sit below Agathe (3,200).
-- (overridable) Swift kill: par 45 s, then 100 s (less with a kit) adds a card. The pick holds 2 s.
-- (overridable) Boss Rush: no wall; x1.6 at fight 10, x2.8 at 15, x4 at 20, then +0.25 a fight (pass 96).
-- (overridable) Pass 96: heavy = poise 60+ (94 attacks); projectiles stay blockable; the end reads "Reached fight
-  N"; Deep Lungs, Quick/Deep Breath and Second Wind are gone; the harder press is every boss's, Story's too.
-- (overridable) Pass 98: "Your name" with Join / Cancel; Options > Game > Name; a new player spars, then is asked.
-- (overridable) The Giant's ember eyes, fused skulls, femur club; its rename is yours.
-- (overridable) Endings: one line at a time low over the live world; a half-dark veil only behind the credits.
-- (overridable) End screen: "The crown answered" (won), "Team wiped" (lost); the clock starts at the leader's start.
-- (overridable) Chapters 7-14's words (`STORY.md` 6, 7, 10c-10j) and boss HP (v7.65.0) are the loop's.
+None for the authorized audit repairs. Historical choices remain in PLAN.md and git history.

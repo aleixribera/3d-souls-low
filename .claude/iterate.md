@@ -2,6 +2,13 @@
 
 The loop file for the `iterate` skill. Where it differs from the skill, this file wins.
 
+## Active repair run (Aleix, 2026-11-16)
+
+Model change: Opus 5.5 -> Astra, baseline cd8eb50. Aleix resumed work immediately and asked Astra to run
+the repair passes itself. During this run, one writer in the main checkout replaces the two content tracks.
+Follow docs/audit-repairs.md: mechanics, bugs, startup, menus and reliability only; no content or unfinished systems.
+The Friday hold is superseded. Keep evidence and commit references in that repair log.
+
 ## Vision
 
 - `VISION.md`: what the game is, in Aleix's words. Wins over everything, this file included.

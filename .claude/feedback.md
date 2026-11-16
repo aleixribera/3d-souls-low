@@ -101,3 +101,5 @@ took it (once taken).
   longer enters fullscreen.
 - 2026-11-14, asked whether passes may download the Sekiro and Stellar Blade reference clips again for the animation
   judge: "Yes, download them". Kept in `.scratch/`, never committed.
+
+- 2026-11-16, Aleix: model change Opus 5.5 -> Astra; resume now with full authority. Astra runs audit repairs itself. Online first, offline only if unavailable. No new Story, level/enemy content, ability/crate systems, or boss/attack redesign. Approved repair plan: docs/audit-repairs.md.
