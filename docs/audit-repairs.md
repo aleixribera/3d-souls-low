@@ -1,9 +1,8 @@
 # Audit repairs
 
-Model change: **Opus 5.5 -> Astra**, authorized by Aleix on 2026-11-16.
+A repair run Aleix started and stopped on 2026-11-16; v7.139.0 shipped part of it.
 Starting revision: cd8eb507d2a045747bd042c7c1386f344526a39b (v7.138.0).
-Astra owns implementation, verification and shipping. This is a repair run, not a design pass.
-Aleix resumed work now, superseding the Friday pause and counter hold.
+What is left below is backlog, not orders: the Friday pause and the plan stand.
 
 ## Owner scope
 

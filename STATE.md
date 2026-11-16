@@ -4,9 +4,8 @@ The iterate loop's working note (`.claude/iterate.md`). Cap: 8,000 characters.
 
 ## Now
 
-Model change: Opus 5.5 -> Astra, 2026-11-16; baseline cd8eb50. Aleix resumed work now.
-Repair pass 105: audit 1 counters; attempt 1. Check: every deflect opens a light counter; it cancels the string, including online.
-Scope and evidence: docs/audit-repairs.md (repair-only; overrides Friday hold and content tracks).
+Paused by Aleix, 2026-11-14 (after pass 103, v7.131.0). No pass until the loop chat resumes it (Friday 2026-11-20, 21:05).
+- v7.139.0 (2026-11-16): audit repairs shipped outside the loop; `docs/audit-repairs.md` lists what is left, as backlog.
 - v7.134.0: online is Boss Rush and the Weekly Run only. Single-Quad Boss, co-op Story, rests, gates and the old wipe
   screens went (code too); a wipe ends the run on its summary. Protocol 3.
 - v7.135.0: Boss Rush alone, no server (`js/alone.js` hosts `js/lobby-host.js` in a frame).
