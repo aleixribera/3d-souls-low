@@ -167,6 +167,10 @@ function resolveCombat(game) {
     const base = p.hitbox.payload, strike = abilityStrike(p.kit, p.perk, e, base);   // the kit's bonus (online: the server's own)
     p.hitbox.markHit(e);
     const res = typeof multiplayer !== 'undefined' && multiplayer.active() ? multiplayer.hit(e, base) : e.takeHit(strike, p);
+    // Enemy contacts were captured before this hit. A landed counter cancels that blow even in this same step;
+    // ordinary simultaneous swings still trade. The server also cancels the string for every teammate.
+    if (strike.riposte && !strike.power && !res.blocked)
+      for (let i = enemyHits.length - 1; i >= 0; i--) if (enemyHits[i].owner === e) enemyHits.splice(i, 1);
     game.hitstop = Math.max(game.hitstop, res.blocked ? CONFIG.block.hitstop : strike.hitstop);
     events.emit('strike', { strike, attacker: p, target: e, at: contact(p.hitbox, e), blocked: !!res.blocked });
     if (strike.empowered) events.emit('abilityPerk', { body: p, perk: 'empower', target: e });

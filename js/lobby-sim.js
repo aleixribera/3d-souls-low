@@ -21,6 +21,13 @@ globalThis.host = (() => {
   const crowdClocks = new Map();
   // Contact plausibility state, per run: hit budgets per player/enemy and each player's last accepted parry (riposte).
   const hitBudget = new Map(), lastParry = new Map(), spentOpening = new Map();   // spentOpening: the opening a player's counter used (one counter each)
+  const defended = new Map();   // recent accepted defence identities; retries cannot open another counter
+  function firstDefence(kind, id, msg, hit) {
+    for (const [key, at] of defended) if (time - at > C.historySeconds + C.claimWait) defended.delete(key);
+    const key = JSON.stringify([kind, id, msg.enemy, msg.serial, hit]);
+    if (defended.has(key)) return false;
+    defended.set(key, time); return true;
+  }
   // An empty, settled run sleeps (world clocks advance, enemies wait at home) until somebody returns.
   let sleeping = false, settleCheck = 0;
   // Boss Rush's abilities (CONFIG.abilities, js/abilities.js), kept across a run's fights: ids held (one per pick,
@@ -220,7 +227,7 @@ globalThis.host = (() => {
     epoch++; time = 0; completedFor = 0; fought = 0; eventList = []; bolts = []; flying.length = 0; history = []; players = [];
     damage = new Map(); closed = false; deaths = new Map(); fightBots = new Set();
     feats = new Map(); lastHit = null; killer = null; embers.clear(); risen.length = 0;
-    hitBudget.clear(); lastParry.clear(); spentOpening.clear(); sleeping = false; settleCheck = 0;
+    hitBudget.clear(); lastParry.clear(); spentOpening.clear(); defended.clear(); sleeping = false; settleCheck = 0;
     wipeOnly = isBossDef(d);
     if (!keepAbilities) { owned.clear(); offers.clear(); }
     kits.clear(); perks.clear(); lastDodge.clear(); pendingClaims.length = 0;
@@ -253,11 +260,14 @@ globalThis.host = (() => {
   // them (setGear). `rarities` (a list) keeps the offer to those: the free pick before fight 1 (CONFIG.abilities.first).
   // A player holding CONFIG.abilities.legendaries legendaries is offered only those again, as their next level. A
   // number key (ABILITY_KEYS) holds one ability: once one is taken, no other for that key is offered (pass 87, Aleix).
+  const offerSize = (crowned, extra = 0) => crowned
+    ? Math.max(CONFIG.abilities.offer + extra, CONFIG.endless.crownedOffer)
+    : CONFIG.abilities.offer + extra;
   function offerAbilities(ids, withBots = true, extra = 0, won = 0, crowned = false, seed = null, crates = true, rarities = null) {
     const B = CONFIG.abilities;
     let random = Math.random, nth = -1;
     const pick = list => list[Math.floor(random() * list.length)];
-    const cards = crowned ? Math.max(B.offer + extra, CONFIG.endless.crownedOffer) : B.offer + extra;
+    const cards = offerSize(crowned, extra);
     for (const id of [...ids, ...(withBots ? bots.keys() : [])]) {
       nth++;
       if (offers.has(id)) continue;
@@ -376,7 +386,7 @@ globalThis.host = (() => {
       const e = struckNear(p, msg);
       if (!e) return false;
       if (p.state !== 'roll') return wait();
-      lastDodge.set(id, time);
+      // The separate dodged claim owns the counter window; an ability report must not refresh a spent opening.
       abilityPowers.trigger(id, body, kit, 'dodge', { enemy: e });
     } else if (msg.when === 'flask') {
       if (p.state !== PS.USE_ITEM) return wait();
@@ -659,10 +669,10 @@ globalThis.host = (() => {
     // Pass 85: every perfect dodge opens a counter (CONFIG.player.counterTime), Counterstep's window if longer.
     // The window is the latest opening's own; a counter swing that reaches several foes counts on each (one `swing`).
     const parried = lastParry.get(id) ?? -Infinity, dodgedAt = lastDodge.get(id) ?? -Infinity, opening = Math.max(parried, dodgedAt);
-    const spent = spentOpening.get(id), swing = Number.isSafeInteger(msg.swing) ? msg.swing : null;
-    const fresh = !spent || opening > spent.opening || (swing !== null && spent.opening === opening && spent.swing === swing);
+    const spent = spentOpening.get(id), swing = typeof msg.swing === 'string' || Number.isSafeInteger(msg.swing) ? msg.swing : null;
+    const fresh = !spent || opening > spent.opening || (swing !== null && spent.opening === opening && spent.swing === swing && !spent.enemies.has(e.netId));
     const span = opening === dodgedAt ? Math.max(CONFIG.player.counterTime * longer, step ? step.window : 0) : CONFIG.parry.riposteTime * longer;
-    const riposte = msg.riposte === true && fresh && time - opening <= span + C.riposteSlack;
+    const riposte = a.id === PLAYER_DEF.moveset.counter.light && msg.riposte === true && fresh && time - opening <= span + C.riposteSlack;
     const base = makeStrike(a, riposte, msg.charge);
     if (!Number.isFinite(base.damage) || !Number.isFinite(base.poise) || e.invulnerable() || !spendHit(id, e)) return false;
     const strike = abilityStrike(kit, perkOf(id), e, base);   // the kit's bonus, from what the server knows of them
@@ -670,7 +680,10 @@ globalThis.host = (() => {
     if (!Number.isFinite(e.hp)) e.hp = hp;   // a bar can never become NaN (alive yet unkillable)
     creditDamage(id, hp - e.hp); noteDamage(e, id, hp - e.hp);
     if (!result.blocked) gainCharge(id, pressGain(strike));
-    if (riposte && !result.blocked) spentOpening.set(id, { opening, swing });
+    if (riposte && !result.blocked) {
+      const enemies = spent && spent.opening === opening && spent.swing === swing ? spent.enemies : new Set();
+      enemies.add(e.netId); spentOpening.set(id, { opening, swing, enemies });
+    }
     if (result.opened) {   // a stance broken, a wind-up faltered: open, a counter for this player (their browser opens it)
       lastParry.set(id, time); eventList.push({ type: 'opened', player: id, enemy: e.netId });
     }
@@ -707,12 +720,13 @@ globalThis.host = (() => {
     // The parried blow must have reached this player: its farthest hit from where the enemy stood during it.
     const reach = Math.max(...a.hits.map(h => reachOf(h.box || a.box))) + p.radius;
     if (!within(p, e, reach, [-Infinity, Infinity], s => s.attack === msg.serial)) return false;
+    if (!firstDefence('parry', id, msg, hit)) return false;
     // A delayed parry of an old move still succeeded on that player's screen,
     // but must never cancel an unrelated new move on everybody else's screen.
     sleeping = false;
     const opened = hit === a.hits.length - 1;
     if (opened && e.netAttack === msg.serial) e.getParried();
-    if (opened) lastParry.set(id, time);
+    lastParry.set(id, time);
     feat(id).parries++; gainCharge(id, CONFIG.abilities.press.gain.deflect);
     eventList.push({ type: 'parry', player: id, enemy: e.netId });
     abilityPowers.trigger(id, holderOf(id), kitOf(id), 'parry', { enemy: e });   // Thousand Blades, Counterflame
@@ -728,6 +742,12 @@ globalThis.host = (() => {
       if (!retry && pendingClaims.length < C.maxPendingClaims) pendingClaims.push({ id, msg, until: time + C.claimWait, fn: dodged });
       return false;
     }
+    let hit = null;
+    for (let i = history.length - 1; i >= 0; i--) {
+      const s = history[i].enemies.find(s => s.id === msg.enemy && s.attack === msg.serial && (s.state === ES.WINDUP || s.state === ES.ACTIVE));
+      if (s) { hit = s.hit || 0; break; }
+    }
+    if (!firstDefence('dodge', id, msg, hit)) return false;
     lastDodge.set(id, time); gainCharge(id, CONFIG.abilities.press.gain.dodge);
     const e = enemy(msg.enemy);   // still that attack: a boss recovers longer from a blow dashed through (CONFIG.bossMove.dodged)
     if (e && e.netAttack === msg.serial && e.in('attacking')) e.dashedThroughBy();
@@ -772,7 +792,7 @@ globalThis.host = (() => {
     reviveHealth: id => maxHpOf(id) * CONFIG.revive.health, frame, hit, parry, dodged, endFinisher, lifesteal, landed,
     playerMaxHp: PLAYER_DEF.stats.maxHp,
     offerAbilities, setGear, settleAbilities, pickAbility, giveAbilities, kitOf, maxHpOf, notePose, abilityClaim,
-    abilityPickTime: CONFIG.abilities.pickTime, abilityPickHold: CONFIG.abilities.pickHold, abilityFirst: CONFIG.abilities.first,
+    offerSize, abilityPickTime: CONFIG.abilities.pickTime, abilityPickHold: CONFIG.abilities.pickHold, abilityFirst: CONFIG.abilities.first,
     rushPar, rushHealth, partyMight, swiftExtra: CONFIG.swift.extra,
     abilities: () => Object.fromEntries(owned), abilityOffer: id => offers.get(id) || null,
     playerMaxFlasks: PLAYER_DEF.inventory.find(it => it.item === 'flask').max,

@@ -177,7 +177,7 @@ class Player {
     this.attack = a; this.attackT = 0; this.chargeT = 0; this.charge = a.charge ? 0 : 2;
     // The run's speed, carried forward (momentum); never more than a run, so an attack out of a dash keeps its own reach.
     this.carry = clamp(this.vx * Math.sin(this.yaw) + this.vz * Math.cos(this.yaw), 0, CONFIG.player.walkSpeed);
-    this.payload = makeStrike(a, this.riposte > 0, 0);
+    this.payload = makeStrike(a, this.riposte > 0 && a.id === this.def.moveset.counter.light, 0);
     if (a.charge && this.perk.bastion > 0) {   // Bastion: a blocked blow readied this heavy, fully charged at once
       this.perk.bastion = 0; this.chargeT = a.charge.hold; this.charge = 2; this.payload = makeStrike(a, this.payload.riposte, 1);
       events.emit('chargeFull', { actor: this, attack: a }); events.emit('abilityPerk', { body: this, perk: 'block/charge' });

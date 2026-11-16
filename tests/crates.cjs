@@ -32,6 +32,7 @@ const seeded = seed => () => { seed = (seed + 0x6d2b79f5) >>> 0; let t = seed; t
   assert.equal(progress.runXp({ won: 4, crowned: 0, time: 370 }), 4 * X.fight + 6 * X.minute);
   assert.equal(progress.runXp({ won: 5, crowned: 1, time: 59 }), 5 * X.fight + X.crowned);
   assert.equal(progress.runXp({ won: 0, time: 20 }), X.least, 'a run lost at once still earns something');
+  assert.equal(progress.award({ outcome: 'left', won: 0, time: 120 }, 'abandoned'), null, 'an abandoned run before its first win earns nothing');
   assert.equal(progress.runXp({ won: 'x', crowned: -3, time: NaN }), X.least, 'a summary that makes no sense earns the least');
 
   // A run is counted once by its key; its levels are crates.

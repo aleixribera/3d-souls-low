@@ -228,6 +228,8 @@
   #bootError .box { border: 2px solid #8a3a2a; background: #120c0d; padding: 26px 34px; max-width: 640px; }
   #bootError h2 { margin: 0 0 12px; font-weight: normal; letter-spacing: 4px; color: #d0705a; font-size: 20px; }
   #bootError .msg { white-space: pre-line; font-size: 14px; line-height: 1.55; color: #d9cda8; }
+  #bootError.loading .box { border-color: #6e5d36; }
+  #bootError.loading h2 { color: #c9a85e; }
 
   #hud { position: fixed; inset: 0; pointer-events: none; z-index: 5; overflow: hidden;
     --u: 1; --mx: 30px; --my: 24px; --calm: 0; --calm-dim: 0.5; --toast-time: 3.2s;
@@ -533,24 +535,39 @@
   }
 </style>
 <script>
-  // Load guard (plain script, runs even if the game module never does): if the game fails to start
-  // (offline CDN, a data error, a crash at load), show a readable message instead of a dead menu.
+  // A slow download is recoverable. Only a real load/runtime error sets __bootShown,
+  // which the script loader also uses to stop loading developer tests.
+  var bootMessage = '', bootSlow = false;
+  function drawBootStatus() {
+    var box = document.getElementById('bootError');
+    if (!box) return;
+    box.querySelector('.msg').textContent = bootMessage;
+    box.classList.toggle('loading', bootSlow && !window.__bootShown);
+    box.classList.toggle('hidden', !bootMessage);
+  }
+  document.addEventListener('DOMContentLoaded', drawBootStatus);
   window.__bootError = function (msg) {
     if (window.__bootShown) return;   // keep the first, most specific message
     window.__bootShown = true;
-    var show = function () {
-      var box = document.getElementById('bootError');
-      if (!box) return;
-      box.querySelector('.msg').textContent = msg;
-      box.classList.remove('hidden');
-    };
-    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', show); else show();
+    clearTimeout(bootTimer);
+    bootMessage = msg;
+    drawBootStatus();
+  };
+  window.__bootComplete = function () {
+    clearTimeout(bootTimer);
+    if (window.__bootShown) return;   // never hide a genuine startup failure
+    bootMessage = '';
+    bootSlow = false;
+    drawBootStatus();
   };
   window.addEventListener('error', function (ev) {
     if (!window.__arenaReady) window.__bootError('The game failed to start:\n' + (ev.message || 'a script error') + '.');
   });
-  setTimeout(function () {
-    if (!window.__arenaReady) window.__bootError('The game did not load.\nIt needs an internet connection once to download Three.js from cdn.jsdelivr.net. Check your connection, then reload the page.');
+  var bootTimer = setTimeout(function () {
+    if (window.__arenaReady || window.__bootShown) return;
+    bootSlow = true;
+    bootMessage = 'Still loading.\nThis is taking longer than usual. If loading does not finish, check your connection and reload.';
+    drawBootStatus();
   }, 10000);
 </script>
 <!-- Three.js and its addons, all from the same CDN and version. -->
@@ -643,7 +660,7 @@
   <div id="loadPad"><svg viewBox="0 0 30 20" fill="none" stroke="currentColor" stroke-width="1.4" aria-hidden="true">
     <path d="M8 3h14c4 0 6 3 7 8s0 8-3 8c-2 0-3-2-5-4H9c-2 2-3 4-5 4-3 0-4-3-3-8s3-8 7-8z"/>
     <path d="M8 7v5M5.5 9.5h5"/><circle cx="21" cy="8" r="1"/><circle cx="23.5" cy="11" r="1"/></svg><span id="loadPadText"></span></div></div>
-<div id="bootError" class="hidden"><div class="box"><h2>COMBAT ARENA 3D</h2><div class="msg"></div></div></div>
+<div id="bootError" class="hidden" role="status" aria-live="polite"><div class="box"><h2>COMBAT ARENA 3D</h2><div class="msg"></div></div></div>
 
 <script type="module" onerror="window.__bootError('The game did not load.
 It needs an internet connection once to download Three.js from cdn.jsdelivr.net. Check your connection, then reload the page.')">
@@ -838,7 +855,7 @@ const GAME_FILES = [
   'replay.js',     // the replay viewer: the replay door's /watch only (server/replays.cjs)
   'boot.js',
 ];
-const LOAD_STAMP = '7.138.0';   // bump for each release; stable within a release so browsers can cache scripts
+const LOAD_STAMP = '7.139.0';   // bump for each release; stable within a release so browsers can cache scripts
 const loadScript = (file, dir = 'js/') => new Promise(resolve => {
   const s = document.createElement('script');
   s.src = dir + file + '?v=' + LOAD_STAMP;
@@ -847,8 +864,9 @@ const loadScript = (file, dir = 'js/') => new Promise(resolve => {
   s.onerror = () => resolve(false);
   document.body.appendChild(s);
 });
-const loading = GAME_FILES.map(file => loadScript(file));
-for (const [i, file] of GAME_FILES.entries()) {
+const bootFiles = document.querySelector('meta[name="arena-replay"]') ? GAME_FILES : GAME_FILES.filter(file => file !== 'replay.js');
+const loading = bootFiles.map(file => loadScript(file));
+for (const [i, file] of bootFiles.entries()) {
   if (!await loading[i]) { window.__bootError(`Could not load js/${file}.
 Reload the page, or update the game and its js folder together.`); break; }
   if (window.__bootShown) break;   // the file failed while running: its message is already on screen

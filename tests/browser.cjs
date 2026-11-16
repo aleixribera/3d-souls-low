@@ -24,8 +24,14 @@ function watch() {
   watcher.unref();
   process.once('exit', () => { try { watcher.kill(); } catch (e) { /* gone */ } });
 }
-if (lowered) {
+const softwareGL = process.env.ARENA_SOFTWARE_GL === '1';
+if (lowered || softwareGL) {
   const launch = playwright.chromium.launch.bind(playwright.chromium);
-  playwright.chromium.launch = async (...args) => { const browser = await launch(...args); watch(); return browser; };
+  playwright.chromium.launch = async (options = {}) => {
+    const args = softwareGL ? [...new Set([...(options.args || []), '--use-angle=swiftshader', '--enable-unsafe-swiftshader'])] : options.args;
+    const browser = await launch({ ...options, args });
+    if (lowered) watch();
+    return browser;
+  };
 }
 module.exports = playwright;

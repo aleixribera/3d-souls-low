@@ -51,13 +51,24 @@
     const dateNow = options.dateNow || Date.now;
     // Replays (PLAN.md "replays"): `replays` (server/replays.cjs, the server only) records every Boss Rush run.
     const replays = options.replays || null;
-    let recording = null, emptySince = 0;   // the run being recorded; since when nobody is in the lobby
-    const REPLAY_IDLE = 60000;   // a run with nobody in the lobby this long stops recording
+    let recording = null;
     function endRecording(outcome, summary = null) { if (recording) { recording.end(outcome, summary); recording = null; } }
     const replayRoster = r => r.players.map(p => ({ id: p.id, name: p.name, ...(p.look ? { look: p.look } : {}), ...(p.bot ? { bot: true } : {}) }));
     // `clients` holds players who said hello (they own a slot); `pending` sockets are still joining.
     const clients = new Map(), pending = new Set(), hellos = new Map();   // address -> { count, at } joins this minute
     const memories = new Map(); // Private browser credentials; never included in roster or pose broadcasts.
+    const RESULT_TTL = 10 * 60 * 1000;
+    function pendingResults(memory) {
+      const now = performance.now();
+      return (memory.results || []).filter(r => r.expires > now);
+    }
+    function retainResult(summary) {
+      const participants = new Set(summary.players.filter(p => !p.bot).map(p => p.id));
+      const expires = performance.now() + RESULT_TTL;
+      for (const memory of memories.values()) if (participants.has(memory.id)) {
+        memory.results = [...pendingResults(memory), { summary, expires }].slice(-8);
+      }
+    }
     const freshPose = p => p.ready && p.pose && performance.now() - p.lastPose < C.stalePlayer * 1000;
     const participating = p => p.hello && p.foreground && (p.ready && p.pose ? freshPose(p) : performance.now() - p.loadingSince < C.loadTimeout);
     function remember(p) {
@@ -165,11 +176,14 @@
     };
     const error = (p, message) => send(p, { type: 'error', message });
     function stop(message, reason = null, extra = {}) {
-      if (tally?.run.week && !tally.recorded) recordWeekly(runSummary('left'));   // a weekly run left for the lobby counts too
-      if (recording) endRecording(extra.summary?.outcome || (reason === 'error' ? 'error' : 'left'), extra.summary || (tally ? runSummary('left') : null));
+      let summary = extra.summary;
+      if (!summary && tally && reason !== 'error') summary = abandonedRun();
+      if (summary) recordWeekly(summary);
+      if (summary) retainResult(summary);
+      endRecording(summary?.outcome || (reason === 'error' ? 'error' : 'left'), summary);
       session = null; abilityFor = null; abilityRound.clear(); tally = null;
       for (const p of clients.values()) { p.ready = false; p.pose = null; p.encoder.reset(); }
-      broadcast({ type: 'stop', message, reason, ...extra }); sendRoster();
+      broadcast({ type: 'stop', message, reason, ...(summary ? { summary } : {}) }); sendRoster();
     }
     // Boss Rush's end of a fight: its damage and falls join the run's totals, and a won fight counts once (a fight of two
     // bosses too: one count, the fight, pass 96), with its bosses and its time against par (CONFIG.swift); under par is a
@@ -207,18 +221,36 @@
     }
     // A Boss Rush run's end: the summary for the end screen, after a weekly run's board has it.
     function endRun(outcome) { const summary = runSummary(outcome); recordWeekly(summary); return summary; }
+    function abandonedRun() {
+      if (tallied) return runSummary('left');
+      // Snapshot the old fight before a replacement starts. A rejected replacement leaves its live tally intact.
+      const live = tally;
+      tally = { ...live, times: [...live.times], players: new Map([...live.players].map(([id, row]) => [id, { ...row }])) };
+      try {
+        tallied = !!sim.state.complete;
+        tallyFight(tallied);
+        return runSummary('left');
+      } finally { tally = live; tallied = false; }
+    }
     // Online play is Boss Rush only (and its weekly run): one fight of `run` ({ seed, opening[, week] }, sim.calling),
     // `fight` counting from 0. `opening`: the run's start, with its intro card.
     function start(run, fight = 0, opening = false) {
       // Ids are resolved and validated before the shared simulation changes; a refused request keeps the run.
       const gauntlet = sim.calling(run, fight);
+      const abandoned = fight === 0 && tally ? abandonedRun() : null;
       // A later fight of the run keeps the run's abilities; a new run starts without.
       try { session = sim.start('arena', gauntlet.boss, gauntlet.partners, fight > 0); } catch (e) {
         // A failure after validation leaves the simulation half-built: end the run properly for everyone.
         if (!e.rejected && session) stop('The session stopped after a server error. The leader can start another run.', 'error');
         throw e;
       }
-      if (tally?.run.week && !tally.recorded && fight === 0) recordWeekly(runSummary('left'));   // a weekly run given up
+      if (abandoned) {
+        recordWeekly(abandoned);
+        retainResult(abandoned);
+        endRecording('left', abandoned);
+        for (const p of clients.values()) if (abandoned.players.some(row => row.id === p.id))
+          send(p, { type: 'runResult', summary: abandoned });
+      }
       for (const p of clients.values()) if (p.hello) sim.registerPlayer(p.id, p.name);
       session.gauntlet = gauntlet;
       session.abilities = sim.abilities();   // player id -> ability ids held, for every body's kit
@@ -231,7 +263,6 @@
       if (fight === 0) tally = { key: secret(8), run: gauntlet.run, id: gauntlet.id, name: gauntlet.name, startedAt: performance.now(), won: 0, crowned: 0, times: [], players: new Map() };
       tally.at = gauntlet.number;   // the fight the run is in: the HUD's number
       // The replay: a new run ends the one being recorded; each Boss Rush fight is a chapter of its own.
-      if (recording && fight === 0) endRecording('left');
       if (replays && fight === 0) recording = replays.begin({ mode: gauntlet.run.week ? 'weekly' : 'boss-rush', name: gauntlet.name, version: sim.catalog().version, build });
       tallied = false;
       if (opening) session.opening = true;
@@ -299,7 +330,8 @@
     // This player's open offer (if any), the time left to choose, and what they hold.
     function sendOffer(p) {
       const offer = sim.abilityOffer(p.id);
-      if (p.hello && offer) send(p, { type: 'abilities', offer, left: Math.max(0, sim.abilityPickTime - abilityFor), held: sim.abilities()[p.id] || [], swift: swiftKill(), crowned: !!session.gauntlet?.crowned });
+      const crowned = !!session.gauntlet?.crowned;
+      if (p.hello && offer) send(p, { type: 'abilities', offer, left: Math.max(0, sim.abilityPickTime - abilityFor), held: sim.abilities()[p.id] || [], swift: swiftKill() && offer.length > sim.offerSize(crowned), crowned });
     }
     // This fight was won under its par (CONFIG.swift): its ability offer has an extra choice.
     const swiftKill = () => !!tally?.times.length && tally.times[tally.times.length - 1].swift && tallied;
@@ -327,9 +359,12 @@
       p.name = net.name(msg.name) || p.name; p.hello = true; p.foreground = msg.foreground !== false;
       p.look = sim.setGear(p.id, msg.look, msg.crates);   // what this browser's crates gave it (js/data/crates.js)
       p.loadingSince = performance.now(); remember(p);
+      recording?.resume();
       if (session) sim.registerPlayer(p.id, p.name);
       noteActivity(p);
-      send(p, { id: p.id, token: p.token, build, catalog: sim.catalog(), board: board.current(), ...roster(), type: 'welcome' });
+      p.memory.results = pendingResults(p.memory);
+      const results = p.memory.results.map(r => r.summary);
+      send(p, { id: p.id, token: p.token, build, catalog: sim.catalog(), board: board.current(), ...roster(), type: 'welcome', ...(results.length ? { results } : {}) });
       if (session) send(p, { type: 'start', session, resume: p.pose });
       if (session) offerLate(p);
       queueRoster();
@@ -421,6 +456,10 @@
         p.name = name; remember(p); if (session) sim.registerPlayer(p.id, p.name); queueRoster(); return;
       }
       if (msg.type === 'control') { control(p, msg); return; }
+      if (msg.type === 'runResultSeen') {
+        p.memory.results = pendingResults(p.memory).filter(r => r.summary.key !== msg.key);
+        return;
+      }
       if (!session || msg.epoch !== session.epoch) return;
       if (msg.type === 'pickAbility') {   // a pick from this player's own open offer, while the offers are open
         noteActivity(p);
@@ -476,6 +515,7 @@
       pending.delete(p);
       if (clients.get(p.id) !== p) return;   // a replacement connection (or nobody) owns this identity now
       remember(p); clients.delete(p.id); p.revive = null;
+      if (!clients.size) recording?.pause();
       if (session) sim.dropEmber(p.id);
       if (!refreshLeader('disconnect')) queueRoster();
     }
@@ -501,7 +541,6 @@
       updateMetrics(now);
       refreshLeader();
       if (!session) { accumulator = 0; return; }
-      if (recording && !clients.size) { emptySince ||= now; if (now - emptySince >= REPLAY_IDLE) endRecording('left', tally ? runSummary('left') : null); } else emptySince = 0;
       syncPlayers(); accumulator += elapsed;
       try {
         while (accumulator >= 1 / C.tickRate) {

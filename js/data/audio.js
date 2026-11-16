@@ -133,12 +133,6 @@ const AUDIO = {
       { noise: 'brown', filter: { type: 'lowpass', freq: 600, to: 80 }, a: 0.002, d: 0.9, gain: 1.0, drive: 2 },
       { noise: 'white', parallel: [{ type: 'bandpass', freq: 4100, q: 32 }, { type: 'bandpass', freq: 5650, q: 28 }], at: 0.02, a: 0.002, d: 1.4, gain: 1.3 },
     ] },
-    counterRise: { bus: 'sfx', priority: 3, cooldown: 0.1, verb: 0.3, heat: 0.45, jitter: 50, layers: [
-      { noise: 'pink', filter: { type: 'bandpass', freq: 250, to: 2600, q: 0.9 }, glide: 0.22, a: 0.06, d: 0.26, gain: 1.1 },
-      { noise: 'white', filter: { type: 'bandpass', freq: 1600, to: 6000, q: 1.4 }, glide: 0.22, a: 0.05, d: 0.22, gain: 0.6 },
-      { noise: 'white', filter: { type: 'bandpass', freq: [3100, 3500], q: 20 }, at: 0.14, a: 0.002, d: 0.5, gain: 1.4 },
-      { wave: 'sine', freq: 70, to: 110, a: 0.05, d: 0.3, gain: 0.35 },
-    ] },
     // The cut opening a beat after the blow: a tearing hiss and a deep, dry boom.
     cutOpen: { bus: 'sfx', priority: 3, cooldown: 0.12, verb: 0.4, heat: 0.8, jitter: 40, layers: [
       { noise: 'white', filter: { type: 'highpass', freq: [3000, 4200], to: 9000, q: 0.7 }, a: 0.002, d: 0.16, gain: 0.7, drive: 2 },

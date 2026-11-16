@@ -59,11 +59,11 @@ function peer(url, origin) {
   assert.equal(sim.dodged('a', { enemy: e.netId, serial: newSerial }), true, 'a dodge while dashing');
   // Pass 100: a counter (a blow after this player's own opening) cracks the guard, one counter an opening; the counter on
   // a guard cracked to the last is the Finishing Blow, granted to whoever landed it, and only they end it.
-  const X = sim.inspect().CONFIG.finisher, counter = swing => sim.hit('a', { enemy: e.netId, attack: 'light', charge: 0, riposte: true, swing });
+  const X = sim.inspect().CONFIG.finisher, counter = swing => sim.hit('a', { enemy: e.netId, attack: 'counter', charge: 0, riposte: true, swing });
   sim.setPlayers([{ ...pose(6, -3), id: 'a' }, { ...pose(-12, 0), id: 'b' }]);
   assert.equal(counter(7), true); assert.equal(e.cracks, 1, 'a counter cracks the guard');
   const h1 = e.hp; counter(7);
-  assert.ok(h1 - e.hp > 16, `one counter swing that reaches more than one foe is a counter on each (${h1 - e.hp})`);
+  assert.equal(h1 - e.hp, 16, 'a duplicate contact cannot crack the same guard twice');
   for (let i = 0; i < 60; i++) sim.tick(1 / 60);
   counter(); assert.equal(e.cracks, 1, 'one counter an opening');
   e.cracks = X.cracks; e.crackBy = null;

@@ -90,6 +90,24 @@ assert.ok(stop.summary.time < pausedFor, `the paused minutes are not run time: $
 assert.ok(typeof stop.summary.key === 'string' && stop.summary.key.length === 16, 'a run key for the rewards (js/progress.js)');
 assert.equal(lobby.session, null);
 
+// Restarting after a win settles the old run before the new fight starts.
+hp = 120;
+inbox.length = 0;
+send({ type: 'control', action: 'start', kind: 'calling', id: C.calling.id, opening: ['ostrey'] });
+session = take('start').session;
+send({ type: 'ready', epoch: session.epoch });
+assert.ok(run(() => inbox.some(m => m.type === 'abilities')));
+send({ type: 'pickAbility', epoch: session.epoch, id: take('abilities').offer[0] });
+assert.ok(run(() => sim.state.fought > 0.5));
+for (const e of sim.inspect().Game.enemies) { e.hp = 0; e.die(); }
+assert.ok(run(() => sim.state.complete));
+send({ type: 'control', action: 'restart' });
+const replaced = take('runResult').summary;
+assert.equal(replaced.outcome, 'left');
+assert.equal(replaced.won, 1);
+assert.notEqual(replaced.key, stop.summary.key);
+assert.notEqual(take('start').session.epoch, session.epoch);
+
 lobby.disconnect(p);
 assert.equal(lobby.clients.size, 0);
 lobby.close();

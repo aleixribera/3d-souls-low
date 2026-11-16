@@ -35,7 +35,7 @@ const PLAYER_DEF = {
     ground: { light: 'light', heavy: 'heavy' },        // input action -> attack id
     air: { light: 'jumpLight', heavy: 'jumpHeavy' },
     dash: { light: 'dashLight', heavy: 'dashHeavy' },  // an attack pressed in a dash (CONFIG.player.dashAttackFrom)
-    counter: { light: 'counter', heavy: 'counterHeavy' },   // pressed while a riposte is open (a perfect dodge, an opening deflect)
+    counter: { light: 'counter' },   // pressed while a riposte is open (a perfect dodge, an opening deflect)
     attacks: {
       // Four-phase (js/attack-anim.js): wind-up, strike (hitbox on), follow-through, recovery.
       // The light string: diagonal -> backhand -> overhead -> thrust (`next`: the attack a press during this one chains
@@ -103,14 +103,9 @@ const PLAYER_DEF = {
       counter: { id: 'counter', anim: 'sweep', pose: 'counterFlash', hits: [{ startup: 0.1, active: 0.14, follow: 0.26 }], recovery: 0.3,
                  next: { light: 'light2', heavy: 'finisher2' },
                  markers: [{ at: 'active', t: 0, event: 'sound', sound: 'counterFlash', vel: 1 }, { at: 'active', t: 0.5, event: 'glint' }],
-                 damage: 16, poise: 24, knock: 3, lunge: 0, hitstop: 0.12, riposte: { damage: 2.6 },
+                 damage: 16, poise: 24, knock: 3, lunge: 0, hitstop: 0.12, riposte: { damage: 2.25 },
                  flashStep: { past: 1.1, min: 3, max: 5.5, range: 6, cone: 0.7, brake: 60, exit: 4 }, cut: { kind: 'line', open: 0.32 },
                  box: { w: 1.8, h: 1.8, d: 2.8, fwd: 0.5, y: 1.1 } },
-      counterHeavy: { id: 'counterHeavy', anim: 'overhead', pose: 'counterRising', feel: 'heavy', hits: [{ startup: 0.24, active: 0.12, follow: 0.28 }], recovery: 0.38,
-                      markers: [{ at: 'windup', t: 0.55, event: 'sound', sound: 'counterRise', vel: 1 }, { at: 'active', t: 0.6, event: 'glint' }],
-                      damage: 36, poise: 52, knock: 6, lunge: 3.5, hitstop: 0.16, riposte: { damage: 2.6, poise: 2.5 },
-                      cut: { kind: 'arc', open: 0.24 },
-                      box: { w: 3.0, h: 3.0, d: 2.6, fwd: 1.3, y: 1.4 } },
       // The Finishing Blow (pass 100, js/finisher.js): the counter that lands on a guard cracked twice. No hitbox: the
       // damage is its own (CONFIG.finisher.damage), dealt as the active phase opens. Wind-up: time stops for the foe and
       // the player flash-steps through it (CONFIG.finisher.steps); active: every cut opens at once; follow and recovery:

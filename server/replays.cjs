@@ -194,11 +194,27 @@ function createReplays({ dir = null, keepDays = 60, batchSeconds = 30, now = Dat
     }
     // A disk that refuses a batch: the file keeps what it has (played as cut short), and nothing more piles up in memory.
     function stopWriting(what, e) { fail(what, e); broken = true; pending = []; tailLines = []; tailStart = persisted; }
-    const at = () => Math.max(lastT, round((clock() - started) / 1000));
+    let pausedAt = null, pausedMs = 0;
+    const at = () => Math.max(lastT, round(((pausedAt ?? clock()) - started - pausedMs) / 1000));
     push({ k: 'run', v: FORMAT, id, mode: card.mode, name: card.name, version: card.version, build: card.build, startedAt });
     saveSoon();
     const rec = {
       id,
+      pause() {
+        if (!ended && pausedAt === null) pausedAt = clock();
+      },
+      resume() {
+        if (ended || pausedAt === null) return;
+        const seconds = round((clock() - pausedAt) / 1000);
+        pausedMs += clock() - pausedAt;
+        pausedAt = null;
+        chapterAt = lastT;
+        chapterSim = null;
+        encoder.reset();
+        lastHp.clear();
+        recent.length = 0;
+        mark({ type: 'gap', seconds });
+      },
       // A fight starts: its session (bosses, modifiers, abilities held), and who is there.
       chapter(session, roster) {
         if (ended) return;
@@ -214,7 +230,7 @@ function createReplays({ dir = null, keepDays = 60, batchSeconds = 30, now = Dat
       },
       // One snapshot, as sent to the players (sim.frame() and the players' poses).
       frame(frame, players) {
-        if (ended || fight < 0) return;
+        if (ended || fight < 0 || pausedAt !== null) return;
         if (chapterSim === null) chapterSim = frame.time;
         const t = lastT = Math.max(lastT, round(chapterAt + frame.time - chapterSim));
         const m = encoder.encode(frame, players); delete m.type; delete m.frame.server;
@@ -262,7 +278,7 @@ function createReplays({ dir = null, keepDays = 60, batchSeconds = 30, now = Dat
       writing: () => writing,
     };
     // The game calls these from its tick: an error here ends the recording (cut short), never the run being played.
-    for (const k of ['chapter', 'frame', 'roster', 'kit', 'end']) {
+    for (const k of ['chapter', 'frame', 'roster', 'kit', 'end', 'pause', 'resume']) {
       const f = rec[k];
       rec[k] = (a, b) => { try { f(a, b); } catch (e) { fail('a run stopped recording', e); if (!ended) { ended = true; card.live = false; card.outcome = card.outcome || 'cut'; try { flush(true); } catch {} live.delete(id); saveSoon(); } } };
     }

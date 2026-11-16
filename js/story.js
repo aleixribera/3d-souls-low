@@ -48,14 +48,24 @@ function makeCampaign(C) {
   const strs = a => Array.isArray(a) && a.every(s => typeof s === 'string');
   const finite = v => typeof v === 'number' && Number.isFinite(v);
   const record = v => !!v && typeof v === 'object' && !Array.isArray(v);
-  // A readable save, or null. Anything odd (an old version, a level since removed, a bonfire that moved) is refused.
+  // Recover a checkpoint against the current level. If it was removed, keep progress and use the chapter start.
+  function checkpoint(d, level) {
+    const fire = (level.bonfires || []).find(b => b.id === d.bonfire);
+    if (!fire) return { bonfire: null, spawn: null };
+    if (fire.spawn) return { bonfire: fire.id, spawn: { ...fire.spawn } };
+    const off = CONFIG.rest.respawnOffset;
+    const savedSide = d.spawn && d.spawn.z === fire.z && Math.abs(Math.abs(d.spawn.x - fire.x) - off) < 1e-6;
+    const side = savedSide ? Math.sign(d.spawn.x - fire.x) : (level.start.x < fire.x ? -1 : 1);
+    return { bonfire: fire.id, spawn: { x: fire.x + side * off, z: fire.z, yaw: level.start.yaw } };
+  }
+  // A readable save, or null. An incompatible version or unknown chapter is refused.
   function check(d) {
     if (!record(d) || d.v !== S().saveVersion) return null;
     if (d.level === 'tutorial') d = { ...d, level: chapterIds()[0], bonfire: null, spawn: null };
     if (!storyLevels().includes(d.level)) return null;
     const L = ALL_LEVELS.find(l => l.id === d.level);
     if (!L) return null;
-    if (d.bonfire !== null && !(L.bonfires || []).some(b => b.id === d.bonfire)) return null;
+    if (d.bonfire !== null && (typeof d.bonfire !== 'string' || !d.bonfire)) return null;
     if (d.spawn !== null && !(d.spawn && finite(d.spawn.x) && finite(d.spawn.z) && finite(d.spawn.yaw) && (d.spawn.y === undefined || finite(d.spawn.y)))) return null;
     if (![d.cleared, d.shortcuts, d.traps, d.seen, d.bosses].every(strs)) return null;
     if ('zones' in d && !strs(d.zones)) return null;   // v5.1: optional (older saves derive won zones from `cleared`)
@@ -70,7 +80,7 @@ function makeCampaign(C) {
       d = { ...d, finds: roadFinds(d.level) };
       if (flask && least !== null && flask.max < least) d.progress = { ...d.progress, inventory: { ...d.progress.inventory, flask: { ...flask, max: least } } };
     }
-    return { ...d, completed: !!d.completed };
+    return { ...d, ...checkpoint(d, L), completed: !!d.completed };
   }
   function load() {
     const raw = readRaw();

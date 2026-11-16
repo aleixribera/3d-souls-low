@@ -305,7 +305,7 @@ class Enemy {
   }
   invulnerable() { return this.in('invulnerable') || this.blinkLeft > 0 || this.burrowed() || (!!this.attack && !!this.attack.invulnerable && (this.state === ES.WINDUP || this.state === ES.ACTIVE)); }
   savePrev() { this.px = this.x; this.py = this.y; this.pz = this.z; this.pyaw = this.yaw; }
-  setState(s) { this.state = s; this.stateTime = 0; this.leaping = false; this.blinkLeft = 0; this.markerSeen = null; if (s !== ES.CHASE) this.cued = null; }
+  setState(s) { this.parriedFor = null; this.state = s; this.stateTime = 0; this.leaping = false; this.blinkLeft = 0; this.markerSeen = null; if (s !== ES.CHASE) this.cued = null; }
   in(group) { return ENEMY_GROUPS[group].has(this.state); }
   alive() { return this.state !== ES.DEAD && this.state !== ES.GONE; }
   isAttacking() { return this.in('attacking'); }
@@ -382,7 +382,7 @@ class Enemy {
     this.updateFeedback(dt);
     this.chainTime += dt; this.blockTime += dt; this.struckTime += dt;
     const held = this.state === ES.EXECUTED;   // through a Finishing Blow (js/finisher.js)
-    // The cracks in its guard never fade with time (js/finisher.js); crackTime only spaces one striker's cracks (`rest`).
+    // Cracks never fade with time; crackTime is retained for presentation/snapshots.
     if (this.cracks > 0 && !held) this.crackTime += dt;
     // A def's `resonance` (pass 68): it fades once no blow has landed for `delay` s, and a Finishing Blow empties it.
     if (this.resonanceRest > 0) this.resonanceRest -= dt;
@@ -618,7 +618,7 @@ class Enemy {
         if (this.stateTime >= d.staggerTime) { this.poise = d.poise; this.cooldown = d.cooldown[0]; this.setState(ES.CHASE); }
         break;
       case ES.PARRIED:
-        if (this.stateTime >= d.parriedTime) { this.poise = d.poise; this.cooldown = d.cooldown[0]; this.setState(ES.CHASE); }
+        if (this.stateTime >= (this.parriedFor ?? d.parriedTime)) { this.poise = d.poise; this.cooldown = d.cooldown[0]; this.setState(ES.CHASE); }
         break;
       case ES.PHASE: {   // between two health bars: kneels, rises, the new bar fills; nothing it does can hurt
         const T = d.transition || CONFIG.enemy.transition;
@@ -938,7 +938,7 @@ class Enemy {
       case ES.WINDUP: if (this.stateTime >= this.attack.hits[this.hitIndex].startup) this.strike(); break;
       case ES.ACTIVE: this.endStrikeWhenDone(); break;
       case ES.RECOVER: if (this.stateTime >= this.attack.recovery) this.setState(ES.IDLE); break;
-      case ES.PARRIED: if (this.stateTime >= this.def.parriedTime) this.setState(ES.IDLE); break;
+      case ES.PARRIED: if (this.stateTime >= (this.parriedFor ?? this.def.parriedTime)) this.setState(ES.IDLE); break;
     }
   }
 
@@ -966,11 +966,11 @@ class Enemy {
     this.setState(ES.PARRIED);
   }
   // A deflect (pass 85, CONFIG.parry): the last blow of its attack deflected ends it, open (getParried); an earlier blow
-  // is only turned aside and the string goes on. Returns { opened }.
+  // is turned aside and the string goes on. Every deflect opens the player counter.
   getDeflected() {
     const a = this.attack, last = !a || this.hitIndex >= a.hits.length - 1;
     if (last) this.getParried();
-    return { opened: last };
+    return { opened: true };
   }
   // Anti-mash (pass 85, CONFIG.enemy.mash): the run of blows a boss has taken without a pause of `gap` s. Long enough,
   // and it answers with a break-off of its own (breakOff): its quickest attack that reaches, the widest first. The run
@@ -1062,9 +1062,14 @@ class Enemy {
     if (this.hp <= 0) { this.hitbox = null; this.setState(ES.DEAD); return { died: true }; }
     // A counter (a riposte's blow; a power's blow never) cracks the guard; one on a guard cracked CONFIG.finisher.cracks
     // times is the Finishing Blow (js/finisher.js: the striker runs it).
-    const finisher = !!strike.riposte && !strike.power && crackGuard(this, from);
+    const counter = !!strike.riposte && !strike.power;
+    const finisher = counter && crackGuard(this, from);
+    if (counter) {
+      this.getParried(); this.parriedFor = CONFIG.parry.counterReel;
+      return { died: false, finisher };
+    }
     if (this.isBoss()) {
-      // Bosses ignore interrupts.
+      // Ordinary hits do not interrupt bosses.
       this.noteMash(strike, from);   // before chainTime restarts: it measures the pause before this blow
       this.chainTime = 0;
       // A hit's `falter` (pass 55, the King's Blade): `hits` blows landed through its wind-up and it breaks off, open.

@@ -7,7 +7,7 @@ A Souls-like in the browser, alone or with friends online.
 - In the browser: https://aleixribera.github.io/3d-souls-low/ (single player), or open `combat-arena-3d.html` from
   a checkout. Nothing to install.
 - **Story** is the one road: Ashmere, then over the pass into Thrale. It saves itself at every bonfire you rest at.
-  **Boss Rush** joins the public lobby on a server (below), where friends fight boss after boss together.
+  **Boss Rush** joins the public lobby, where friends fight boss after boss together. Solo play is available if the lobby cannot be used.
   **Practice** fights any enemy or boss (one, several, or two teams of bosses) or plays any level on its own.
 - Fight like a Souls game: watch the wind-up, roll through or parry the strike, punish the recovery, mind your
   stamina. Bonfires refill your health and flasks and are your checkpoints.
@@ -15,7 +15,7 @@ A Souls-like in the browser, alone or with friends online.
 | Action | Keys | Gamepad |
 |---|---|---|
 | Move / camera | WASD / mouse | Left / right stick |
-| Light / heavy attack (light on a kneeling enemy: execute) | J or left mouse / K or right mouse | RB / RT |
+| Light / heavy attack | J or left mouse / K or right mouse | RB / RT |
 | Roll / jump | Shift / Space | B / A |
 | Block (hold) / parry | L or C / E | LB / LT |
 | Lock on / switch target | Q / Tab | R3 / flick the right stick |

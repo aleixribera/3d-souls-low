@@ -239,8 +239,8 @@ function validateData({ visual = true } = {}) {
     need(botConfig.tempo[key] <= 1, `Bot tempo.${key} must be 0..1.`);
   for (const key of ['punishWindow', 'punishRecovery', 'punishCommit']) need(num(botConfig.tempo[key]) && botConfig.tempo[key] > 0, `Bot tempo.${key} must be positive.`);
   { const D = botConfig.dashIn, T = botConfig.tempo;   // pass 88: finishers and dash attacks
-    need(['finisher', 'finisherOpening'].every(k => num(T[k]) && T[k] >= 0) && D && pair(D.gap) && ['rate', 'rest', 'heavy', 'counterReach', 'counterHeavy'].every(k => num(D[k]) && D[k] >= 0),
-      'Bot tempo.finisher and finisherOpening must be 0 or more; dashIn needs gap [near, far] and rate, rest, heavy, counterReach and counterHeavy of 0 or more.'); }
+    need(['finisher', 'finisherOpening'].every(k => num(T[k]) && T[k] >= 0) && D && pair(D.gap) && ['rate', 'rest', 'heavy', 'counterReach'].every(k => num(D[k]) && D[k] >= 0),
+      'Bot tempo.finisher and finisherOpening must be 0 or more; dashIn needs gap [near, far] and rate, rest, heavy, counterReach of 0 or more.'); }
   for (const key of ['windowSlack', 'minWindow'])
     need(num(botConfig.risk?.[key]) && botConfig.risk[key] > 0, `Bot risk.${key} must be positive.`);
   for (const key of ['combo', 'earlyRollChance'])
@@ -621,11 +621,12 @@ function validateData({ visual = true } = {}) {
   const AG = CONFIG.aggro;   // a boss against a group (v7.35.0): its targeting and its area attacks
   need(AG && ['damage', 'healReach', 'hold', 'margin', 'crowd', 'areaWidth'].every(k => num(AG[k]) && AG[k] >= 0) && num(AG.memory) && AG.memory > 0
     && num(AG.areaMul) && AG.areaMul >= 1, 'CONFIG.aggro: damage, healReach, hold, margin, crowd and areaWidth must be 0 or more, memory above 0 and areaMul 1 or more.');
+  need(num(CONFIG.parry.counterReel) && CONFIG.parry.counterReel > 0, 'CONFIG.parry.counterReel must be positive.');
   // The Finishing Blow (js/finisher.js): the attack it runs, and every tuning number.
   { const Fa = M.attacks.finisher, F = CONFIG.finisher;
     need(Fa && Fa.pose && Fa.hits.length === 1 && Fa.damage === 0, 'Player moveset: the Finishing Blow needs a one-hit "finisher" attack with a pose and no damage of its own.');
     need(F && Number.isInteger(F.cracks) && F.cracks >= 1 && Number.isInteger(F.steps) && F.steps >= 1
-      && ['rest', 'past', 'hitstop', 'grace', 'push'].every(k => num(F[k]) && F[k] >= 0)
+      && ['past', 'hitstop', 'grace', 'push'].every(k => num(F[k]) && F[k] >= 0)
       && ['base', 'mul', 'bossMul', 'bossCap'].every(k => num(F.damage[k]) && F.damage[k] > 0) && F.damage.bossCap <= 0.5
       && num(F.heal) && F.heal >= 0 && F.heal < 1 && num(F.camera.rate) && F.camera.rate > 0,
       'CONFIG.finisher: cracks and steps whole numbers 1 or more, the other numbers 0 or more, damage above 0 with bossCap at most 0.5, heal under 1.');

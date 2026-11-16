@@ -463,6 +463,7 @@ const replayView = (() => {
     .rv-finisher{width:9px;height:9px;background:var(--ui-accent-hi);transform:translateX(-50%) rotate(45deg);bottom:4px}
     .rv-pick{width:0;height:0;border:6px solid transparent;border-bottom:10px solid #b9a2ff;border-top:0}
     .rv-note{width:3px;height:14px;background:var(--ui-ink)}
+    .rv-gap{width:4px;height:10px;border-inline:1px solid var(--ui-ink)}
     #rvTip{position:absolute;bottom:50px;transform:translateX(-50%);padding:5px 9px;background:#06080af2;border:1px solid var(--ui-line-hi);font:500 13px/1.35 var(--ui-text);
       white-space:nowrap;max-width:min(320px,80vw);overflow:hidden;text-overflow:ellipsis;pointer-events:none}
     #rvRow{display:flex;flex-wrap:wrap;align-items:center;gap:8px}
@@ -603,6 +604,7 @@ const replayView = (() => {
       for (const m of marks) {
         if (m.type === 'down' || m.type === 'death' || m.type === 'finisher') out.push(`<i class="rv-m rv-${m.type}" style="left:${pct(m.t)}%"></i>`);
         else if (m.type === 'pick' && ABILITY_BY_ID[m.ability]?.rarity === 'legendary') out.push(`<i class="rv-m rv-pick" style="left:${pct(m.t)}%"></i>`);
+        else if (m.type === 'gap') out.push(`<i class="rv-m rv-gap" style="left:${pct(m.t)}%"></i>`);
       }
       for (const n of notes) out.push(`<i class="rv-m rv-note" style="left:${pct(n.t)}%"></i>`);
       $r('rvMarks').innerHTML = out.join('');
@@ -776,7 +778,7 @@ const replayView = (() => {
       const d = duration(); if (!d) { tip.hidden = true; return; }
       const r = line.getBoundingClientRect(), px = 9 / Math.max(1, r.width) * d;
       let near = null, best = px;
-      for (const m of marks) if (['down', 'death', 'finisher', 'pick'].includes(m.type) && Math.abs(m.t - t) < best) { best = Math.abs(m.t - t); near = m; }
+      for (const m of marks) if (['down', 'death', 'finisher', 'pick', 'gap'].includes(m.type) && Math.abs(m.t - t) < best) { best = Math.abs(m.t - t); near = m; }
       for (const n of card?.notes || []) if (Math.abs(n.t - t) < best) { best = Math.abs(n.t - t); near = { type: 'note', t: n.t, text: n.text }; }
       const fight = chapterAt(t);
       let text = clock(near ? near.t : t);
@@ -784,6 +786,7 @@ const replayView = (() => {
       else if (near?.type === 'finisher') text += ` · ${nameOf(near.player)}'s Finishing Blow`;
       else if (near?.type === 'pick') text += ` · ${nameOf(near.player)} picks ${ABILITY_BY_ID[near.ability]?.name || near.ability}`;
       else if (near?.type === 'note') text += ` · ${near.text}`;
+      else if (near?.type === 'gap') text += ` · Lobby empty for ${clock(near.seconds)}`;
       else if (fight) text += ` · Fight ${fight.session.gauntlet?.number ?? fight.fight + 1}`;
       tip.textContent = text; tip.hidden = false;
       tip.style.left = clamp((t / d) * r.width, 60, r.width - 60) + 'px';

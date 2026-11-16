@@ -683,14 +683,14 @@
     faceOff(e, p, 2); e.beginAttack(combo);
     sim.until(() => e.state === ES.WINDUP && e.stateTime >= combo.hits[0].startup - 0.08, 2); sim.press('block');
     sim.until(() => log.includes('parry'), 0.4);
-    expect.ok(log.includes('parry') && e.state !== ES.PARRIED && e.attack === combo, 'the first cut turned, the string goes on');
+    expect.ok(log.includes('parry') && p.riposte > 0 && e.state !== ES.PARRIED && e.attack === combo, 'the first deflect opens a counter while the string continues');
     sim.until(() => e.hitIndex === 1, 1);
     expect.ok(p.hp === hp0, 'the turned cut never landed');
     // The rest of the string, deflected: the last cut leaves it open, and a riposte follows.
     log.length = 0; const n = deflectString(e, combo);
     expect.ok(n >= 2 && e.state === ES.PARRIED && p.riposte > 0, `the last cut deflected opens it (${e.state}), a riposte is ready`);
-    sim.press('heavy'); sim.until(() => p.state === PS.ATTACK, 0.5);   // pass 88: the riposte is the counter's rising cut, never a charge
-    expect.ok(p.state === PS.ATTACK && p.attack.id === 'counterHeavy' && p.payload.riposte && p.charge === 2, `a heavy now is the heavy counter (${p.attack && p.attack.id})`);
+    sim.press('heavy'); sim.until(() => p.state === PS.ATTACK, 0.5);
+    expect.ok(p.state === PS.ATTACK && p.attack.id === 'heavy' && !p.payload.riposte, `heavy stays a normal heavy (${p.attack && p.attack.id})`);
   });
   test('pass 85 deflect: mashing the button deflects nothing (the spam lock)', () => {
     Game.startFight('pillagerCaptain'); sim.begin(); sturdy(Game.player); log.length = 0;
@@ -3524,7 +3524,7 @@
     expect.ok(p.state !== PS.ROLL && p.invulnerable(), 'the roll presses were ignored, and a short grace follows');
     sim.seconds(CONFIG.finisher.grace + 0.05); expect.ok(!p.invulnerable() && p.hp === hp0, 'grace over, no harm taken');
   });
-  test('Finishing Blow: a plain blow or a power never cracks the guard; a counter does, once in a while for each striker', () => {
+  test('Finishing Blow: a plain blow or a power never cracks the guard; every distinct counter does', () => {
     Game.startFight('knight'); Game.loading = 0; sim.begin();
     const e = Game.duel, riposte = makeStrike(A.PLAYER_DEF.moveset.attacks.light, true), me = { ...behind(e), id: 'me' };
     const hit = (s, from) => { quiet(e); e.hp = e.def.hp; return e.takeHit(s, from); };   // whole each time: no blow kills it
@@ -3533,9 +3533,7 @@
     hit({ ...riposte, power: 'fire-burst' }, me);
     expect.ok(e.cracks === 0, 'nor does a power');
     hit(riposte, me); hit(riposte, me);
-    expect.ok(e.cracks === 1, `a counter cracks it, and the same striker's next counter at once does not (${e.cracks})`);
-    sim.seconds(CONFIG.finisher.rest + 0.05); hit(riposte, me);
-    expect.ok(e.cracks === 2, `a counter a moment later does (${e.cracks})`);
+    expect.ok(e.cracks === 2, `two counters crack it twice, without a cooldown (${e.cracks})`);
     const res = hit(riposte, { ...behind(e), id: 'friend' });
     expect.ok(res.finisher && e.cracks === 2, `in a party anyone's counter counts: a friend's is the Finishing Blow, theirs to run (${JSON.stringify(res)}, ${e.cracks})`);
   });

@@ -16,6 +16,9 @@ concurrency:
   cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
 
 jobs:
+  browser-smoke:
+    uses: ./.github/workflows/browser-smoke.yaml
+
   node:
     name: Node tests
     runs-on: ubuntu-latest

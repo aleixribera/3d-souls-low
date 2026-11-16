@@ -38,7 +38,7 @@ const SHOWCASE = {
     { id: 'deflect', kind: 'deflect', at: 23, attack: 'ravenous', counter: 'light' },
     { id: 'dragon', kind: 'ability', at: 34, key: 4 },
     { id: 'finaleDodge', kind: 'dodge', at: 43, attack: 'hungerCuts', counter: 'light' },
-    { id: 'finale', kind: 'deflect', at: 50, attack: 'keepingRiver', counter: 'heavy', finisher: true, kill: true },
+    { id: 'finale', kind: 'deflect', at: 50, attack: 'keepingRiver', counter: 'light', finisher: true, kill: true },
   ],
   shots: {
     over: { at: 0, back: 3.4, side: 1.25, up: 2.1, look: 0.75, lookUp: 0.6, fov: 50, push: 0.25 },

@@ -224,6 +224,10 @@ const multiplayer = (() => {
   document.head.appendChild(summaryStyle);
   let summary = null;   // the last run's summary while its screen is open
   const runClock = seconds => `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, '0')}`;
+  function settleRunResult(data) {
+    if ((data.players || []).some(r => r.id === self)) progress.award(data, data.key);
+    if (data.key) send({ type: 'runResultSeen', key: data.key });
+  }
   function showRunSummary(data) {
     summary = data;
     runSummary.classList.toggle('summary-wiped', data.outcome !== 'won');
@@ -244,6 +248,7 @@ const multiplayer = (() => {
     }
     // This browser's xp, level and crates (js/crate-screen.js): xp only for those who played the run.
     crateScreen.runRewards(el('runSummaryRewards'), data, (data.players || []).some(r => r.id === self));
+    if (data.key) send({ type: 'runResultSeen', key: data.key });
     const rows = el('runSummaryRows'); rows.replaceChildren();
     for (const r of data.players || []) {
       const tr = document.createElement('tr'); tr.dataset.self = String(r.id === self);
@@ -951,6 +956,15 @@ const multiplayer = (() => {
       el('lobbyStatus').textContent = ''; updateRoster();
       if (!panel.classList.contains('hidden')) focusLobbyControl(ensureLobbyFocus(true));   // joined: focus moves from Leave to Start
       if (solo) control('start', { kind: 'calling', id: C.calling.id });
+      else if (Array.isArray(msg.results)) {
+        const showLast = msg.session ? null : msg.results.at(-1);
+        for (const result of msg.results) {
+          if (result === showLast) showRunSummary(result);
+          else settleRunResult(result);
+        }
+      }
+    } else if (msg.type === 'runResult') {
+      if (msg.summary) settleRunResult(msg.summary);
     } else if (msg.type === 'board') {
       board = msg.board && typeof msg.board === 'object' ? msg.board : null; drawBoard();
     } else if (msg.type === 'roster') {
@@ -1216,7 +1230,16 @@ const multiplayer = (() => {
     command('hit', { enemy: e.netId, attack: strike.attackId, swing: hitIds.get(hb), charge: strike.charge || 0, riposte: strike.riposte });
     e.tint = 1; e.recoil = 1;
     const counter = e.counterAgainst(Game.player, strike.attackId);   // a counter stance turns it, or a breaker breaks it open (pass 55)
-    return { blocked: (e.guarding() && isInFront(e, Game.player.x, Game.player.z)) || counter === 'turn', opened: counter === 'break', died: false };
+    const blocked = (e.guarding() && isInFront(e, Game.player.x, Game.player.z)) || counter === 'turn';
+    if (!blocked && strike.riposte && strike.attackId === PLAYER_DEF.moveset.counter.light) {
+      // Health is client-owned: stop the struck string immediately, as on a last-hit deflect, while the claim travels.
+      const known = e.learned.length;
+      e.getParried(); e.parriedFor = CONFIG.parry.counterReel;
+      e.netCounterSerial = e.netSerial;
+      e.netCounterUntil = performance.now() / 1000 + CONFIG.parry.counterReel + C.interpolation;
+      e.learned.length = known;
+    }
+    return { blocked, opened: counter === 'break', died: false };
   }
   // A deflect (pass 85): the blow's index goes too, so the server knows a string's last blow (which opens the foe) from
   // an earlier one (only turned aside, the string goes on). Returns { opened } like Enemy.getDeflected.
@@ -1224,7 +1247,7 @@ const multiplayer = (() => {
     const hit = e.hitIndex || 0, last = !!e.attack && hit === e.attack.hits.length - 1;
     command('parry', { enemy: e.netId, serial: e.netSerial, hit });
     const known = e.learned.length, res = e.getDeflected();
-    if (res.opened && last) e.netParried = e.netSerial;   // only the last blow opens it on the server too
+    if (last) e.netParried = e.netSerial;   // only the last blow opens it on the server too
     e.learned.length = known;   // what it learns from the parry is the server's to say (pass 77): its next frame brings it
     return res;
   }

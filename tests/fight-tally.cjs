@@ -21,7 +21,7 @@ function finisherBy(id, e) {
   assert.equal(sim.dodged(id, { enemy: e.netId, serial: e.netAttack }), true, 'a perfect dodge');
   sim.setPlayers([{ id, ...at, state: 'idle' }, ...others]);
   e.cracks = sim.inspect().CONFIG.finisher.cracks;
-  assert.equal(hit(id, e, { riposte: true }), true); assert.ok(e.netExec, 'the Finishing Blow is granted');
+  assert.equal(hit(id, e, { attack: 'counter', riposte: true }), true); assert.ok(e.netExec, 'the Finishing Blow is granted');
 }
 function complete() {
   for (const e of sim.inspect().Game.enemies) { e.hp = 0; e.die(); }

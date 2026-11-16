@@ -43,7 +43,7 @@ const until = async (test, message, limit = 4000) => {
   enemy.beginAttack(enemy.baseDef.attacks.find(a => a.id === 'sweep')); idle.setPlayers([owner]); idle.tick(1 / C.tickRate);
   assert.ok(idle.dodged(owner.id, { enemy: enemy.netId, serial: enemy.netAttack }), 'the owner dodged: a counter is open');
   idle.setPlayers([{ ...owner, state: 'idle' }]); enemy.cracks = idle.inspect().CONFIG.finisher.cracks;
-  assert.ok(idle.hit(owner.id, { enemy: enemy.netId, attack: 'light', charge: 0, riposte: true }) && enemy.netExec, 'the Finishing Blow is granted');
+  assert.ok(idle.hit(owner.id, { enemy: enemy.netId, attack: 'counter', charge: 0, riposte: true }) && enemy.netExec, 'the Finishing Blow is granted');
   idle.setPlayers([]);
   for (let i = 0; i < 600; i++) idle.tick(1 / C.tickRate);
   assert.equal(enemy.netExec, null, 'an abandoned Finishing Blow resolves while the arena is empty');

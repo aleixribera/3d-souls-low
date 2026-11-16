@@ -46,7 +46,7 @@ const LESSONS = {
   execute: { title: 'EXECUTE', keys: ['light'], urgent: true, text: () => 'It kneels. Step close to its front and strike to finish it.',
     on: (type, d, t, g) => type === 'executionEnd' && d.player === g.player },
   // The block key tapped as a red-glinting blow lands (one key: held it blocks, tapped it deflects).
-  parry: { title: 'DEFLECT', keys: ['block'], text: () => 'Tap, don\'t hold, as a red blow lands to turn it aside. Turn a string\'s last blow and strike back.',
+  parry: { title: 'DEFLECT', keys: ['block'], text: () => 'Tap, don\'t hold, as a red blow lands to turn it aside. Then light attack to counter.',
     on: (type, d, t, g) => type === 'parry' && lessonBy(d, g) },
   rest: { title: 'BONFIRE', keys: ['rest'], arrow: true,
     text: () => 'Rest to heal and refill your flasks. You return here if you fall, and foes you beat stay down.',

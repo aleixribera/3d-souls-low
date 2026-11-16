@@ -51,6 +51,7 @@ const progress = (() => {
   // What a run earns: its fights won, its Crowned ones, its whole minutes, never under `least`.
   function runXp(run) {
     const X = CRATES.xp, n = v => Math.max(0, Math.floor(Number(v) || 0));
+    if (run.outcome === 'left' && !n(run.won)) return 0;
     return Math.max(X.least, n(run.won) * X.fight + n(run.crowned) * X.crowned + Math.floor(n(run.time) / 60) * X.minute);
   }
   // Counts a finished run once (`key` names it): its xp, the levels and the crates they give. Null if already counted.
@@ -58,6 +59,7 @@ const progress = (() => {
     sync();
     if (key && state.counted.includes(key)) return null;
     const before = levelOf(state.xp), xp = runXp(run);
+    if (!xp) return null;
     state.xp += xp;
     const after = levelOf(state.xp), crates = after.level - before.level;
     state.crates = Math.min(999, state.crates + crates);

@@ -59,10 +59,10 @@ function withMood(boss, profile, want) {
     const pause = mid && !(e.state === 'active' && e.hitIndex === kneel.hits.length - 1);
     if (p.state === 'attack' && pause) swungMid = true;
     if (mid) farthest = Math.max(farthest, Math.hypot(p.x - e.x, p.z - e.z));
-    if (e.state === 'recover' && p.state === 'attack') { swungAfter = true; break; }
+    if ((e.state === 'recover' || e.state === 'parried' && p.payload?.riposte) && p.state === 'attack') { swungAfter = true; break; }
   }
   assert.ok(!swungMid, 'a patient bot never swings into the pause between the two rings');
-  assert.ok(swungAfter, 'it goes in once the string is over (the recovery)');
+  assert.ok(swungAfter, 'it punishes recovery or interrupts with an earned counter');
   console.log(`Kneel: a ${b.brain.mood} Maren waits out both rings (out to ${farthest.toFixed(1)} m), then strikes in the recovery.`);
 }
 

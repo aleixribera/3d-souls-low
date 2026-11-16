@@ -166,11 +166,11 @@ const finisher = (() => {
 })();
 
 // A counter landed on `e` from `from` (Enemy.takeHit; online on the server only). Cracks its guard, or, with
-// CONFIG.finisher.cracks cracks already in it, returns true: the Finishing Blow is due. One crack per counter: a second
-// riposte blow by the same striker within `rest` s of the last crack is only a blow.
+// CONFIG.finisher.cracks cracks already in it, returns true: the Finishing Blow is due.
+// Hitboxes and server spent openings prevent duplicate counter contacts.
 function crackGuard(e, from) {
   const C = CONFIG.finisher, who = from && from.id != null ? from.id : from;
-  if (e.training || e.state === ES.EXECUTED || (e.crackBy === who && e.cracks > 0 && e.crackTime < C.rest)) return false;
+  if (e.training || e.state === ES.EXECUTED) return false;
   if (e.cracks >= C.cracks) return true;
   e.cracks++; e.crackTime = 0; e.crackBy = who; e.crack = 1;
   events.emit('guardCrack', { enemy: e, cracks: e.cracks, by: from });

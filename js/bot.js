@@ -690,7 +690,7 @@ const bot = (() => {
       if (dashPlan && me.state === PS.ROLL) { hands.press(dashPlan.action); dashPlan = null; return { mv: { ...to, has: true }, lock: e }; }
       if (me.state === PS.ROLL && me.riposte > 0 && !me.buffer && !str && gap <= C.reach + C.dashIn.counterReach) {
         const fits = act => window > commit(A()[me.def.moveset.counter[act]]) + C.safety;
-        if (fits('light')) hands.press(rng() < profile.heavy + C.dashIn.counterHeavy && fits('heavy') ? 'heavy' : 'light');
+        if (fits('light')) hands.press('light');
       }
 
       // ---- 3. Heal when hurt and safe; back off first ----
@@ -768,8 +768,8 @@ const bot = (() => {
           decisionLeft = span(profile.think, rng);
           if (str) tally.gaps++, waitedThis = false;
           const rip = me.riposte > 0;
-          // A riposte is the counter (pass 88): a heavy press is its rising cut, never a charge.
-          if (rip && ready && attackWindow > commit(A().counterHeavy) + spare) { hands.press('heavy'); return { mv: idle, lock: e }; }
+          // The open counter always uses light; heavy remains a normal attack.
+          if (rip && ready && attackWindow > commit(A().counter) + spare) { hands.press('light'); return { mv: idle, lock: e }; }
           if (!rip && ready && !near && window > C.chargeWindow + commit(heavy) && can(heavy.cost) && rng() < profile.heavy) {
             hands.press('heavy'); hands.hold('heavy', true); heavyHold = heavy.charge.hold * (0.5 + 0.5 * rng());
             return { mv: idle, lock: e };

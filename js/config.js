@@ -3,7 +3,7 @@
 // 1. CONFIG
 // ============================================================================
 // Shared tuning. Per-character data (player, enemies, items) and level layouts live in section 2.
-const VERSION = 'v7.138.0';   // shown in the footer of the title and the pause menu; each release is tagged with the same name
+const VERSION = 'v7.139.0';   // shown in the footer of the title and the pause menu; each release is tagged with the same name
 const CONFIG = {
   step: 1 / 60,          // fixed simulation timestep (s)
   maxSteps: 5,           // max simulation steps per rendered frame
@@ -114,18 +114,18 @@ const CONFIG = {
   // blow lands. The window is anchored to the enemy's swing: it opens `lead` s before the active phase and closes
   // `grace` s into it. A press stays armed for `arm` s, so a press succeeds in [active - lead - arm, active + grace],
   // about a third of a second. Spamming: a press that deflects nothing locks the next `spamLock` s of presses out (a
-  // deflect clears it, so a string can be deflected blow by blow). The last blow of an attack deflected leaves it open
-  // (Enemy.getDeflected), and the next blow within `riposteTime` s is a riposte: a counter.
+  // deflect clears it, so a string can be deflected blow by blow). Every deflect opens a light counter;
+  // a landed counter ends the string and reels the foe for `counterReel` s.
   parry: { arm: 0.17, lead: 0.13, grace: 0.05, spamLock: 0.5, reach: 0.6, hitstop: 0.12,
-           riposteTime: 1.1, riposteHitstop: 1.6, flashTime: 0.4, shakeTime: 0.22, shakeAmp: 0.08 },
+           counterReel: 0.5, riposteTime: 1.1, riposteHitstop: 1.6, flashTime: 0.4, shakeTime: 0.22, shakeAmp: 0.08 },
   // The Finishing Blow (pass 100, js/finisher.js; it replaced the posture bar and executions). Each counter that lands
   // cracks the foe's guard, and the cracks stay until the Finishing Blow spends them (or the foe gives up the fight and
   // walks home; Aleix: no timer). The counter that lands on a guard with `cracks` cracks is the Finishing Blow (one
-  // crack a counter: a striker's second riposte blow within `rest` s of their crack is only a blow): the striker runs
+  // crack per accepted counter): the striker runs
   // the `finisher` attack (js/data/player.js), `steps` flash steps through the held foe through its wind-up, each ending `past` m beyond the far edge of its body,
   // then every cut opens at once. Every number of the system is here.
   finisher: {
-    cracks: 2, rest: 0.6, steps: 3, past: 1.4,   // the cracks' look: ANIM_SETTINGS.finisherFx (js/finisher-fx.js)
+    cracks: 2, steps: 3, past: 1.4,   // the cracks' look: ANIM_SETTINGS.finisherFx (js/finisher-fx.js)
     // Damage: `mul` times `base` for normal enemies (90); `bossMul` times `base` for bosses (24 x 20 = 480, about a
     // seventh of a boss's bar), never above `bossCap` of a boss's bar. A blow that would empty a bar leaves 1 hp until
     // the attack ends; the death, phase change or retreat follows it.
@@ -966,8 +966,8 @@ const CONFIG = {
     // Pass 88, a dash attack: from `gap` m (edge to edge) out, with every dash charge in hand, it dashes in at about `rate`
     // a second (scaled by its aggression), at most once every `rest` s, striking out of the dash (a heavy by `heavy` times
     // its taste for them). A dash that slips a blow comes out as the counter while the foe is within `counterReach` m
-    // past its reach (a heavy one by its taste plus `counterHeavy`).
-    dashIn: { gap: [1.8, 3.4], rate: 0.6, rest: 5, heavy: 0.8, counterReach: 1.2, counterHeavy: 0.3 },
+    // past its reach. An open counter always uses light.
+    dashIn: { gap: [1.8, 3.4], rate: 0.6, rest: 5, heavy: 0.8, counterReach: 1.2 },
     // Risk is chosen on a clock, never re-rolled every frame.
     risk: { interval: [2.5, 4], duration: [1.3, 2.1], windowSlack: 0.5, minWindow: 0.28,
       combo: 0.9, earlyRollChance: 0.35, rollLead: [0.12, 0.22] },

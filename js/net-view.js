@@ -35,7 +35,10 @@ const netView = {
     // A bolt's mark (pass 48): noted from the target the snapshot names, as the server notes it from the same body.
     const wh = e.state === ES.WINDUP && e.attack && e.attack.hits[e.hitIndex];
     if (wh && wh.bolt) e.noteBolt(s.lure || ctx.bodyOf(s.target));   // `lure`: a summon draws it
-    if (e.netParried === s.serial && [ES.WINDUP, ES.ACTIVE].includes(s.state)) { e.state = ES.PARRIED; e.stateTime = 0; }
+    // A counter predicts only a short reel. If the server rejects it, its live string becomes authoritative again
+    // when that prediction expires; an accepted interruption arrives as PARRIED/EXECUTED or a new serial.
+    const counterPending = e.netCounterSerial === s.serial && performance.now() / 1000 < e.netCounterUntil;
+    if ((e.netParried === s.serial || counterPending) && [ES.WINDUP, ES.ACTIVE].includes(s.state)) { e.state = ES.PARRIED; e.stateTime = 0; }
     const boxKey = `${s.serial}/${s.hitIndex}`;
     // Each cut is noted where it was first seen striking, hitbox or not, so that a later `echo` of it hangs there.
     if (e.state === ES.ACTIVE && e.attack && e.netCutKey !== boxKey) { e.netCutKey = boxKey; e.noteCut(); }
