@@ -13,7 +13,7 @@ const { createServer } = require('../server/index.cjs');
 const { config: C } = require('../js/net-protocol.js');
 const out = process.env.CALLING_SHOTS || '.scratch/calling';
 (async () => {
-  const app = createServer({ dev: true, firstPick: false }), errors = [];   // the free first pick: tests/rush-alone-browser.cjs
+  const app = createServer({ dev: true, firstPick: false, activityNow: () => 0 }), errors = [];   // the free first pick: tests/rush-alone-browser.cjs; a frozen activity clock keeps the leader on a slow runner (tests/lobby-leader.cjs covers idling)
   await new Promise(resolve => app.server.listen(0, '127.0.0.1', resolve));
   const browser = await chromium.launch({ channel: 'msedge', headless: true });
   const ready = p => p.waitForFunction(() => multiplayer.info.ready && Game.loading <= 0 && !multiplayer.runIntroActive && multiplayer.info.receivedFrames > 2, null, { timeout: 90000 });
@@ -93,7 +93,7 @@ const out = process.env.CALLING_SHOTS || '.scratch/calling';
     for (const page of [a, b]) await page.locator('#abilityScreen').waitFor({ timeout: 30000 });
     // Won in seconds, far under par: a swift kill, so a fourth card, marked.
     assert.equal(await a.locator('#abilityChoices button').count(), 4, 'a swift kill: four abilities to choose from');
-    assert.equal(await a.locator('#abilityChoices button em.swift').count(), 1);
+    assert.equal(await a.locator('#abilityChoices button em.swift', { hasText: 'Swift kill' }).count(), 1);
     assert.equal(await a.locator('#abilityChoices button').last().locator('em.swift').textContent(), 'Swift kill');
     await a.waitForTimeout(400);
     await a.screenshot({ path: `${out}/ability-desktop.png` });
@@ -172,7 +172,7 @@ const out = process.env.CALLING_SHOTS || '.scratch/calling';
     for (const page of [a, b]) {
       assert.equal(await page.locator('#abilityChoices button').count(), 4, 'a Crowned win: four abilities');
       assert.ok(await page.locator('#abilityChoices button[data-rarity=legendary]').count() >= 1, 'one of them a legendary');
-      assert.equal(await page.locator('#abilityChoices button em.swift').count(), 0, 'no swift mark on a Crowned offer');
+      assert.equal(await page.locator('#abilityChoices button em.swift', { hasText: 'Swift kill' }).count(), 0, 'no swift mark on a Crowned offer');
     }
     await a.waitForTimeout(400);
     await a.screenshot({ path: `${out}/crowned-offer.png` });
