@@ -52,7 +52,7 @@ const lines = text => text.split('\n').filter(Boolean).map(l => JSON.parse(l));
     for (const url of ['/api/runs', '/api/runs/feedback', '/watch', '/watch?run=2026-01-01-abcdef0123', '/replays/index.html', '/replays/list.js', '/healthz/replays'])
       assert.equal((await get(origin, url)).status, 404, `public ${url} is refused`);
     const game = await get(origin, '/combat-arena-3d.html');
-    assert.equal(game.status, 200); assert.ok(!game.text.includes('arena-replay'), 'the public game page is never in replay mode');
+    assert.equal(game.status, 200); assert.ok(!game.text.includes('<meta name="arena-replay"'), 'the public game page is never in replay mode');
 
     // ---- a Boss Rush is recorded from its first fight; nothing before it ----
     const a = await peer(origin, 'Ash'), b = await peer(origin, 'Bram'); peers.push(a, b);

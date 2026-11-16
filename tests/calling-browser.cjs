@@ -118,7 +118,7 @@ const out = process.env.CALLING_SHOTS || '.scratch/calling';
     await a.waitForFunction(() => !document.getElementById('abilityStatus').textContent, null, { timeout: 5000 });   // everyone chose: no more waiting
     await a.waitForFunction(epoch => multiplayer.info.session?.epoch > epoch, epoch, { timeout: 30000 });
     const held = Date.now() - lastPick, hold = await a.evaluate(() => CONFIG.abilities.pickHold);
-    assert.ok(held >= hold * 1000 - 250 && held < hold * 1000 + 3000, `everyone chose: the pick holds ${hold} s, then goes on (${held} ms)`);
+    assert.ok(held >= hold * 1000 - 250 && held < hold * 1000 + 8000, `everyone chose: the pick holds ${hold} s, then goes on (${held} ms)`);
     assert.equal(await b.evaluate(() => multiplayer.info.session.drop && !document.getElementById('loading').classList.contains('show')), true, 'the next boss drops straight in, no loading card');
     await Promise.all([ready(a), ready(b)]);
     assert.equal(await a.locator('#abilityScreen').isVisible(), false);

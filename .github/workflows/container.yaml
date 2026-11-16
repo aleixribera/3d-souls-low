@@ -12,12 +12,9 @@ concurrency:
   group: publish-game-container
   cancel-in-progress: false
 
+# CI already tests the release commit on main; this workflow only builds, smoke-tests the image and publishes it.
 jobs:
-  browser-smoke:
-    uses: ./.github/workflows/browser-smoke.yaml
-
   publish:
-    needs: browser-smoke
     runs-on: ubuntu-latest
     timeout-minutes: 25
     permissions:
@@ -60,10 +57,8 @@ jobs:
           echo "image=$image" >> "$GITHUB_OUTPUT"
       - name: Install server dependencies
         run: npm --prefix server ci
-      - name: Test shared simulation and deployment
-        run: |
-          node tests/run-all.cjs --group node
-          docker compose config --quiet
+      - name: Check the compose file
+        run: docker compose config --quiet
       - name: Set up multi-platform emulation
         uses: docker/setup-qemu-action@c7c53464625b32c7a7e944ae62b3e17d2b600130 # v3
       - name: Set up Docker builder
