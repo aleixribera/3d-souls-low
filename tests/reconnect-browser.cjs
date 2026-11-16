@@ -77,7 +77,7 @@ const { config: C } = require('../js/net-protocol.js');
     suspended.delete(a); await devtools.send('Page.setWebLifecycleState', { state: 'active' }); await ready(a);
     assert.equal(await a.evaluate(() => multiplayer.info.self), oldId, 'thaw/recovery retains identity');
     const saved = await save(a);
-    await a.waitForTimeout(150);
+    for (const until = Date.now() + 5000; app.clients.get(oldId).pose?.flasks !== 1 && Date.now() < until;) await a.waitForTimeout(50);   // the next pose carries it
     assert.equal(app.clients.get(oldId).pose.flasks, 1);
 
     // A transport failure restores personal state once, rather than creating a full-health character.
