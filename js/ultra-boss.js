@@ -858,6 +858,34 @@ void main() {
           spawnArc(v3.x, v3.y, v3.z, v2.x, v2.y, v2.z, L.el, 0.1, 0.22, 0.22);
         }
       }
+    } else if (amb.kind === 'tempest') {   // orbiting sea-gale vortex motes, pale salt spray, and tempest-gold axe arcs
+      const whole = (amb.rate || 0) >= 40;
+      while (acc.mote >= 1) {
+        acc.mote -= 1;
+        const a = rand(0, Math.PI * 2), rr = rand(0.45, rad * 1.15), life = rand(0.65, 1.4);
+        col.set(whole && Math.random() < 0.35 ? cSec : cMain).multiplyScalar((whole ? 2.6 : 2.1) * rand(0.8, 1.25));
+        const tx = -Math.sin(a) * (1.8 + (whole ? 0.9 : 0)), tz = Math.cos(a) * (1.8 + (whole ? 0.9 : 0));
+        fx.motes.spawn({ x: e.x + Math.cos(a) * rr, y: e.y + rand(0.2, h * 0.9), z: e.z + Math.sin(a) * rr,
+          vx: tx, vy: rand(0.35, 1.1), vz: tz, drag: 0.7, lift: 0.6, life, max: life,
+          s0: U.motes.size * (whole ? 1.15 : 0.9) * sc, s1: U.motes.size * 0.2,
+          r: col.r, g: col.g, b: col.b, swirl: calm() ? 0 : (whole ? 3.2 : 2.4), cx: e.x, cz: e.z, fadeIn: 0.14 });
+      }
+      acc.puff += (whole ? 3.4 : 2.2) * dt;
+      while (acc.puff >= 1) {
+        acc.puff -= 1;
+        const a = rand(0, Math.PI * 2), rr = rand(0.5, rad * 1.2);
+        PUFF_VEL[0] = -Math.sin(a) * 1.1; PUFF_VEL[1] = rand(0.15, 0.5); PUFF_VEL[2] = Math.cos(a) * 1.1;
+        fx.puff(e.x + Math.cos(a) * rr, e.y + rand(0.15, 0.75), e.z + Math.sin(a) * rr, L.el.smoke || 0x1a2630, 0.45 * sc, 1.45 * sc, 1.15, PUFF_VEL, 0.3);
+      }
+      if (whole && !calm()) {
+        acc.arc += (isUltra() ? 2.4 : 1.1) * dt;
+        if (acc.arc >= 1) {
+          acc.arc -= 1;
+          tip(e, rand(0.4, 1.1), v3);
+          const a = rand(0, Math.PI * 2), rr = 0.75 * sc;
+          spawnArc(v3.x, v3.y, v3.z, v3.x + Math.cos(a) * rr, v3.y + rand(-0.3, 0.7), v3.z + Math.sin(a) * rr, L.el, 0.1, 0.2, 0.22);
+        }
+      }
     } else {   // generic ambient fallback for any upcoming kind (motes.spawn directly avoids double density scaling)
       while (acc.mote >= 1) {
         acc.mote -= 1;

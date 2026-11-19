@@ -35,6 +35,8 @@ const FX_ELEMENTS = {
   starving:   { core: 0xfff2c6, glow: 0xff2808, mote: 0xff6a1e, trail: 0xff3c10, sparks: 'feral', impact: 'blaze', smoke: 0x1a0806 },
   ironCoal:   { core: 0xfff0d0, glow: 0xe68e38, mote: 0xffb858, trail: 0xf09c44, sparks: 'clash', impact: 'shatter', smoke: 0x1c1816 },
   lanternFire:{ core: 0xfff8d4, glow: 0xff5210, mote: 0xff942e, trail: 0xff6e18, sparks: 'ember', impact: 'blaze', smoke: 0x160c08 },
+  seaGale:    { core: 0xf4fcff, glow: 0x4eb8e8, mote: 0xa4e0ff, trail: 0x76ccf4, sparks: 'storm', impact: 'gale', smoke: 0x16222c },
+  wholeGilt:  { core: 0xfff8e2, glow: 0xdca83c, mote: 0xffe49c, trail: 0xf0c868, sparks: 'gold', impact: 'shatter', smoke: 0x181e26 },
   toll:       { core: 0xe8f4ff, glow: 0x7aa8d8, mote: 0xb8d4f0, trail: 0xc8dcf0, sparks: 'storm', impact: 'toll' },
   lunar:     { core: 0xf4fbff, glow: 0x78c8ff, mote: 0xc0e6ff, trail: 0xa4daff, sparks: 'lunar', impact: 'prism' },
   eclipse:   { core: 0xfff0ff, glow: 0x9c54ff, mote: 0xd4a4ff, trail: 0xb874ff, sparks: 'eclipse', impact: 'prism', smoke: 0x120820 },
@@ -366,13 +368,56 @@ const BOSS_FX = {
       ] },
     },
   },
-  // Hale and Harrow (Level 8): the sea wind round Hale's axe, iron and stone under Harrow's greaves; taking up her sister's
-  // half is a grief, not a fire: storm for both once alone, and gold round the suit made whole.
-  hale: { element: 'storm', aura: 0xc8d4dc, phases: { whole: 'storm' }, attacks: {
-    crownCleave: { impact: 'shatter', windup: 'gather' }, beardsHook: { element: 'steel' }, helmsSalute: { element: 'steel' }, haftsHeel: { element: 'steel' },
-    wallTurns: { impact: 'gale' }, offTheRampart: { impact: 'gale' },
-    stampStones: { element: 'earth', impact: 'quake' }, fallingWeight: { element: 'earth', impact: 'quake' }, greaveSlide: { element: 'earth' }, backHeel: { element: 'earth' },
-    sistersHalf: { impact: 'shatter', windup: 'gather' }, bothHalves: { impact: 'shatter', windup: 'gather' } } },
+  // Hale, the Castellan (Level 8): Saltgrave sea-gale silver-cyan cyclones round her bearded axe; alone in the whole
+  // suit, mourning tempest-gold cataclysms unite both axe and greaves.
+  hale: {
+    element: 'seaGale', aura: 0x9edcff,
+    phases: { whole: 'wholeGilt' },
+    ambient: { kind: 'tempest', color: 0xa8e2ff, secondary: 0x1c2832, rate: 28, radius: 1.5, height: 2.9 },
+    phaseAmbient: { whole: { kind: 'tempest', color: 0xffe08a, secondary: 0x8cc8f0, rate: 48, radius: 1.75, height: 3.1 } },
+    phaseFx: { dome: { radius: 7.8, height: 4.8, time: 0.62 }, spires: { count: 14, radius: 4.5, height: 2.9, style: 'gold' },
+               pillar: { radius: 1.9, height: 15 }, glyph: 'vortex', arcs: 10, rings: 3 },
+    attacks: {
+      crownCleave: { impact: 'shatter', windup: 'vortex', slash: { kind: 'chop', scale: 1.75, y: 1.65 },
+        dome: { radius: 4.8, height: 3.0 }, spires: { count: 10, radius: 3.2, height: 2.3, style: 'iron' },
+        glyph: 'shatter', arcs: 6 },
+      beardsHook: { windup: 'gather', hits: [
+        { slash: { kind: 'uppercut', scale: 1.5, tilt: 0.2, y: 1.25 }, arcs: 3 },
+        { slash: { kind: 'backhand', scale: 1.65, tilt: -0.1, y: 1.7 }, arcs: 4 },
+      ] },
+      helmsSalute: { windup: 'gather', slash: { kind: 'thrust', scale: 1.7, y: 1.25 }, arcs: 4 },
+      haftsHeel: { windup: 'gather', slash: { kind: 'thrust', scale: 1.3, y: 1.05 }, dome: { radius: 2.8, height: 1.6 }, arcs: 3 },
+      wallTurns: { impact: 'gale', windup: 'vortex', hits: [
+        { slash: { kind: 'wheel', scale: 1.95, tilt: 0.08, y: 1.15 }, glyph: 'vortex', arcs: 6 },
+        { slash: { kind: 'wheel', scale: 2.1, tilt: -0.08, y: 1.2 }, dome: { radius: 5.6, height: 2.6 }, glyph: 'vortex', arcs: 7 },
+      ] },
+      offTheRampart: { impact: 'gale', windup: 'vortex', slash: { kind: 'chop', scale: 1.8, y: 1.6 },
+        dome: { radius: 5.8, height: 3.6 }, spires: { count: 12, radius: 3.8, height: 2.7, style: 'ice' },
+        glyph: 'vortex', arcs: 8 },
+      saltWind: { windup: 'crackle', slash: { kind: 'sweep', scale: 1.75, tilt: 0.06, y: 1.3 }, glyph: 'vortex', arcs: 4 },
+      stampStones: { element: 'earth', impact: 'quake', windup: 'gather', hits: [
+        { dome: { radius: 4.4, height: 2.4 }, spires: { count: 8, radius: 3.0, height: 1.9, style: 'stone' }, glyph: 'shatter', arcs: 4 },
+        { dome: { radius: 6.4, height: 3.2 }, spires: { count: 12, radius: 4.2, height: 2.5, style: 'stone' }, glyph: 'shatter', arcs: 6 },
+      ] },
+      fallingWeight: { element: 'earth', impact: 'quake', windup: 'vortex', hits: [
+        { dome: { radius: 5.2, height: 3.2 }, spires: { count: 12, radius: 3.5, height: 2.4, style: 'stone' }, glyph: 'shatter', arcs: 6 },
+        { dome: { radius: 6.6, height: 2.8 }, glyph: 'toll', arcs: 5 },
+      ] },
+      greaveSlide: { element: 'earth', windup: 'crackle', glyph: 'rend', arcs: 4 },
+      backHeel: { element: 'earth', windup: 'gather', dome: { radius: 3.0, height: 1.7 }, arcs: 3 },
+      sistersHalf: { element: 'wholeGilt', impact: 'shatter', windup: 'vortex',
+        dome: { radius: 7.8, height: 4.6, time: 0.62 },
+        spires: { count: 14, radius: 4.6, height: 2.9, style: 'gold' },
+        glyph: 'vortex', arcs: 10 },
+      bothHalves: { element: 'wholeGilt', impact: 'shatter', windup: 'vortex', hits: [
+        { slash: { kind: 'chop', scale: 1.8, y: 1.65 }, dome: { radius: 4.8, height: 3.0 },
+          spires: { count: 8, radius: 3.2, height: 2.2, style: 'gold' }, glyph: 'shatter', arcs: 6 },
+        { impact: 'quake', dome: { radius: 6.4, height: 3.2 }, spires: { count: 10, radius: 4.0, height: 2.4, style: 'stone' },
+          glyph: 'toll', arcs: 6 },
+        { slash: { kind: 'uppercut', scale: 1.85, tilt: 0.18, y: 1.35 }, glyph: 'vortex', arcs: 7 },
+      ] },
+    },
+  },
   harrow: { element: 'earth', aura: 0xc8d4dc, phases: { whole: 'storm' }, attacks: {
     stampStones: { impact: 'quake' }, hammerOfHands: { impact: 'quake', windup: 'gather' }, fallingWeight: { impact: 'quake' }, knuckleHeel: { element: 'steel' },
     crownCleave: { element: 'storm', impact: 'shatter', windup: 'gather' }, wallTurns: { element: 'storm', impact: 'gale' }, offTheRampart: { element: 'storm', impact: 'gale' },
