@@ -6,6 +6,7 @@
 //   title    a few words
 //   text     one to three sentences, shown under the list when the entry is selected
 const CHANGELOG = [
+  { version: 'v7.141.0', title: 'Giant Skeleton VFX revamp', text: 'Revamped the Giant Skeleton with spectral grave-bone slash crescents, triple claw arcs, erupting bone spires, glowing floor fractures, shock domes, crackling energy arcs, and a blazing pit-furnace Phase 2 cataclysm, scaled cleanly across Ultra and Normal presets.' },
   { version: 'v7.140.0', title: 'New boss: Gemini, Neon High', text: 'A new boss joins Boss Rush, the Weekly Run, and Practice: Gemini, Neon High. Her crescent glaive plants floating crystal prisms across the arena that lock sightlines and fire converging light-lances when she raises her hand; deflect her blade and land a Counter to shatter every active prism. Past half health the eclipse opens, adding mist blinks and crossfire plunges.' },
   { version: 'v7.139.0', title: 'Audit repairs', text: 'Fix counters, startup recovery, run rewards, reconnect replays, and Story checkpoints.' },
   { version: 'v7.138.0', title: 'One click to play', text: 'The title now starts each mode in one click: Boss Rush goes straight to the lobby (playing in private is offered if joining fails), Story asks Continue or New game only when you have a save, and Tutorial plays the showcase and then the sparring. A foe\'s cracked guard from your counters no longer fades with time: it lasts until the Finishing Blow, or until the foe walks back home.' },

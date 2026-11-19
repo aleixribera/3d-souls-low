@@ -787,26 +787,83 @@ function validateData({ visual = true } = {}) {
         need((inherited(id, 'parts') || []).some(o => o.use === 'baked'), `Model "${id}": its body is all null but it has no baked parts (it extends a baked model?): give it its own body.`);
     }
   }
-  // Boss effects (js/data/boss-fx.js, the Ultra preset): known elements, impacts, bosses, phases and attacks.
+  // Boss effects (js/data/boss-fx.js, the Ultra & Normal presets): known elements, impacts, bosses, phases, ambients and attacks.
   const isCol = v => Number.isInteger(v) && v >= 0 && v <= 0xffffff;
   for (const [n, E] of Object.entries(FX_ELEMENTS))
     need(['core', 'glow', 'mote', 'trail'].every(k => isCol(E[k])) && E.sparks in CONFIG.VISUALS.ultra.sparks.colors && BOSS_FX_IMPACTS.includes(E.impact)
       && (E.smoke === undefined || isCol(E.smoke)), `FX_ELEMENTS.${n}: core, glow, mote and trail colours, sparks (a spark palette) and an impact (${BOSS_FX_IMPACTS.join(', ')}).`);
+  const checkAmbient = (amb, tag) => {
+    need(amb && typeof amb === 'object' && BOSS_FX_AMBIENTS.includes(amb.kind), `${tag}: ambient needs a known kind (${BOSS_FX_AMBIENTS.join(', ')}).`);
+    if (!amb) return;
+    if (amb.color !== undefined) need(isCol(amb.color), `${tag}: ambient.color must be a colour.`);
+    if (amb.secondary !== undefined) need(isCol(amb.secondary), `${tag}: ambient.secondary must be a colour.`);
+    for (const k of ['rate', 'radius', 'height']) if (amb[k] !== undefined) need(num(amb[k]) && amb[k] > 0, `${tag}: ambient.${k} must be positive.`);
+  };
+  const checkFxProps = (A, tag) => {
+    if (A.element !== undefined) need(A.element in FX_ELEMENTS, `${tag}: unknown element "${A.element}".`);
+    if (A.impact !== undefined) need(BOSS_FX_IMPACTS.includes(A.impact), `${tag}: unknown impact "${A.impact}".`);
+    if (A.windup !== undefined) need(BOSS_FX_WINDUPS.includes(A.windup), `${tag}: windup must be one of ${BOSS_FX_WINDUPS.join(', ')}.`);
+    if (A.aura !== undefined) need(isCol(A.aura), `${tag}: aura must be a colour.`);
+    if (A.slash !== undefined) {
+      const sl = typeof A.slash === 'string' ? { kind: A.slash } : A.slash;
+      need(sl && BOSS_FX_SLASHES.includes(sl.kind), `${tag}: slash kind must be one of ${BOSS_FX_SLASHES.join(', ')}.`);
+      if (sl && sl.scale !== undefined) need(num(sl.scale) && sl.scale > 0, `${tag}: slash.scale must be positive.`);
+      if (sl && sl.tilt !== undefined) need(num(sl.tilt), `${tag}: slash.tilt must be a number.`);
+      if (sl && sl.y !== undefined) need(num(sl.y), `${tag}: slash.y must be a number.`);
+      if (sl && sl.color !== undefined) need(isCol(sl.color), `${tag}: slash.color must be a colour.`);
+    }
+    if (A.spires !== undefined) {
+      const sp = A.spires;
+      need(sp && Number.isInteger(sp.count) && sp.count > 0 && num(sp.radius) && sp.radius > 0 && num(sp.height) && sp.height > 0
+        && (sp.style === undefined || BOSS_FX_SPIRES.includes(sp.style)),
+        `${tag}: spires needs whole count > 0, positive radius and height, and known style.`);
+    }
+    if (A.dome !== undefined) {
+      const dm = A.dome;
+      need(dm && num(dm.radius) && dm.radius > 0 && (dm.height === undefined || (num(dm.height) && dm.height > 0))
+        && (dm.time === undefined || (num(dm.time) && dm.time > 0)),
+        `${tag}: dome needs positive radius (and optional positive height, time).`);
+    }
+    if (A.glyph !== undefined) need(BOSS_FX_GLYPHS.includes(A.glyph), `${tag}: unknown glyph "${A.glyph}".`);
+    if (A.arcs !== undefined) need(Number.isInteger(A.arcs) && A.arcs > 0, `${tag}: arcs must be a positive whole number.`);
+    if (A.pillar !== undefined) need(A.pillar && num(A.pillar.radius) && A.pillar.radius > 0 && num(A.pillar.height) && A.pillar.height > 0,
+      `${tag}: pillar needs positive radius and height.`);
+    if (A.rings !== undefined) need(Number.isInteger(A.rings) && A.rings > 0, `${tag}: rings must be a positive whole number.`);
+  };
   for (const [id, B] of Object.entries(BOSS_FX)) {
     const d = ENEMY_BY_ID[id], w = `BOSS_FX.${id}`;
     need(!!d, `${w}: no enemy "${id}".`);
     if (!d) continue;
     need(B.element in FX_ELEMENTS, `${w}: unknown element "${B.element}".`);
     if ('aura' in B) need(isCol(B.aura), `${w}: aura must be a colour.`);
+    if ('ambient' in B) checkAmbient(B.ambient, `${w}.ambient`);
+    if (B.phaseAmbient !== undefined) need(B.phaseAmbient && typeof B.phaseAmbient === 'object' && !Array.isArray(B.phaseAmbient), `${w}.phaseAmbient must be an object.`);
+    for (const [ph, amb] of Object.entries(B.phaseAmbient || {})) {
+      need(!!(d.phases && d.phases[ph]), `${w}.phaseAmbient.${ph}: needs a phase of "${id}".`);
+      checkAmbient(amb, `${w}.phaseAmbient.${ph}`);
+    }
+    if ('phaseFx' in B) {
+      need(B.phaseFx && typeof B.phaseFx === 'object', `${w}.phaseFx must be an object.`);
+      if (B.phaseFx) checkFxProps(B.phaseFx, `${w}.phaseFx`);
+    }
+    if (B.phases !== undefined) need(B.phases && typeof B.phases === 'object' && !Array.isArray(B.phases), `${w}.phases must be an object.`);
     for (const [ph, el] of Object.entries(B.phases || {}))
       need(!!(d.phases && d.phases[ph]) && el in FX_ELEMENTS, `${w}.phases.${ph}: needs a phase of "${id}" and a known element ("${el}").`);
-    const ids = new Set([...(d.attacks || []), ...Object.values(d.phases || {}).flatMap(P => P.attacks || [])].filter(a => a && typeof a === 'object').map(a => a.id));
+    const atkById = new Map([...(d.attacks || []), ...Object.values(d.phases || {}).flatMap(P => P.attacks || [])].filter(a => a && typeof a === 'object').map(a => [a.id, a]));
     for (const [aid, A] of Object.entries(B.attacks || {})) {
-      need(ids.has(aid), `${w}.attacks.${aid}: "${id}" has no attack "${aid}".`);
-      if (A.element !== undefined) need(A.element in FX_ELEMENTS, `${w}.attacks.${aid}: unknown element "${A.element}".`);
-      if (A.impact !== undefined) need(BOSS_FX_IMPACTS.includes(A.impact), `${w}.attacks.${aid}: unknown impact "${A.impact}".`);
-      if (A.windup !== undefined) need(['gather', 'none'].includes(A.windup), `${w}.attacks.${aid}: windup is "gather" or "none".`);
-      if (A.aura !== undefined) need(isCol(A.aura), `${w}.attacks.${aid}: aura must be a colour.`);
+      const atk = atkById.get(aid);
+      need(!!atk, `${w}.attacks.${aid}: "${id}" has no attack "${aid}".`);
+      need(A && typeof A === 'object' && !Array.isArray(A), `${w}.attacks.${aid}: must be an object.`);
+      if (!A || typeof A !== 'object') continue;
+      checkFxProps(A, `${w}.attacks.${aid}`);
+      if (A.hits !== undefined) {
+        need(Array.isArray(A.hits) && (!atk || A.hits.length <= atk.hits.length), `${w}.attacks.${aid}.hits must be a list of at most ${atk ? atk.hits.length : 0} hit overrides.`);
+        if (Array.isArray(A.hits)) A.hits.forEach((h, i) => {
+          if (h === null || h === undefined) return;
+          need(typeof h === 'object' && !Array.isArray(h), `${w}.attacks.${aid}.hits[${i}]: must be an object or null.`);
+          if (typeof h === 'object') checkFxProps(h, `${w}.attacks.${aid}.hits[${i}]`);
+        });
+      }
     }
   }
   // Story mode (js/data/story.js): each campaign's chapters name a real level, once each, with a title and

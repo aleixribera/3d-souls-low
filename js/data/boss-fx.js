@@ -8,26 +8,73 @@
 // (every heavy, held, leaping or ringing hit gathers anyway), `aura` overrides the colour of the motes round the body.
 // Checked at load (js/validate.js): every boss, phase and attack named here must exist.
 const BOSS_FX_IMPACTS = ['quake', 'pillar', 'blaze', 'geyser', 'bloom', 'void', 'gale', 'roar', 'toll', 'shatter', 'prism'];
+const BOSS_FX_SLASHES = ['sweep', 'backhand', 'chop', 'claw', 'wheel', 'thrust', 'uppercut', 'cross'];
+const BOSS_FX_GLYPHS = ['shatter', 'toll', 'arcane', 'vortex', 'rend'];
+const BOSS_FX_SPIRES = ['bone', 'stone', 'flame', 'ice', 'iron', 'thorn', 'gold', 'prism'];
+const BOSS_FX_AMBIENTS = ['grave', 'furnace', 'arson', 'bronze', 'emberCrown', 'feral', 'lantern', 'tempest', 'seismic', 'chains', 'gilt', 'seams', 'storm', 'roots', 'blade', 'celestial'];
+const BOSS_FX_WINDUPS = ['gather', 'none', 'vortex', 'crackle'];
 const FX_ELEMENTS = {
   // core: the hot centre of its light; glow: its colour; mote: the dust it sheds; trail: its swing ribbon; sparks: a spark
   // palette (VISUALS.ultra.sparks.colors); impact: default ground effect; smoke: a dark colour its blade trails, if any.
-  steel: { core: 0xfff2dc, glow: 0xffb070, mote: 0xffd8a8, trail: 0xffc89a, sparks: 'clash', impact: 'quake' },
-  holy:  { core: 0xfffbe8, glow: 0xffc860, mote: 0xffe4a0, trail: 0xffe2a0, sparks: 'holy', impact: 'pillar' },
-  fire:  { core: 0xfff0b0, glow: 0xff6a18, mote: 0xff8a30, trail: 0xff9038, sparks: 'ember', impact: 'blaze' },
-  blood: { core: 0xff9070, glow: 0xd01408, mote: 0xff3418, trail: 0xff3a22, sparks: 'blood', impact: 'geyser' },
-  rot:   { core: 0xffc0a0, glow: 0xff3a2a, mote: 0xff6048, trail: 0xff5a44, sparks: 'rot', impact: 'bloom' },
-  black: { core: 0xff5a40, glow: 0x9a0606, mote: 0xff2414, trail: 0xff3428, sparks: 'blood', impact: 'void', smoke: 0x120606 },
-  storm: { core: 0xf0f6ff, glow: 0x9ec0ff, mote: 0xd2e0ff, trail: 0xd8e6ff, sparks: 'storm', impact: 'gale' },
-  earth: { core: 0xffe2b0, glow: 0xd09048, mote: 0xe0c090, trail: 0xffc880, sparks: 'clash', impact: 'quake' },
-  bone:  { core: 0xf0ead8, glow: 0xb8b0a0, mote: 0xd8d0c0, trail: 0xe8e0cc, sparks: 'clash', impact: 'quake', smoke: 0x3a3630 },
-  toll:  { core: 0xe8f4ff, glow: 0x7aa8d8, mote: 0xb8d4f0, trail: 0xc8dcf0, sparks: 'storm', impact: 'toll' },
-  lunar:   { core: 0xf4fbff, glow: 0x78c8ff, mote: 0xc0e6ff, trail: 0xa4daff, sparks: 'lunar', impact: 'prism' },
-  eclipse: { core: 0xfff0ff, glow: 0x9c54ff, mote: 0xd4a4ff, trail: 0xb874ff, sparks: 'eclipse', impact: 'prism', smoke: 0x120820 },
+  steel:     { core: 0xfff2dc, glow: 0xffb070, mote: 0xffd8a8, trail: 0xffc89a, sparks: 'clash', impact: 'quake' },
+  holy:      { core: 0xfffbe8, glow: 0xffc860, mote: 0xffe4a0, trail: 0xffe2a0, sparks: 'holy', impact: 'pillar' },
+  fire:      { core: 0xfff0b0, glow: 0xff6a18, mote: 0xff8a30, trail: 0xff9038, sparks: 'ember', impact: 'blaze' },
+  blood:     { core: 0xff9070, glow: 0xd01408, mote: 0xff3418, trail: 0xff3a22, sparks: 'blood', impact: 'geyser' },
+  rot:       { core: 0xffc0a0, glow: 0xff3a2a, mote: 0xff6048, trail: 0xff5a44, sparks: 'rot', impact: 'bloom' },
+  black:     { core: 0xff5a40, glow: 0x9a0606, mote: 0xff2414, trail: 0xff3428, sparks: 'blood', impact: 'void', smoke: 0x120606 },
+  storm:     { core: 0xf0f6ff, glow: 0x9ec0ff, mote: 0xd2e0ff, trail: 0xd8e6ff, sparks: 'storm', impact: 'gale' },
+  earth:     { core: 0xffe2b0, glow: 0xd09048, mote: 0xe0c090, trail: 0xffc880, sparks: 'clash', impact: 'quake' },
+  bone:      { core: 0xe6f4ff, glow: 0x4e96f0, mote: 0x8cc4ff, trail: 0x98ccff, sparks: 'bone', impact: 'shatter', smoke: 0x161b26 },
+  gravefire: { core: 0xfff2c4, glow: 0xff520c, mote: 0xff8828, trail: 0xff741c, sparks: 'gravefire', impact: 'blaze', smoke: 0x1a100c },
+  toll:      { core: 0xe8f4ff, glow: 0x7aa8d8, mote: 0xb8d4f0, trail: 0xc8dcf0, sparks: 'storm', impact: 'toll' },
+  lunar:     { core: 0xf4fbff, glow: 0x78c8ff, mote: 0xc0e6ff, trail: 0xa4daff, sparks: 'lunar', impact: 'prism' },
+  eclipse:   { core: 0xfff0ff, glow: 0x9c54ff, mote: 0xd4a4ff, trail: 0xb874ff, sparks: 'eclipse', impact: 'prism', smoke: 0x120820 },
 };
 const BOSS_FX = {
-  giant: { element: 'bone', aura: 0xd8d0c0, phases: { gathered: 'fire' }, attacks: { stomp: { impact: 'shatter', windup: 'gather' },
-    giantSlam: { impact: 'shatter', windup: 'gather' }, giantClubClaw: { impact: 'shatter' }, giantGathering: { impact: 'shatter', windup: 'gather' },
-    giantPitStomps: { impact: 'shatter' }, giantReach: { impact: 'shatter', windup: 'gather' } } },
+  // The Giant Skeleton (Level 1): spectral grave-bone & cold soul-ash rising from its spine, turning to a raging pit
+  // furnace inside its ribs once the dead gather in Phase 2.
+  giant: {
+    element: 'bone', aura: 0xb8d4f8,
+    phases: { gathered: 'gravefire' },
+    ambient: { kind: 'grave', color: 0x7cbaff, secondary: 0x1b2436, rate: 34, radius: 1.6, height: 3.6 },
+    phaseAmbient: { gathered: { kind: 'furnace', color: 0xff6214, secondary: 0xffe088, rate: 52, radius: 1.7, height: 3.8 } },
+    phaseFx: { dome: { radius: 7.4, height: 5.2, time: 0.62 }, spires: { count: 16, radius: 4.4, height: 3.2, style: 'bone' },
+               pillar: { radius: 2.1, height: 15 }, glyph: 'shatter', arcs: 10, rings: 3 },
+    attacks: {
+      sweep: { windup: 'gather', slash: { kind: 'sweep', scale: 1.45, tilt: 0.08, y: 1.35 }, arcs: 2 },
+      stomp: { impact: 'shatter', windup: 'vortex', dome: { radius: 4.8, height: 2.6 },
+               spires: { count: 10, radius: 3.2, height: 2.1, style: 'bone' }, glyph: 'shatter', arcs: 4 },
+      giantClaw: { windup: 'crackle', slash: { kind: 'claw', scale: 1.35, y: 1.3 }, arcs: 3 },
+      giantSlam: { impact: 'shatter', windup: 'vortex', slash: { kind: 'chop', scale: 1.5, y: 1.8 },
+                   dome: { radius: 5.8, height: 3.6 }, spires: { count: 14, radius: 3.8, height: 2.9, style: 'bone' },
+                   glyph: 'shatter', arcs: 6 },
+      giantTaking: { windup: 'vortex', slash: { kind: 'sweep', scale: 1.15, tilt: -0.14, y: 0.85 }, arcs: 4 },
+      giantTakingPunish: { windup: 'vortex', slash: { kind: 'sweep', scale: 1.15, tilt: -0.14, y: 0.85 }, arcs: 4 },
+      giantClubClaw: { impact: 'shatter', windup: 'gather', hits: [
+        { slash: { kind: 'backhand', scale: 1.35, tilt: -0.1, y: 1.35 }, arcs: 2 },
+        { slash: { kind: 'claw', scale: 1.35, y: 1.25 }, arcs: 3 },
+        { slash: { kind: 'chop', scale: 1.5, y: 1.8 }, dome: { radius: 5.4, height: 3.4 },
+          spires: { count: 12, radius: 3.5, height: 2.6, style: 'bone' }, glyph: 'shatter', arcs: 6 },
+      ] },
+      giantGathering: { element: 'gravefire', impact: 'blaze', windup: 'vortex',
+                        dome: { radius: 7.2, height: 4.8, time: 0.6 },
+                        spires: { count: 18, radius: 4.6, height: 3.4, style: 'bone' },
+                        glyph: 'shatter', arcs: 12 },
+      giantReach: { impact: 'shatter', windup: 'vortex', slash: { kind: 'claw', scale: 1.35, y: 1.0 },
+                    dome: { radius: 4.5, height: 2.6 }, spires: { count: 8, radius: 2.8, height: 2.0, style: 'bone' },
+                    glyph: 'rend', arcs: 5 },
+      giantWheel: { windup: 'crackle', slash: { kind: 'wheel', scale: 1.85, y: 1.65 }, arcs: 6, hits: [
+        { slash: { kind: 'wheel', scale: 1.8, tilt: 0.08, y: 1.6 }, arcs: 5 },
+        { slash: { kind: 'wheel', scale: 1.95, tilt: -0.08, y: 1.75 }, dome: { radius: 5.8, height: 2.6 }, arcs: 7 },
+      ] },
+      giantPitStomps: { impact: 'shatter', windup: 'gather', hits: [
+        { dome: { radius: 3.6, height: 2.0 }, spires: { count: 7, radius: 2.6, height: 1.7, style: 'bone' }, glyph: 'shatter', arcs: 3 },
+        { dome: { radius: 3.8, height: 2.1 }, spires: { count: 7, radius: 2.7, height: 1.8, style: 'bone' }, glyph: 'shatter', arcs: 3 },
+        { impact: 'blaze', dome: { radius: 6.4, height: 3.8 }, spires: { count: 14, radius: 4.2, height: 2.9, style: 'bone' },
+          glyph: 'shatter', arcs: 8 },
+      ] },
+    },
+  },
   pillagerCaptain: { element: 'steel', aura: 0xff9a50, phases: { lit: 'fire' }, attacks: { captainOverhead: { impact: 'quake', windup: 'gather' },
     captainKindling: { element: 'fire', impact: 'blaze', windup: 'gather' }, captainOverheadLit: { impact: 'blaze', windup: 'gather' } } },
   bellWarden: { element: 'toll', aura: 0xb8d4f0, attacks: { wardenHammerfall: { impact: 'toll', windup: 'gather' }, wardenBackhand: { impact: 'toll' },
