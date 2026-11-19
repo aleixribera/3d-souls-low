@@ -1050,6 +1050,37 @@ void main() {
             e.x + Math.cos(a2) * rr, e.y + h * rand(0.5, 0.92), e.z + Math.sin(a2) * rr, L.el, 0.12, 0.22, 0.28);
         }
       }
+    } else if (amb.kind === 'blade') {   // honed oath-steel blade glints; Ember-Worn torch-fire & sword-to-shield arcs in Phase 2
+      const torch = !!e.def?.ignite;
+      if (e.rig && e.rig.weapon) tip(e, 0.8, v3); else v3.set(e.x, e.y + h * 0.55, e.z);
+      while (acc.mote >= 1) {
+        acc.mote -= 1;
+        const a = rand(0, Math.PI * 2), rr = rand(0.08, torch ? 0.5 : rad * 0.8), life = rand(0.6, 1.4);
+        col.set(torch && Math.random() < 0.3 ? cSec : cMain).multiplyScalar((torch ? 2.9 : 2.1) * rand(0.8, 1.3));
+        const ox = torch ? v3.x : e.x, oy = torch ? v3.y : e.y + rand(0.3, h * 0.85), oz = torch ? v3.z : e.z;
+        fx.motes.spawn({ x: ox + Math.cos(a) * rr, y: oy + rand(-0.2, 0.3), z: oz + Math.sin(a) * rr,
+          vx: Math.cos(a) * (torch ? 0.8 : 0.25), vy: rand(0.5, torch ? 2.4 : 1.1), vz: Math.sin(a) * (torch ? 0.8 : 0.25),
+          drag: 0.9, lift: torch ? 1.7 : 0.6, life, max: life,
+          s0: U.motes.size * (torch ? 1.15 : 0.8) * sc, s1: U.motes.size * 0.18,
+          r: col.r, g: col.g, b: col.b, swirl: calm() ? 0 : (torch ? 2.1 : 0.8), cx: e.x, cz: e.z, fadeIn: 0.12 });
+      }
+      if (torch) {
+        acc.puff += 4.0 * dt;
+        while (acc.puff >= 1) {
+          acc.puff -= 1;
+          PUFF_VEL[0] = rand(-0.35, 0.35); PUFF_VEL[1] = rand(0.75, 1.45); PUFF_VEL[2] = rand(-0.35, 0.35);
+          fx.puff(v3.x + rand(-0.18, 0.18), v3.y + 0.1, v3.z + rand(-0.18, 0.18), L.el.smoke || 0x160a08, 0.34 * sc, 1.25 * sc, 1.05, PUFF_VEL, 0.44);
+        }
+        if (!calm()) {
+          acc.arc += (isUltra() ? 2.8 : 1.3) * dt;
+          if (acc.arc >= 1) {
+            acc.arc -= 1;
+            const sh = e.rig && e.rig.tellGlows && e.rig.tellGlows.shield;
+            if (sh) sh.getWorldPosition(v2); else v2.set(e.x, e.y + h * 0.55, e.z);
+            spawnArc(v3.x, v3.y, v3.z, v2.x, v2.y, v2.z, L.el, 0.1, 0.2, 0.22);
+          }
+        }
+      }
     } else {   // generic ambient fallback for any upcoming kind (motes.spawn directly avoids double density scaling)
       while (acc.mote >= 1) {
         acc.mote -= 1;

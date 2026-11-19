@@ -48,6 +48,8 @@ const FX_ELEMENTS = {
   fulgurite:  { core: 0xf2fbff, glow: 0x368eff, mote: 0x9cd0ff, trail: 0x5cb0ff, sparks: 'storm', impact: 'gale', smoke: 0x101c2e },
   heartwood:  { core: 0xffeec4, glow: 0xc47222, mote: 0xf4a848, trail: 0xd8862e, sparks: 'ember', impact: 'quake', smoke: 0x20150e },
   wildfire:   { core: 0xfff6c8, glow: 0xff4408, mote: 0xff8c22, trail: 0xff6210, sparks: 'gravefire', impact: 'blaze', smoke: 0x160a06 },
+  oathSteel:  { core: 0xf8fbff, glow: 0x6ca4e2, mote: 0xd4e8ff, trail: 0x94c2f4, sparks: 'clash', impact: 'shatter' },
+  corvelTorch:{ core: 0xfff8d8, glow: 0xff3c08, mote: 0xff8a24, trail: 0xff5a12, sparks: 'ember', impact: 'blaze', smoke: 0x160a08 },
   toll:       { core: 0xe8f4ff, glow: 0x7aa8d8, mote: 0xb8d4f0, trail: 0xc8dcf0, sparks: 'storm', impact: 'toll' },
   lunar:     { core: 0xf4fbff, glow: 0x78c8ff, mote: 0xc0e6ff, trail: 0xa4daff, sparks: 'lunar', impact: 'prism' },
   eclipse:   { core: 0xfff0ff, glow: 0x9c54ff, mote: 0xd4a4ff, trail: 0xb874ff, sparks: 'eclipse', impact: 'prism', smoke: 0x120820 },
@@ -813,12 +815,64 @@ const BOSS_FX = {
   },
   // The Rootbound (Level 13): wood, and the mark that burns.
   rootbound: { element: 'earth', aura: 0xff9a50, attacks: { rootMark: { element: 'fire', impact: 'blaze', windup: 'gather' }, rootThorn: { element: 'fire' } } },
-  // The King's Blade (Level 14): the champion's steel, until the Ember shows through it (the second phase)
-  // (js/data/bosses/kings-blade.js, loaded after this file).
-  kingsBlade: { element: 'steel', aura: 0xff8a40, phases: { emberWorn: 'fire' }, attacks: {
-    crownsWeight: { impact: 'shatter', windup: 'gather' }, torchTaken: { element: 'fire', impact: 'blaze', windup: 'gather' },
-    corvel: { element: 'fire', impact: 'blaze', windup: 'gather' }, emberLeap: { element: 'fire', impact: 'blaze', windup: 'gather' },
-    shieldBurns: { element: 'fire', impact: 'blaze' } } },
+  // The King's Blade (Level 14): masterwork Ashmere oath-steel glints & crisp ice-shattering cleaves; Ember-Worn in
+  // Phase 2, the sword becomes Corvel's blazing torch with twin fire-ring waves and burning shield slams.
+  kingsBlade: {
+    element: 'oathSteel', aura: 0xbadcff,
+    phases: { emberWorn: 'corvelTorch' },
+    ambient: { kind: 'blade', color: 0xd4e8ff, secondary: 0x6ca4e2, rate: 20, radius: 1.2, height: 2.2 },
+    phaseAmbient: { emberWorn: { kind: 'blade', color: 0xff6a18, secondary: 0xffe28a, rate: 50, radius: 1.5, height: 2.5 } },
+    phaseFx: { dome: { radius: 8.4, height: 5.0, time: 0.64 }, spires: { count: 16, radius: 4.6, height: 3.1, style: 'flame' },
+               pillar: { radius: 2.0, height: 16 }, glyph: 'shatter', arcs: 12, rings: 3 },
+    attacks: {
+      oathGuard: { windup: 'gather', slash: { kind: 'thrust', scale: 1.75, y: 1.25 }, arcs: 4 },
+      theAnswer: { windup: 'crackle', hits: [
+        { dome: { radius: 3.2, height: 1.8 }, arcs: 3 },
+        { slash: { kind: 'chop', scale: 1.65, y: 1.3 }, glyph: 'rend', arcs: 5 },
+      ] },
+      keepingRiver: { windup: 'gather', hits: [
+        { slash: { kind: 'sweep', scale: 1.55, tilt: 0.08, y: 1.1 }, arcs: 3 },
+        { slash: { kind: 'uppercut', scale: 1.6, tilt: 0.16, y: 1.2 }, arcs: 3 },
+        { dome: { radius: 3.0, height: 1.7 }, arcs: 4 },
+      ] },
+      kingsReach: { windup: 'crackle', slash: { kind: 'thrust', scale: 1.95, y: 1.25 }, glyph: 'rend', arcs: 5 },
+      reachPunish: { windup: 'crackle', slash: { kind: 'thrust', scale: 2.05, y: 1.25 }, glyph: 'rend', arcs: 6 },
+      shieldWall: { windup: 'crackle', hits: [
+        { dome: { radius: 3.8, height: 2.2 }, arcs: 4 },
+        { slash: { kind: 'backhand', scale: 1.6, tilt: -0.14, y: 1.2 }, arcs: 5 },
+      ] },
+      crownsWeight: { impact: 'shatter', windup: 'vortex', slash: { kind: 'chop', scale: 1.85, y: 1.6 },
+        dome: { radius: 4.6, height: 2.8 }, spires: { count: 10, radius: 3.2, height: 2.3, style: 'ice' },
+        glyph: 'shatter', arcs: 6 },
+      givesGround: { windup: 'gather', hits: [
+        { slash: { kind: 'backhand', scale: 1.5, y: 1.15 }, arcs: 3 },
+        { slash: { kind: 'thrust', scale: 1.85, y: 1.25 }, glyph: 'rend', arcs: 5 },
+      ] },
+      theTurn: { windup: 'gather', slash: { kind: 'wheel', scale: 1.75, y: 1.1 }, arcs: 4 },
+      rimStrike: { windup: 'gather', dome: { radius: 3.0, height: 1.7 }, arcs: 4 },
+      torchTaken: { element: 'corvelTorch', impact: 'blaze', windup: 'vortex', slash: { kind: 'chop', scale: 2.0, y: 1.6 },
+        dome: { radius: 8.4, height: 4.8, time: 0.64 },
+        spires: { count: 16, radius: 4.6, height: 3.1, style: 'flame' },
+        glyph: 'shatter', arcs: 12 },
+      corvel: { element: 'corvelTorch', impact: 'blaze', windup: 'vortex', hits: [
+        { slash: { kind: 'chop', scale: 2.0, y: 1.65 }, dome: { radius: 7.4, height: 4.4 },
+          spires: { count: 14, radius: 4.4, height: 2.9, style: 'flame' }, glyph: 'shatter', arcs: 10 },
+        { dome: { radius: 9.6, height: 5.4, time: 0.68 }, spires: { count: 20, radius: 5.2, height: 3.4, style: 'flame' },
+          glyph: 'toll', arcs: 14 },
+      ] },
+      hungerCuts: { element: 'corvelTorch', windup: 'crackle', hits: [
+        { dome: { radius: 3.6, height: 2.0 }, arcs: 4 },
+        { slash: { kind: 'thrust', scale: 1.8, y: 1.2 }, arcs: 5 },
+        { impact: 'blaze', slash: { kind: 'chop', scale: 1.9, y: 1.55 }, dome: { radius: 4.6, height: 2.8 },
+          spires: { count: 8, radius: 3.0, height: 2.2, style: 'flame' }, glyph: 'rend', arcs: 8 },
+      ] },
+      emberLeap: { element: 'corvelTorch', impact: 'blaze', windup: 'vortex', slash: { kind: 'chop', scale: 1.95, y: 1.65 },
+        dome: { radius: 6.2, height: 3.8 }, spires: { count: 14, radius: 4.2, height: 2.9, style: 'flame' },
+        glyph: 'shatter', arcs: 10 },
+      shieldBurns: { element: 'corvelTorch', impact: 'blaze', windup: 'vortex', dome: { radius: 5.2, height: 3.0 },
+        spires: { count: 10, radius: 3.4, height: 2.4, style: 'flame' }, glyph: 'shatter', arcs: 8 },
+    },
+  },
   // Vesper, the Pale Meridian (Boss Rush / Practice): cold moonlight silver & ice-cyan glass prisms; past half her
   // strength the eclipse opens, her rings flare violet-silver and her blade trails dark astral mist.
   vesper: { element: 'lunar', aura: 0x98dcff, phases: { eclipse: 'eclipse' }, attacks: {
