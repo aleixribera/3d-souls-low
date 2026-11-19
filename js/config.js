@@ -3,7 +3,7 @@
 // 1. CONFIG
 // ============================================================================
 // Shared tuning. Per-character data (player, enemies, items) and level layouts live in section 2.
-const VERSION = 'v7.144.0';   // shown in the footer of the title and the pause menu; each release is tagged with the same name
+const VERSION = 'v7.145.0';   // shown in the footer of the title and the pause menu; each release is tagged with the same name
 const CONFIG = {
   step: 1 / 60,          // fixed simulation timestep (s)
   maxSteps: 5,           // max simulation steps per rendered frame
@@ -596,7 +596,7 @@ const CONFIG = {
                    floor: 0.65, fade: 12, maxDistance: 38, windup: 0.25, active: 1,
                    sourceRetention: 1.15, minPower: 0.01, tip: 0.8, maxDt: 0.1,
                    projectile: 0.65, breath: 1.4, sigil: 1.5, pulseSlots: 6,
-                   elements: ['holy', 'fire', 'blood', 'rot', 'black', 'storm', 'toll', 'lunar', 'eclipse', 'bone', 'gravefire', 'arson', 'bronze', 'resonance', 'emberGold', 'royalFlame'],
+                   elements: ['holy', 'fire', 'blood', 'rot', 'black', 'storm', 'toll', 'lunar', 'eclipse', 'bone', 'gravefire', 'arson', 'bronze', 'resonance', 'emberGold', 'royalFlame', 'feral', 'starving'],
                    storm: { intensity: 1.8, ambient: 0.24, direction: [0.7, 1, -0.45] } },
     exposure: 1.1,                                            // tone-mapping exposure unless a level sets its own
     hemi: { sky: 0x000000, ground: 0x000000, intensity: 0 },  // sky/ground fill; off unless a level sets `hemi`
@@ -922,7 +922,7 @@ const CONFIG = {
                           blood: [0xff6a40, 0xc00808], rot: [0xffa080, 0xff2a20], storm: [0xffffff, 0x9ec0ff],
                           lunar: [0xf4fbff, 0x70c4ff], eclipse: [0xfff0ff, 0x9c54ff],
                           bone: [0xf6fbff, 0x88b4e8], gravefire: [0xfff4d0, 0xff5a10],
-                          bronze: [0xeafff4, 0x38d898] },
+                          bronze: [0xeafff4, 0x38d898], feral: [0xffe0b0, 0xe8220c] },
                 boost: 4.5 },
       blood: { max: 900, life: [0.5, 1.1], speed: [2.5, 7.5], width: 0.065, stretch: 0.04, gravity: 13, color: 0xb01010, dark: 0x5a0404,
                splats: 0.3, mist: 4, mistColor: 0x6a0808, sawdust: 0xa08a60 },

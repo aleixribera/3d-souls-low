@@ -799,6 +799,37 @@ void main() {
           spawnArc(v3.x, v3.y, v3.z, v3.x + Math.cos(a) * rr, v3.y + rand(-0.3, 0.8), v3.z + Math.sin(a) * rr, L.el, 0.11, 0.2, 0.24);
         }
       }
+    } else if (amb.kind === 'feral') {   // blood-ember hunger wisps, stalking dark mist, and crackling antler streaks
+      const starving = (amb.rate || 0) >= 40;
+      const marks = e.learned ? Math.min(6, e.learned.size) / 6 : 0;
+      const heat = starving ? 1 : 0.35 + marks * 0.65;
+      while (acc.mote >= 1) {
+        acc.mote -= 1;
+        const a = rand(0, Math.PI * 2), rr = rand(0.18, rad), life = rand(0.65, 1.45);
+        col.set(starving && Math.random() < 0.3 ? cSec : cMain).multiplyScalar((2.0 + heat * 1.1) * rand(0.8, 1.25));
+        fx.motes.spawn({ x: e.x + Math.cos(a) * rr, y: e.y + rand(0.35, h * 0.92), z: e.z + Math.sin(a) * rr,
+          vx: Math.cos(a) * (0.3 + heat * 0.7), vy: rand(0.6, 1.6 + heat * 0.9), vz: Math.sin(a) * (0.3 + heat * 0.7),
+          drag: 0.95, lift: 1.0 + heat * 0.8, life, max: life,
+          s0: U.motes.size * (0.95 + heat * 0.3) * sc, s1: U.motes.size * 0.2,
+          r: col.r, g: col.g, b: col.b, swirl: calm() ? 0 : (1.1 + heat * 1.5), cx: e.x, cz: e.z, fadeIn: 0.14 });
+      }
+      acc.puff += (starving ? 4.4 : 2.6) * dt;
+      while (acc.puff >= 1) {
+        acc.puff -= 1;
+        const a = rand(0, Math.PI * 2), rr = rand(0.3, rad * 1.1);
+        PUFF_VEL[0] = Math.cos(a) * 0.55; PUFF_VEL[1] = rand(0.2, 0.7); PUFF_VEL[2] = Math.sin(a) * 0.55;
+        fx.puff(e.x + Math.cos(a) * rr, e.y + rand(0.2, 0.85), e.z + Math.sin(a) * rr, L.el.smoke || 0x180906, 0.5 * sc, 1.55 * sc, 1.2, PUFF_VEL, starving ? 0.44 : 0.32);
+      }
+      if ((starving || marks > 0.15) && !calm()) {
+        acc.arc += (isUltra() ? 2.8 : 1.3) * (0.5 + heat * 0.7) * dt;
+        if (acc.arc >= 1) {
+          acc.arc -= 1;
+          const ant = e.rig && e.rig.tellGlows && e.rig.tellGlows.antlers;
+          if (ant) ant.getWorldPosition(v3); else v3.set(e.x, e.y + h * 0.82, e.z);
+          const a = rand(0, Math.PI * 2), rr = 0.85 * sc;
+          spawnArc(v3.x, v3.y, v3.z, v3.x + Math.cos(a) * rr, v3.y + rand(-0.2, 0.8), v3.z + Math.sin(a) * rr, L.el, 0.1, 0.22, 0.24);
+        }
+      }
     } else {   // generic ambient fallback for any upcoming kind (motes.spawn directly avoids double density scaling)
       while (acc.mote >= 1) {
         acc.mote -= 1;
