@@ -33,6 +33,8 @@ const FX_ELEMENTS = {
   royalFlame: { core: 0xfff4c6, glow: 0xff3008, mote: 0xff6a1c, trail: 0xff4c12, sparks: 'ember', impact: 'blaze', smoke: 0x160a08 },
   feral:      { core: 0xffd8b4, glow: 0xd82410, mote: 0xff5a28, trail: 0xe83214, sparks: 'blood', impact: 'geyser', smoke: 0x160a08 },
   starving:   { core: 0xfff2c6, glow: 0xff2808, mote: 0xff6a1e, trail: 0xff3c10, sparks: 'feral', impact: 'blaze', smoke: 0x1a0806 },
+  ironCoal:   { core: 0xfff0d0, glow: 0xe68e38, mote: 0xffb858, trail: 0xf09c44, sparks: 'clash', impact: 'shatter', smoke: 0x1c1816 },
+  lanternFire:{ core: 0xfff8d4, glow: 0xff5210, mote: 0xff942e, trail: 0xff6e18, sparks: 'ember', impact: 'blaze', smoke: 0x160c08 },
   toll:       { core: 0xe8f4ff, glow: 0x7aa8d8, mote: 0xb8d4f0, trail: 0xc8dcf0, sparks: 'storm', impact: 'toll' },
   lunar:     { core: 0xf4fbff, glow: 0x78c8ff, mote: 0xc0e6ff, trail: 0xa4daff, sparks: 'lunar', impact: 'prism' },
   eclipse:   { core: 0xfff0ff, glow: 0x9c54ff, mote: 0xd4a4ff, trail: 0xb874ff, sparks: 'eclipse', impact: 'prism', smoke: 0x120820 },
@@ -311,12 +313,59 @@ const BOSS_FX = {
       ] },
     },
   },
-  // Old Ostrey (Level 7): iron on iron, and coals from his lantern; once he opens it (the second phase), fire.
-  ostrey: { element: 'steel', aura: 0xffb050, phases: { kindled: 'fire' }, attacks: {
-    gateDrop: { impact: 'shatter', windup: 'gather' }, threeKnocks: { impact: 'shatter' }, shoulderGate: { impact: 'shatter' },
-    lanternCoals: { element: 'fire' }, coalPunish: { element: 'fire' }, lanternSwing: { element: 'fire' }, emberRain: { element: 'fire' },
-    lanternBursts: { element: 'fire', impact: 'blaze', windup: 'gather' }, lanternBreath: { element: 'fire', windup: 'gather' },
-    burningDrop: { element: 'fire', impact: 'blaze' }, kindledSweep: { element: 'fire' } } },
+  // Old Ostrey, the Porter (Level 7): forged gate-iron & drifting lantern coals; once he opens his lantern in Phase 2,
+  // a roaring Ember-coal inferno erupts from the cage with flame-domes, scorched ground waves, and whirling ember rains.
+  ostrey: {
+    element: 'ironCoal', aura: 0xffb050,
+    phases: { kindled: 'lanternFire' },
+    ambient: { kind: 'lantern', color: 0xffb44c, secondary: 0x1c1816, rate: 24, radius: 0.7, height: 2.5 },
+    phaseAmbient: { kindled: { kind: 'lantern', color: 0xff6214, secondary: 0x160c08, rate: 52, radius: 1.1, height: 2.8 } },
+    phaseFx: { dome: { radius: 8.2, height: 5.0, time: 0.64 }, spires: { count: 16, radius: 4.6, height: 3.1, style: 'flame' },
+               pillar: { radius: 2.0, height: 15 }, glyph: 'shatter', arcs: 12, rings: 3 },
+    attacks: {
+      barTheWay: { windup: 'gather', slash: { kind: 'sweep', scale: 1.8, tilt: -0.04, y: 0.55 }, glyph: 'rend', arcs: 3 },
+      gateDrop: { impact: 'shatter', windup: 'vortex', slash: { kind: 'chop', scale: 1.75, y: 1.7 },
+        dome: { radius: 5.2, height: 3.2 }, spires: { count: 12, radius: 3.4, height: 2.5, style: 'iron' },
+        glyph: 'shatter', arcs: 6 },
+      barDrive: { windup: 'gather', hits: [
+        { slash: { kind: 'thrust', scale: 1.25, y: 1.25 }, arcs: 2 },
+        { slash: { kind: 'thrust', scale: 1.75, y: 1.25 }, glyph: 'rend', arcs: 5 },
+      ] },
+      threeKnocks: { impact: 'shatter', windup: 'gather', hits: [
+        { slash: { kind: 'chop', scale: 1.35, y: 1.45 }, arcs: 2 },
+        { slash: { kind: 'chop', scale: 1.5, y: 1.55 }, arcs: 3 },
+        { slash: { kind: 'chop', scale: 1.75, y: 1.7 }, dome: { radius: 4.8, height: 2.9 },
+          spires: { count: 10, radius: 3.2, height: 2.3, style: 'iron' }, glyph: 'shatter', arcs: 6 },
+      ] },
+      shoulderGate: { impact: 'shatter', windup: 'crackle', dome: { radius: 4.0, height: 2.4 }, glyph: 'shatter', arcs: 5 },
+      lanternCoals: { element: 'lanternFire', windup: 'gather', slash: { kind: 'uppercut', scale: 1.35, y: 1.3 }, arcs: 4 },
+      coalPunish: { element: 'lanternFire', windup: 'gather', slash: { kind: 'uppercut', scale: 1.2, y: 1.3 }, arcs: 3 },
+      buttBack: { windup: 'gather', slash: { kind: 'thrust', scale: 1.25, y: 1.05 }, dome: { radius: 2.8, height: 1.6 }, arcs: 3 },
+      lanternSwing: { element: 'lanternFire', windup: 'gather', slash: { kind: 'uppercut', scale: 1.45, y: 1.4 }, arcs: 4 },
+      lanternBursts: { element: 'lanternFire', impact: 'blaze', windup: 'vortex', hits: [
+        { slash: { kind: 'chop', scale: 1.7, y: 1.55 }, dome: { radius: 6.4, height: 4.0 },
+          spires: { count: 14, radius: 4.2, height: 3.0, style: 'flame' }, glyph: 'shatter', arcs: 10 },
+        { dome: { radius: 8.0, height: 3.4 }, glyph: 'toll', arcs: 8 },
+      ] },
+      kindledSweep: { element: 'lanternFire', windup: 'crackle', hits: [
+        { slash: { kind: 'sweep', scale: 1.9, tilt: -0.05, y: 0.5 }, glyph: 'rend', arcs: 5 },
+        { slash: { kind: 'backhand', scale: 1.95, tilt: 0.08, y: 1.85 }, arcs: 6 },
+      ] },
+      lanternBreath: { element: 'lanternFire', windup: 'vortex', hits: [
+        { dome: { radius: 4.6, height: 2.6 }, glyph: 'rend', arcs: 6 },
+        { arcs: 3 }, { arcs: 3 }, { arcs: 3 }, { arcs: 3 }, { arcs: 3 }, { arcs: 4 },
+      ] },
+      burningDrop: { element: 'lanternFire', impact: 'blaze', windup: 'vortex', hits: [
+        { slash: { kind: 'chop', scale: 1.9, y: 1.75 }, dome: { radius: 6.8, height: 4.2 },
+          spires: { count: 16, radius: 4.4, height: 3.2, style: 'flame' }, glyph: 'shatter', arcs: 10 },
+        { dome: { radius: 7.8, height: 3.2 }, glyph: 'toll', arcs: 8 },
+      ] },
+      emberRain: { element: 'lanternFire', windup: 'crackle', hits: [
+        { slash: { kind: 'wheel', scale: 1.65, tilt: 0.2, y: 2.2 }, arcs: 6 },
+        { slash: { kind: 'wheel', scale: 1.75, tilt: -0.2, y: 2.15 }, arcs: 6 },
+      ] },
+    },
+  },
   // Hale and Harrow (Level 8): the sea wind round Hale's axe, iron and stone under Harrow's greaves; taking up her sister's
   // half is a grief, not a fire: storm for both once alone, and gold round the suit made whole.
   hale: { element: 'storm', aura: 0xc8d4dc, phases: { whole: 'storm' }, attacks: {

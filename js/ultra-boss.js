@@ -830,6 +830,34 @@ void main() {
           spawnArc(v3.x, v3.y, v3.z, v3.x + Math.cos(a) * rr, v3.y + rand(-0.2, 0.8), v3.z + Math.sin(a) * rr, L.el, 0.1, 0.22, 0.24);
         }
       }
+    } else if (amb.kind === 'lantern') {   // warm coals & rising fire streaming directly off a swinging lantern bone
+      const open = !!e.def?.ignite;
+      const bone = e.rig && e.rig.bones && e.rig.bones.lantern;
+      if (bone) bone.getWorldPosition(v3); else v3.set(e.x, e.y + h * 0.55, e.z);
+      while (acc.mote >= 1) {
+        acc.mote -= 1;
+        const a = rand(0, Math.PI * 2), rr = rand(0.06, open ? 0.55 : 0.28), life = rand(0.6, 1.45);
+        col.set(Math.random() < 0.28 ? L.el.core : cMain).multiplyScalar((open ? 3.0 : 2.1) * rand(0.8, 1.3));
+        fx.motes.spawn({ x: v3.x + Math.cos(a) * rr, y: v3.y + rand(-0.25, 0.25), z: v3.z + Math.sin(a) * rr,
+          vx: Math.cos(a) * rand(0.15, open ? 1.0 : 0.45), vy: rand(0.7, open ? 2.5 : 1.3), vz: Math.sin(a) * rand(0.15, open ? 1.0 : 0.45),
+          drag: 0.9, lift: open ? 1.8 : 0.85, life, max: life,
+          s0: U.motes.size * (open ? 1.2 : 0.85) * sc, s1: U.motes.size * 0.2,
+          r: col.r, g: col.g, b: col.b, swirl: calm() ? 0 : (open ? 2.0 : 0.8), cx: v3.x, cz: v3.z, fadeIn: 0.12 });
+      }
+      acc.puff += (open ? 4.8 : 1.6) * dt;
+      while (acc.puff >= 1) {
+        acc.puff -= 1;
+        PUFF_VEL[0] = rand(-0.3, 0.3); PUFF_VEL[1] = rand(0.75, 1.5); PUFF_VEL[2] = rand(-0.3, 0.3);
+        fx.puff(v3.x + rand(-0.18, 0.18), v3.y + 0.1, v3.z + rand(-0.18, 0.18), cSec, 0.32 * sc, 1.25 * sc, 1.1, PUFF_VEL, open ? 0.46 : 0.24);
+      }
+      if (open && !calm()) {
+        acc.arc += (isUltra() ? 2.4 : 1.1) * dt;
+        if (acc.arc >= 1) {
+          acc.arc -= 1;
+          tip(e, 0.8, v2);
+          spawnArc(v3.x, v3.y, v3.z, v2.x, v2.y, v2.z, L.el, 0.1, 0.22, 0.22);
+        }
+      }
     } else {   // generic ambient fallback for any upcoming kind (motes.spawn directly avoids double density scaling)
       while (acc.mote >= 1) {
         acc.mote -= 1;
