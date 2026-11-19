@@ -965,6 +965,33 @@ void main() {
           }
         }
       }
+    } else if (amb.kind === 'seams') {   // rising volcanic ash-embers & magma crackle between bare uncrowned hands
+      const magma = !!e.def?.ignite;
+      while (acc.mote >= 1) {
+        acc.mote -= 1;
+        const a = rand(0, Math.PI * 2), rr = rand(0.2, rad), life = rand(0.65, 1.5);
+        col.set(magma && Math.random() < 0.3 ? cSec : cMain).multiplyScalar((magma ? 3.0 : 2.1) * rand(0.8, 1.3));
+        fx.motes.spawn({ x: e.x + Math.cos(a) * rr, y: e.y + rand(0.15, h * 0.92), z: e.z + Math.sin(a) * rr,
+          vx: Math.cos(a) * (magma ? 0.85 : 0.3), vy: rand(0.9, magma ? 2.8 : 1.5), vz: Math.sin(a) * (magma ? 0.85 : 0.3),
+          drag: 0.9, lift: magma ? 2.0 : 1.0, life, max: life,
+          s0: U.motes.size * (magma ? 1.25 : 0.95) * sc, s1: U.motes.size * 0.22,
+          r: col.r, g: col.g, b: col.b, swirl: calm() ? 0 : (magma ? 2.4 : 1.0), cx: e.x, cz: e.z, fadeIn: 0.12 });
+      }
+      acc.puff += (magma ? 4.8 : 2.4) * dt;
+      while (acc.puff >= 1) {
+        acc.puff -= 1;
+        const a = rand(0, Math.PI * 2), rr = rand(0.25, rad * 0.95);
+        PUFF_VEL[0] = Math.cos(a) * 0.55; PUFF_VEL[1] = rand(0.6, 1.4); PUFF_VEL[2] = Math.sin(a) * 0.55;
+        fx.puff(e.x + Math.cos(a) * rr, e.y + rand(0.25, h * 0.72), e.z + Math.sin(a) * rr, L.el.smoke || 0x1a120e, 0.48 * sc, 1.55 * sc, 1.2, PUFF_VEL, magma ? 0.45 : 0.3);
+      }
+      if (magma && !calm()) {
+        acc.arc += (isUltra() ? 3.0 : 1.4) * dt;
+        if (acc.arc >= 1) {
+          acc.arc -= 1;
+          const bL = e.rig && e.rig.bones && e.rig.bones.elbowL, bR = e.rig && e.rig.bones && e.rig.bones.elbowR;
+          if (bL && bR) { bL.getWorldPosition(v2); bR.getWorldPosition(v3); spawnArc(v2.x, v2.y, v2.z, v3.x, v3.y, v3.z, L.el, 0.12, 0.22, 0.26); }
+        }
+      }
     } else {   // generic ambient fallback for any upcoming kind (motes.spawn directly avoids double density scaling)
       while (acc.mote >= 1) {
         acc.mote -= 1;

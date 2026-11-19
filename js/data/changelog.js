@@ -6,6 +6,7 @@
 //   title    a few words
 //   text     one to three sentences, shown under the list when the entry is selected
 const CHANGELOG = [
+  { version: 'v7.151.0', title: 'Oswin VFX revamp', text: 'Revamped Oswin, the First Crown / Uncrowned with volcanic ash-crown and First Ember magma palettes, bare-hand plasma arc aura, tectonic stone and flame spire rings, glowing floor fissures, and apocalyptic Crown Cast Down and Ground Breaker eruptions.' },
   { version: 'v7.150.0', title: 'Regent Hollis VFX revamp', text: 'Revamped The Regent Hollis / The Gilt Cracked with baroque gold-leaf filigree and molten cracked-gilt palettes, floating gold-leaf aura, arcane floor seals, golden spire eruptions, X-slash courtesy combos, and shattering phase cataclysm domes.' },
   { version: 'v7.149.0', title: 'Ringer of Thrale VFX revamp', text: 'Revamped The Ringer of Thrale / Over the Line with moonlight gaol-iron and deep indigo-silver bell-knell resonance, chained harmonic ripple aura, iron spire rings, escalating Nine Tailors waves, and cathedral Over the Line cataclysm domes.' },
   { version: 'v7.148.0', title: 'Harrow VFX revamp', text: 'Revamped Harrow, the Castellan / Whole Castellan with seismic basalt stone-spire eruptions, levitating grit and tremor-ring aura, crushing knee-drop shock domes, and reunited gilt-storm whole-suit axe and greave combos.' },

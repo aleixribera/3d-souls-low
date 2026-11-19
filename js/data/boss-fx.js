@@ -42,6 +42,8 @@ const FX_ELEMENTS = {
   bellKnell:  { core: 0xf4f6ff, glow: 0x5262f2, mote: 0xb2bcff, trail: 0x7a88ff, sparks: 'bellKnell', impact: 'toll', smoke: 0x14162c },
   giltLeaf:   { core: 0xfffce0, glow: 0xe2a824, mote: 0xffe478, trail: 0xf4c444, sparks: 'gold', impact: 'pillar' },
   crackedGilt:{ core: 0xfff4c8, glow: 0xf05212, mote: 0xff9834, trail: 0xff6e1c, sparks: 'ember', impact: 'blaze', smoke: 0x1a0e08 },
+  ashCrown:   { core: 0xfff2cc, glow: 0xd46a1c, mote: 0xffa044, trail: 0xe67e28, sparks: 'ember', impact: 'quake', smoke: 0x1e1814 },
+  firstEmber: { core: 0xfff6c8, glow: 0xff2c04, mote: 0xff7018, trail: 0xff440a, sparks: 'gravefire', impact: 'blaze', smoke: 0x160a06 },
   toll:       { core: 0xe8f4ff, glow: 0x7aa8d8, mote: 0xb8d4f0, trail: 0xc8dcf0, sparks: 'storm', impact: 'toll' },
   lunar:     { core: 0xf4fbff, glow: 0x78c8ff, mote: 0xc0e6ff, trail: 0xa4daff, sparks: 'lunar', impact: 'prism' },
   eclipse:   { core: 0xfff0ff, glow: 0x9c54ff, mote: 0xd4a4ff, trail: 0xb874ff, sparks: 'eclipse', impact: 'prism', smoke: 0x120820 },
@@ -617,14 +619,75 @@ const BOSS_FX = {
       ] },
     },
   },
-  // Oswin, the First Crown (Level 11): the ash king's stomps and axe crack the floor, and the cracks stay open (drawn by
-  // js/ember-seams.js on every preset); from 40 % the axe is cast down and the Ember takes his hands.
-  oswin: { element: 'earth', aura: 0xff8a40, phases: { uncrowned: 'fire' }, attacks: {
-    tread: { impact: 'quake' }, twinTread: { element: 'fire', impact: 'quake' }, headsman: { impact: 'shatter', windup: 'gather' },
-    threefold: { impact: 'quake' }, kingsLeap: { impact: 'shatter' }, leapPunish: { impact: 'shatter' }, sceptre: { element: 'steel' }, turn: { element: 'steel' }, backhand: { element: 'fire' },
-    longLive: { element: 'fire', impact: 'blaze', windup: 'gather' }, crownCastDown: { element: 'fire', impact: 'roar', windup: 'gather' },
-    emberFists: { element: 'fire', impact: 'quake' }, groundBreaker: { element: 'fire', impact: 'quake', windup: 'gather' },
-    firstHunger: { element: 'fire', impact: 'blaze', windup: 'gather' } } },
+  // Oswin, the First Crown (Level 11): volcanic obsidian-ash & tectonic magma fissures (pairing with js/ember-seams.js);
+  // uncrowned from 40%, his axe is cast down and primordial First Ember erupts through both bare hands.
+  oswin: {
+    element: 'ashCrown', aura: 0xff943c,
+    phases: { uncrowned: 'firstEmber' },
+    ambient: { kind: 'seams', color: 0xff983c, secondary: 0x1e1814, rate: 30, radius: 1.65, height: 3.4 },
+    phaseAmbient: { uncrowned: { kind: 'seams', color: 0xff4a10, secondary: 0xffe288, rate: 58, radius: 1.9, height: 3.6 } },
+    phaseFx: { dome: { radius: 9.0, height: 5.5, time: 0.68 }, spires: { count: 20, radius: 5.0, height: 3.4, style: 'stone' },
+               pillar: { radius: 2.4, height: 17 }, glyph: 'shatter', arcs: 14, rings: 3 },
+    attacks: {
+      tread: { impact: 'quake', windup: 'vortex', dome: { radius: 4.8, height: 2.6 },
+        spires: { count: 10, radius: 3.4, height: 2.2, style: 'stone' }, glyph: 'shatter', arcs: 5 },
+      headsman: { impact: 'shatter', windup: 'vortex', slash: { kind: 'chop', scale: 1.95, y: 1.8 },
+        dome: { radius: 5.8, height: 3.6 }, spires: { count: 14, radius: 3.8, height: 2.8, style: 'stone' },
+        glyph: 'shatter', arcs: 8 },
+      threefold: { impact: 'quake', windup: 'gather', hits: [
+        { slash: { kind: 'sweep', scale: 1.75, tilt: 0.06, y: 1.25 }, arcs: 4 },
+        { slash: { kind: 'backhand', scale: 1.8, tilt: -0.06, y: 1.25 }, arcs: 4 },
+        { slash: { kind: 'chop', scale: 1.95, y: 1.75 }, dome: { radius: 5.6, height: 3.4 },
+          spires: { count: 12, radius: 3.8, height: 2.6, style: 'stone' }, glyph: 'shatter', arcs: 8 },
+      ] },
+      sceptre: { windup: 'gather', hits: [
+        { slash: { kind: 'thrust', scale: 1.75, y: 1.3 }, arcs: 4 },
+        { slash: { kind: 'uppercut', scale: 1.8, tilt: 0.16, y: 1.45 }, arcs: 5 },
+      ] },
+      kingsLeap: { impact: 'shatter', windup: 'vortex', slash: { kind: 'chop', scale: 2.05, y: 1.75 },
+        dome: { radius: 7.2, height: 4.4 }, spires: { count: 18, radius: 4.6, height: 3.2, style: 'stone' },
+        glyph: 'shatter', arcs: 10 },
+      leapPunish: { impact: 'shatter', windup: 'vortex', slash: { kind: 'chop', scale: 1.95, y: 1.7 },
+        dome: { radius: 6.4, height: 4.0 }, spires: { count: 14, radius: 4.2, height: 2.9, style: 'stone' },
+        glyph: 'shatter', arcs: 9 },
+      turn: { windup: 'gather', slash: { kind: 'wheel', scale: 2.0, y: 1.3 }, arcs: 5 },
+      longLive: { element: 'firstEmber', impact: 'blaze', windup: 'vortex', hits: [
+        { dome: { radius: 5.4, height: 3.0 }, glyph: 'shatter', arcs: 6 },
+        { dome: { radius: 8.6, height: 5.0, time: 0.65 }, spires: { count: 18, radius: 4.8, height: 3.3, style: 'flame' },
+          glyph: 'shatter', arcs: 12 },
+      ] },
+      crownCastDown: { element: 'firstEmber', impact: 'blaze', windup: 'vortex', slash: { kind: 'chop', scale: 2.1, y: 1.8 },
+        dome: { radius: 9.0, height: 5.4, time: 0.68 },
+        spires: { count: 20, radius: 5.0, height: 3.4, style: 'flame' },
+        glyph: 'shatter', arcs: 14 },
+      kingsHold: { element: 'firstEmber', windup: 'vortex', slash: { kind: 'cross', scale: 1.75, y: 1.35 },
+        dome: { radius: 4.0, height: 2.4 }, arcs: 7 },
+      holdPunish: { element: 'firstEmber', windup: 'crackle', slash: { kind: 'cross', scale: 1.85, y: 1.35 },
+        dome: { radius: 4.2, height: 2.5 }, arcs: 7 },
+      emberFists: { element: 'firstEmber', impact: 'quake', windup: 'crackle', hits: [
+        { slash: { kind: 'sweep', scale: 1.6, tilt: 0.12, y: 1.35 }, arcs: 4 },
+        { slash: { kind: 'backhand', scale: 1.65, tilt: -0.12, y: 1.35 }, arcs: 5 },
+        { impact: 'blaze', dome: { radius: 5.6, height: 3.4 }, spires: { count: 12, radius: 3.8, height: 2.7, style: 'flame' },
+          glyph: 'shatter', arcs: 9 },
+      ] },
+      groundBreaker: { element: 'firstEmber', impact: 'blaze', windup: 'vortex',
+        dome: { radius: 8.4, height: 4.8, time: 0.64 },
+        spires: { count: 18, radius: 4.8, height: 3.2, style: 'stone' },
+        glyph: 'shatter', arcs: 12 },
+      grasp: { element: 'firstEmber', windup: 'crackle', slash: { kind: 'claw', scale: 1.85, y: 1.3 },
+        dome: { radius: 4.6, height: 2.6 }, arcs: 8 },
+      twinTread: { element: 'firstEmber', impact: 'quake', windup: 'vortex', hits: [
+        { dome: { radius: 5.0, height: 2.8 }, spires: { count: 10, radius: 3.4, height: 2.3, style: 'flame' }, glyph: 'shatter', arcs: 6 },
+        { dome: { radius: 5.8, height: 3.2 }, spires: { count: 12, radius: 3.8, height: 2.6, style: 'flame' }, glyph: 'shatter', arcs: 8 },
+      ] },
+      firstHunger: { element: 'firstEmber', impact: 'blaze', windup: 'vortex', hits: [
+        { dome: { radius: 7.4, height: 4.2 }, spires: { count: 14, radius: 4.4, height: 2.9, style: 'flame' }, glyph: 'shatter', arcs: 10 },
+        { dome: { radius: 8.8, height: 5.2, time: 0.66 }, spires: { count: 20, radius: 5.0, height: 3.4, style: 'flame' },
+          glyph: 'shatter', arcs: 14 },
+      ] },
+      backhand: { element: 'firstEmber', windup: 'crackle', slash: { kind: 'wheel', scale: 1.9, y: 1.35 }, arcs: 6 },
+    },
+  },
   // Mother Agathe, the Rending Hand (Level 12): the hook's steel, and the torn earth and stones, in the first half; then
   // the storm comes at her back: the hook seamed with lightning, and the storm falls where you stand
   // (js/data/bosses/agathe.js, loaded after this file; checked at validation).
