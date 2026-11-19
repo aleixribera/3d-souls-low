@@ -1022,6 +1022,34 @@ void main() {
           }
         }
       }
+    } else if (amb.kind === 'roots') {   // drifting bark-spores & charred forest-ash; raging wildfire canopy & sap arcs in Phase 2
+      const ablaze = !!e.def?.ignite;
+      while (acc.mote >= 1) {
+        acc.mote -= 1;
+        const a = rand(0, Math.PI * 2), rr = rand(0.3, rad * 1.1), life = rand(0.75, 1.7);
+        col.set(ablaze && Math.random() < 0.3 ? cSec : cMain).multiplyScalar((ablaze ? 2.9 : 2.1) * rand(0.8, 1.3));
+        fx.motes.spawn({ x: e.x + Math.cos(a) * rr, y: e.y + rand(0.25, h * 0.95), z: e.z + Math.sin(a) * rr,
+          vx: Math.cos(a) * (ablaze ? 0.85 : 0.25), vy: rand(0.7, ablaze ? 2.8 : 1.3), vz: Math.sin(a) * (ablaze ? 0.85 : 0.25),
+          drag: 0.95, lift: ablaze ? 1.9 : 0.85, life, max: life,
+          s0: U.motes.size * (ablaze ? 1.3 : 1.0) * sc, s1: U.motes.size * 0.25,
+          r: col.r, g: col.g, b: col.b, swirl: calm() ? 0 : (ablaze ? 2.2 : 1.0), cx: e.x, cz: e.z, fadeIn: 0.15 });
+      }
+      acc.puff += (ablaze ? 4.8 : 2.2) * dt;
+      while (acc.puff >= 1) {
+        acc.puff -= 1;
+        const a = rand(0, Math.PI * 2), rr = rand(0.35, rad);
+        PUFF_VEL[0] = Math.cos(a) * 0.5; PUFF_VEL[1] = rand(0.55, 1.4); PUFF_VEL[2] = Math.sin(a) * 0.5;
+        fx.puff(e.x + Math.cos(a) * rr, e.y + rand(0.3, h * 0.78), e.z + Math.sin(a) * rr, L.el.smoke || 0x1c120c, 0.52 * sc, 1.7 * sc, 1.3, PUFF_VEL, ablaze ? 0.46 : 0.28);
+      }
+      if (ablaze && !calm()) {
+        acc.arc += (isUltra() ? 2.8 : 1.3) * dt;
+        if (acc.arc >= 1) {
+          acc.arc -= 1;
+          const a1 = rand(0, Math.PI * 2), a2 = a1 + rand(1.0, 2.4), rr = e.radius * 1.1;
+          spawnArc(e.x + Math.cos(a1) * rr, e.y + h * rand(0.45, 0.85), e.z + Math.sin(a1) * rr,
+            e.x + Math.cos(a2) * rr, e.y + h * rand(0.5, 0.92), e.z + Math.sin(a2) * rr, L.el, 0.12, 0.22, 0.28);
+        }
+      }
     } else {   // generic ambient fallback for any upcoming kind (motes.spawn directly avoids double density scaling)
       while (acc.mote >= 1) {
         acc.mote -= 1;

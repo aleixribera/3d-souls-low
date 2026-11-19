@@ -46,6 +46,8 @@ const FX_ELEMENTS = {
   firstEmber: { core: 0xfff6c8, glow: 0xff2c04, mote: 0xff7018, trail: 0xff440a, sparks: 'gravefire', impact: 'blaze', smoke: 0x160a06 },
   abbeyIron:  { core: 0xf4f2ee, glow: 0x7c96b4, mote: 0xc2d0de, trail: 0x98b0c8, sparks: 'clash', impact: 'shatter', smoke: 0x1c1e24 },
   fulgurite:  { core: 0xf2fbff, glow: 0x368eff, mote: 0x9cd0ff, trail: 0x5cb0ff, sparks: 'storm', impact: 'gale', smoke: 0x101c2e },
+  heartwood:  { core: 0xffeec4, glow: 0xc47222, mote: 0xf4a848, trail: 0xd8862e, sparks: 'ember', impact: 'quake', smoke: 0x20150e },
+  wildfire:   { core: 0xfff6c8, glow: 0xff4408, mote: 0xff8c22, trail: 0xff6210, sparks: 'gravefire', impact: 'blaze', smoke: 0x160a06 },
   toll:       { core: 0xe8f4ff, glow: 0x7aa8d8, mote: 0xb8d4f0, trail: 0xc8dcf0, sparks: 'storm', impact: 'toll' },
   lunar:     { core: 0xf4fbff, glow: 0x78c8ff, mote: 0xc0e6ff, trail: 0xa4daff, sparks: 'lunar', impact: 'prism' },
   eclipse:   { core: 0xfff0ff, glow: 0x9c54ff, mote: 0xd4a4ff, trail: 0xb874ff, sparks: 'eclipse', impact: 'prism', smoke: 0x120820 },
@@ -756,13 +758,59 @@ const BOSS_FX = {
   },
   // The Rending Brothers (Level 12): the hooked knife, and the floor rent open.
   rendingBrother: { element: 'steel', aura: 0xb8c4d8, attacks: { brotherRend: { element: 'earth', impact: 'gale' } } },
-  // The Kindling Tree (Level 13): its wood and its earth; its mark and its rising burst in the Ember's fire, and once it
-  // catches (the second phase) everything burns (js/data/bosses/kindling-tree.js, loaded after this file).
-  kindlingTree: { element: 'earth', aura: 0xff9a50, phases: { kindled: 'fire' }, attacks: {
-    fallingBough: { impact: 'shatter' }, kindlingMark: { element: 'fire', impact: 'blaze' }, thornVolley: { element: 'fire' },
-    rootsRise: { impact: 'quake', windup: 'gather' }, intoTheRoots: { impact: 'quake' }, risingPunish: { impact: 'quake' }, deepRoots: { impact: 'quake' },
-    uprooted: { element: 'fire', impact: 'blaze', windup: 'gather' }, greatKindling: { element: 'fire', impact: 'blaze', windup: 'gather' },
-    rootCharge: { impact: 'quake' } } },
+  // The Kindling Tree (Level 13): ancient charred heartwood, thorny root eruptions & burning sap seals; at 60% it
+  // uproots itself into a raging wildfire conflagration with double fire rings and subterranean thorn breaches.
+  kindlingTree: {
+    element: 'heartwood', aura: 0xff9a44,
+    phases: { kindled: 'wildfire' },
+    ambient: { kind: 'roots', color: 0xf4a848, secondary: 0x20150e, rate: 32, radius: 2.0, height: 4.4 },
+    phaseAmbient: { kindled: { kind: 'roots', color: 0xff5a12, secondary: 0xffe288, rate: 60, radius: 2.3, height: 4.6 } },
+    phaseFx: { dome: { radius: 9.2, height: 5.6, time: 0.68 }, spires: { count: 20, radius: 5.2, height: 3.6, style: 'thorn' },
+               pillar: { radius: 2.5, height: 17 }, glyph: 'rend', arcs: 14, rings: 3 },
+    attacks: {
+      lash: { windup: 'gather', hits: [
+        { slash: { kind: 'claw', scale: 2.0, tilt: 0.12, y: 1.4 }, arcs: 4 },
+        { slash: { kind: 'claw', scale: 2.0, tilt: -0.12, y: 1.4 }, glyph: 'rend', arcs: 4 },
+      ] },
+      burningLash: { element: 'wildfire', windup: 'crackle', hits: [
+        { slash: { kind: 'claw', scale: 2.05, tilt: 0.12, y: 1.45 }, arcs: 5 },
+        { slash: { kind: 'claw', scale: 2.05, tilt: -0.12, y: 1.45 }, arcs: 5 },
+        { impact: 'blaze', slash: { kind: 'chop', scale: 2.15, y: 1.9 }, dome: { radius: 5.8, height: 3.6 },
+          spires: { count: 14, radius: 4.0, height: 3.0, style: 'thorn' }, glyph: 'shatter', arcs: 9 },
+      ] },
+      fallingBough: { impact: 'shatter', windup: 'vortex', slash: { kind: 'chop', scale: 2.05, y: 1.9 },
+        dome: { radius: 5.6, height: 3.4 }, spires: { count: 14, radius: 4.0, height: 2.9, style: 'thorn' },
+        glyph: 'shatter', arcs: 7 },
+      kindlingMark: { element: 'wildfire', impact: 'blaze', windup: 'vortex', hits: [
+        { slash: { kind: 'chop', scale: 1.65, y: 1.5 }, glyph: 'rend', arcs: 5 },
+        { dome: { radius: 5.4, height: 3.4 }, spires: { count: 12, radius: 3.6, height: 2.6, style: 'flame' },
+          glyph: 'arcane', arcs: 8 },
+      ] },
+      thornVolley: { element: 'wildfire', windup: 'gather', slash: { kind: 'sweep', scale: 1.85, y: 3.0 }, arcs: 5 },
+      rootsRise: { impact: 'quake', windup: 'vortex', dome: { radius: 6.4, height: 3.6 },
+        spires: { count: 18, radius: 4.4, height: 3.0, style: 'thorn' }, glyph: 'rend', arcs: 8 },
+      intoTheRoots: { impact: 'quake', windup: 'vortex', dome: { radius: 6.8, height: 4.2 },
+        spires: { count: 18, radius: 4.6, height: 3.2, style: 'thorn' }, glyph: 'shatter', arcs: 10 },
+      risingPunish: { impact: 'quake', windup: 'vortex', dome: { radius: 6.4, height: 4.0 },
+        spires: { count: 16, radius: 4.4, height: 3.0, style: 'thorn' }, glyph: 'shatter', arcs: 9 },
+      deepRoots: { element: 'wildfire', impact: 'blaze', windup: 'vortex', hits: [
+        { dome: { radius: 6.6, height: 4.0 }, spires: { count: 16, radius: 4.4, height: 3.0, style: 'thorn' }, glyph: 'shatter', arcs: 10 },
+        { dome: { radius: 7.4, height: 4.4 }, spires: { count: 20, radius: 4.8, height: 3.3, style: 'thorn' }, glyph: 'shatter', arcs: 12 },
+      ] },
+      turningBough: { windup: 'gather', slash: { kind: 'wheel', scale: 2.1, y: 1.45 }, arcs: 5 },
+      uprooted: { element: 'wildfire', impact: 'blaze', windup: 'vortex',
+        dome: { radius: 9.2, height: 5.4, time: 0.68 },
+        spires: { count: 20, radius: 5.2, height: 3.5, style: 'thorn' },
+        glyph: 'rend', arcs: 14 },
+      rootCharge: { element: 'wildfire', impact: 'quake', windup: 'crackle', slash: { kind: 'thrust', scale: 2.05, y: 1.5 },
+        dome: { radius: 4.6, height: 2.6 }, glyph: 'rend', arcs: 8 },
+      greatKindling: { element: 'wildfire', impact: 'blaze', windup: 'vortex', hits: [
+        { dome: { radius: 7.4, height: 4.4 }, spires: { count: 14, radius: 4.6, height: 3.0, style: 'flame' }, glyph: 'toll', arcs: 10 },
+        { dome: { radius: 10.0, height: 5.8, time: 0.68 }, spires: { count: 22, radius: 5.4, height: 3.6, style: 'flame' },
+          glyph: 'shatter', arcs: 14 },
+      ] },
+    },
+  },
   // The Rootbound (Level 13): wood, and the mark that burns.
   rootbound: { element: 'earth', aura: 0xff9a50, attacks: { rootMark: { element: 'fire', impact: 'blaze', windup: 'gather' }, rootThorn: { element: 'fire' } } },
   // The King's Blade (Level 14): the champion's steel, until the Ember shows through it (the second phase)

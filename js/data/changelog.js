@@ -6,6 +6,7 @@
 //   title    a few words
 //   text     one to three sentences, shown under the list when the entry is selected
 const CHANGELOG = [
+  { version: 'v7.153.0', title: 'Kindling Tree VFX revamp', text: 'Revamped The Kindling Tree / Ablaze with ancient heartwood and wildfire palettes, bark-spore and canopy-arc roots aura, thorny root-spire eruptions, blazing Kindling Mark arcane seals, and world-tree Uprooted and Great Kindling infernos.' },
   { version: 'v7.152.0', title: 'Mother Agathe VFX revamp', text: 'Revamped Mother Agathe, the Rending Hand / Storm at Her Back with abbey-iron quarry stone spires and fulgurite cobalt-lightning cyclones, electrified hook-arc storm aura, Gale Reap 320-degree storm wheels, and thunderbolt Storm Leap impacts.' },
   { version: 'v7.151.0', title: 'Oswin VFX revamp', text: 'Revamped Oswin, the First Crown / Uncrowned with volcanic ash-crown and First Ember magma palettes, bare-hand plasma arc aura, tectonic stone and flame spire rings, glowing floor fissures, and apocalyptic Crown Cast Down and Ground Breaker eruptions.' },
   { version: 'v7.150.0', title: 'Regent Hollis VFX revamp', text: 'Revamped The Regent Hollis / The Gilt Cracked with baroque gold-leaf filigree and molten cracked-gilt palettes, floating gold-leaf aura, arcane floor seals, golden spire eruptions, X-slash courtesy combos, and shattering phase cataclysm domes.' },
