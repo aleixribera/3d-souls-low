@@ -6,6 +6,7 @@
 //   title    a few words
 //   text     one to three sentences, shown under the list when the entry is selected
 const CHANGELOG = [
+  { version: 'v7.143.0', title: 'Bell Warden VFX revamp', text: 'Revamped the Bell Warden with spectral verdigris-emerald acoustic slash crescents, concentric harmonic bell glyphs, resonant shock domes, erupting dark-iron spires, crackling resonance arcs, and an explosive Waking Phase 2 peal on Ultra and Normal presets.' },
   { version: 'v7.142.0', title: 'Pillager Captain VFX revamp', text: 'Revamped the Pillager Captain with violent forged-iron slash crescents, shock cones, reaping cyclone arcs, erupting iron and charred-obsidian spires, pitch-tar arson smoke, and a blazing Kindling Phase 2 cataclysm on both Ultra and Normal presets.' },
   { version: 'v7.141.0', title: 'Giant Skeleton VFX revamp', text: 'Revamped the Giant Skeleton with spectral grave-bone slash crescents, triple claw arcs, erupting bone spires, glowing floor fractures, shock domes, crackling energy arcs, and a blazing pit-furnace Phase 2 cataclysm, scaled cleanly across Ultra and Normal presets.' },
   { version: 'v7.140.0', title: 'New boss: Gemini, Neon High', text: 'A new boss joins Boss Rush, the Weekly Run, and Practice: Gemini, Neon High. Her crescent glaive plants floating crystal prisms across the arena that lock sightlines and fire converging light-lances when she raises her hand; deflect her blade and land a Counter to shatter every active prism. Past half health the eclipse opens, adding mist blinks and crossfire plunges.' },

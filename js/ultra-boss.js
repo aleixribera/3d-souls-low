@@ -567,10 +567,15 @@ void main() {
       groundRing(x, y, z, 0.5, s * 2.6, 0.7, L.el.glow, 0.7, 0.9);
     },
     toll(x, y, z, s, L) {
-      base(x, y, z, s, L, 0.5);
-      for (let i = 0; i < 3; i++) later(() => groundRing(x, y, z, 0.3, s * (1.4 + i * 0.6), 0.8 + i * 0.15, L.el.glow, 0.45, 1 - i * 0.2), i * 130);
-      fx.moteBurst(P(x, y + 0.5, z), 60, L.el.mote, { r: s * 0.5, speed: 3, lift: 0.6, life: [0.6, 1.4], size: 0.9 });
-      ultraPost.wave(P(x, y + 1, z), 1.4, 2); fx.flashAt(P(x, y + 1, z), L.el.glow, 10, 10);
+      base(x, y, z, s, L, 0.55);
+      const el = L.el, nRings = isUltra() ? 3 : 2;
+      for (let i = 0; i < nRings; i++) later(() => groundRing(x, y, z, 0.3, s * (1.45 + i * 0.65), 0.78 + i * 0.14, i === 1 ? el.core : el.glow, 0.42, 1 - i * 0.2), i * 120);
+      fx.moteBurst(P(x, y + 0.5, z), Math.round(62 + 16 * s), el.mote, { r: s * 0.55, speed: 3.4, lift: 0.9, life: [0.65, 1.5], size: 1.0, swirl: 1.8 });
+      fx.sparkBurst(P(x, y + 0.35, z), Math.round(22 * s), el.sparks, [0, 1, 0], 0.4, 1.05);
+      fx.flare(P(x, y + 0.8, z), el.core, 1.8 + 0.45 * s, 0.3);
+      fx.mark(x, y, z, el.glow, s * 2.5, 1.6, 0.95);
+      ultraPost.wave(P(x, y + 1, z), Math.min(1.8, 1.1 + s * 0.2), Math.min(2.4, 1.6 + s * 0.2));
+      fx.flashAt(P(x, y + 1, z), el.glow, 12 + 2 * s, 11);
     },
     prism(x, y, z, s, L) {
       base(x, y, z, s, L, 0.65);
@@ -740,6 +745,33 @@ void main() {
         fx.puff(v3.x + rand(-0.2, 0.2), v3.y + 0.15, v3.z + rand(-0.2, 0.2), cSec, 0.36 * sc, 1.35 * sc, 1.1, PUFF_VEL, lit ? 0.52 : 0.28);
       }
       if (lit && !calm() && Math.random() < (isUltra() ? 6 : 3) * dt) fx.sparkBurst(v3, 1, 'ember', [0, 1, 0], 0.3, 0.45);
+    } else if (amb.kind === 'bronze') {   // resonant harmonic soundwave pulses & rising emerald-mint motes around the bell
+      const res = e.def && e.def.resonance ? clamp((e.resonance || 0) / Math.max(1, e.def.resonance.max), 0, 1) : 0;
+      const woken = (amb.rate || 0) >= 35;
+      while (acc.mote >= 1) {
+        acc.mote -= 1;
+        const a = rand(0, Math.PI * 2), rr = rand(0.25, rad), life = rand(0.8, 1.65);
+        col.set(Math.random() < 0.35 ? L.el.core : cMain).multiplyScalar((2.1 + res * 1.1) * rand(0.8, 1.25));
+        fx.motes.spawn({ x: e.x + Math.cos(a) * rr, y: e.y + rand(0.25, h * 0.85), z: e.z + Math.sin(a) * rr,
+          vx: Math.cos(a) * (0.25 + res * 0.6), vy: rand(0.5, 1.3), vz: Math.sin(a) * (0.25 + res * 0.6), drag: 1.0, lift: 0.8,
+          life, max: life, s0: U.motes.size * (0.95 + res * 0.4) * sc, s1: U.motes.size * 0.2,
+          r: col.r, g: col.g, b: col.b, swirl: calm() ? 0 : (1.2 + res * 1.6), cx: e.x, cz: e.z, fadeIn: 0.18 });
+      }
+      // Slow breathing harmonic ring at feet (< 1 Hz, calm-friendly) + resonance arcs when woken or humming high
+      acc.puff += (woken ? 0.85 : 0.45 + res * 0.5) * dt;
+      if (acc.puff >= 1) {
+        acc.puff -= 1;
+        groundRing(e.x, e.y, e.z, e.radius * 0.9, e.radius * (2.6 + res * 1.2), 1.1, cSec, 0.26, 0.38 + res * 0.35);
+      }
+      if ((woken || res > 0.45) && !calm()) {
+        acc.arc += (isUltra() ? 2.6 : 1.2) * (0.6 + res) * dt;
+        if (acc.arc >= 1) {
+          acc.arc -= 1;
+          tip(e, 0.9, v3);
+          const a = rand(0, Math.PI * 2), rr = 0.75 * sc;
+          spawnArc(v3.x, v3.y, v3.z, v3.x + Math.cos(a) * rr, v3.y + rand(-0.4, 0.6), v3.z + Math.sin(a) * rr, L.el, 0.1, 0.2, 0.22);
+        }
+      }
     } else {   // generic ambient fallback for any upcoming kind (motes.spawn directly avoids double density scaling)
       while (acc.mote >= 1) {
         acc.mote -= 1;
