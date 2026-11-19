@@ -992,6 +992,36 @@ void main() {
           if (bL && bR) { bL.getWorldPosition(v2); bR.getWorldPosition(v3); spawnArc(v2.x, v2.y, v2.z, v3.x, v3.y, v3.z, L.el, 0.12, 0.22, 0.26); }
         }
       }
+    } else if (amb.kind === 'storm') {   // electric static arcs leaping off the hook & high-speed storm vortex motes
+      const electrified = !!e.def?.storm;
+      while (acc.mote >= 1) {
+        acc.mote -= 1;
+        const a = rand(0, Math.PI * 2), rr = rand(0.35, rad * 1.15), life = rand(0.6, 1.35);
+        col.set(electrified && Math.random() < 0.35 ? L.el.core : cMain).multiplyScalar((electrified ? 2.8 : 1.8) * rand(0.8, 1.3));
+        const tx = -Math.sin(a) * (electrified ? 2.4 : 0.9), tz = Math.cos(a) * (electrified ? 2.4 : 0.9);
+        fx.motes.spawn({ x: e.x + Math.cos(a) * rr, y: e.y + rand(0.25, h * 0.95), z: e.z + Math.sin(a) * rr,
+          vx: tx, vy: rand(0.4, electrified ? 1.6 : 0.8), vz: tz, drag: 0.75, lift: 0.6, life, max: life,
+          s0: U.motes.size * (electrified ? 1.15 : 0.85) * sc, s1: U.motes.size * 0.2,
+          r: col.r, g: col.g, b: col.b, swirl: calm() ? 0 : (electrified ? 3.4 : 1.2), cx: e.x, cz: e.z, fadeIn: 0.12 });
+      }
+      if (electrified) {
+        acc.puff += 3.8 * dt;
+        while (acc.puff >= 1) {
+          acc.puff -= 1;
+          const a = rand(0, Math.PI * 2), rr = rand(0.45, rad * 1.2);
+          PUFF_VEL[0] = -Math.sin(a) * 1.2; PUFF_VEL[1] = rand(0.25, 0.75); PUFF_VEL[2] = Math.cos(a) * 1.2;
+          fx.puff(e.x + Math.cos(a) * rr, e.y + rand(0.2, 0.9), e.z + Math.sin(a) * rr, cSec, 0.45 * sc, 1.5 * sc, 1.1, PUFF_VEL, 0.36);
+        }
+        if (!calm()) {
+          acc.arc += (isUltra() ? 3.8 : 1.7) * dt;
+          if (acc.arc >= 1) {
+            acc.arc -= 1;
+            tip(e, rand(0.2, 1.15), v3);
+            const a = rand(0, Math.PI * 2), rr = 0.95 * sc;
+            spawnArc(v3.x, v3.y, v3.z, v3.x + Math.cos(a) * rr, v3.y + rand(-0.4, 0.9), v3.z + Math.sin(a) * rr, L.el, 0.11, 0.22, 0.28);
+          }
+        }
+      }
     } else {   // generic ambient fallback for any upcoming kind (motes.spawn directly avoids double density scaling)
       while (acc.mote >= 1) {
         acc.mote -= 1;

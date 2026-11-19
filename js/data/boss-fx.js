@@ -44,6 +44,8 @@ const FX_ELEMENTS = {
   crackedGilt:{ core: 0xfff4c8, glow: 0xf05212, mote: 0xff9834, trail: 0xff6e1c, sparks: 'ember', impact: 'blaze', smoke: 0x1a0e08 },
   ashCrown:   { core: 0xfff2cc, glow: 0xd46a1c, mote: 0xffa044, trail: 0xe67e28, sparks: 'ember', impact: 'quake', smoke: 0x1e1814 },
   firstEmber: { core: 0xfff6c8, glow: 0xff2c04, mote: 0xff7018, trail: 0xff440a, sparks: 'gravefire', impact: 'blaze', smoke: 0x160a06 },
+  abbeyIron:  { core: 0xf4f2ee, glow: 0x7c96b4, mote: 0xc2d0de, trail: 0x98b0c8, sparks: 'clash', impact: 'shatter', smoke: 0x1c1e24 },
+  fulgurite:  { core: 0xf2fbff, glow: 0x368eff, mote: 0x9cd0ff, trail: 0x5cb0ff, sparks: 'storm', impact: 'gale', smoke: 0x101c2e },
   toll:       { core: 0xe8f4ff, glow: 0x7aa8d8, mote: 0xb8d4f0, trail: 0xc8dcf0, sparks: 'storm', impact: 'toll' },
   lunar:     { core: 0xf4fbff, glow: 0x78c8ff, mote: 0xc0e6ff, trail: 0xa4daff, sparks: 'lunar', impact: 'prism' },
   eclipse:   { core: 0xfff0ff, glow: 0x9c54ff, mote: 0xd4a4ff, trail: 0xb874ff, sparks: 'eclipse', impact: 'prism', smoke: 0x120820 },
@@ -688,14 +690,70 @@ const BOSS_FX = {
       backhand: { element: 'firstEmber', windup: 'crackle', slash: { kind: 'wheel', scale: 1.9, y: 1.35 }, arcs: 6 },
     },
   },
-  // Mother Agathe, the Rending Hand (Level 12): the hook's steel, and the torn earth and stones, in the first half; then
-  // the storm comes at her back: the hook seamed with lightning, and the storm falls where you stand
-  // (js/data/bosses/agathe.js, loaded after this file; checked at validation).
-  agathe: { element: 'steel', aura: 0xc8d4e8, phases: { storm: 'storm' }, attacks: {
-    hookHaul: { impact: 'shatter' }, rendEarth: { element: 'earth', impact: 'quake', windup: 'gather' }, tornStones: { element: 'earth' },
-    cornerstone: { element: 'earth', impact: 'quake', windup: 'gather' },
-    stormComes: { element: 'storm', impact: 'gale', windup: 'gather' }, stormKnows: { element: 'storm', impact: 'gale', windup: 'gather' },
-    stormFurrow: { element: 'storm', impact: 'gale', windup: 'gather' }, stormLeap: { element: 'storm', impact: 'gale' } } },
+  // Mother Agathe, the Rending Hand (Level 12): brutal abbey-iron hook & torn quarry stone; at half health, the storm
+  // gathers at her back with fulgurite cobalt lightning, cyclone gale reaps, and sky-splitting thunderbolts.
+  agathe: {
+    element: 'abbeyIron', aura: 0xc8d8ec,
+    phases: { storm: 'fulgurite' },
+    ambient: { kind: 'storm', color: 0xb8cce0, secondary: 0x1c1e24, rate: 22, radius: 1.5, height: 3.0 },
+    phaseAmbient: { storm: { kind: 'storm', color: 0x8cc8ff, secondary: 0x101c2e, rate: 54, radius: 1.85, height: 3.3 } },
+    phaseFx: { dome: { radius: 8.6, height: 5.2, time: 0.64 }, spires: { count: 16, radius: 4.8, height: 3.1, style: 'iron' },
+               pillar: { radius: 2.2, height: 17 }, glyph: 'vortex', arcs: 14, rings: 3 },
+    attacks: {
+      reapingDraw: { windup: 'gather', hits: [
+        { slash: { kind: 'sweep', scale: 2.0, tilt: 0.06, y: 1.15 }, arcs: 4 },
+        { slash: { kind: 'backhand', scale: 1.9, tilt: -0.05, y: 0.45 }, glyph: 'rend', arcs: 5 },
+      ] },
+      crook: { windup: 'gather', hits: [
+        { slash: { kind: 'thrust', scale: 1.8, y: 1.35 }, arcs: 3 },
+        { slash: { kind: 'backhand', scale: 1.7, tilt: -0.1, y: 1.05 }, glyph: 'rend', arcs: 5 },
+      ] },
+      crookPunish: { windup: 'crackle', hits: [
+        { slash: { kind: 'thrust', scale: 1.85, y: 1.35 }, arcs: 4 },
+        { slash: { kind: 'backhand', scale: 1.75, tilt: -0.1, y: 1.05 }, glyph: 'rend', arcs: 5 },
+      ] },
+      correction: { windup: 'gather', hits: [
+        { slash: { kind: 'thrust', scale: 1.25, y: 1.3 }, arcs: 2 },
+        { slash: { kind: 'thrust', scale: 1.35, y: 1.3 }, arcs: 3 },
+        { slash: { kind: 'thrust', scale: 1.5, y: 1.3 }, arcs: 4 },
+      ] },
+      hookHaul: { impact: 'shatter', windup: 'vortex', hits: [
+        { slash: { kind: 'sweep', scale: 1.65, y: 0.4 }, glyph: 'rend', arcs: 3 },
+        { slash: { kind: 'chop', scale: 1.85, y: 1.65 }, dome: { radius: 4.8, height: 3.0 },
+          spires: { count: 10, radius: 3.4, height: 2.4, style: 'stone' }, glyph: 'shatter', arcs: 6 },
+      ] },
+      rendEarth: { element: 'basalt', impact: 'quake', windup: 'vortex', slash: { kind: 'chop', scale: 1.85, y: 1.45 },
+        dome: { radius: 5.0, height: 2.8 }, spires: { count: 12, radius: 3.6, height: 2.3, style: 'stone' },
+        glyph: 'rend', arcs: 7 },
+      tornStones: { element: 'basalt', windup: 'gather', slash: { kind: 'sweep', scale: 1.5, y: 0.6 }, glyph: 'rend', arcs: 4 },
+      cornerstone: { element: 'basalt', impact: 'quake', windup: 'vortex', slash: { kind: 'uppercut', scale: 1.75, y: 1.5 },
+        dome: { radius: 4.4, height: 2.6 }, spires: { count: 10, radius: 3.2, height: 2.2, style: 'stone' },
+        glyph: 'shatter', arcs: 6 },
+      turningHook: { windup: 'gather', slash: { kind: 'wheel', scale: 1.95, y: 1.1 }, arcs: 4 },
+      stormComes: { element: 'fulgurite', impact: 'gale', windup: 'vortex',
+        dome: { radius: 8.6, height: 5.0, time: 0.64 },
+        spires: { count: 16, radius: 4.8, height: 3.1, style: 'iron' },
+        glyph: 'vortex', arcs: 14 },
+      stormKnows: { element: 'fulgurite', impact: 'gale', windup: 'crackle', hits: [
+        { dome: { radius: 3.8, height: 2.4 }, glyph: 'arcane', arcs: 8 },
+        { dome: { radius: 4.2, height: 2.6 }, glyph: 'arcane', arcs: 9 },
+        { dome: { radius: 4.8, height: 3.0 }, glyph: 'arcane', arcs: 10 },
+      ] },
+      stormFurrow: { element: 'fulgurite', impact: 'gale', windup: 'vortex', hits: [
+        { slash: { kind: 'chop', scale: 1.9, y: 1.5 }, dome: { radius: 5.2, height: 3.0 },
+          spires: { count: 12, radius: 3.6, height: 2.4, style: 'stone' }, glyph: 'rend', arcs: 9 },
+        { dome: { radius: 4.6, height: 2.8 }, glyph: 'arcane', arcs: 10 },
+      ] },
+      galeReap: { element: 'fulgurite', impact: 'gale', windup: 'vortex', hits: [
+        { slash: { kind: 'wheel', scale: 2.25, tilt: 0.08, y: 1.1 }, glyph: 'vortex', arcs: 9 },
+        { slash: { kind: 'wheel', scale: 2.3, tilt: -0.08, y: 0.45 }, dome: { radius: 6.0, height: 2.8 },
+          glyph: 'vortex', arcs: 10 },
+      ] },
+      stormLeap: { element: 'fulgurite', impact: 'gale', windup: 'vortex', slash: { kind: 'chop', scale: 2.0, y: 1.7 },
+        dome: { radius: 6.8, height: 4.2 }, spires: { count: 16, radius: 4.4, height: 3.0, style: 'iron' },
+        glyph: 'shatter', arcs: 12 },
+    },
+  },
   // The Rending Brothers (Level 12): the hooked knife, and the floor rent open.
   rendingBrother: { element: 'steel', aura: 0xb8c4d8, attacks: { brotherRend: { element: 'earth', impact: 'gale' } } },
   // The Kindling Tree (Level 13): its wood and its earth; its mark and its rising burst in the Ember's fire, and once it
