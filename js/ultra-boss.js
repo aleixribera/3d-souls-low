@@ -886,6 +886,30 @@ void main() {
           spawnArc(v3.x, v3.y, v3.z, v3.x + Math.cos(a) * rr, v3.y + rand(-0.3, 0.7), v3.z + Math.sin(a) * rr, L.el, 0.1, 0.2, 0.22);
         }
       }
+    } else if (amb.kind === 'seismic') {   // levitating basalt grit, ground tremor rings, and reunited gilt arcs
+      const whole = (amb.rate || 0) >= 40;
+      while (acc.mote >= 1) {
+        acc.mote -= 1;
+        const a = rand(0, Math.PI * 2), rr = rand(0.25, rad * 1.1), life = rand(0.7, 1.5);
+        col.set(whole && Math.random() < 0.3 ? cSec : cMain).multiplyScalar((whole ? 2.5 : 1.9) * rand(0.8, 1.2));
+        fx.motes.spawn({ x: e.x + Math.cos(a) * rr, y: e.y + rand(0.08, 0.9), z: e.z + Math.sin(a) * rr,
+          vx: Math.cos(a) * 0.25, vy: rand(0.65, 1.6), vz: Math.sin(a) * 0.25, drag: 1.2, lift: 0.4, life, max: life,
+          s0: U.motes.size * (whole ? 1.1 : 0.9) * sc, s1: U.motes.size * 0.25,
+          r: col.r, g: col.g, b: col.b, swirl: calm() ? 0 : (whole ? 1.8 : 0.5), cx: e.x, cz: e.z, fadeIn: 0.14 });
+      }
+      acc.puff += (whole ? 0.8 : 0.55) * dt;
+      if (acc.puff >= 1) {
+        acc.puff -= 1;
+        groundRing(e.x, e.y, e.z, e.radius * 0.85, e.radius * (2.6 + (whole ? 0.9 : 0)), 1.0, cMain, 0.24, 0.38);
+      }
+      if (whole && !calm()) {
+        acc.arc += (isUltra() ? 2.2 : 1.0) * dt;
+        if (acc.arc >= 1) {
+          acc.arc -= 1;
+          const a = rand(0, Math.PI * 2), rr = e.radius * 1.1;
+          spawnArc(e.x, e.y + 0.3, e.z, e.x + Math.cos(a) * rr, e.y + rand(0.4, 1.6), e.z + Math.sin(a) * rr, L.el, 0.1, 0.2, 0.22);
+        }
+      }
     } else {   // generic ambient fallback for any upcoming kind (motes.spawn directly avoids double density scaling)
       while (acc.mote >= 1) {
         acc.mote -= 1;

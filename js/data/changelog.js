@@ -6,6 +6,7 @@
 //   title    a few words
 //   text     one to three sentences, shown under the list when the entry is selected
 const CHANGELOG = [
+  { version: 'v7.148.0', title: 'Harrow VFX revamp', text: 'Revamped Harrow, the Castellan / Whole Castellan with seismic basalt stone-spire eruptions, levitating grit and tremor-ring aura, crushing knee-drop shock domes, and reunited gilt-storm whole-suit axe and greave combos.' },
   { version: 'v7.147.0', title: 'Hale VFX revamp', text: 'Revamped Hale, the Castellan / Whole Castellan with Saltgrave sea-gale cyclones and mourning tempest-gold whole-suit cataclysms, swirling coastal tempest aura, 320-degree wheel slash cyclones, crystal/gold spire eruptions, and vortex floor glyphs.' },
   { version: 'v7.146.0', title: 'Old Ostrey VFX revamp', text: 'Revamped Old Ostrey, the Porter / The Lantern Opened with iron-coal and lantern-fire slash arcs, live swinging-lantern ember plumes and weapon arcs, iron and flame spire eruptions, kindled sweep scorches, and blazing phase cataclysm domes.' },
   { version: 'v7.145.0', title: 'Antlered Hunger VFX revamp', text: 'Added full feral blood-ember VFX for The Antlered Hunger with scaling antler-mark aura, crimson claw and scissor cross-slashes, antler uppercuts, erupting bone/thorn spires, roaring acoustic domes, and starving frenzy flames.' },
