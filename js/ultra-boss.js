@@ -721,6 +721,25 @@ void main() {
         spawnArc(e.x + Math.cos(a1) * rr, e.y + h * rand(0.35, 0.68), e.z + Math.sin(a1) * rr,
           e.x + Math.cos(a2) * rr, e.y + h * rand(0.45, 0.82), e.z + Math.sin(a2) * rr, L.el, 0.1, 0.2, 0.25);
       }
+    } else if (amb.kind === 'arson') {   // billowing black pitch-tar smoke & blistering arson embers off the lit billhook
+      const lit = e.def?.ignite === 'weapon' || e.def?.ignite === true;
+      if (lit && e.rig && e.rig.weapon) tip(e, 0.95, v3); else v3.set(e.x, e.y + h * 0.55, e.z);
+      while (acc.mote >= 1) {
+        acc.mote -= 1;
+        const a = rand(0, Math.PI * 2), rr = rand(0.06, lit ? 0.45 : rad), life = rand(0.55, 1.35);
+        col.set(Math.random() < 0.25 ? L.el.core : cMain).multiplyScalar((lit ? 2.9 : 1.8) * rand(0.8, 1.3));
+        fx.motes.spawn({ x: v3.x + Math.cos(a) * rr, y: v3.y + rand(-0.25, 0.35), z: v3.z + Math.sin(a) * rr,
+          vx: Math.cos(a) * rand(0.2, 0.9), vy: rand(0.8, lit ? 2.4 : 1.1), vz: Math.sin(a) * rand(0.2, 0.9), drag: 0.9, lift: lit ? 1.8 : 0.7,
+          life, max: life, s0: U.motes.size * (lit ? 1.15 : 0.85) * sc, s1: U.motes.size * 0.2,
+          r: col.r, g: col.g, b: col.b, swirl: calm() ? 0 : (lit ? 1.6 : 0.6), cx: v3.x, cz: v3.z, fadeIn: 0.1 });
+      }
+      acc.puff += (lit ? 5.5 : 1.8) * dt;
+      while (acc.puff >= 1) {
+        acc.puff -= 1;
+        PUFF_VEL[0] = rand(-0.35, 0.35); PUFF_VEL[1] = rand(0.7, 1.5); PUFF_VEL[2] = rand(-0.35, 0.35);
+        fx.puff(v3.x + rand(-0.2, 0.2), v3.y + 0.15, v3.z + rand(-0.2, 0.2), cSec, 0.36 * sc, 1.35 * sc, 1.1, PUFF_VEL, lit ? 0.52 : 0.28);
+      }
+      if (lit && !calm() && Math.random() < (isUltra() ? 6 : 3) * dt) fx.sparkBurst(v3, 1, 'ember', [0, 1, 0], 0.3, 0.45);
     } else {   // generic ambient fallback for any upcoming kind (motes.spawn directly avoids double density scaling)
       while (acc.mote >= 1) {
         acc.mote -= 1;
