@@ -21,7 +21,9 @@ const netView = {
     e.vx = s.vx; e.vy = s.vy; e.vz = s.vz;
     e.hp = s.hp; e.poise = s.poise; e.frozen = s.frozen || 0;
     if ((s.cracks || 0) !== e.cracks) {   // pass 100: the server's cracks; `by` the striker (this player, or another's id)
+      const grew = (s.cracks || 0) > e.cracks;
       e.cracks = s.cracks || 0; e.crack = e.cracks ? 1 : 0;
+      if (grew && e.shatterPrisms) e.shatterPrisms();
       events.emit('guardCrack', { enemy: e, cracks: e.cracks, by: s.crackBy && s.crackBy === ctx.self ? Game.player : s.crackBy ?? 'server' });
     }
     e.resonance = s.resonance || 0;   // pass 68 (the Bell Warden)
@@ -35,6 +37,8 @@ const netView = {
     // A bolt's mark (pass 48): noted from the target the snapshot names, as the server notes it from the same body.
     const wh = e.state === ES.WINDUP && e.attack && e.attack.hits[e.hitIndex];
     if (wh && wh.bolt) e.noteBolt(s.lure || ctx.bodyOf(s.target));   // `lure`: a summon draws it
+    if (wh && wh.prismFire) e.notePrismAim(s.lure || ctx.bodyOf(s.target));
+    if ((e.state === ES.EXECUTED || e.state === ES.DEAD) && e.prisms && e.prisms.length) e.shatterPrisms();
     // A counter predicts only a short reel. If the server rejects it, its live string becomes authoritative again
     // when that prediction expires; an accepted interruption arrives as PARRIED/EXECUTED or a new serial.
     const counterPending = e.netCounterSerial === s.serial && performance.now() / 1000 < e.netCounterUntil;

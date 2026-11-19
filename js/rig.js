@@ -153,7 +153,7 @@ class Rig {
   }
   initSettle() {
     const skip = new Set();
-    if (this.anim) { for (const c of this.anim.cloth) skip.add(c.bone); for (const h of this.anim.hang) skip.add(h.bone); }   // springs of their own
+    if (this.anim) { for (const c of this.anim.cloth) skip.add(c.bone); for (const h of this.anim.hang) skip.add(h.bone); for (const s of this.anim.spin) skip.add(s.bone); }   // springs & spinners of their own
     const all = this.skeleton ? this.skeleton.bones : ['tip', 'spin', 'chest', 'neck', 'head', 'legL', 'legR', 'kneeL', 'kneeR', 'armL', 'armR', 'elbowL', 'elbowR', 'weapon'].map(n => this[n]);
     this.settleBones = all.filter(b => b && !skip.has(b));
     this.settlePrev = this.settleBones.map(b => b.quaternion.clone()); this.settleOff = this.settleBones.map(() => new THREE.Quaternion());

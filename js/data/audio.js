@@ -563,6 +563,28 @@ const AUDIO = {
       { wave: 'sine', freq: 46, to: 24, a: 0.004, d: 1.6, gain: 0.9 },
       { wave: 'sine', freq: 300, partials: [[1, 1, 1], [2.3, 0.5, 0.6]], at: 0.05, a: 0.002, d: 1.2, gain: 0.08 },
     ] },
+    // Astral prisms (js/astral-prisms.js): planting a silver crystal, locking its sightline, firing the light-lance,
+    // and shattering every prism in a shower of glass when a Counter lands.
+    prismPlant: { bus: 'sfx', priority: 2, cooldown: 0.12, max: 3, verb: 0.5, heat: 0.15, jitter: 35, layers: [
+      { wave: 'sine', freq: [1320, 1480], partials: [[1, 1, 1], [1.5, 0.55, 0.85], [2.76, 0.3, 0.55]], a: 0.003, d: 0.7, gain: 0.24 },
+      { noise: 'white', filter: { type: 'bandpass', freq: 4800, q: 18 }, a: 0.002, d: 0.25, gain: 0.7 },
+    ] },
+    prismLock: { bus: 'sfx', priority: 3, cooldown: 0.25, max: 2, verb: 0.55, heat: 0.3, jitter: 20, layers: [
+      { wave: 'sine', freq: 980, to: 1960, glide: 0.5, partials: [[1, 1, 1], [1.5, 0.5, 0.9], [2.0, 0.35, 0.7]], a: 0.04, h: 0.15, d: 0.55, gain: 0.22 },
+      { noise: 'white', parallel: [{ type: 'bandpass', freq: 3600, q: 26 }, { type: 'bandpass', freq: 5400, q: 24 }], a: 0.05, d: 0.55, gain: 0.95 },
+    ] },
+    prismLance: { bus: 'sfx', priority: 3, cooldown: 0.15, max: 2, verb: 0.5, heat: 0.75, jitter: 30, layers: [
+      { noise: 'white', filter: { type: 'highpass', freq: 3400, q: 0.7 }, a: 0.0006, d: 0.04, gain: 0.95, drive: 2.5 },
+      { noise: 'white', filter: { type: 'bandpass', freq: 5200, to: 1600, q: 1.8 }, glide: 0.24, a: 0.002, d: 0.36, gain: 1.1, drive: 2 },
+      { wave: 'sine', freq: 1860, to: 930, glide: 0.32, partials: [[1, 1, 1], [2.5, 0.4, 0.6], [3.8, 0.25, 0.4]], a: 0.001, d: 0.65, gain: 0.22 },
+      { wave: 'sine', freq: [96, 112], to: 42, glide: 0.3, a: 0.003, d: 0.42, gain: 0.65, drive: 2 },
+    ] },
+    prismShatter: { bus: 'sfx', priority: 3, cooldown: 0.2, max: 2, verb: 0.5, heat: 0.45, jitter: 45, layers: [
+      { noise: 'white', filter: { type: 'highpass', freq: 4500, q: 0.8 }, a: 0.0005, d: 0.08, gain: 0.9, drive: 2 },
+      { wave: 'sine', freq: [2200, 2600], partials: [[1, 1, 1], [1.41, 0.6, 0.7], [2.32, 0.4, 0.5]], a: 0.001, d: 0.55, gain: 0.2 },
+      { wave: 'sine', freq: [1650, 1950], partials: [[1, 1, 1], [1.73, 0.5, 0.6]], at: 0.05, a: 0.001, d: 0.5, gain: 0.16 },
+      { wave: 'sine', freq: [2900, 3400], at: 0.11, a: 0.001, d: 0.4, gain: 0.12 },
+    ] },
 
     // ---- menus ----
     uiMove: { bus: 'ui', priority: 1, cooldown: 0.04, jitter: 6, heat: 0, layers: [

@@ -111,6 +111,9 @@ const TEXTURE_DEFS = [
   { id: 'sentinelRags', kind: 'tattered', base: 0x82858a, alt: 0xbec2c8, accent: 0x383a3e, rough: [0.85, 1], metal: 0, bump: 1.0, scratch: 6, stain: 0x2c2a26, alpha: true, cavity: 0.7 },
   { id: 'sentinelTrim', kind: 'cloth', base: 0x282522, alt: 0x767068, accent: 0x12100e, rough: [0.78, 0.96], metal: 0, bump: 1.35, scratch: 4, stain: 0x161412, cavity: 0.85, contrast: 0.95, scale: 3 },
   { id: 'sentinelSteel', kind: 'steel', base: 0x88867e, alt: 0xc8c4b8, accent: 0x5c4824, rough: [0.22, 0.55], metal: 0.74, bump: 1.0, scratch: 60, stain: 0x282014, contrast: 0.75 },
+  // Vesper, the Pale Meridian: polished moonlit silver plate and rich midnight-indigo observatory cloth.
+  { id: 'astralSilver', kind: 'plate', base: 0x92a0b4, alt: 0xe2eaf6, accent: 0x526078, rough: [0.18, 0.42], metal: 0.82, bump: 0.45, scratch: 22, stain: 0x323b4d, contrast: 0.35 },
+  { id: 'midnightCloth', kind: 'cloth', base: 0x26386e, alt: 0x3e569c, accent: 0x172248, rough: [0.76, 0.94], metal: 0, bump: 0.65, scratch: 2, stain: 0x121b38, cavity: 0.35, contrast: 0.28 },
 ];
 
 

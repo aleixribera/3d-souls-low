@@ -7,7 +7,7 @@
 // attack may name its own element and impact; `windup: 'gather'` draws power into the weapon through a heavy wind-up
 // (every heavy, held, leaping or ringing hit gathers anyway), `aura` overrides the colour of the motes round the body.
 // Checked at load (js/validate.js): every boss, phase and attack named here must exist.
-const BOSS_FX_IMPACTS = ['quake', 'pillar', 'blaze', 'geyser', 'bloom', 'void', 'gale', 'roar', 'toll', 'shatter'];
+const BOSS_FX_IMPACTS = ['quake', 'pillar', 'blaze', 'geyser', 'bloom', 'void', 'gale', 'roar', 'toll', 'shatter', 'prism'];
 const FX_ELEMENTS = {
   // core: the hot centre of its light; glow: its colour; mote: the dust it sheds; trail: its swing ribbon; sparks: a spark
   // palette (VISUALS.ultra.sparks.colors); impact: default ground effect; smoke: a dark colour its blade trails, if any.
@@ -21,6 +21,8 @@ const FX_ELEMENTS = {
   earth: { core: 0xffe2b0, glow: 0xd09048, mote: 0xe0c090, trail: 0xffc880, sparks: 'clash', impact: 'quake' },
   bone:  { core: 0xf0ead8, glow: 0xb8b0a0, mote: 0xd8d0c0, trail: 0xe8e0cc, sparks: 'clash', impact: 'quake', smoke: 0x3a3630 },
   toll:  { core: 0xe8f4ff, glow: 0x7aa8d8, mote: 0xb8d4f0, trail: 0xc8dcf0, sparks: 'storm', impact: 'toll' },
+  lunar:   { core: 0xf4fbff, glow: 0x78c8ff, mote: 0xc0e6ff, trail: 0xa4daff, sparks: 'lunar', impact: 'prism' },
+  eclipse: { core: 0xfff0ff, glow: 0x9c54ff, mote: 0xd4a4ff, trail: 0xb874ff, sparks: 'eclipse', impact: 'prism', smoke: 0x120820 },
 };
 const BOSS_FX = {
   giant: { element: 'bone', aura: 0xd8d0c0, phases: { gathered: 'fire' }, attacks: { stomp: { impact: 'shatter', windup: 'gather' },
@@ -99,4 +101,13 @@ const BOSS_FX = {
     crownsWeight: { impact: 'shatter', windup: 'gather' }, torchTaken: { element: 'fire', impact: 'blaze', windup: 'gather' },
     corvel: { element: 'fire', impact: 'blaze', windup: 'gather' }, emberLeap: { element: 'fire', impact: 'blaze', windup: 'gather' },
     shieldBurns: { element: 'fire', impact: 'blaze' } } },
+  // Vesper, the Pale Meridian (Boss Rush / Practice): cold moonlight silver & ice-cyan glass prisms; past half her
+  // strength the eclipse opens, her rings flare violet-silver and her blade trails dark astral mist.
+  vesper: { element: 'lunar', aura: 0x98dcff, phases: { eclipse: 'eclipse' }, attacks: {
+    zenithFall: { impact: 'prism', windup: 'gather' }, prismSeed: { impact: 'prism' },
+    starAlignment: { impact: 'prism', windup: 'gather' },
+    eclipseOpen: { element: 'eclipse', impact: 'prism', aura: 0xb874ff, windup: 'gather' },
+    mirrorStep: { element: 'eclipse', impact: 'gale' },
+    eclipseCross: { element: 'eclipse', impact: 'prism', windup: 'gather' },
+    lunarTempest: { element: 'eclipse', impact: 'prism', windup: 'gather' } } },
 };

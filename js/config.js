@@ -3,7 +3,7 @@
 // 1. CONFIG
 // ============================================================================
 // Shared tuning. Per-character data (player, enemies, items) and level layouts live in section 2.
-const VERSION = 'v7.139.0';   // shown in the footer of the title and the pause menu; each release is tagged with the same name
+const VERSION = 'v7.140.0';   // shown in the footer of the title and the pause menu; each release is tagged with the same name
 const CONFIG = {
   step: 1 / 60,          // fixed simulation timestep (s)
   maxSteps: 5,           // max simulation steps per rendered frame
@@ -214,6 +214,11 @@ const CONFIG = {
   // The storm (pass 48, Mother Agathe; a hit's `bolt`, Enemy.noteBolt): its mark follows the target for the first `lock`
   // of the wind-up (unless the attack's tracking says otherwise), and a bolt's wind-up is at least `minTell` s (validated).
   storm: { lock: 0.55, minTell: 0.9 },
+  // Astral prisms (a hit's `prism` / `prismFire`, js/enemy.js notePrisms & notePrismAim): at most `max` float in the
+  // arena at `flyHeight` m (oldest shatters past `max` or `life` s). A `prismFire` hit tracks the target for `lock` of
+  // its wind-up (at least `minTell` s total) then locks rigid and fires piercing lances `width` m wide, `height` m tall,
+  // `beamLen` m long. `callAt` active prisms unlock `when: 'prismed'`. Landing a Counter shatters all active prisms.
+  prisms: { max: 4, width: 0.95, height: 3.0, beamLen: 24, callAt: 2, lock: 0.46, minTell: 1.05, flyHeight: 1.55, life: 24 },
   // A hit's `burrow` (pass 50, the Kindling Tree): its heave stops `near` m short of the player's body (it rises beside
   // them, not in them), and holds still over the spot it will rise from for at least `minTell` s before the rise (validated).
   burrow: { near: 2.0, minTell: 0.6 },
@@ -591,7 +596,7 @@ const CONFIG = {
                    floor: 0.65, fade: 12, maxDistance: 38, windup: 0.25, active: 1,
                    sourceRetention: 1.15, minPower: 0.01, tip: 0.8, maxDt: 0.1,
                    projectile: 0.65, breath: 1.4, sigil: 1.5, pulseSlots: 6,
-                   elements: ['holy', 'fire', 'blood', 'rot', 'black', 'storm', 'toll'],
+                   elements: ['holy', 'fire', 'blood', 'rot', 'black', 'storm', 'toll', 'lunar', 'eclipse'],
                    storm: { intensity: 1.8, ambient: 0.24, direction: [0.7, 1, -0.45] } },
     exposure: 1.1,                                            // tone-mapping exposure unless a level sets its own
     hemi: { sky: 0x000000, ground: 0x000000, intensity: 0 },  // sky/ground fill; off unless a level sets `hemi`
@@ -770,6 +775,11 @@ const CONFIG = {
     // jagged light in `segs` pieces, `width` m wide, lit `flash` s), the sparks off the hook.
     stormRend: { mark: 2.6, markColor: 0x9fc4ff, boltColor: 0xd8e8ff, height: 26, segs: 12, width: 0.32, jag: 1.5, flash: 0.28,
       stormColor: 0xa8ccff },
+    // Floating astral prisms & light-lances (js/astral-prisms.js): pooled crystal diamonds, spinning rings, sightlines,
+    // and firing lances. `eclipseColor` takes over once the caster enters a revealed/eclipse phase.
+    astralPrisms: { pool: 16, color: 0x2cb4ff, core: 0xe6f8ff, eclipseColor: 0x9c46ff, eclipseCore: 0xf8e4ff,
+      crystalR: 0.34, crystalH: 0.68, ringR: 0.74, floorR: 0.88, bob: 0.14, spin: 1.8,
+      aimW: 0.08, lockW: 0.14, beamW: 0.44, coreW: 0.12, flash: 0.34, fade: 0.38, spawn: 0.24 },
     // The Kindling Tree's burrow (js/root-heave.js): it sinks `depth` of its height and rises in `rise` s; clods of root and
     // earth heave up behind the head every `step` m and settle in `life` s; the spot it rises from shows its reach as a
     // ring (`ring` colour) that brightens and tightens once it holds still.
@@ -909,7 +919,8 @@ const CONFIG = {
       // Streaks: sparks (additive, bloom-bright) and blood drops (opaque), drawn as stretched quads along their flight.
       sparks: { max: 1200, life: [0.25, 0.7], speed: [4, 13], width: 0.034, stretch: 0.06, gravity: 14, bounce: 0.35, drag: 1.4,
                 colors: { clash: [0xfff2c0, 0xffb040], parry: [0xffffff, 0xfff0a0], gold: [0xffe08a, 0xffa020], ember: [0xffa040, 0xff4010], holy: [0xfff6d0, 0xffd060],
-                          blood: [0xff6a40, 0xc00808], rot: [0xffa080, 0xff2a20], storm: [0xffffff, 0x9ec0ff] },
+                          blood: [0xff6a40, 0xc00808], rot: [0xffa080, 0xff2a20], storm: [0xffffff, 0x9ec0ff],
+                          lunar: [0xf4fbff, 0x70c4ff], eclipse: [0xfff0ff, 0x9c54ff] },
                 boost: 4.5 },
       blood: { max: 900, life: [0.5, 1.1], speed: [2.5, 7.5], width: 0.065, stretch: 0.04, gravity: 13, color: 0xb01010, dark: 0x5a0404,
                splats: 0.3, mist: 4, mistColor: 0x6a0808, sawdust: 0xa08a60 },

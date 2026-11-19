@@ -1635,6 +1635,8 @@ const KIT = (() => {
     for (const c of M.anim?.cloth || []) if (!known(c.bone)) bad(`anim.cloth names unknown bone "${c.bone}" (a model's own \`bones\` replace the ones it extends).`);
     for (const h of M.anim?.hang || []) if (!(M.bones && h.bone in M.bones && h.k > 0 && h.damp >= 0 && h.gain >= 0))
       bad('anim.hang lists { bone (one of the model bones), k above 0, damp and gain 0 or more }.');
+    for (const s of M.anim?.spin || []) if (!(M.bones && s.bone in M.bones && ['x', 'y', 'z'].includes(s.axis) && typeof s.speed === 'number' && Number.isFinite(s.speed) && (s.revealMul === undefined || (typeof s.revealMul === 'number' && s.revealMul > 0))))
+      bad('anim.spin lists { bone (one of the model bones), axis (x, y or z), speed (rad/s), revealMul? (> 0) }.');
     if ('grip' in M) {   // (pass 53) a two-handed haft on a weapon built in Blender
       const G = M.grip, n = v => typeof v === 'number' && Number.isFinite(v);
       if (!(G && Array.isArray(G.span) && G.span.length === 2 && G.span.every(n) && G.span[0] < G.span[1] && Array.isArray(G.rest) && G.rest.length === 3 && G.rest.every(n) && ['y', 'gap', 'fist'].every(k => !(k in G) || n(G[k])))) bad("grip needs span [from, to] (where the left hand may hold the haft, along it from the fist), rest [pitch, yaw, roll], and optional y (the haft's line off the wrist, in the haft's frame), fist (the fist's middle below the wrist) and gap.");

@@ -201,6 +201,24 @@ void main() {
       fx.moteBurst(P(x, y + 0.5, z), 60, L.el.mote, { r: s * 0.5, speed: 3, lift: 0.6, life: [0.6, 1.4], size: 0.9 });
       ultraPost.wave(P(x, y + 1, z), 1.4, 2); fx.flashAt(P(x, y + 1, z), L.el.glow, 10, 10);
     },
+    prism(x, y, z, s, L) {   // shattered starlight: twin sharp meridian rings, perimeter starlight pillars on big bursts, clean center
+      base(x, y, z, s, L, 0.65);
+      groundRing(x, y, z, 0.25, s * 1.9, 0.52, L.el.glow, 0.32, 1);
+      later(() => groundRing(x, y, z, 0.15, s * 1.35, 0.42, L.el.core, 0.22, 0.9), 90);
+      if (s >= 1.8) {   // major celestial burst: three soaring perimeter starlight columns framing the boss without obscuring her
+        const Pl = BB.pillar, rad = 3.2;
+        for (let i = 0; i < 3; i++) {
+          const a = i / 3 * Math.PI * 2 + 0.52;
+          pillar(x + Math.cos(a) * rad, y, z + Math.sin(a) * rad, Pl.radius * 0.26, Pl.height * 0.85, L.el);
+        }
+      }
+      fx.moteBurst(P(x, y + 0.4, z), Math.round(55 + 22 * s), L.el.mote, { r: s * 0.65, speed: 3.2, lift: 2.8, life: [0.65, 1.5], size: 1.0, swirl: 2.6, up: 1.3, boost: 2.2 });
+      fx.sparkBurst(P(x, y + 0.25, z), Math.round(28 * s), L.el.sparks, [0, 1, 0], 0.5, 1.25);
+      fx.flare(P(x, y + 0.25, z), L.el.core, 1.05 + 0.25 * s, 0.24);
+      fx.flashAt(P(x, y + 1.0, z), L.el.glow, 11 + 3 * s, 9 + 2 * s);
+      fx.mark(x, y, z, L.el.glow, s * 2.2, 1.5, 0.95);
+      ultraPost.wave(P(x, y + 0.5, z), Math.min(1.6, 0.8 + s * 0.3), Math.min(2.2, 1.2 + s * 0.35));
+    },
   };
 
   // ---- attack moments -----------------------------------------------------------------------------------------------------

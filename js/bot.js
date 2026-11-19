@@ -50,7 +50,7 @@ const bot = (() => {
     const C = B(), b = hit.box || a.box;
     // Lands wherever you stand: a burrow's heave, a blink, a storm's bolt on your mark (pass 54: the bot used to read a bolt
     // by the box at the caster's feet, stand still under it and take every one), fire up every open seam.
-    if (hit.blink || hit.burrow || hit.bolt || hit.erupt) return Infinity;
+    if (hit.blink || hit.burrow || hit.bolt || hit.erupt || hit.prismFire) return Infinity;
     let r = b.ring ? Math.max(b.ring.from, b.ring.to) + b.ring.width / 2 + Math.hypot(b.fwd, 0) : Math.hypot(b.fwd + b.d / 2, b.w / 2);
     r += (a.lunge || 0) * C.lungeShare;
     if (a.dash && e.hitIndex === 0) r += a.dash.speed * C.dashShare;
@@ -143,7 +143,7 @@ const bot = (() => {
   // Only where the enemy's target is known (the server's netTarget); rings, blinks, leaps and boxes round it count.
   function aimedElsewhere(e, blow, me) {
     const b = blow.hit.box || blow.attack.box;
-    if (!e.netTarget || e.netTarget === (me.id ?? me.botId) || b.ring || blow.hit.blink || blow.hit.burrow || blow.hit.leap || blow.attack.breath || blow.attack.sphere || b.fwd - b.d / 2 < 0) return false;
+    if (!e.netTarget || e.netTarget === (me.id ?? me.botId) || b.ring || blow.hit.blink || blow.hit.burrow || blow.hit.leap || blow.hit.prismFire || blow.attack.breath || blow.attack.sphere || b.fwd - b.d / 2 < 0) return false;
     return Math.abs(angDiff(Math.atan2(me.x - e.x, me.z - e.z), e.yaw)) > Math.PI / 2 + B().behindMargin;
   }
   // The enemy's attention is on `me`: the server's netTarget where it is known, else (a solo companion) it faces `me`
@@ -289,26 +289,31 @@ const bot = (() => {
     // longer than a roll's i-frames, clear only off every seam. Read where they land, not the box at the caster's feet.
     function offMark(me, e, blow, x = me.x, z = me.z) {
       if (blow.hit.erupt) { const s = nearestSeam(e, x, z); return !s || s.dist > CONFIG.seams.width / 2 + me.radius + C.defence.margin; }
+      if (blow.hit.prismFire) {
+        if (!(e.hitbox && e.hitbox.lines) && !(e.prisms && e.prisms.length && e.prisms.every(p => p.locked))) return false;
+        const s = nearestLine(e, x, z, true); return !s || s.dist > CONFIG.prisms.width / 2 + me.radius + C.defence.margin;
+      }
       const M = e.bolt, b = blow.hit.box || blow.attack.box;
       if (!(blow.hit.bolt && M && M.locked && M.key === e.attackNo * 64 + blow.index)) return false;
       // The box stands on the mark, turned as the caster faced when it locked (Hitbox.place with a bolt anchor).
       const s = Math.sin(M.yaw), c = Math.cos(M.yaw), dx = x - M.x, dz = z - M.z, margin = me.radius + C.defence.margin;
       return Math.abs(dz * s - dx * c) > b.w / 2 + margin || Math.abs(dx * s + dz * c - (b.fwd || 0)) > b.d / 2 + margin;
     }
-    // The open seam nearest (x, z): { dist, away } (away: the flat direction off it), or null with none open. While the
-    // fire stands, its walls are the hitbox's lines (the floor's seams may already have closed behind them).
-    function nearestSeam(e, x, z) {
+    // The open seam (or prism lance) nearest (x, z): { dist, away } (away: the flat direction off it), or null with none.
+    function nearestLine(e, x, z, prism = false) {
+      const list = (e.hitbox && e.hitbox.lines) || (prism ? (e.prismLines ? e.prismLines() : []) : e.seams) || [];
       let best = null;
-      for (const L of (e.hitbox && e.hitbox.lines) || e.seams || []) {
+      for (const L of list) {
         const ax = L.x1 - L.x0, az = L.z1 - L.z0, len2 = ax * ax + az * az || 1;
         const t = clamp(((x - L.x0) * ax + (z - L.z0) * az) / len2, 0, 1), px = L.x0 + ax * t, pz = L.z0 + az * t, dist = Math.hypot(x - px, z - pz);
         if (!best || dist < best.dist) best = { dist, away: dist > 1e-3 ? flat(x - px, z - pz) : flat(-az, ax) };
       }
       return best;
     }
-    // A way off every open seam within `travel` m (null if none): straight off the nearest first, then 16 bearings.
+    const nearestSeam = (e, x, z) => nearestLine(e, x, z, false);
+    // A way off every open seam or prism lance within `travel` m (null if none): straight off the nearest first, then 16 bearings.
     function offSeams(me, e, blow, travel) {
-      const s = nearestSeam(e, me.x, me.z);
+      const s = nearestLine(e, me.x, me.z, !!blow.hit.prismFire);
       if (!s) return null;
       const tries = [s.away];
       for (let i = 0; i < 16; i++) tries.push(rot(s.away, (i % 2 ? -1 : 1) * Math.ceil((i + 1) / 2) * Math.PI / 8));
@@ -320,7 +325,7 @@ const bot = (() => {
     }
     function outsideBox(me, e, blow, x = me.x, z = me.z, yaw = e.yaw, extra = 0) {
       const b = blow.hit.box || blow.attack.box;
-      if (blow.hit.bolt || blow.hit.erupt) return offMark(me, e, blow, x, z);
+      if (blow.hit.bolt || blow.hit.erupt || blow.hit.prismFire) return offMark(me, e, blow, x, z);
       if (b.ring) return false;
       const s = Math.sin(yaw), c = Math.cos(yaw), lunge = (blow.attack.lunge || 0) * blow.hit.active;
       const dx = x - e.x - s * lunge, dz = z - e.z - c * lunge, forward = dx * s + dz * c, left = dz * s - dx * c;
@@ -386,7 +391,7 @@ const bot = (() => {
       const a = blow.attack, h = blow.hit, box = h.box || a.box;
       if (box.ring || a.dash || a.breath || a.sphere || h.step || h.leap || h.blink || h.burrow || blow.eta < C.defence.walkLead) return null;
       const travel = CONFIG.player.walkSpeed * (blow.eta - C.defence.walkMargin);
-      const d = h.erupt ? offSeams(me, e, blow, travel) : escapeDir(me, e, blow);
+      const d = h.erupt || h.prismFire ? offSeams(me, e, blow, travel) : escapeDir(me, e, blow);
       if (!d) return null;
       const end = { x: me.x + d.x * travel, z: me.z + d.z * travel, y: me.y, height: me.height };
       // A blow still tracking turns after the walker (pass 54: a sidestep from a wide tracked sweep, Oswin's Threefold
@@ -435,8 +440,8 @@ const bot = (() => {
     function rollDir(me, e, blow, risky = false) {
       const C = B().roll, P = CONFIG.player, to = flat(e.x - me.x, e.z - me.z), b = blow.hit.box || blow.attack.box;
       const turn = rng() < C.reverseChance ? -side : side;
-      if (blow.hit.erupt) {   // off every seam, out of their walls
-        const way = offSeams(me, e, blow, P.rollSpeed * P.rollTime * (1 - P.rollSlow / 3)), s = !way && nearestSeam(e, me.x, me.z);
+      if (blow.hit.erupt || blow.hit.prismFire) {   // off every seam or prism lance
+        const way = offSeams(me, e, blow, P.rollSpeed * P.rollTime * (1 - P.rollSlow / 3)), s = !way && nearestLine(e, me.x, me.z, !!blow.hit.prismFire);
         if (way || s) return way || s.away;
       }
       if (b.ring) return rot(to, turn * span(C.ringAngle, rng));

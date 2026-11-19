@@ -722,6 +722,7 @@ const GAME_FILES = [
   'data/bosses/agathe.js',   // after move-sources.js: her Rending Brothers fight with the Beastman's moves
   'data/bosses/kindling-tree.js',   // after move-sources.js: the Rootbound fight with the Zealot's moves
   'data/bosses/kings-blade.js',   // the Oath Guard and its answer; the torch past half
+  'data/bosses/vesper.js',   // Boss Rush & Practice: Vesper, the Pale Meridian (floating silver prisms & eclipse)
   'data/rush.js',   // Endless Boss Rush: the opening bosses and the modifiers
   'data/showcase.js',   // the showcase's script (js/showcase.js)
   'levels/arena.js',
@@ -771,7 +772,7 @@ const GAME_FILES = [
   'baked/hollow.js',
   'baked/lancer.js',
   'baked/knight.js',
-  'baked/rogue.js', 'baked/duelist.js', 'baked/warden.js', 'baked/bowman.js', 'baked/wisp.js', 'baked/executioner.js', 'baked/shover.js', 'baked/gargoyle.js', 'baked/sentinel.js', 'baked/captain.js', 'baked/bellwarden.js', 'baked/giant.js', 'baked/aldric.js', 'baked/ostrey.js', 'baked/castellans.js', 'baked/ringer.js', 'baked/hollis.js', 'baked/oswin.js', 'baked/agathe.js', 'baked/kindling-tree.js', 'baked/kings-blade.js',
+  'baked/rogue.js', 'baked/duelist.js', 'baked/warden.js', 'baked/bowman.js', 'baked/wisp.js', 'baked/executioner.js', 'baked/shover.js', 'baked/gargoyle.js', 'baked/sentinel.js', 'baked/captain.js', 'baked/bellwarden.js', 'baked/giant.js', 'baked/aldric.js', 'baked/ostrey.js', 'baked/castellans.js', 'baked/ringer.js', 'baked/hollis.js', 'baked/oswin.js', 'baked/agathe.js', 'baked/kindling-tree.js', 'baked/kings-blade.js', 'baked/vesper.js',
   'baked/hound.js',   // the Grave Hound summon's own model (js/summon-hound.js)
   'baked/guardian.js',   // the Stone Guardian summon's own model (js/summon-figures.js)
   'baked/lancer-of-ash.js',   // the Lancer of Ash summon's own model (js/summon-figures.js)
@@ -828,6 +829,7 @@ const GAME_FILES = [
   'gilt-echo.js',
   'ember-seams.js', 'ground-fire.js',
   'storm-rend.js',
+  'astral-prisms.js',
   'root-heave.js',
   'bonfire-guidance.js',
   'effect-lighting.js',
@@ -855,7 +857,7 @@ const GAME_FILES = [
   'replay.js',     // the replay viewer: the replay door's /watch only (server/replays.cjs)
   'boot.js',
 ];
-const LOAD_STAMP = '7.139.0';   // bump for each release; stable within a release so browsers can cache scripts
+const LOAD_STAMP = '7.140.0';   // bump for each release; stable within a release so browsers can cache scripts
 const loadScript = (file, dir = 'js/') => new Promise(resolve => {
   const s = document.createElement('script');
   s.src = dir + file + '?v=' + LOAD_STAMP;
@@ -886,6 +888,7 @@ if (location.hash === '#dev' && !window.__bootShown) {
   await loadScript('suite-torn-abbey.js', 'tests/');   // v7.48.0: Level 12
   await loadScript('suite-ember-root.js', 'tests/');   // v7.50.0: Level 13
   await loadScript('suite-still-mere.js', 'tests/');   // v7.51.0: Level 14
+  await loadScript('suite-vesper.js', 'tests/');   // Vesper, the Pale Meridian (Boss Rush & Practice)
   await loadScript('suite-showcase.js', 'tests/');   // the showcase: every beat still happens
   // Developer viewers: F8 texture lab, F9 model lab (MODELLAB.open('<model id>')).
   await loadScript('texture-lab.js'); await loadScript('model-lab.js');

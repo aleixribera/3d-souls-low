@@ -112,6 +112,11 @@ function checkVisualData(need, num) {
     && typeof C.surface.floorSeams === 'boolean'
     && Number.isInteger(C.foliage.segments) && C.foliage.segments >= 1 && C.foliage.segments <= 4,
     'CONFIG.VISUALS.cinematic: invalid mist, surface, mineral or foliage settings.');
+  const AP = VIS.astralPrisms;
+  need(AP && Number.isInteger(AP.pool) && AP.pool >= 4 && [AP.color, AP.core, AP.eclipseColor, AP.eclipseCore].every(isCol)
+    && ['crystalR', 'crystalH', 'ringR', 'floorR', 'spin', 'aimW', 'lockW', 'beamW', 'coreW', 'flash', 'fade', 'spawn'].every(k => num(AP[k]) && AP[k] > 0)
+    && num(AP.bob) && AP.bob >= 0,
+    'CONFIG.VISUALS.astralPrisms: pool (whole >= 4), colours, positive sizes/widths/timings, and non-negative bob.');
   for (const [m, kind] of Object.entries(VIS.surfaces.materials))
     need(m in MAT && kind in VIS.surfaces.kinds, `CONFIG.VISUALS.surfaces.materials: "${m}" -> "${kind}" names an unknown material or kind.`);
   for (const [k, K] of Object.entries(VIS.surfaces.kinds))

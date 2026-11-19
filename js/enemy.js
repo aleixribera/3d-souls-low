@@ -33,6 +33,7 @@ const REACTIONS = {
   shielded: e => e.blockTime < CONFIG.ai.reactions.shielded,
   struck: e => e.struckTime < CONFIG.ai.reactions.struck,   // v5.9: a blow landed on it just now (Malenia's counter-kick)
   seamed: e => e.seams.length >= CONFIG.seams.callAt,   // pass 47: enough of the floor cracked open to call it up (Oswin)
+  prismed: e => e.prisms.length >= CONFIG.prisms.callAt,   // enough floating prisms planted to converge and fire
   resonant: e => !!e.def.resonance && e.resonance >= e.def.resonance.max,   // pass 68: its `resonance` is full (the Bell Warden)
 };
 // Follow-up conditions (an attack's `followUps[].if`): where the player is as the last hit's follow-through ends.
@@ -104,7 +105,7 @@ function areaHit(a, i) {
     const plain = !a.projectile && !a.dash && !a.hits.some(h => h.leap);
     marks = a.hits.map(h => {
       const b = h.box || a.box;
-      return plain && !!b && !h.erupt && !h.bolt && !h.echo && (!!b.ring || !!b.round || !!b.ground || a.anim === 'stomp') && hitReach(a, h) >= CONFIG.area.reach;
+      return plain && !!b && !h.erupt && !h.bolt && !h.echo && !h.prismFire && (!!b.ring || !!b.round || !!b.ground || a.anim === 'stomp') && hitReach(a, h) >= CONFIG.area.reach;
     });
     AREA_HITS.set(a, marks);
   }
@@ -191,6 +192,7 @@ class Enemy {
     this.leaping = false;                            // airborne in a leaping strike (a hit's `leap`)
     this.attackNo = 0; this.cuts = [];               // attacks begun; where it stood for each hit of this one (`noteCut`, a hit's `echo`)
     this.seams = []; this.erupting = null; this.seamKey = -1; this.seamNo = 0;   // the floor it has cracked open (a hit's `seam` / `erupt`)
+    this.prisms = []; this.prismBeams = null; this.prismKey = -1; this.prismNo = 0;   // floating prisms planted in the arena (a hit's `prism` / `prismFire`)
     this.fires = []; this.fireKey = -1; this.fireNo = 0;   // the fires it has left burning on the floor (a hit's `fire`, burnInFires)
     // Boss phases (v4.3): an enemy def with `phases` fights through the phase ids its placement lists (`boss.phases`,
     // else the def's `defaultPhases`), one full health bar each. `boss.retreat`: when the last bar empties it leaps
@@ -429,6 +431,13 @@ class Enemy {
     const engage = sees && (reach || this.ranged) && dist <= this.leash;
     let tx = 0, tz = 0;
     // A boss sees its player's dash start and takes its distance again (CONFIG.bossMove.respace).
+    if (this.prisms.length) {   // floating prisms age out cleanly if left unused
+      const life = CONFIG.prisms.life;
+      for (let i = this.prisms.length - 1; i >= 0; i--) {
+        this.prisms[i].age += dt;
+        if (this.prisms[i].age >= life && !(this.state === ES.WINDUP && this.attack?.hits[this.hitIndex]?.prismFire)) this.prisms.splice(i, 1);
+      }
+    }
     if (this.isBoss()) {
       const dashing = playerAlive && player.state === PS.ROLL;
       if (dashing && !this.sawDash) this.respace = CONFIG.bossMove.respace.time;
@@ -538,6 +547,7 @@ class Enemy {
       case ES.WINDUP: {
         const a = this.attack, hit = a.hits[this.hitIndex];
         if (hit.bolt) this.noteBolt(player);
+        if (hit.prismFire) this.notePrismAim(player);
         // Tracking attacks keep turning for the whole wind-up; others stop part way, so a late dodge works.
         // Delayed attack: at `hold.at` of the wind-up it may freeze, clearly still, for a while before carrying on.
         if (hit.hold && this.holdLeft === null && this.stateTime >= hit.startup * hit.hold.at)
@@ -691,7 +701,7 @@ class Enemy {
     this.setState(ES.GONE);
     events.emit('bossGone', { enemy: this });
   }
-  die() { this.hitbox = null; this.seams.length = 0; this.erupting = null; this.fires.length = 0; this.setState(ES.DEAD); }
+  die() { this.hitbox = null; this.seams.length = 0; this.erupting = null; this.prisms.length = 0; this.prismBeams = null; this.fires.length = 0; this.setState(ES.DEAD); }
   // After moving: death in a pit, or damage from a hard landing (same rule as the player).
   checkFall() {
     if (!this.alive()) return;
@@ -820,6 +830,14 @@ class Enemy {
       hb.near.x = this.x; hb.near.y = this.y; hb.near.z = this.z;   // until it finds someone: at his feet (where its impact lands)
       return hb;
     }
+    if (hit.prismFire) {   // every planted prism fires along its locked sightline at once; none planted, nothing happens
+      const lines = this.prismBeams && this.prismBeams.length ? this.prismBeams : null;
+      if (!lines) return null;
+      const hb = new Hitbox(this, box, { ...makeStrike(this.attack), ...(hit.damage ? { damage: hit.damage } : {}), rollOnly: true }, null, lines, CONFIG.prisms);
+      hb.payload.damage *= this.damageMul;
+      hb.near.x = this.x; hb.near.y = this.y + 1; hb.near.z = this.z;
+      return hb;
+    }
     const strike = makeStrike(this.attack);
     if (hit.damage) strike.damage = hit.damage;
     strike.damage *= this.damageMul;
@@ -850,7 +868,64 @@ class Enemy {
   noteCut() {
     const c = this.cuts[this.hitIndex] || (this.cuts[this.hitIndex] = { x: 0, y: 0, z: 0, yaw: 0, no: -1 });
     c.x = this.x; c.y = this.y; c.z = this.z; c.yaw = this.yaw; c.no = this.attackNo;
-    this.noteSeams(); this.noteFires();
+    this.noteSeams(); this.notePrisms(); this.noteFires();
+  }
+  // A hit's `prism` (floating crystal mirrors planted in the arena) and `prismFire` (every active prism fires a piercing
+  // light-lance along its locked sightline). Clamped inside playable bounds so no prism spawns in a wall.
+  notePrisms() {
+    const hit = this.attack && this.attack.hits[this.hitIndex], key = this.attackNo * 64 + this.hitIndex;
+    if (!hit || (!hit.prism && !hit.prismFire) || this.prismKey === key) return;
+    this.prismKey = key;
+    const P = CONFIG.prisms;
+    if (hit.prism) {
+      const s = Math.sin(this.yaw), c = Math.cos(this.yaw), fy = this.y + (hit.prism.height ?? P.flyHeight);
+      for (const [fwd, side] of hit.prism.at) {
+        let px = this.x + s * fwd + c * side, pz = this.z + c * fwd - s * side;
+        if (typeof world !== 'undefined' && world && !world.solids && Number.isFinite(world.minX)) {
+          const pad = 1.4;
+          px = clamp(px, world.minX + pad, world.maxX - pad);
+          pz = clamp(pz, -world.halfZ + pad, world.halfZ - pad);
+        }
+        const entry = { x: px, y: this.y, fy, z: pz, aimX: px + s * P.beamLen, aimZ: pz + c * P.beamLen,
+          locked: false, aimKey: -1, age: 0, no: ++this.prismNo };
+        this.prisms.push(entry);
+        if (this.prisms.length > P.max) this.prisms.shift();
+        events.emit('prismPlant', { enemy: this, at: { x: px, y: fy, z: pz } });
+      }
+    }
+    if (hit.prismFire) {
+      this.prismBeams = this.prismLines(hit.prismFire.len);
+      const keep = hit.prismFire && typeof hit.prismFire === 'object' && hit.prismFire.keep;
+      if (!keep) this.prisms.length = 0;
+    }
+  }
+  // During a `prismFire` wind-up, each active prism tracks `target` until `lock` of the wind-up, then holds rigid.
+  notePrismAim(target) {
+    const a = this.attack, hit = a && a.hits[this.hitIndex];
+    if (!hit || !hit.prismFire || this.state !== ES.WINDUP || !target || !this.prisms.length) return;
+    const P = CONFIG.prisms, key = this.attackNo * 64 + this.hitIndex;
+    const lock = (hit.prismFire && typeof hit.prismFire === 'object' ? hit.prismFire.lock : null) ?? P.lock;
+    const len = (hit.prismFire && typeof hit.prismFire === 'object' ? hit.prismFire.len : null) ?? P.beamLen;
+    for (const pr of this.prisms) {
+      if (pr.aimKey === key && this.stateTime >= hit.startup * lock) { pr.locked = true; continue; }
+      const dx = target.x - pr.x, dz = target.z - pr.z, d = Math.hypot(dx, dz) || 1;
+      pr.aimX = pr.x + dx / d * len; pr.aimZ = pr.z + dz / d * len;
+      pr.aimKey = key; pr.locked = false;
+    }
+  }
+  prismLines(len) {
+    const L = len ?? CONFIG.prisms.beamLen;
+    return this.prisms.map(pr => {
+      const dx = pr.aimX - pr.x, dz = pr.aimZ - pr.z, d = Math.hypot(dx, dz) || 1;
+      return { x0: pr.x, z0: pr.z, x1: pr.x + dx / d * L, z1: pr.z + dz / d * L, y: pr.y, fy: pr.fy, no: pr.no };
+    });
+  }
+  // Shatter all active floating prisms (called when a Counter or Finishing Blow lands!).
+  shatterPrisms() {
+    if (!this.prisms || !this.prisms.length) return;
+    const list = this.prisms.map(p => ({ x: p.x, y: p.fy, z: p.z, no: p.no }));
+    this.prisms.length = 0;
+    events.emit('prismShatter', { enemy: this, list });
   }
   // A hit's `fire` (pass 63, the Pillager Captain): as it strikes it leaves fires burning on the floor, one per `at`
   // [fwd, side] (m ahead of him, m to his left) where he stands and faces, each `r` m across, for `time` s, burning
@@ -985,7 +1060,7 @@ class Enemy {
     const M = CONFIG.enemy.mash;
     if (!this.isBoss() || (this.mash || 0) < M.hits || this.chainTime > M.gap) return null;
     const fits = this.def.attacks.filter(a => !a.when && !a.learned && !a.projectile && attackChance(a) > 0 && dist >= (a.minRange || 0) && dist <= a.range + M.reach
-      && !a.hits[0].leap && !a.hits[0].bolt && (!a.hpBelow || this.hp <= this.def.hp * a.hpBelow));
+      && !a.hits[0].leap && !a.hits[0].bolt && !a.hits[0].prismFire && (!a.hpBelow || this.hp <= this.def.hp * a.hpBelow));
     if (!fits.length) return null;
     const pick = fits.reduce((b, a) => {
       const sa = a.hits[0].startup - (isAreaAttack(a) ? M.areaBonus : 0), sb = b.hits[0].startup - (isAreaAttack(b) ? M.areaBonus : 0);
@@ -1000,7 +1075,7 @@ class Enemy {
   clearWounds() { for (const w of this.wounds) { w.pool = 0; w.who = null; } this.mendPool = 0; }
   // A Finishing Blow's hold: learned forms forgotten, resonance emptied, wounds sealed (Enemy.step does it each held step
   // solo; the server, which skips a foe a person's blow holds, calls it once as it grants the blow).
-  forgetAll() { this.learned.length = 0; this.resonance = 0; this.clearWounds(); }
+  forgetAll() { this.learned.length = 0; this.resonance = 0; this.clearWounds(); this.shatterPrisms(); }
 
   // One strike from `from`. Returns { died, blocked?, opened? (it reels open: a counter for the striker), finisher? (this
   // blow was a counter on a guard already cracked CONFIG.finisher.cracks times: the Finishing Blow is due, js/finisher.js) }.
@@ -1059,12 +1134,13 @@ class Enemy {
     }
     if (!this.def.rooted) { this.kx += kx; this.kz += kz; }   // a rooted phase (pass 50) is not knocked back either
     if (this.hp <= 0 && this.outlast()) return { died: false };   // a boss with another bar, or retreating
-    if (this.hp <= 0) { this.hitbox = null; this.setState(ES.DEAD); return { died: true }; }
+    if (this.hp <= 0) { this.hitbox = null; this.prisms.length = 0; this.prismBeams = null; this.setState(ES.DEAD); return { died: true }; }
     // A counter (a riposte's blow; a power's blow never) cracks the guard; one on a guard cracked CONFIG.finisher.cracks
     // times is the Finishing Blow (js/finisher.js: the striker runs it).
     const counter = !!strike.riposte && !strike.power;
     const finisher = counter && crackGuard(this, from);
     if (counter) {
+      this.shatterPrisms();
       this.getParried(); this.parriedFor = CONFIG.parry.counterReel;
       return { died: false, finisher };
     }

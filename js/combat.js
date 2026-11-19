@@ -25,8 +25,8 @@ function makeStrike(attack, riposte = false, charge = 0) {
 // `lines` (a hit's `erupt`, Enemy.makeHitbox): the floor's open seams [{ x0, z0, x1, z1, y }], each a wall of fire
 // CONFIG.seams.width wide and `height` tall along it, instead of the box.
 class Hitbox {
-  constructor(owner, box, payload, anchor = null, lines = null) {
-    this.owner = owner; this.box = box; this.payload = payload; this.hit = new Set(); this.anchor = anchor; this.lines = lines;
+  constructor(owner, box, payload, anchor = null, lines = null, lineSpec = null) {
+    this.owner = owner; this.box = box; this.payload = payload; this.hit = new Set(); this.anchor = anchor; this.lines = lines; this.lineSpec = lineSpec;
     this.weighed = null; this.dodged = false;   // the dash it was last weighed against (Player.dashNo), and whether it was dodged (resolveCombat)
     this.x = 0; this.y = 0; this.z = 0; this.yaw = 0; this.near = { x: 0, y: 0, z: 0 };
   }
@@ -62,9 +62,9 @@ class Hitbox {
     const y0 = o.y + b.y - b.h / 2, y1 = o.y + b.y + b.h / 2;
     return y1 > target.y && y0 < target.y + target.height;
   }
-  // Any open seam whose wall of fire holds the target's body: within half its width of the line, above its floor.
+  // Any open seam or prism beam whose volume holds the target's body: within half its width of the line, above its floor.
   overlapsSeams(target) {
-    const S = CONFIG.seams, reach = S.width / 2 + target.radius;
+    const S = this.lineSpec || CONFIG.seams, reach = S.width / 2 + target.radius;
     for (const L of this.lines) {
       const ax = L.x1 - L.x0, az = L.z1 - L.z0, len2 = ax * ax + az * az || 1;
       const t = clamp(((target.x - L.x0) * ax + (target.z - L.z0) * az) / len2, 0, 1), px = L.x0 + ax * t, pz = L.z0 + az * t;

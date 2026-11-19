@@ -28,8 +28,14 @@ function validateData({ visual = true } = {}) {
     need(Rb && num(Rb.delay) && num(Rb.rise) && num(Rb.hold) && num(Rb.fall) && num(Rb.drop) && rot(Rb.pose),
       'ANIM_SETTINGS.deflect.clang.rebound: delay, rise, hold and fall (s), drop (m) and a pose of [x, y, z] per bone.');
     need(A.clothClamp > 0 && A.clothSpeed > 0, 'ANIM_SETTINGS.clothClamp (rad) and clothSpeed (m/s): both above 0.');
-    for (const [id, M] of Object.entries(MODEL_DEFS)) for (const c of (M.anim && M.anim.cloth) || [])
-      need(c.max === undefined || (c.max > 0 && c.max <= A.clothClamp), `Model "${id}": cloth ${c.bone}'s max must be above 0 and at most ANIM_SETTINGS.clothClamp (rad).`);
+    for (const [id, M] of Object.entries(MODEL_DEFS)) {
+      for (const c of (M.anim && M.anim.cloth) || [])
+        need(c.max === undefined || (c.max > 0 && c.max <= A.clothClamp), `Model "${id}": cloth ${c.bone}'s max must be above 0 and at most ANIM_SETTINGS.clothClamp (rad).`);
+      for (const s of (M.anim && M.anim.spin) || [])
+        need(s && typeof s.bone === 'string' && ['x', 'y', 'z'].includes(s.axis) && Number.isFinite(s.speed) && s.speed !== 0
+          && (s.revealMul === undefined || (Number.isFinite(s.revealMul) && s.revealMul > 0)),
+          `Model "${id}": spin needs bone (string), axis ('x'|'y'|'z'), non-zero speed (rad/s), and optional positive revealMul.`);
+    }
     const Da = A.dash, L = A.land, r3 = v => Array.isArray(v) && v.length === 3 && v.every(Number.isFinite);
     const Dk = Da && Da.keys;
     need(Da && num(Da.rise) && Da.lift >= 0 && Da.lift <= 0.3 && Array.isArray(Dk) && Dk.length >= 2 && Dk[0].at === 0 && Dk[Dk.length - 1].at === 1
@@ -260,6 +266,10 @@ function validateData({ visual = true } = {}) {
   need(BF && ['margin', 'push', 'ending'].every(k => num(BF[k]) && BF[k] >= 0), 'Bot fire needs non-negative margin (m), push and ending (s).');
   const ST = CONFIG.storm;
   need(ST && num(ST.lock) && ST.lock > 0 && ST.lock < 1 && num(ST.minTell) && ST.minTell > 0, 'CONFIG.storm needs lock (0 to 1) and minTell (s).');
+  const PR = CONFIG.prisms;
+  need(PR && Number.isInteger(PR.max) && PR.max >= 1 && Number.isInteger(PR.callAt) && PR.callAt >= 1 && PR.callAt <= PR.max
+    && ['width', 'height', 'beamLen', 'minTell', 'flyHeight', 'life'].every(k => num(PR[k]) && PR[k] > 0) && num(PR.lock) && PR.lock > 0 && PR.lock < 1,
+    'CONFIG.prisms needs max/callAt (whole, 1..max), lock (0 to 1), and positive width, height, beamLen, minTell, flyHeight and life.');
   need(CONFIG.burrow && num(CONFIG.burrow.near) && CONFIG.burrow.near > 0 && num(CONFIG.burrow.minTell) && CONFIG.burrow.minTell > 0, 'CONFIG.burrow needs near (m) and minTell (s).');
   const AR = CONFIG.area;
   need(AR && ['reach', 'tell', 'offset', 'locked'].every(k => num(AR[k]) && AR[k] > 0) && num(AR.held) && AR.held > 0 && AR.held < 1 && num(AR.dash) && AR.dash > 0 && AR.dash <= 1,
@@ -411,6 +421,23 @@ function validateData({ visual = true } = {}) {
           `${tag}: hit ${i + 1}'s bolt must be true or { lock } (0 to 1), its box centred on the mark (fwd 0); not with an echo, seam, erupt, leap, blink, step, ring or projectile.`);
         need(h.startup >= CONFIG.storm.minTell - 1e-6, `${tag}: hit ${i + 1}'s bolt needs a wind-up of at least ${CONFIG.storm.minTell} s (its mark).`);
       }
+      // Floating astral prisms (`prism` / `prismFire`, js/enemy.js notePrisms & notePrismAim).
+      if ('prism' in h) {
+        const Pm = h.prism;
+        need(Pm && Array.isArray(Pm.at) && Pm.at.length > 0 && Pm.at.every(q => Array.isArray(q) && q.length === 2 && q.every(num))
+          && (!('height' in Pm) || (num(Pm.height) && Pm.height > 0 && Pm.height <= 4)) && !h.prismFire && !a.projectile,
+          `${tag}: hit ${i + 1}'s prism needs at (non-empty list of [fwd, side]), optional height (0 to 4 m); not with prismFire or a projectile.`);
+      }
+      if ('prismFire' in h) {
+        const Pf = h.prismFire, b = h.box || a.box || {};
+        need((Pf === true || (Pf && typeof Pf === 'object'
+            && (!('lock' in Pf) || (num(Pf.lock) && Pf.lock > 0 && Pf.lock < 1))
+            && (!('len' in Pf) || (num(Pf.len) && Pf.len > 0))
+            && (!('keep' in Pf) || typeof Pf.keep === 'boolean')))
+          && !b.ground && !b.ring && !h.echo && !h.seam && !h.erupt && !h.bolt && !h.prism && !a.projectile,
+          `${tag}: hit ${i + 1}'s prismFire must be true or { lock? (0..1), len? (>0), keep? }; plain box, not with echo, seam, erupt, bolt, prism or projectile.`);
+        need(h.startup >= CONFIG.prisms.minTell - 1e-6, `${tag}: hit ${i + 1}'s prismFire needs a wind-up of at least ${CONFIG.prisms.minTell} s (its locked sightline tell).`);
+      }
       // Every area attack fair on its own (pass 93, CONFIG.area; areaHit in js/enemy.js, drawn by js/area-marks.js).
       if (h && areaHit(a, i)) {
         const A = CONFIG.area, b = h.box || a.box, prev = a.hits[i - 1], at = `${tag}: hit ${i + 1} (a ground area hit, CONFIG.area)`;
@@ -546,7 +573,7 @@ function validateData({ visual = true } = {}) {
           for (const a of own.concat(more)) {   // its learned forms and follow-ups too
             if (!a || !a.hits || seen.has(a) || !(a.noParry || a.rollOnly) || a.projectile) continue;
             seen.add(a);
-            if (a.hits.some((h, i) => areaHit(a, i) || h.seize || h.pull || h.leap || h.erupt || h.bolt || h.burrow)) continue;
+            if (a.hits.some((h, i) => areaHit(a, i) || h.seize || h.pull || h.leap || h.erupt || h.bolt || h.burrow || h.prismFire)) continue;
             big.add(a.name.replace(/, Learned$/, ''));
           }
           need(big.size <= CONFIG.undeflectable.bigMoments, `${tag}: ${big.size} moves no guard can deflect (${[...big].join(', ')}); a phase keeps at most ${CONFIG.undeflectable.bigMoments} besides its area hits, grabs, leaps, shots and fire (CONFIG.undeflectable).`);

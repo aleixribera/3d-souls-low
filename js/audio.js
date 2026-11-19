@@ -445,6 +445,8 @@ function registerAudioListeners() {
   on('boltStopped', d => audio.play('boltStopped', { pos: spot(d.bolt) }));
   on('alert', d => audio.play('alert', { pos: chest(d.enemy), pitch: big(d.enemy) }));
   on('perilous', d => audio.play('perilous', { pos: chest(d.enemy), pitch: big(d.enemy) }));
+  on('prismPlant', d => audio.play('prismPlant', { pos: d.at || chest(d.enemy), vel: 0.7 }));
+  on('prismShatter', d => audio.play('prismShatter', { pos: chest(d.enemy), vel: 0.85 }));
   on('attackMarker', d => { if (d.marker.event === 'sound') audio.play(d.marker.sound, { pos: d.actor === Game.player ? null : chest(d.actor), vel: d.marker.vel ?? 0.7, pitch: big(d.actor) }); });
   // The swing whoosh, as each strike goes active: every cut of a combo, after any held (delayed) wind-up, and a jump
   // attack as it drives down. An attack with its own `sound` markers times them itself (the player's ground attacks).

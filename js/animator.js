@@ -14,6 +14,8 @@ class ModelAnimator {
     // (v7.58.0, opt-in) `hang`: bones that hang plumb from where they are held (a lantern from a fist), swinging on a
     // damped spring when the hand moves.
     this.hang = (A.hang || []).map(c => ({ bone: rig.bones[c.bone], c, a: 0, va: 0, s: 0, vs: 0, px: NaN, pz: NaN, vx: 0, vz: 0 }));
+    // Opt-in `spin`: extra bones that turn steadily about an axis (e.g. concentric astrolabe rings behind the shoulders).
+    this.spin = (A.spin || []).map(c => ({ bone: rig.bones[c.bone], c, a: 0 }));
   }
   updateHang(actor, ctx, dt) {
     const r = this.rig, H = ModelAnimator.scratch, G = ANIM_SETTINGS;
@@ -62,6 +64,17 @@ class ModelAnimator {
   finish(actor, ctx, dt, dead) {
     const r = this.rig, g = r.glint;
     if (this.hang.length) this.updateHang(actor, ctx, dt);
+    if (this.spin.length) {
+      const calm = typeof reducedMotion === 'function' && reducedMotion(), frozen = dead || actor?.hitstop > 0;
+      for (const s of this.spin) {
+        if (!s.bone) continue;
+        if (!frozen && dt > 0) {
+          const mul = (r.revealed && s.c.revealMul ? s.c.revealMul : 1) * (calm ? 0.35 : 1);
+          s.a = (s.a + s.c.speed * mul * dt) % (Math.PI * 2);
+        }
+        s.bone.rotation[s.c.axis] = s.a;
+      }
+    }
     if (g) {
       const k = this.glintK * r.alphaK; g.sprite.visible = k > 0.01; g.sprite.material.opacity = k * 0.9; g.sprite.scale.setScalar(g.size * (0.6 + 0.8 * this.glintK));
     }

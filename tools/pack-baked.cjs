@@ -35,6 +35,7 @@ const FILES = {
   'agathe': { sources: ['agathe'] },
   'kindling-tree': { sources: ['kindling_tree'] },
   'kings-blade': { sources: ['kings_blade'] },
+  'vesper': { sources: ['vesper'] },
   'hound': { sources: ['hound'] },
   'guardian': { sources: ['guardian'] },
   'lancer-of-ash': { sources: ['lancer_of_ash'] },
