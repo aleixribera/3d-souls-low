@@ -51,8 +51,8 @@ const FX_ELEMENTS = {
   oathSteel:  { core: 0xf8fbff, glow: 0x6ca4e2, mote: 0xd4e8ff, trail: 0x94c2f4, sparks: 'clash', impact: 'shatter' },
   corvelTorch:{ core: 0xfff8d8, glow: 0xff3c08, mote: 0xff8a24, trail: 0xff5a12, sparks: 'ember', impact: 'blaze', smoke: 0x160a08 },
   toll:       { core: 0xe8f4ff, glow: 0x7aa8d8, mote: 0xb8d4f0, trail: 0xc8dcf0, sparks: 'storm', impact: 'toll' },
-  lunar:     { core: 0xf4fbff, glow: 0x78c8ff, mote: 0xc0e6ff, trail: 0xa4daff, sparks: 'lunar', impact: 'prism' },
-  eclipse:   { core: 0xfff0ff, glow: 0x9c54ff, mote: 0xd4a4ff, trail: 0xb874ff, sparks: 'eclipse', impact: 'prism', smoke: 0x120820 },
+  lunar:     { core: 0xf4fbff, glow: 0x2cb4ff, mote: 0xa4e2ff, trail: 0x62ccff, sparks: 'lunar', impact: 'prism' },
+  eclipse:   { core: 0xfff0ff, glow: 0x9c38ff, mote: 0xd89eff, trail: 0xb864ff, sparks: 'eclipse', impact: 'prism', smoke: 0x120820 },
 };
 const BOSS_FX = {
   // The Giant Skeleton (Level 1): spectral grave-bone & cold soul-ash rising from its spine, turning to a raging pit
@@ -873,13 +873,56 @@ const BOSS_FX = {
         spires: { count: 10, radius: 3.4, height: 2.4, style: 'flame' }, glyph: 'shatter', arcs: 8 },
     },
   },
-  // Vesper, the Pale Meridian (Boss Rush / Practice): cold moonlight silver & ice-cyan glass prisms; past half her
-  // strength the eclipse opens, her rings flare violet-silver and her blade trails dark astral mist.
-  vesper: { element: 'lunar', aura: 0x98dcff, phases: { eclipse: 'eclipse' }, attacks: {
-    zenithFall: { impact: 'prism', windup: 'gather' }, prismSeed: { impact: 'prism' },
-    starAlignment: { impact: 'prism', windup: 'gather' },
-    eclipseOpen: { element: 'eclipse', impact: 'prism', aura: 0xb874ff, windup: 'gather' },
-    mirrorStep: { element: 'eclipse', impact: 'gale' },
-    eclipseCross: { element: 'eclipse', impact: 'prism', windup: 'gather' },
-    lunarTempest: { element: 'eclipse', impact: 'prism', windup: 'gather' } } },
+  // Gemini, Neon High (Boss Rush / Practice): electric neon ice-cyan starlight & crystalline prism spires (pairing
+  // with js/astral-prisms.js); past half her strength the eclipse opens into ultraviolet cosmic crossfire.
+  vesper: {
+    element: 'lunar', aura: 0x80d8ff,
+    phases: { eclipse: 'eclipse' },
+    ambient: { kind: 'celestial', color: 0x9ce2ff, secondary: 0x2cb4ff, rate: 30, radius: 1.55, height: 3.0 },
+    phaseAmbient: { eclipse: { kind: 'celestial', color: 0xd89eff, secondary: 0x120820, rate: 56, radius: 1.85, height: 3.2 } },
+    phaseFx: { dome: { radius: 8.8, height: 5.4, time: 0.66 }, spires: { count: 18, radius: 4.8, height: 3.2, style: 'prism' },
+               pillar: { radius: 2.2, height: 17 }, glyph: 'arcane', arcs: 14, rings: 3 },
+    attacks: {
+      crescentDraw: { windup: 'gather', hits: [
+        { slash: { kind: 'uppercut', scale: 1.7, tilt: -0.35, y: 1.3 }, arcs: 4 },
+        { slash: { kind: 'backhand', scale: 1.85, tilt: 0.25, y: 1.25 }, glyph: 'arcane', arcs: 5 },
+      ] },
+      meridianThrust: { windup: 'crackle', slash: { kind: 'thrust', scale: 2.0, y: 1.25 }, glyph: 'rend', arcs: 6 },
+      needlePunish: { windup: 'crackle', slash: { kind: 'thrust', scale: 2.1, y: 1.25 }, glyph: 'rend', arcs: 6 },
+      astrolabeWaltz: { windup: 'gather', hits: [
+        { slash: { kind: 'sweep', scale: 1.7, tilt: 0.16, y: 1.25 }, arcs: 4 },
+        { slash: { kind: 'backhand', scale: 1.75, tilt: -0.16, y: 1.25 }, arcs: 4 },
+        { impact: 'prism', slash: { kind: 'chop', scale: 1.95, y: 1.65 }, dome: { radius: 4.8, height: 3.0 },
+          spires: { count: 10, radius: 3.4, height: 2.5, style: 'prism' }, glyph: 'arcane', arcs: 7 },
+      ] },
+      zenithFall: { impact: 'prism', windup: 'vortex', slash: { kind: 'chop', scale: 2.05, y: 1.75 },
+        dome: { radius: 5.6, height: 3.6 }, spires: { count: 14, radius: 3.8, height: 2.8, style: 'prism' },
+        glyph: 'arcane', arcs: 9 },
+      prismSeed: { impact: 'prism', windup: 'crackle', slash: { kind: 'wheel', scale: 1.95, y: 1.1 },
+        glyph: 'arcane', arcs: 6 },
+      starAlignment: { impact: 'prism', windup: 'vortex', dome: { radius: 6.0, height: 3.6 },
+        glyph: 'arcane', arcs: 10 },
+      turnArc: { windup: 'gather', slash: { kind: 'wheel', scale: 1.85, y: 1.15 }, arcs: 5 },
+      eclipseOpen: { element: 'eclipse', impact: 'prism', windup: 'vortex',
+        dome: { radius: 8.8, height: 5.2, time: 0.66 },
+        spires: { count: 18, radius: 4.8, height: 3.2, style: 'prism' },
+        glyph: 'arcane', arcs: 14 },
+      mirrorStep: { element: 'eclipse', impact: 'gale', windup: 'crackle', hits: [
+        { slash: { kind: 'sweep', scale: 1.8, tilt: 0.24, y: 1.25 }, arcs: 6 },
+        { slash: { kind: 'cross', scale: 1.95, y: 1.25 }, glyph: 'arcane', arcs: 8 },
+      ] },
+      eclipseCross: { element: 'eclipse', impact: 'prism', windup: 'vortex', hits: [
+        { dome: { radius: 5.6, height: 3.4 }, glyph: 'arcane', arcs: 10 },
+        { slash: { kind: 'chop', scale: 2.1, y: 1.7 }, dome: { radius: 6.8, height: 4.2 },
+          spires: { count: 16, radius: 4.4, height: 3.1, style: 'prism' }, glyph: 'arcane', arcs: 12 },
+      ] },
+      lunarTempest: { element: 'eclipse', impact: 'prism', windup: 'crackle', hits: [
+        { slash: { kind: 'sweep', scale: 1.75, tilt: 0.2, y: 1.25 }, arcs: 5 },
+        { slash: { kind: 'backhand', scale: 1.8, tilt: -0.2, y: 1.25 }, arcs: 5 },
+        { slash: { kind: 'wheel', scale: 2.0, tilt: -0.06, y: 0.55 }, glyph: 'vortex', arcs: 7 },
+        { slash: { kind: 'chop', scale: 2.1, y: 1.7 }, dome: { radius: 6.2, height: 3.8 },
+          spires: { count: 14, radius: 4.2, height: 3.0, style: 'prism' }, glyph: 'arcane', arcs: 12 },
+      ] },
+    },
+  },
 };

@@ -17,7 +17,7 @@ const ultraBoss = (() => {
   const v1 = new THREE.Vector3(), v2 = new THREE.Vector3(), v3 = new THREE.Vector3();
   const col = new THREE.Color(), col2 = new THREE.Color(), dummy = new THREE.Object3D();
   const UP = new THREE.Vector3(0, 1, 0), tmpDir = new THREE.Vector3(), tmpQ = new THREE.Quaternion();
-  const PUFF_VEL = [0, 0, 0];
+  const PUFF_VEL = [0, 0, 0], UP_DIR = [0, 1, 0];
   const STEEL = FX_ELEMENTS.steel;
   let generation = 0;
   function later(fn, ms) {
@@ -744,7 +744,7 @@ void main() {
         PUFF_VEL[0] = rand(-0.35, 0.35); PUFF_VEL[1] = rand(0.7, 1.5); PUFF_VEL[2] = rand(-0.35, 0.35);
         fx.puff(v3.x + rand(-0.2, 0.2), v3.y + 0.15, v3.z + rand(-0.2, 0.2), cSec, 0.36 * sc, 1.35 * sc, 1.1, PUFF_VEL, lit ? 0.52 : 0.28);
       }
-      if (lit && !calm() && Math.random() < (isUltra() ? 6 : 3) * dt) fx.sparkBurst(v3, 1, 'ember', [0, 1, 0], 0.3, 0.45);
+      if (lit && !calm() && Math.random() < 6 * dt) fx.sparkBurst(v3, 1, L.el.sparks, UP_DIR, 0.3, 0.45);
     } else if (amb.kind === 'bronze') {   // resonant harmonic soundwave pulses & rising emerald-mint motes around the bell
       const res = e.def && e.def.resonance ? clamp((e.resonance || 0) / Math.max(1, e.def.resonance.max), 0, 1) : 0;
       const woken = (amb.rate || 0) >= 35;
@@ -801,7 +801,7 @@ void main() {
       }
     } else if (amb.kind === 'feral') {   // blood-ember hunger wisps, stalking dark mist, and crackling antler streaks
       const starving = (amb.rate || 0) >= 40;
-      const marks = e.learned ? Math.min(6, e.learned.size) / 6 : 0;
+      const marks = e.learned ? Math.min(6, e.learned.length ?? e.learned.size ?? 0) / 6 : 0;
       const heat = starving ? 1 : 0.35 + marks * 0.65;
       while (acc.mote >= 1) {
         acc.mote -= 1;
@@ -1078,6 +1078,37 @@ void main() {
             const sh = e.rig && e.rig.tellGlows && e.rig.tellGlows.shield;
             if (sh) sh.getWorldPosition(v2); else v2.set(e.x, e.y + h * 0.55, e.z);
             spawnArc(v3.x, v3.y, v3.z, v2.x, v2.y, v2.z, L.el, 0.1, 0.2, 0.22);
+          }
+        }
+      }
+    } else if (amb.kind === 'celestial') {   // inclined starlight orbital rings, eclipse mist, and cosmic glaive arcs
+      const eclipsed = (amb.rate || 0) >= 45;
+      while (acc.mote >= 1) {
+        acc.mote -= 1;
+        const a = rand(0, Math.PI * 2), rr = rand(0.55, rad * 1.15), life = rand(0.75, 1.6);
+        const tilt = Math.sin(a) * 0.55;
+        col.set(Math.random() < 0.3 ? L.el.core : cMain).multiplyScalar((eclipsed ? 2.8 : 2.3) * rand(0.8, 1.3));
+        const tx = -Math.sin(a) * (eclipsed ? 2.2 : 1.3), tz = Math.cos(a) * (eclipsed ? 2.2 : 1.3);
+        fx.motes.spawn({ x: e.x + Math.cos(a) * rr, y: e.y + h * 0.55 + tilt + rand(-0.25, 0.25), z: e.z + Math.sin(a) * rr,
+          vx: tx, vy: rand(0.1, 0.65), vz: tz, drag: 0.85, lift: 0.35, life, max: life,
+          s0: U.motes.size * (eclipsed ? 1.15 : 0.9) * sc, s1: U.motes.size * 0.18,
+          r: col.r, g: col.g, b: col.b, swirl: calm() ? 0 : (eclipsed ? 3.0 : 2.0), cx: e.x, cz: e.z, fadeIn: 0.14 });
+      }
+      if (eclipsed) {
+        acc.puff += 3.6 * dt;
+        while (acc.puff >= 1) {
+          acc.puff -= 1;
+          const a = rand(0, Math.PI * 2), rr = rand(0.35, rad * 1.05);
+          PUFF_VEL[0] = -Math.sin(a) * 0.9; PUFF_VEL[1] = rand(0.2, 0.75); PUFF_VEL[2] = Math.cos(a) * 0.9;
+          fx.puff(e.x + Math.cos(a) * rr, e.y + rand(0.35, h * 0.8), e.z + Math.sin(a) * rr, cSec, 0.42 * sc, 1.45 * sc, 1.15, PUFF_VEL, 0.38);
+        }
+        if (!calm()) {
+          acc.arc += (isUltra() ? 3.2 : 1.5) * dt;
+          if (acc.arc >= 1) {
+            acc.arc -= 1;
+            tip(e, rand(0.25, 1.1), v3);
+            const a = rand(0, Math.PI * 2), rr = 0.85 * sc;
+            spawnArc(v3.x, v3.y, v3.z, v3.x + Math.cos(a) * rr, v3.y + rand(-0.35, 0.8), v3.z + Math.sin(a) * rr, L.el, 0.1, 0.22, 0.25);
           }
         }
       }
