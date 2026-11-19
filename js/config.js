@@ -3,7 +3,7 @@
 // 1. CONFIG
 // ============================================================================
 // Shared tuning. Per-character data (player, enemies, items) and level layouts live in section 2.
-const VERSION = 'v7.143.0';   // shown in the footer of the title and the pause menu; each release is tagged with the same name
+const VERSION = 'v7.144.0';   // shown in the footer of the title and the pause menu; each release is tagged with the same name
 const CONFIG = {
   step: 1 / 60,          // fixed simulation timestep (s)
   maxSteps: 5,           // max simulation steps per rendered frame
@@ -596,7 +596,7 @@ const CONFIG = {
                    floor: 0.65, fade: 12, maxDistance: 38, windup: 0.25, active: 1,
                    sourceRetention: 1.15, minPower: 0.01, tip: 0.8, maxDt: 0.1,
                    projectile: 0.65, breath: 1.4, sigil: 1.5, pulseSlots: 6,
-                   elements: ['holy', 'fire', 'blood', 'rot', 'black', 'storm', 'toll', 'lunar', 'eclipse', 'bone', 'gravefire', 'arson', 'bronze', 'resonance'],
+                   elements: ['holy', 'fire', 'blood', 'rot', 'black', 'storm', 'toll', 'lunar', 'eclipse', 'bone', 'gravefire', 'arson', 'bronze', 'resonance', 'emberGold', 'royalFlame'],
                    storm: { intensity: 1.8, ambient: 0.24, direction: [0.7, 1, -0.45] } },
     exposure: 1.1,                                            // tone-mapping exposure unless a level sets its own
     hemi: { sky: 0x000000, ground: 0x000000, intensity: 0 },  // sky/ground fill; off unless a level sets `hemi`

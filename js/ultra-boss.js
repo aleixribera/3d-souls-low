@@ -772,6 +772,33 @@ void main() {
           spawnArc(v3.x, v3.y, v3.z, v3.x + Math.cos(a) * rr, v3.y + rand(-0.4, 0.6), v3.z + Math.sin(a) * rr, L.el, 0.1, 0.2, 0.22);
         }
       }
+    } else if (amb.kind === 'emberCrown') {   // royal Undying Ember rising off the shackle crown & cracked cuirass
+      const burning = !!e.def?.ignite;
+      while (acc.mote >= 1) {
+        acc.mote -= 1;
+        const a = rand(0, Math.PI * 2), rr = rand(0.15, burning ? rad : rad * 0.75), life = rand(0.7, 1.55);
+        col.set(Math.random() < 0.3 ? cSec : cMain).multiplyScalar((burning ? 2.9 : 2.1) * rand(0.8, 1.3));
+        fx.motes.spawn({ x: e.x + Math.cos(a) * rr, y: e.y + rand(burning ? 0.3 : 0.6, h * 0.96), z: e.z + Math.sin(a) * rr,
+          vx: Math.cos(a) * rand(0.2, 0.8), vy: rand(0.9, burning ? 2.6 : 1.4), vz: Math.sin(a) * rand(0.2, 0.8), drag: 0.95, lift: burning ? 1.9 : 0.9,
+          life, max: life, s0: U.motes.size * (burning ? 1.2 : 0.9) * sc, s1: U.motes.size * 0.2,
+          r: col.r, g: col.g, b: col.b, swirl: calm() ? 0 : (burning ? 2.3 : 0.9), cx: e.x, cz: e.z, fadeIn: 0.14 });
+      }
+      if (burning) {
+        acc.puff += 4.2 * dt;
+        while (acc.puff >= 1) {
+          acc.puff -= 1;
+          const a = rand(0, Math.PI * 2), rr = rand(0.2, rad * 0.85);
+          PUFF_VEL[0] = Math.cos(a) * 0.5; PUFF_VEL[1] = rand(0.8, 1.5); PUFF_VEL[2] = Math.sin(a) * 0.5;
+          fx.puff(e.x + Math.cos(a) * rr, e.y + rand(0.5, h * 0.8), e.z + Math.sin(a) * rr, L.el.smoke || 0x160a08, 0.45 * sc, 1.45 * sc, 1.2, PUFF_VEL, 0.42);
+        }
+        acc.arc += (isUltra() ? 2.8 : 1.3) * dt;
+        if (acc.arc >= 1) {
+          acc.arc -= 1;
+          tip(e, rand(0.3, 1.2), v3);
+          const a = rand(0, Math.PI * 2), rr = 0.7 * sc;
+          spawnArc(v3.x, v3.y, v3.z, v3.x + Math.cos(a) * rr, v3.y + rand(-0.3, 0.8), v3.z + Math.sin(a) * rr, L.el, 0.11, 0.2, 0.24);
+        }
+      }
     } else {   // generic ambient fallback for any upcoming kind (motes.spawn directly avoids double density scaling)
       while (acc.mote >= 1) {
         acc.mote -= 1;
