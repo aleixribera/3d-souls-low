@@ -38,6 +38,8 @@ const FX_ELEMENTS = {
   seaGale:    { core: 0xf4fcff, glow: 0x4eb8e8, mote: 0xa4e0ff, trail: 0x76ccf4, sparks: 'storm', impact: 'gale', smoke: 0x16222c },
   wholeGilt:  { core: 0xfff8e2, glow: 0xdca83c, mote: 0xffe49c, trail: 0xf0c868, sparks: 'gold', impact: 'shatter', smoke: 0x181e26 },
   basalt:     { core: 0xfff2d2, glow: 0xc88438, mote: 0xe8b470, trail: 0xd89a4c, sparks: 'clash', impact: 'quake', smoke: 0x241e18 },
+  gaolIron:   { core: 0xeff6ff, glow: 0x4878cc, mote: 0xa6c4f4, trail: 0x6c9ae6, sparks: 'storm', impact: 'shatter', smoke: 0x161c2a },
+  bellKnell:  { core: 0xf4f6ff, glow: 0x5262f2, mote: 0xb2bcff, trail: 0x7a88ff, sparks: 'bellKnell', impact: 'toll', smoke: 0x14162c },
   toll:       { core: 0xe8f4ff, glow: 0x7aa8d8, mote: 0xb8d4f0, trail: 0xc8dcf0, sparks: 'storm', impact: 'toll' },
   lunar:     { core: 0xf4fbff, glow: 0x78c8ff, mote: 0xc0e6ff, trail: 0xa4daff, sparks: 'lunar', impact: 'prism' },
   eclipse:   { core: 0xfff0ff, glow: 0x9c54ff, mote: 0xd4a4ff, trail: 0xb874ff, sparks: 'eclipse', impact: 'prism', smoke: 0x120820 },
@@ -477,14 +479,73 @@ const BOSS_FX = {
       ] },
     },
   },
-  // The Ringer of Thrale (Level 9): old iron while she is chained, her knells the pale toll of a bell; over the line,
-  // all of it rings.
-  ringer: { element: 'steel', aura: 0xb8c8ff, phases: { tolling: 'toll' }, attacks: {
-    strikeHour: { impact: 'shatter', windup: 'gather' }, strikeHour2: { impact: 'toll', windup: 'gather' }, risingToll: { windup: 'gather' },
-    fetterStamp: { element: 'earth', impact: 'quake' }, fetterStamp2: { element: 'earth', impact: 'quake' },
-    callAcross: { element: 'toll', impact: 'toll', windup: 'gather' }, callPunish: { element: 'toll', impact: 'toll' },
-    overTheLine: { element: 'toll', impact: 'toll', windup: 'gather' }, nineTailors: { element: 'toll', impact: 'toll' },
-    peal: { impact: 'toll' }, outOfTheRing: { impact: 'shatter' } } },
+  // The Ringer of Thrale (Level 9): cold moonlight gaol-iron & spectral chain-blue resonance; once she steps Over the
+  // Line in Phase 2, every blow tolls with cathedral indigo-silver harmonic waves and iron-chain spire bursts.
+  ringer: {
+    element: 'gaolIron', aura: 0xa8c4ff,
+    phases: { tolling: 'bellKnell' },
+    ambient: { kind: 'chains', color: 0xa6c4f4, secondary: 0x628cd4, rate: 24, radius: 1.4, height: 2.9 },
+    phaseAmbient: { tolling: { kind: 'chains', color: 0xc8ccff, secondary: 0x7c86ff, rate: 48, radius: 1.75, height: 3.2 } },
+    phaseFx: { dome: { radius: 8.6, height: 5.2, time: 0.65 }, spires: { count: 16, radius: 4.8, height: 3.1, style: 'iron' },
+               pillar: { radius: 2.2, height: 16 }, glyph: 'toll', arcs: 12, rings: 3 },
+    attacks: {
+      strikeHour: { impact: 'shatter', windup: 'vortex', slash: { kind: 'chop', scale: 1.8, y: 1.7 },
+        dome: { radius: 5.2, height: 3.2 }, spires: { count: 12, radius: 3.4, height: 2.5, style: 'iron' },
+        glyph: 'toll', arcs: 6 },
+      strikeHour2: { element: 'bellKnell', impact: 'toll', windup: 'vortex', hits: [
+        { slash: { kind: 'chop', scale: 1.85, y: 1.7 }, dome: { radius: 5.2, height: 3.2 },
+          spires: { count: 12, radius: 3.4, height: 2.5, style: 'iron' }, glyph: 'shatter', arcs: 6 },
+        { dome: { radius: 7.4, height: 3.8 }, glyph: 'toll', arcs: 9 },
+      ] },
+      changeRinging: { windup: 'gather', hits: [
+        { slash: { kind: 'sweep', scale: 1.85, tilt: -0.05, y: 0.5 }, glyph: 'rend', arcs: 4 },
+        { slash: { kind: 'backhand', scale: 1.9, tilt: 0.08, y: 1.85 }, arcs: 5 },
+      ] },
+      risingToll: { windup: 'vortex', slash: { kind: 'uppercut', scale: 1.85, tilt: 0.14, y: 1.55 },
+        glyph: 'toll', arcs: 6 },
+      clapperDrive: { windup: 'gather', hits: [
+        { slash: { kind: 'thrust', scale: 1.3, y: 1.2 }, arcs: 2 },
+        { slash: { kind: 'thrust', scale: 1.8, y: 1.2 }, glyph: 'rend', arcs: 5 },
+      ] },
+      fetterStamp: { impact: 'toll', windup: 'vortex', dome: { radius: 5.0, height: 2.6 },
+        spires: { count: 10, radius: 3.3, height: 2.1, style: 'iron' }, glyph: 'toll', arcs: 5 },
+      fetterStamp2: { element: 'bellKnell', impact: 'toll', windup: 'vortex', hits: [
+        { dome: { radius: 5.0, height: 2.6 }, spires: { count: 8, radius: 3.2, height: 2.0, style: 'iron' }, glyph: 'toll', arcs: 5 },
+        { dome: { radius: 7.2, height: 3.6 }, spires: { count: 14, radius: 4.4, height: 2.7, style: 'iron' }, glyph: 'toll', arcs: 8 },
+      ] },
+      backstroke: { windup: 'gather', slash: { kind: 'backhand', scale: 1.55, y: 1.1 },
+        dome: { radius: 3.2, height: 1.8 }, arcs: 4 },
+      callAcross: { element: 'bellKnell', impact: 'toll', windup: 'vortex', slash: { kind: 'chop', scale: 1.7, y: 1.6 },
+        dome: { radius: 7.6, height: 4.2 }, spires: { count: 12, radius: 4.2, height: 2.6, style: 'iron' },
+        glyph: 'toll', arcs: 10 },
+      callPunish: { element: 'bellKnell', impact: 'toll', windup: 'crackle', slash: { kind: 'chop', scale: 1.65, y: 1.6 },
+        dome: { radius: 7.2, height: 3.8 }, glyph: 'toll', arcs: 8 },
+      overTheLine: { element: 'bellKnell', impact: 'toll', windup: 'vortex', hits: [
+        { slash: { kind: 'chop', scale: 1.95, y: 1.7 }, dome: { radius: 6.8, height: 4.4 },
+          spires: { count: 16, radius: 4.4, height: 3.0, style: 'iron' }, glyph: 'shatter', arcs: 10 },
+        { dome: { radius: 8.8, height: 4.0, time: 0.65 }, glyph: 'toll', arcs: 12 },
+      ] },
+      nineTailors: { element: 'bellKnell', impact: 'toll', windup: 'vortex', hits: [
+        { dome: { radius: 4.6, height: 2.6 }, glyph: 'toll', arcs: 5 },
+        { dome: { radius: 5.4, height: 3.0 }, glyph: 'toll', arcs: 6 },
+        { dome: { radius: 6.2, height: 3.4 }, glyph: 'toll', arcs: 7 },
+        { dome: { radius: 8.4, height: 4.8, time: 0.65 }, spires: { count: 16, radius: 4.8, height: 3.1, style: 'iron' },
+          glyph: 'toll', arcs: 12 },
+      ] },
+      peal: { element: 'bellKnell', impact: 'toll', windup: 'crackle', hits: [
+        { slash: { kind: 'sweep', scale: 1.6, tilt: 0.32, y: 1.35 }, arcs: 4 },
+        { slash: { kind: 'backhand', scale: 1.6, tilt: -0.32, y: 1.35 }, arcs: 4 },
+        { slash: { kind: 'sweep', scale: 1.7, tilt: 0.35, y: 1.4 }, arcs: 5 },
+        { slash: { kind: 'chop', scale: 1.85, y: 1.65 }, dome: { radius: 5.8, height: 3.4 },
+          spires: { count: 12, radius: 3.8, height: 2.6, style: 'iron' }, glyph: 'toll', arcs: 9 },
+      ] },
+      outOfTheRing: { element: 'bellKnell', impact: 'toll', windup: 'vortex', hits: [
+        { slash: { kind: 'chop', scale: 1.95, y: 1.75 }, dome: { radius: 6.8, height: 4.2 },
+          spires: { count: 16, radius: 4.4, height: 3.0, style: 'iron' }, glyph: 'shatter', arcs: 10 },
+        { dome: { radius: 7.8, height: 3.4 }, glyph: 'toll', arcs: 8 },
+      ] },
+    },
+  },
   // The Regent Hollis (Level 10): gold leaf and the light off it; past the worst of his hurt the gilt cracks and the
   // hunger burns through it (his hanging cuts themselves are drawn by js/gilt-echo.js, on every preset).
   hollis: { element: 'holy', aura: 0xffc860, phases: { hungry: 'fire' }, attacks: {

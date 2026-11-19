@@ -910,6 +910,31 @@ void main() {
           spawnArc(e.x, e.y + 0.3, e.z, e.x + Math.cos(a) * rr, e.y + rand(0.4, 1.6), e.z + Math.sin(a) * rr, L.el, 0.1, 0.2, 0.22);
         }
       }
+    } else if (amb.kind === 'chains') {   // cold spectral gaol-iron motes, chime ripples, and unchained indigo-silver arcs
+      const unchained = (amb.rate || 0) >= 40;
+      while (acc.mote >= 1) {
+        acc.mote -= 1;
+        const a = rand(0, Math.PI * 2), rr = rand(0.2, rad), life = rand(0.8, 1.7);
+        col.set(Math.random() < 0.3 ? L.el.core : cMain).multiplyScalar((unchained ? 2.6 : 1.9) * rand(0.8, 1.25));
+        fx.motes.spawn({ x: e.x + Math.cos(a) * rr, y: e.y + rand(0.25, h * 0.9), z: e.z + Math.sin(a) * rr,
+          vx: Math.cos(a) * 0.2, vy: rand(0.45, 1.25), vz: Math.sin(a) * 0.2, drag: 1.0, lift: 0.75, life, max: life,
+          s0: U.motes.size * (unchained ? 1.1 : 0.85) * sc, s1: U.motes.size * 0.2,
+          r: col.r, g: col.g, b: col.b, swirl: calm() ? 0 : (unchained ? 2.1 : 1.0), cx: e.x, cz: e.z, fadeIn: 0.18 });
+      }
+      acc.puff += (unchained ? 0.9 : 0.5) * dt;
+      if (acc.puff >= 1) {
+        acc.puff -= 1;
+        groundRing(e.x, e.y, e.z, e.radius * 0.9, e.radius * (2.8 + (unchained ? 1.1 : 0)), 1.15, cSec, 0.22, unchained ? 0.55 : 0.34);
+      }
+      if (unchained && !calm()) {
+        acc.arc += (isUltra() ? 2.6 : 1.2) * dt;
+        if (acc.arc >= 1) {
+          acc.arc -= 1;
+          tip(e, 0.95, v3);
+          const a = rand(0, Math.PI * 2), rr = 0.8 * sc;
+          spawnArc(v3.x, v3.y, v3.z, v3.x + Math.cos(a) * rr, v3.y + rand(-0.35, 0.65), v3.z + Math.sin(a) * rr, L.el, 0.1, 0.2, 0.24);
+        }
+      }
     } else {   // generic ambient fallback for any upcoming kind (motes.spawn directly avoids double density scaling)
       while (acc.mote >= 1) {
         acc.mote -= 1;

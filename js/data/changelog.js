@@ -6,6 +6,7 @@
 //   title    a few words
 //   text     one to three sentences, shown under the list when the entry is selected
 const CHANGELOG = [
+  { version: 'v7.149.0', title: 'Ringer of Thrale VFX revamp', text: 'Revamped The Ringer of Thrale / Over the Line with moonlight gaol-iron and deep indigo-silver bell-knell resonance, chained harmonic ripple aura, iron spire rings, escalating Nine Tailors waves, and cathedral Over the Line cataclysm domes.' },
   { version: 'v7.148.0', title: 'Harrow VFX revamp', text: 'Revamped Harrow, the Castellan / Whole Castellan with seismic basalt stone-spire eruptions, levitating grit and tremor-ring aura, crushing knee-drop shock domes, and reunited gilt-storm whole-suit axe and greave combos.' },
   { version: 'v7.147.0', title: 'Hale VFX revamp', text: 'Revamped Hale, the Castellan / Whole Castellan with Saltgrave sea-gale cyclones and mourning tempest-gold whole-suit cataclysms, swirling coastal tempest aura, 320-degree wheel slash cyclones, crystal/gold spire eruptions, and vortex floor glyphs.' },
   { version: 'v7.146.0', title: 'Old Ostrey VFX revamp', text: 'Revamped Old Ostrey, the Porter / The Lantern Opened with iron-coal and lantern-fire slash arcs, live swinging-lantern ember plumes and weapon arcs, iron and flame spire eruptions, kindled sweep scorches, and blazing phase cataclysm domes.' },
