@@ -935,6 +935,36 @@ void main() {
           spawnArc(v3.x, v3.y, v3.z, v3.x + Math.cos(a) * rr, v3.y + rand(-0.35, 0.65), v3.z + Math.sin(a) * rr, L.el, 0.1, 0.2, 0.24);
         }
       }
+    } else if (amb.kind === 'gilt') {   // shimmering drifting gold-leaf flakes; cracked into molten embers & arcs in Phase 2
+      const cracked = !!e.def?.ignite;
+      while (acc.mote >= 1) {
+        acc.mote -= 1;
+        const a = rand(0, Math.PI * 2), rr = rand(0.25, rad * 1.15), life = rand(0.9, 1.85);
+        col.set(Math.random() < 0.35 ? cSec : cMain).multiplyScalar((cracked ? 2.8 : 2.3) * rand(0.8, 1.3));
+        fx.motes.spawn({ x: e.x + Math.cos(a) * rr, y: e.y + rand(0.2, h * 0.95), z: e.z + Math.sin(a) * rr,
+          vx: Math.cos(a) * (cracked ? 0.65 : 0.18), vy: cracked ? rand(0.8, 2.2) : rand(0.15, 0.65),
+          vz: Math.sin(a) * (cracked ? 0.65 : 0.18), drag: cracked ? 0.95 : 1.5, lift: cracked ? 1.5 : 0.3,
+          life, max: life, s0: U.motes.size * (cracked ? 1.15 : 0.9) * sc, s1: U.motes.size * 0.22,
+          r: col.r, g: col.g, b: col.b, swirl: calm() ? 0 : (cracked ? 2.2 : 0.9), cx: e.x, cz: e.z, fadeIn: 0.18 });
+      }
+      if (cracked) {
+        acc.puff += 3.6 * dt;
+        while (acc.puff >= 1) {
+          acc.puff -= 1;
+          const a = rand(0, Math.PI * 2), rr = rand(0.25, rad * 0.85);
+          PUFF_VEL[0] = Math.cos(a) * 0.45; PUFF_VEL[1] = rand(0.7, 1.4); PUFF_VEL[2] = Math.sin(a) * 0.45;
+          fx.puff(e.x + Math.cos(a) * rr, e.y + rand(0.45, h * 0.78), e.z + Math.sin(a) * rr, L.el.smoke || 0x1a0e08, 0.4 * sc, 1.35 * sc, 1.15, PUFF_VEL, 0.38);
+        }
+        if (!calm()) {
+          acc.arc += (isUltra() ? 2.6 : 1.2) * dt;
+          if (acc.arc >= 1) {
+            acc.arc -= 1;
+            tip(e, rand(0.4, 1.1), v3);
+            const a = rand(0, Math.PI * 2), rr = 0.75 * sc;
+            spawnArc(v3.x, v3.y, v3.z, v3.x + Math.cos(a) * rr, v3.y + rand(-0.3, 0.75), v3.z + Math.sin(a) * rr, L.el, 0.1, 0.2, 0.22);
+          }
+        }
+      }
     } else {   // generic ambient fallback for any upcoming kind (motes.spawn directly avoids double density scaling)
       while (acc.mote >= 1) {
         acc.mote -= 1;

@@ -40,6 +40,8 @@ const FX_ELEMENTS = {
   basalt:     { core: 0xfff2d2, glow: 0xc88438, mote: 0xe8b470, trail: 0xd89a4c, sparks: 'clash', impact: 'quake', smoke: 0x241e18 },
   gaolIron:   { core: 0xeff6ff, glow: 0x4878cc, mote: 0xa6c4f4, trail: 0x6c9ae6, sparks: 'storm', impact: 'shatter', smoke: 0x161c2a },
   bellKnell:  { core: 0xf4f6ff, glow: 0x5262f2, mote: 0xb2bcff, trail: 0x7a88ff, sparks: 'bellKnell', impact: 'toll', smoke: 0x14162c },
+  giltLeaf:   { core: 0xfffce0, glow: 0xe2a824, mote: 0xffe478, trail: 0xf4c444, sparks: 'gold', impact: 'pillar' },
+  crackedGilt:{ core: 0xfff4c8, glow: 0xf05212, mote: 0xff9834, trail: 0xff6e1c, sparks: 'ember', impact: 'blaze', smoke: 0x1a0e08 },
   toll:       { core: 0xe8f4ff, glow: 0x7aa8d8, mote: 0xb8d4f0, trail: 0xc8dcf0, sparks: 'storm', impact: 'toll' },
   lunar:     { core: 0xf4fbff, glow: 0x78c8ff, mote: 0xc0e6ff, trail: 0xa4daff, sparks: 'lunar', impact: 'prism' },
   eclipse:   { core: 0xfff0ff, glow: 0x9c54ff, mote: 0xd4a4ff, trail: 0xb874ff, sparks: 'eclipse', impact: 'prism', smoke: 0x120820 },
@@ -546,12 +548,75 @@ const BOSS_FX = {
       ] },
     },
   },
-  // The Regent Hollis (Level 10): gold leaf and the light off it; past the worst of his hurt the gilt cracks and the
-  // hunger burns through it (his hanging cuts themselves are drawn by js/gilt-echo.js, on every preset).
-  hollis: { element: 'holy', aura: 0xffc860, phases: { hungry: 'fire' }, attacks: {
-    salute: { element: 'steel' }, measure: { element: 'steel' }, turnCloak: { element: 'steel' }, judgement: { impact: 'pillar', windup: 'gather' },
-    giltCracks: { element: 'fire', impact: 'blaze', aura: 0xff6a20, windup: 'gather' }, ravenous: { element: 'fire' },
-    callHome: { element: 'fire' }, feast: { element: 'fire', impact: 'blaze', windup: 'gather' } } },
+  // The Regent Hollis (Level 10): opulent royal gold-leaf filigree & arcane floor seals (pairing with js/gilt-echo.js);
+  // past his hurt the gilt cracks into scorching ember-gold, hanging X-slashes, and ravenous molten feasts.
+  hollis: {
+    element: 'giltLeaf', aura: 0xffe078,
+    phases: { hungry: 'crackedGilt' },
+    ambient: { kind: 'gilt', color: 0xffe478, secondary: 0xe2a824, rate: 28, radius: 1.5, height: 2.9 },
+    phaseAmbient: { hungry: { kind: 'gilt', color: 0xff8c28, secondary: 0xffe078, rate: 52, radius: 1.75, height: 3.1 } },
+    phaseFx: { dome: { radius: 8.2, height: 5.0, time: 0.64 }, spires: { count: 16, radius: 4.6, height: 3.1, style: 'gold' },
+               pillar: { radius: 2.0, height: 15 }, glyph: 'arcane', arcs: 12, rings: 3 },
+    attacks: {
+      courtesy: { windup: 'gather', hits: [
+        { slash: { kind: 'uppercut', scale: 1.6, tilt: -0.45, y: 1.35 }, arcs: 3 },
+        { glyph: 'arcane', arcs: 4 },
+      ] },
+      courtesy2: { element: 'crackedGilt', windup: 'crackle', hits: [
+        { slash: { kind: 'uppercut', scale: 1.65, tilt: -0.45, y: 1.35 }, arcs: 4 },
+        { slash: { kind: 'backhand', scale: 1.65, tilt: 0.45, y: 1.35 }, arcs: 4 },
+        { slash: { kind: 'cross', scale: 1.75, y: 1.35 }, glyph: 'arcane', arcs: 6 },
+        { glyph: 'rend', arcs: 6 },
+      ] },
+      salute: { windup: 'gather', hits: [
+        { slash: { kind: 'thrust', scale: 1.85, y: 1.3 }, arcs: 4 },
+        { slash: { kind: 'thrust', scale: 1.6, y: 1.3 }, arcs: 5 },
+      ] },
+      salutePunish: { windup: 'crackle', slash: { kind: 'thrust', scale: 1.9, y: 1.3 }, glyph: 'rend', arcs: 5 },
+      measure: { windup: 'gather', hits: [
+        { slash: { kind: 'sweep', scale: 1.55, tilt: 0.06, y: 1.1 }, arcs: 3 },
+        { slash: { kind: 'backhand', scale: 1.6, tilt: -0.06, y: 1.1 }, arcs: 3 },
+        { glyph: 'arcane', arcs: 5 },
+      ] },
+      longTable: { windup: 'gather', hits: [
+        { slash: { kind: 'sweep', scale: 2.0, tilt: -0.04, y: 0.5 }, glyph: 'rend', arcs: 4 },
+        { slash: { kind: 'sweep', scale: 1.85, tilt: 0.04, y: 0.55 }, arcs: 6 },
+      ] },
+      judgement: { impact: 'pillar', windup: 'vortex', hits: [
+        { slash: { kind: 'chop', scale: 1.85, y: 1.65 }, dome: { radius: 4.6, height: 3.0 },
+          spires: { count: 10, radius: 3.2, height: 2.4, style: 'gold' }, glyph: 'arcane', arcs: 6 },
+        { dome: { radius: 4.8, height: 3.1 }, spires: { count: 10, radius: 3.4, height: 2.4, style: 'gold' },
+          glyph: 'arcane', arcs: 6 },
+      ] },
+      turnCloak: { windup: 'gather', slash: { kind: 'wheel', scale: 1.75, y: 1.1 }, arcs: 4 },
+      largesse: { windup: 'vortex', hits: [
+        { glyph: 'arcane', arcs: 4 },
+        { dome: { radius: 5.2, height: 3.0 }, spires: { count: 8, radius: 3.4, height: 2.2, style: 'gold' },
+          glyph: 'arcane', arcs: 6 },
+      ] },
+      giltCracks: { element: 'crackedGilt', impact: 'blaze', windup: 'vortex',
+        dome: { radius: 8.2, height: 4.8, time: 0.64 },
+        spires: { count: 16, radius: 4.6, height: 3.0, style: 'gold' },
+        glyph: 'shatter', arcs: 12 },
+      callHome: { element: 'crackedGilt', windup: 'crackle', hits: [
+        { slash: { kind: 'sweep', scale: 1.65, y: 1.1 }, arcs: 4 },
+        { slash: { kind: 'backhand', scale: 1.5, y: 1.1 }, arcs: 4 },
+        { slash: { kind: 'cross', scale: 1.8, y: 1.15 }, dome: { radius: 4.4, height: 2.4 }, glyph: 'rend', arcs: 8 },
+      ] },
+      ravenous: { element: 'crackedGilt', windup: 'crackle', hits: [
+        { slash: { kind: 'sweep', scale: 1.55, tilt: 0.14, y: 1.05 }, arcs: 3 },
+        { slash: { kind: 'backhand', scale: 1.55, tilt: -0.14, y: 1.05 }, arcs: 4 },
+        { slash: { kind: 'sweep', scale: 1.65, tilt: 0.16, y: 1.05 }, arcs: 4 },
+        { slash: { kind: 'backhand', scale: 1.7, tilt: -0.16, y: 1.1 }, arcs: 5 },
+        { slash: { kind: 'cross', scale: 1.8, y: 1.1 }, glyph: 'rend', arcs: 7 },
+      ] },
+      feast: { element: 'crackedGilt', impact: 'blaze', windup: 'vortex', hits: [
+        { slash: { kind: 'chop', scale: 1.95, y: 1.65 }, dome: { radius: 6.0, height: 3.8 },
+          spires: { count: 14, radius: 4.2, height: 2.9, style: 'gold' }, glyph: 'shatter', arcs: 10 },
+        { dome: { radius: 6.4, height: 3.6 }, glyph: 'arcane', arcs: 10 },
+      ] },
+    },
+  },
   // Oswin, the First Crown (Level 11): the ash king's stomps and axe crack the floor, and the cracks stay open (drawn by
   // js/ember-seams.js on every preset); from 40 % the axe is cast down and the Ember takes his hands.
   oswin: { element: 'earth', aura: 0xff8a40, phases: { uncrowned: 'fire' }, attacks: {
