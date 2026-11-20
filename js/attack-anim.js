@@ -24,6 +24,7 @@ const EASE = {
 const PHASE_EASE_KEY = { [PHASE.STARTUP]: 'windup', [PHASE.ACTIVE]: 'active', [PHASE.FOLLOW]: 'follow', [PHASE.RECOVERY]: 'recovery' };
 const MARKER_PHASES = ['windup', 'active', 'follow', 'recovery'];
 const MARKER_EVENTS = ['sound', 'shake', 'glint'];
+const POSE_BONES = ['tip', 'spin', 'chest', 'neck', 'head', 'armL', 'armR', 'elbowL', 'elbowR', 'legL', 'legR', 'kneeL', 'kneeR', 'weapon', 'haft'];   // what a key pose may name
 
 const attackHasMarker = (a, event) => !!(a.markers && a.markers.some(m => m.event === event));
 
@@ -76,6 +77,38 @@ function applyKeyPose(rig, pose, k) {
   if (pose.lean) rig.lean(pose.lean * k);
 }
 
+// In-between keys (pass 111, docs/bosses/system.md): a hit's `via: { windup | active | follow | recovery: [{ t, ...pose }] }`
+// puts extra key poses inside a phase, at `t` (0..1 of the phase's eased progress), so a move can anticipate, overshoot
+// and settle, or follow a captured motion (tools/motion/fit-poses.cjs) instead of one straight blend. The body passes
+// through every key on a smooth curve (Catmull-Rom). A key that leaves a channel out keeps the straight blend there. A
+// key with `rel: true` holds offsets from the straight blend instead: a captured motion's shape (its arcs, its dip before
+// the rise) carried onto any two authored ends (tools/motion/via-keys.cjs).
+// One channel of a pose: c -1 a scalar (crouch, lean), else that axis of a [x, y, z].
+const poseCh = (pose, name, c) => { const v = pose && pose[name]; return v == null ? null : c < 0 ? v : v[c]; };
+// Key j's value and time (-1 and keys.length are the phase's ends f and g). Module level: nothing allocated per frame.
+function viaAt(keys, j, f, g, name, c) {
+  if (j < 0) return f; if (j >= keys.length) return g;
+  const K = keys[j], v = poseCh(K, name, c), s = lerp(f, g, K.t);
+  return K.rel ? s + (v ?? 0) : v ?? s;
+}
+const viaT = (keys, j) => j < 0 ? 0 : j >= keys.length ? 1 : keys[j].t;
+function viaValue(f, g, keys, name, c, k) {
+  const n = keys.length;
+  let i = 0; while (i < n && keys[i].t <= k) i++;   // keys[i - 1] .. keys[i] bracket k; -1 and n are the phase's ends
+  const a = Math.max(-1, i - 2), b = i - 1, d = Math.min(n, i + 1);
+  const ta = viaT(keys, a), tb = viaT(keys, b), tc = viaT(keys, i), td = viaT(keys, d), span = tc - tb;
+  const p0 = viaAt(keys, a, f, g, name, c), p1 = viaAt(keys, b, f, g, name, c);
+  const p2 = viaAt(keys, i, f, g, name, c), p3 = viaAt(keys, d, f, g, name, c);
+  if (!(span > 0)) return p2;
+  const u = (k - tb) / span, u2 = u * u, u3 = u2 * u;
+  const m1 = tc > ta ? (p2 - p0) / (tc - ta) * span : 0, m2 = td > tb ? (p3 - p1) / (td - tb) * span : 0;   // tangents
+  return (2 * u3 - 3 * u2 + 1) * p1 + (u3 - 2 * u2 + u) * m1 + (-2 * u3 + 3 * u2) * p2 + (u3 - u2) * m2;
+}
+// A phase's via: its own list of keys, or a POSE_LIBRARY entry's by name (js/data/pose-library.js).
+const viaList = v => typeof v === 'string' ? POSE_LIBRARY[v] && POSE_LIBRARY[v].keys : v;
+const VIA_NAMES = new WeakMap();   // the channels a via list names, found once per list
+const viaNames = keys => { let n = VIA_NAMES.get(keys); if (!n) { n = [...new Set(keys.flatMap(q => Object.keys(q).filter(x => x !== 't' && x !== 'rel')))]; VIA_NAMES.set(keys, n); } return n; };
+
 // Draw side: the blended key pose at time tt into the attack. Bones the rig lacks (a box body has no chest or elbows)
 // are skipped. Returns the blade glint strength (0..1) from `glint` markers.
 // charge: 0..1 of a held heavy; the pose's `charge` key pose is added that much through the wind-up and unwinds
@@ -89,6 +122,9 @@ function poseAttackKeys(rig, a, tt, charge = 0, fromPose = null, style = null) {
   else if (tl.phase === PHASE.ACTIVE) { from = H[i].windup; to = H[i].strike; }
   else if (tl.phase === PHASE.FOLLOW) { from = H[i].strike; to = H[i].follow; }
   else { from = after(H[H.length - 1]); to = null; }
+  const vh = tl.phase === PHASE.RECOVERY ? H[H.length - 1] : H[i], vph = PHASE_EASE_KEY[tl.phase];
+  const vl = vh && vh.via && viaList(vh.via[vph]), via = vl && vl.length ? vl : null;   // in-between keys (viaValue)
+  const blend = (f, g, k, name, c) => via ? viaValue(f, g, via, name, c, k) : lerp(f, g, k);
   const ph = PHASE_EASE_KEY[tl.phase], ease = EASE[(style && style[ph]) || (P.ease && P.ease[ph]) || S.ease[ph]];
   const lagOf = name => (P.lag && P.lag[name]) ?? S.lag[name] ?? 0;
   // A ground ring lives as long as it spreads; the blow that starts it lands in CONFIG.enemy.ringStrike s.
@@ -98,13 +134,13 @@ function poseAttackKeys(rig, a, tt, charge = 0, fromPose = null, style = null) {
   const sc = a.poseScale ?? 1;   // bigger bodies (bosses) exaggerate the same key poses
   const val = (pose, name) => pose && pose[name];
   const cw = !P.charge || charge <= 0 ? 0 : tl.phase === PHASE.STARTUP ? charge : tl.phase === PHASE.ACTIVE ? charge * (1 - at('chest')) : 0;
-  const names = new Set([...Object.keys(from || {}), ...Object.keys(to || {}), ...(cw ? Object.keys(P.charge) : [])]);
+  const names = new Set([...Object.keys(from || {}), ...Object.keys(to || {}), ...(cw ? Object.keys(P.charge) : []), ...(via ? viaNames(via) : [])]);
   let crouch = 0, lean = 0;
   for (const name of names) {
     const f = val(from, name), g = val(to, name), k = at(name), c = cw ? val(P.charge, name) : null;
     if (name === 'haft' || name === 'grip') continue;   // a two-handed haft's (below)
     if (name === 'crouch' || name === 'lean') {
-      const v = (lerp(f || 0, g || 0, k) + (c || 0) * cw) * sc;
+      const v = (blend(f || 0, g || 0, k, name, -1) + (c || 0) * cw) * sc;
       if (name === 'crouch') crouch = v; else lean = v;
       continue;
     }
@@ -113,7 +149,7 @@ function poseAttackKeys(rig, a, tt, charge = 0, fromPose = null, style = null) {
     const fz = f || [0, 0, 0], gz = g || [0, 0, 0], cz = c || [0, 0, 0];
     // Returning to guard from past a full turn (a spin) takes the short way round.
     const fy = to === null ? angDiff(fz[1], 0) : fz[1];
-    bone.rotation.x += (lerp(fz[0], gz[0], k) + cz[0] * cw) * sc; bone.rotation.y += (lerp(fy, gz[1], k) + cz[1] * cw) * sc; bone.rotation.z += (lerp(fz[2], gz[2], k) + cz[2] * cw) * sc;
+    bone.rotation.x += (blend(fz[0], gz[0], k, name, 0) + cz[0] * cw) * sc; bone.rotation.y += (blend(fy, gz[1], k, name, 1) + cz[1] * cw) * sc; bone.rotation.z += (blend(fz[2], gz[2], k, name, 2) + cz[2] * cw) * sc;
   }
   if (crouch > 0) rig.crouch(crouch);
   if (lean) rig.lean(lean);
@@ -122,7 +158,7 @@ function poseAttackKeys(rig, a, tt, charge = 0, fromPose = null, style = null) {
   // key pose (the guard before and after) is the model's rest: the haft at grip.rest, the left hand free.
   if (rig.grip) {
     const G = rig.grip, k = at('weapon'), hf = (from && from.haft) || G.rest, hg = (to && to.haft) || G.rest;
-    for (let j = 0; j < 3; j++) rig.haftNow[j] = lerp(hf[j], hg[j], k);
+    for (let j = 0; j < 3; j++) rig.haftNow[j] = blend(hf[j], hg[j], k, 'haft', j);
     rig.gripW = lerp(from && from.grip !== false ? 1 : 0, to && to.grip !== false ? 1 : 0, k);
   }
   let glint = 0;
@@ -143,7 +179,23 @@ function checkAttackAnim(a, tag, need) {
     if (P) {
       need(Array.isArray(P.hits) && P.hits.length >= a.hits.length && P.hits.every(h => h.windup && h.strike),
         `${tag}: pose "${a.pose}" needs { windup, strike } key poses for each of the attack's ${a.hits.length} hit(s).`);
-      for (const h of P.hits || []) for (const q of [h.windup, h.strike, h.follow]) if (q) {   // a two-handed haft's keys (pass 53)
+      for (const h of P.hits || []) if ('via' in h) {   // in-between keys (pass 111)
+        const ok = h.via && typeof h.via === 'object' && Object.keys(h.via).every(ph => MARKER_PHASES.includes(ph) && (Array.isArray(h.via[ph]) || typeof h.via[ph] === 'string'));
+        need(ok, `${tag}: pose "${a.pose}": via must be { windup | active | follow | recovery: [{ t, ...key pose }] or a POSE_LIBRARY name }.`);
+        if (ok) for (const ph in h.via) {
+          const L = viaList(h.via[ph]);
+          need(Array.isArray(L), `${tag}: pose "${a.pose}": via.${ph} names "${h.via[ph]}", not in POSE_LIBRARY (known: ${Object.keys(POSE_LIBRARY).join(', ')}).`);
+          if (!Array.isArray(L)) continue;
+          need(L.every((q, j) => q && num(q.t) && q.t > 0 && q.t < 1 && (!j || q.t > L[j - 1].t)), `${tag}: pose "${a.pose}": via.${ph} keys need t between 0 and 1, rising.`);
+          for (const q of L) for (const [b, v] of Object.entries(q || {})) {
+            if (b === 't') continue;
+            if (b === 'rel') { need(v === true, `${tag}: pose "${a.pose}": via.${ph} rel can only be true (the key's values are offsets from the straight blend).`); continue; }
+            if (b === 'crouch' || b === 'lean') need(num(v), `${tag}: pose "${a.pose}": via.${ph} ${b} must be a number.`);
+            else need(POSE_BONES.includes(b) && Array.isArray(v) && v.length === 3 && v.every(num), `${tag}: pose "${a.pose}": via.${ph} key "${b}" must be a bone (${POSE_BONES.join(', ')}) as [x, y, z].`);
+          }
+        }
+      }
+      for (const h of P.hits || []) for (const q of [h.windup, h.strike, h.follow, ...Object.values(h.via || {}).map(viaList).filter(Array.isArray).flat()]) if (q) {   // a two-handed haft's keys (pass 53)
         if ('haft' in q) need(Array.isArray(q.haft) && q.haft.length === 3 && q.haft.every(num), `${tag}: pose "${a.pose}": haft must be [pitch, yaw, roll].`);
         if ('grip' in q) need(q.grip === false, `${tag}: pose "${a.pose}": grip can only be false (the left hand lets go of the haft).`);
       }

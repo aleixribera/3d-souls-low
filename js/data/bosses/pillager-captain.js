@@ -129,7 +129,7 @@
     armR: [-0.55, 0, 0], elbowR: [0, 0, 0], haft: [0.58, 0, 3.14], armL: [-0.5, 0, -0.05], elbowL: [-0.1, 0, 0] };
   const wrenched = { ...cleft, crouch: 0.34, lean: 0.4, spin: [0, -0.3, 0], chest: [0.4, -0.15, 0], elbowR: [-0.7, 0, 0], elbowL: [-0.6, 0, 0], haft: [0.5, -0.12, 2.7] };
   ATTACK_POSES.pillagerCleave = { ease: { windup: 'inOutSine', active: 'inQuad', follow: 'outCubic', recovery: 'inOutCubic' }, lag: { weapon: 0.08 },
-    hits: [{ windup: arched, strike: cleft, follow: wrenched }] };
+    hits: [{ windup: arched, strike: cleft, follow: wrenched, via: { windup: 'haftOverheadRaise' } }] };   // (pass 111) the raise as a person does it (js/data/pose-library.js)
 
   // The Hook: the bill laid out low on his right, the hook turned toward you, his eyes on you over his left shoulder; swept
   // across at your shins and hauled in (you with it); then a short chop down.

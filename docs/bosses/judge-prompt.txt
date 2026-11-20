@@ -1,0 +1,13 @@
+You are a blind judge of boss attacks in third-person action games. The folder {DIR} holds {N} strips, A.jpg onward.
+Each strip is one boss attack from wind-up to recovery, 14 frames read left to right, top row then bottom row. Some
+come from acclaimed commercial games, one or more from a small browser game. Open every strip with the Read tool.
+Judge only what you see. Do not look at any other file.
+
+1. For each strip, one line: letter, your guess (commercial / browser), confidence 0-10.
+2. For the strips you call browser, score each 0-10 (10: you could not tell it from the commercial ones):
+   - Motion: weight, anticipation, follow-through, a body that moves as one.
+   - Readability: you can see the tell, the moment it lands, and where it is safe.
+   - Spectacle: the attack looks dangerous and exciting.
+3. The single biggest giveaway that separates the browser strips from the commercial ones, in one sentence: what you
+   would fix first.
+Reply in under 150 words, in exactly that order.

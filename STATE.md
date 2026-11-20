@@ -8,10 +8,12 @@ The iterate loop's working note (`.claude/iterate.md`). Cap: 8,000 characters.
   (`js/ability-touch.js`, sounds in `js/audio.js`). Checks: in-page `plain commons`; frames
   `docs/scorecard/now/touch-*.jpg` (`node tools/now-frames.cjs touches`). Next on track 2: batch 2 (Commons I: the
   blade).
-- Track 1, pass 108: item 4 (pass 1 of 1), art style exploration, done: the Captain fight in four styles,
-  `docs/style/` (`index.html`, `side-by-side.jpg`, MP4s, `frame-times.json`). Normal 1280x720 on this PC, mean ms:
-  control 2.4, cel 8.4, dark 6.8, paint 3.8. Laptop bench unreachable (SSH timeout): 60 fps there unverified. Aleix picked cel
-  (2026-11-20): item 4 done.
+- Track 1, pass 111: item 5 (pass 1 of 3), the boss creation system on the Captain, style-independent half done:
+  `docs/bosses/system.md` and `pillager-captain.md`; in-between keys (`via`) and the pose library; the video-to-motion
+  tools (`tools/motion/`); the cleave's wind-up from a filmed halberd drill; the blind boss judge, round 0: caught 9/10,
+  motion 3 (`docs/scorecard/boss-judge.csv`). Acceptance: `node tools/anim-strip.cjs boss:captainOverhead` shows the
+  hips and chest winding before the arms (`.scratch/bossjudge/cleave-after.jpg`). Next: the strike's in-betweens and
+  follow-through; the wind-up tint and glow off the body; the Captain's cel model. Item 4 (style): Aleix picked cel.
 - Pass 110, the retro (track 2 slot): v7.163.0's CI green (run 44830197524), its container published, and players
   are on it at last (they had v7.159.0 until now). Item 1 done: `PLAY-LINK.txt` is https://aleix.tailfef0f7.ts.net/souls/,
   Pages unpublished (old address 404). Step 1 of every pass: `node tools/live-check.cjs`. Items 1-3 done.
@@ -20,6 +22,9 @@ The iterate loop's working note (`.claude/iterate.md`). Cap: 8,000 characters.
 
 ## Works
 
+- Boss animation (pass 111): `via` in-between keys and `POSE_LIBRARY` (`js/data/pose-library.js`), checked by
+  `tests/pose-via.cjs`; `tools/motion/` (clip to MediaPipe landmarks to rig fit to via keys); boss strips
+  `node tools/anim-strip.cjs boss:<attackId>`; judge prompt `docs/bosses/judge-prompt.txt`.
 - Baked figures (`js/baked/*.js`, triangle counts in each `docs/<name>-model-*.md`): wanderer, Hollow Soldier, Ashen
   Lancer, Rogue, Undead Knight, Pale Duelist, Shield Warden, Rampart Bowman, Toll Wisp,
   Executioner, Shover, Antlered Hunger, Gargoyle (`tail`, `wingL`/`wingR`), Empty Sentinel, Pillager Captain, Bell Warden (`weapon.rest`), Giant Skeleton (`carve()`), Aldric (`burn: true` glow slots drawn only while the boss burns, `js/finale.js`). Checked by

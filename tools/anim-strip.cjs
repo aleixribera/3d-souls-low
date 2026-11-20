@@ -4,8 +4,10 @@
 //   node tools/anim-strip.cjs <move> <out.jpg> [frames=14] [every=2] [zoom=1] [width=640] [height=480]   (zoom 2: the camera half as far)
 // Moves: dash (a dash to the right across the view), deflect (a blow turned aside, filmed from the sword side),
 // finisher (pass 103: three counters on a boss, the third the Finishing Blow, through the game's own camera; `frames`
-// spread over the blow, two from each counter before it). With CLIP=<file.mp4> every step is also written as a 60 fps
-// clip (ffmpeg on PATH).
+// spread over the blow, two from each counter before it), boss:<attackId> (pass 111, docs/bosses/system.md: that boss
+// attack from wind-up to recovery, filmed from the side at a fixed camera, the player standing in front out of reach,
+// `frames` spread over the attack; `every` unused). With CLIP=<file.mp4> every step is also written as a 60 fps clip
+// (ffmpeg on PATH).
 // One headless Edge, closed at the end; idle priority. Take the browser lock (.claude/iterate.md) before running it.
 require('../tests/low-priority.cjs');
 const fs = require('node:fs');
@@ -15,6 +17,7 @@ const { createServer } = require('../server/index.cjs');
 
 const [move = 'dash', out = '.scratch/strip.jpg', frames = '14', every = '2', zoom = '1', width = '640', height = '480'] = process.argv.slice(2);
 const CLIP = process.env.CLIP || '';
+const NOVIA = !!process.env.NOVIA;   // NOVIA=1: every key pose's in-between keys left out (a before/after of a `via`)
 
 (async () => {
   const app = createServer({ dev: true }); await new Promise(r => app.server.listen(0, '127.0.0.1', r));
@@ -25,13 +28,17 @@ const CLIP = process.env.CLIP || '';
     await page.addInitScript(() => localStorage.setItem('combat-arena-3d.settings', JSON.stringify({ graphics: 'normal', volume: 0 })));
     await page.goto(`http://127.0.0.1:${app.server.address().port}/combat-arena-3d.html#dev`);
     await page.waitForFunction(() => window.__arenaReady, null, { timeout: 120000 });
-    const data = await page.evaluate(async ([move, frames, every, zoom, clip]) => {
+    const data = await page.evaluate(async ([move, frames, every, zoom, clip, novia]) => {
+      if (novia) for (const P of Object.values(ATTACK_POSES)) for (const h of P.hits || []) delete h.via;
       const STEP = CONFIG.step; let clock = 0;
       Game.manualClock = true; input.now = () => clock; gamepad.poll = () => {}; gamepad.move = { x: 0, y: 0 };
       let mv = null; Game.moveInput = () => mv ? { x: mv.x, z: mv.z, has: true } : { x: 0, z: 0, has: false };
       input.clear();
-      Game.startFight(move === 'finisher' ? 'pillagerCaptain' : 'hollow'); Game.loading = 0;
-      if (move !== 'finisher') { for (const e of Game.enemies) e.rig.dispose(); Game.enemies = []; for (const z of Game.zones) z.actors = []; }
+      const bossAttack = move.startsWith('boss:') ? move.slice(5) : null;
+      const bossDef = bossAttack && ENEMY_DEFS.find(d => d.attacks.some(a => a.id === bossAttack));
+      if (bossAttack && !bossDef) throw new Error('no enemy has the attack ' + bossAttack);
+      Game.startFight(move === 'finisher' ? 'pillagerCaptain' : bossDef ? bossDef.id : 'hollow'); Game.loading = 0;
+      if (move !== 'finisher' && !bossDef) { for (const e of Game.enemies) e.rig.dispose(); Game.enemies = []; for (const z of Game.zones) z.actors = []; }
       const p = Game.player;
       const cam = { pos: new THREE.Vector3(), look: new THREE.Vector3() }, at = new THREE.Vector3();
       let aim = () => {};
@@ -90,6 +97,26 @@ const CLIP = process.env.CLIP || '';
         const pick = new Set(Array.from({ length: frames }, (_, k) => Math.round(k * (blowSteps - 1) / Math.max(1, frames - 1))));
         roll(blowSteps, i => pick.has(i));
         roll(30);
+      } else if (bossDef) {
+        // The boss at the middle facing +x, the player in front of it beyond the attack's reach (it tracks them), the
+        // camera square to its side. Its AI held while it settles; then the attack, every step drawn, `frames` of it kept.
+        const e = Game.duel || Game.enemies[0], a = e.attackById(bossAttack);
+        p.maxHp = p.hp = 1e6;
+        const k = Math.max(1, e.def.scale || 1), far = (a.range || 3) + (a.lunge || 0) + 4;
+        e.x = e.px = 0; e.z = e.pz = 0; e.yaw = Math.PI / 2;
+        p.x = p.px = far; p.z = p.pz = 0; p.yaw = p.pyaw = -Math.PI / 2; p.vx = p.vz = 0;
+        aim = () => { cam.pos.set(e.x + 1.2 * k, 1.7 * k, 7.5 * k); cam.look.set(e.x + 1.2 * k, 1.1 * k, e.z); };
+        e.update = function () {}; step(40); delete e.update;
+        e.beginAttack(a);
+        const total = Math.round((phaseSpan(a, 'recovery', a.hits.length - 1)[0] + a.recovery) / STEP) + 6;
+        const pick = new Set(Array.from({ length: frames }, (_, j) => Math.round(j * (total - 1) / Math.max(1, frames - 1))));
+        for (let i = 0; i < total; i++) {
+          p.x = p.px = far; p.z = p.pz = 0; p.vx = p.vz = 0;   // the player stays put, out of reach
+          step(1);
+          const keep = pick.has(i), shot = clip || keep ? renderer.domElement.toDataURL('image/jpeg', 0.85) : null;
+          if (clip) film.push(shot);
+          if (keep) shots.push(shot);
+        }
       } else throw new Error('unknown move ' + move);
       // Tile: one row, each frame cropped to the middle and numbered.
       const imgs = await Promise.all(shots.map(src => new Promise(ok => { const im = new Image(); im.onload = () => ok(im); im.src = src; })));
@@ -104,7 +131,7 @@ const CLIP = process.env.CLIP || '';
         g.fillStyle = '#ff0'; g.font = '16px sans-serif'; g.fillText(String(i), (i % cols) * W + 4, Math.floor(i / cols) * H + 18);
       });
       return { strip: cv.toDataURL('image/jpeg', 0.82), film };
-    }, [move, +frames, +every, +zoom, !!CLIP]);
+    }, [move, +frames, +every, +zoom, !!CLIP, NOVIA]);
     fs.mkdirSync(path.dirname(path.resolve(out)), { recursive: true });
     fs.writeFileSync(out, Buffer.from(data.strip.split(',')[1], 'base64'));
     if (CLIP && data.film.length) {   // the clip: every step at 60 fps
