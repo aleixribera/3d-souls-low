@@ -4,7 +4,6 @@ The iterate loop's working note (`.claude/iterate.md`). Cap: 8,000 characters.
 
 ## Now
 
-Paused by Aleix, 2026-11-14 (after pass 103, v7.131.0). No pass until Aleix himself tells the loop chat to resume; the Friday 2026-11-20 resume is cancelled (2026-11-17).
 - v7.139.0 (2026-11-16): audit repairs shipped outside the loop; `docs/audit-repairs.md` lists what is left, as backlog.
 - v7.134.0: online is Boss Rush and the Weekly Run only. Single-Quad Boss, co-op Story, rests, gates and the old wipe
   screens went (code too); a wipe ends the run on its summary. Protocol 3.
