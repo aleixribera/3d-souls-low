@@ -6,6 +6,7 @@
 //   title    a few words
 //   text     one to three sentences, shown under the list when the entry is selected
 const CHANGELOG = [
+  { version: 'v7.162.0', title: 'Crates unlock abilities', text: 'Crates now unlock abilities instead of blade looks. Everyone starts with the same twelve abilities, and each crate adds one you don\'t have. The new Abilities page (from the title or the lobby) turns each ability on or off for Boss Rush, which only offers cards you have on. Everyone\'s abilities reset to the starting twelve; your level and crates stay.' },
   { version: 'v7.161.0', title: 'Clearer boss attacks', text: 'Every boss\'s attack effects are back to their earlier, plainer look, so each attack is easy to see coming. Veyra, the Ashwing has left the game. The sparring ring no longer waits for you to move before the teacher shows a drill.' },
   { version: 'v7.160.0', title: 'Ready when you move', text: 'Boss Rush starts without the five-second pause, and every fight and level holds its enemies still until you move or act. Ability cards highlight when you pick them, and Confirm takes them. You can hold any number of legendaries. Aldric’s and the Castellans’ phase changes are much shorter.' },
   { version: 'v7.158 – v7.159', title: 'Veyra, the Ashwing', text: 'A winged boss, Veyra, the Ashwing, joined Practice and Boss Rush for a while.' },

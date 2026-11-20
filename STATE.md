@@ -3,18 +3,14 @@
 The iterate loop's working note (`.claude/iterate.md`). Cap: 8,000 characters.
 
 ## Now
-- Pass 106, PLAN item 3 (pass 1 of 1): counters break strings. Built out of loop in v7.139 (every deflect opens a
-  counter, a counter ends the string with a 0.5 s reel, light counter only at 36); this pass proved it. Acceptance met:
-  `tests/counters.cjs` (rules 1, 2, 3, 5), in-page `pass 85 deflect`/`pass 95 counter` (heavy stays normal, one cue on
-  dodge or deflect); bot run `TUNE='{"bot":{"parryChanceScale":12}}' node tools/bot-fights.cjs story 4`: 251 deflects
-  all opened, 234 counters, 33 mid-string, string went on 0 (8 with the rule broken on purpose); cue frames
-  `docs/scorecard/now/counter-*.jpg` (`tools/counter-cue-frames.cjs`).
-- CI: `browser-smoke` red on 2e7a8d6 at `calling-browser` line 173 (twice on CI, green locally): the Time Rift was
-  centred on player a, whose W-hold that wakes fight 5 walks further on SwiftShader; now centred on the boss. Next pass
-  reads CI first.
-- Item 1 left: Pages retires and `PLAY-LINK.txt` (waits on Aleix). The red-CI gate is shown: container run
-  44819283087 refused v7.161.0 on red CI. Item 2 done (v7.161.0, pass 104). Items 1-3 through but hosting: next the two
-  tracks (item 4 style exploration, item 7 crates and loadout), by `docs/two-tracks.md`.
+- Track 2, pass 107, PLAN item 7 (pass 1 of 1), done in v7.162.0: crates unlock abilities; starter set
+  (`CRATES.starter`), active pool with per-rarity minimums, the Abilities page (title, lobby; locked during a run), the
+  server offers only the pool (`cratePool`, `setGear`; a change mid-run waits for its end or restart). Checks:
+  `tests/crates.cjs`; `node tools/now-frames.cjs abilities` (clicks the toggles, checks the lock); frames
+  `docs/scorecard/now/abilities-*.jpg`, `crate-roll.jpg`. Next on track 2: item 8, the ability pool.
+- Track 1, pass 108: item 4, art style exploration (own line when it ships).
+- CI: green on e029f3b (run 44823752212): `calling-browser`'s Time Rift fix holds. Next pass reads CI first.
+- Item 1 left: Pages retires and `PLAY-LINK.txt` (waits on Aleix). Items 2-3 done.
 - The Finishing Blow (pass 100-103, `js/finisher.js`, `js/finisher-fx.js`): 3rd counter; judge 4, 4, 5; its look and
   the showcase finale are "Later" in the plan.
 
@@ -52,6 +48,8 @@ The iterate loop's working note (`.claude/iterate.md`). Cap: 8,000 characters.
   starred kept; 11.5-13.3 MB/h, ~0.09 ms a snapshot), viewer `js/replay.js` behind the tailnet-only door
   (REPLAY_PORT, homelab :3083), list `replays/`; notes `node tools/replays.cjs`; `tests/server-replays.cjs`; audit
   `docs/design-audit/2026-11-15.md`.
+- Abilities and crates (pass 107, v7.162.0): `js/data/crates.js`, `js/progress.js` (save `v` 2), `js/crate-screen.js`;
+  `tests/crates.cjs`.
 - Scorecard frames: `tools/scorecard-frames.cjs`; current frames `docs/scorecard/now/` (`tools/now-frames.cjs`).
 
 ## Broken
