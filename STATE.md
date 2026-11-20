@@ -3,11 +3,11 @@
 The iterate loop's working note (`.claude/iterate.md`). Cap: 8,000 characters.
 
 ## Now
-- Track 2, pass 112, PLAN item 8 batch 2 (pass 1 of 1), done in v7.164.0: the six blade commons (Spark Step, Ember
-  Lick, Hot Iron, Petal Cut, Echo Step, Dust Devil), each a small power with its own cel-ink effect
-  (`js/common-fx.js`) and sound; the server checks dash and jump claims against pose trails (`js/lobby-sim.js`).
-  Acceptance: each fires on the Captain, is drawn and heard: in-page `blade commons`, `tests/blade-commons.cjs`;
-  frames `docs/scorecard/now/blade-*.jpg` (`node tools/now-frames.cjs blades`). Next on track 2: batch 3.
+- Track 2, pass 114, PLAN item 8 batch 3 (pass 1 of 2), done in v7.167.0: eleven guard and run commons (Ringing
+  Steel, Thorn Guard, Ash Veil, Bitter Draught, Grit, Kindling, Tithe, Glint, Hunter's Pace, Kindred Ember, Shatter
+  Guard); the server checks the block claim. Cel hit flash in the body's own colours (`tintFromSkin`). Acceptance: each
+  fires on the Captain, drawn and heard: `tests/guard-commons.cjs`; clips `docs/scorecard/now/{blade,guard}-commons.mp4`
+  (`node tools/ability-clips.cjs`). Next on track 2: batch 3 pass 2, Mirror Shard (a reflected bolt the server lacks).
 - Track 1, pass 115: item 5 (the cleave's motion, pass 2 of the judge's motion gap), the Captain, v7.166.0: a delayed
   wind-up creeps on through its hold (`hold.creep`, `Enemy.creepTime`) instead of freezing, and the cleave's wind-up is
   coiled (knees, hips, shoulders) not tipped back. Acceptance: `HOLD=0.8 node tools/anim-strip.cjs

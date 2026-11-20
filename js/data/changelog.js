@@ -6,6 +6,7 @@
 //   title    a few words
 //   text     one to three sentences, shown under the list when the entry is selected
 const CHANGELOG = [
+  { version: 'v7.167.0', title: 'Eleven guard commons', text: 'Eleven new common abilities for the guard and the run: Ringing Steel, Thorn Guard, Ash Veil, Bitter Draught, Grit, Kindling, Tithe, Glint, Hunter\'s Pace, Kindred Ember and Shatter Guard. A struck boss in the cel style now flashes in his own colours instead of going white.' },
   { version: 'v7.166.0', title: 'The Captain\'s cleave, alive', text: 'When the Pillager Captain delays his overhead cleave, he no longer freezes: he keeps coiling slowly back, then brings it down. His wind-up now sinks into his knees and twists his hips and shoulders, so the blow comes from his whole body.' },
   { version: 'v7.165.0', title: 'A clearer Pillager Captain', text: 'The Pillager Captain\'s warning glow now sits on the edge of his bill, so you can see his whole body as he winds up. His overhead cleave swings from the hips and carries his weight through the blow.' },
   { version: 'v7.164.0', title: 'Six blade commons', text: 'Six new commons, each a small strike with its own look and sound: Spark Step (dash past the boss), Ember Lick (the fourth light hit), Hot Iron (a full heavy), Petal Cut (a dash attack that cuts again a beat later), Echo Step (your dodge\'s afterimage swings) and Dust Devil (jump beside the boss).' },
