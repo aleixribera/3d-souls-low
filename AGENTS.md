@@ -17,6 +17,11 @@ agents: a draft, changed whenever the code changes.
 - Blender models: `tools/blender/<name>.py`, built with
   `blender -b --factory-startup -P tools/blender/run_asset.py -- <stem> --export`, packed into `js/baked/` by
   `node tools/pack-baked.cjs <stem>`.
+- **Boss v2** (new bosses): opt in with `v2: true` on the `ENEMY_DEFS` entry and `skinnedV2: true` on its `MODEL_DEFS`
+  entry (reference: `js/data/bosses/ashwing.js`, `tools/blender/ashwing.py`). Supports arbitrary Blender armatures with
+  4-bone smooth skinning + exported animation clips (`skinned: true` in `tools/pack-baked.cjs`), stances & altitude
+  (`js/boss-v2.js`), timeline tracks (`cues`, `spawns`, `motion`, `extraHits`), first-class synced `BossHazards`, and
+  cue-driven modular FX (`js/boss-fx-v2.js`, `BOSS_V2_FX`). Legacy v1 bosses remain untouched.
 
 ## Rules that keep it working
 

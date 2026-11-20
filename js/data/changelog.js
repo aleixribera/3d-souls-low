@@ -6,6 +6,7 @@
 //   title    a few words
 //   text     one to three sentences, shown under the list when the entry is selected
 const CHANGELOG = [
+  { version: 'v7.158.0', title: 'Boss v2 & Veyra, the Ashwing', text: 'Rebuilt how bosses are rigged, animated, and scripted with smooth skinned armatures, stances, timeline tracks, and synced arena hazards. Face the first Boss v2 foe, Veyra, the Ashwing, in Practice and Boss Rush.' },
   { version: 'v7.157.0', title: 'Fix /souls/ boot script', text: 'Removed an illegal top-level return in the subpath trailing-slash redirect.' },
   { version: 'v7.156.0', title: 'Standard HTTPS port', text: 'The public lobby now works behind a standard HTTPS subpath (/souls/) as well as :8443, so players on restricted Wi-Fi networks can join.' },
   { version: 'v7.155.0', title: 'Gemini, Neon High VFX revamp', text: 'Revamped Gemini, Neon High / The Eclipsed with vibrant neon ice-cyan lunar and cosmic ultraviolet eclipse palettes, inclined celestial orbital aura, astrolabe floor seals, crystalline prism spire rings, Mirror Step X-slashes, and Eclipse singularity cataclysms (plus feral learned-mark and arson spark-allocation fixes).' },

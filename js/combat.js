@@ -160,8 +160,15 @@ function resolveCombat(game) {
   }
   // 1. Player hitboxes against enemy bodies.
   const playerHits = p.hitbox ? live.filter(e => !e.invulnerable() && p.hitbox.overlaps(e) && !gateBetween(p, e)) : [];   // a boss between phases: blows pass through
-  // 2. Enemy hitboxes against the player's body.
-  const enemyHits = p.alive() ? live.filter(e => e.hitbox && !(e.frozen > 0) && e.hitbox.overlaps(p) && !gateBetween(e, p)).map(e => e.hitbox) : [];   // stopped in time: harmless
+  // 2. Enemy hitboxes against the player's body (includes Boss v2 concurrent extraHitboxes).
+  const enemyHits = [];
+  if (p.alive()) for (const e of live) {
+    if (e.frozen > 0 || gateBetween(e, p)) continue;
+    if (e.hitbox && e.hitbox.overlaps(p)) enemyHits.push(e.hitbox);
+    if (e.v2 && e.v2.extraHitboxes.length) {
+      for (const eh of e.v2.extraHitboxes) if (eh.overlaps(p)) enemyHits.push(eh);
+    }
+  }
   // 3. Apply damage, knockback and stagger (an enemy's poise; the player's flinch or a heavy's stagger).
   for (const e of playerHits) {
     const base = p.hitbox.payload, strike = abilityStrike(p.kit, p.perk, e, base);   // the kit's bonus (online: the server's own)

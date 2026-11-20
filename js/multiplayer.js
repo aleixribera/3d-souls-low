@@ -718,7 +718,7 @@ const multiplayer = (() => {
   function hide() { setLobbyHelp(false); closePanel(); if (active()) Game.resume(); overlayVisibility(); }
   function active() { return connected && !!session && loaded; }
   function clearRemotes() { for (const r of remotes.values()) { r.body.rig.dispose(); r.label.remove(); } remotes.clear(); }
-  function resetStream() { closeRunSummary(false); clearRunIntro(); tracks.clear(); decoder.reset(); latestFrame = null; receivedFrames = 0; playback = null; ready = false; lastPose = 0; deferredStart = null; resetSpectator(); embers = []; rescuer = null; revive.clear(); }
+  function resetStream() { closeRunSummary(false); clearRunIntro(); tracks.clear(); decoder.reset(); latestFrame = null; receivedFrames = 0; playback = null; ready = false; lastPose = 0; deferredStart = null; resetSpectator(); embers = []; rescuer = null; revive.clear(); if (typeof BossHazards !== 'undefined') BossHazards.clear(); }
   function retryConnection(message) {
     if (solo) { leave(ALONE_FAILED); return; }   // nothing to reconnect to: the lobby was this page's
     if (!reconnectWanted) return;
@@ -1041,6 +1041,7 @@ const multiplayer = (() => {
         reviving: `Reviving ${nameOf(m.id)}`, standIn: `Stand in the ring to revive ${nameOf(m.id)}` }));
       rescuer = embers.find(m => m.id === self)?.by || null;
       revive.set(embers, self);
+      if (typeof BossHazards !== 'undefined' && Array.isArray(frame.hazards)) BossHazards.applySnapshot(frame.hazards);
       applyProgress(frame);
     } else if (msg.type === 'revive') riseAgain(msg);
     else if (msg.type === 'abilitiesChosen' && session) { if (ability) { ability.done = true; drawAbilities(); } }   // everyone has chosen: the hold
@@ -1198,6 +1199,7 @@ const multiplayer = (() => {
     }
     projectiles.update(Game, dt);
     burnInFires(Game, dt, Game.player);   // the fires the server's enemies left (laid here from their strikes, Enemy.noteFires)
+    if (typeof BossHazards !== 'undefined') BossHazards.step(dt, [Game.player], true);
     Game.updateCamera(dt, false);
     // One death sequence per body, whatever killed it (a blow, rot, a script): as Game.update does.
     if (!Game.player.alive() && Game.deathOf !== Game.player) Game.onPlayerDeath();

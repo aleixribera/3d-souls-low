@@ -104,7 +104,7 @@
       };
       const enemies = changes('enemies', frame.enemies), people = changes('players', players);
       return { type: 'frame', full, frame: { epoch: frame.epoch, time: frame.time, complete: frame.complete, fought: frame.fought,
-        enemies: enemies.patches, events: frame.events, shots: frame.shots, embers: (frame.embers || []).map(wire), server: frame.server }, players: people.patches,
+        enemies: enemies.patches, events: frame.events, shots: frame.shots, embers: (frame.embers || []).map(wire), hazards: (frame.hazards || []).map(wire), server: frame.server }, players: people.patches,
         removed: { enemies: enemies.removed, players: people.removed } };
     }
   }
@@ -161,7 +161,7 @@
   }
   // The game's files the lobby's simulation runs (server/headless.cjs, and the page alone in js/alone.js): the engine,
   // every data/ and levels/ file, in GAME_FILES order; then hostFiles, which only the simulation loads.
-  const engine = new Set(['config.js', 'net-protocol.js', 'helpers.js', 'terrain.js', 'states.js', 'registries.js', 'events.js', 'world.js', 'character.js', 'player.js', 'enemy.js', 'crowd.js', 'combat.js', 'finisher.js', 'abilities.js', 'bot-navigation.js', 'bot.js', 'companions.js', 'game.js', 'game-menus.js', 'game-view.js', 'game-level.js', 'attack-anim.js']);
+  const engine = new Set(['config.js', 'net-protocol.js', 'helpers.js', 'terrain.js', 'states.js', 'registries.js', 'events.js', 'world.js', 'character.js', 'player.js', 'boss-v2.js', 'enemy.js', 'crowd.js', 'combat.js', 'finisher.js', 'abilities.js', 'bot-navigation.js', 'bot.js', 'companions.js', 'game.js', 'game-menus.js', 'game-view.js', 'game-level.js', 'attack-anim.js']);
   const engineScript = file => engine.has(file) || file.startsWith('data/') || file.startsWith('levels/');
   const hostFiles = Object.freeze(['lobby-sim.js', 'lobby-host.js']);
   const api = { engineScript, hostFiles, config, finite, id, own, pose, bodyPose, name, cameraView, FrameEncoder, FrameDecoder, EnemyTrack };

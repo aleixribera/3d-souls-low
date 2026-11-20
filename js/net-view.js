@@ -29,6 +29,7 @@ const netView = {
     e.resonance = s.resonance || 0;   // pass 68 (the Bell Warden)
     e.mendPool = s.mend || 0;   // pass 75 (Aldric)
     if (s.learned) { e.learned.length = 0; e.learned.push(...s.learned); } else if (e.learned.length) e.learned.length = 0;   // pass 77 (the Antlered Hunger)
+    if (e.v2 && s.v2s) { e.v2.stance = s.v2s; e.v2.altitude = lerp(s.v2a || 0, q.v2a || 0, alpha); }
     // An attack id this release no longer has plays as no attack (an old replay), never as an error.
     e.attack = s.attack ? e.baseDef.attacks.find(x => x.id === s.attack) || null : null;
     if (s.attack && !e.attack && (e.state === ES.WINDUP || e.state === ES.ACTIVE || e.state === ES.RECOVER || e.state === ES.PARRIED)) e.state = ES.CHASE;
@@ -49,8 +50,13 @@ const netView = {
     if (s.hitbox && e.state === ES.ACTIVE && e.attack && e.netParried !== s.serial && e.netJoinSerial !== s.serial) {
       if (e.netBoxKey !== boxKey || !e.hitbox) {
         e.hitbox = e.makeHitbox(); e.netBoxKey = boxKey;   // notes where it stands for a later `echo` too
+        if (e.v2 && e.attack.timeline && Array.isArray(e.attack.timeline.extraHits)) {
+          e.v2.extraHitboxes.length = 0;
+          for (const eh of e.attack.timeline.extraHits)
+            e.v2.extraHitboxes.push(new Hitbox(e, eh.box, makeStrike({ ...e.attack, damage: eh.damage ?? e.attack.damage, heavy: eh.heavy ?? e.attack.heavy, rollOnly: eh.rollOnly ?? e.attack.rollOnly })));
+        }
       }
-    } else e.hitbox = null;
+    } else { e.hitbox = null; if (e.v2) e.v2.extraHitboxes.length = 0; }
     if (e.state === ES.DEAD && priorState !== ES.DEAD && !e.rewarded) { e.rewarded = true; events.emit('enemyDeath', { enemy: e }); }
   },
   // A teammate's body between their poses `a` and `b` at `f`, `since` s after `a` (its clocks run on).
@@ -85,7 +91,12 @@ const netView = {
         const attack = sample.value.attack ? e.baseDef.attacks.find(a => a.id === sample.value.attack) : e.attack;
         events.emit(d.type, { enemy: e, actor: e, attack, phase: PHASE.ACTIVE, hitIndex: d.hitIndex, seamless: d.seamless, out: d.out });
       } else if (d.type === 'impact') events.emit('impact', { ...d, enemy: e });
-      else if (d.type === 'attackMarker' && e) {
+      else if (d.type === 'bossCue' && e) {
+        const attack = e.baseDef.attacks.find(a => a.id === d.attackId) || e.def.attacks?.find(a => a.id === d.attackId);
+        const cues = attack && attack.timeline && attack.timeline.cues;
+        const cue = Array.isArray(cues) && Number.isInteger(d.cueIndex) && d.cueIndex >= 0 && d.cueIndex < cues.length ? cues[d.cueIndex] : null;
+        if (cue) events.emit('bossCue', { enemy: e, attack, cue, cueIndex: d.cueIndex });
+      } else if (d.type === 'attackMarker' && e) {
         // Wire values: the attack by id from this enemy's own data, the marker index bounds-checked.
         const attack = e.baseDef.attacks.find(a => a.id === d.attackId) || e.def.attacks?.find(a => a.id === d.attackId);
         const marker = attack && Array.isArray(attack.markers) && Number.isInteger(d.marker) && d.marker >= 0 && d.marker < attack.markers.length ? attack.markers[d.marker] : null;
@@ -94,7 +105,13 @@ const netView = {
     }
     for (const shot of sample.shots) {
       const e = Game.enemies.find(e => e.netId === shot.enemy), attack = e?.baseDef.attacks.find(a => a.id === shot.attack);
-      if (e && attack) projectiles.fire(e, attack, shot.target);
+      if (e && attack) {
+        const sp = !attack.projectile && attack.timeline?.spawns?.find(x => x.kind === 'volley');
+        const span = sp && (sp.spread || 0.45), cnt = sp && (sp.count || 3);
+        const angles = sp ? (Array.isArray(span) ? span : Array.from({ length: cnt }, (_, k) => (cnt > 1 ? k / (cnt - 1) - 0.5 : 0) * span)) : null;
+        const resolved = attack.projectile ? attack : sp ? { ...attack, projectile: { ...(sp.projectile || { speed: 18, gravity: 0, size: 0.24 }), spread: angles }, damage: sp.damage ?? attack.damage } : null;
+        if (resolved) projectiles.fire(e, resolved, shot.target);
+      }
     }
   },
 };

@@ -599,6 +599,31 @@ function validateData({ visual = true } = {}) {
       }
       if ('defaultPhases' in d) need(Array.isArray(d.defaultPhases) && d.defaultPhases.length > 0 && d.defaultPhases.every(id => P && id in P), `Enemy "${d.id}": defaultPhases must list its phase ids.`);
     }
+    if ('v2' in d) {
+      need(d.v2 === true, `Enemy "${d.id}": v2 must be true.`);
+      const S = d.stances;
+      need(S && typeof S === 'object' && Object.keys(S).length > 0, `Enemy "${d.id}": v2 boss needs a non-empty stances object.`);
+      if (S) {
+        if ('initialStance' in d) need(d.initialStance in S, `Enemy "${d.id}": unknown initialStance "${d.initialStance}".`);
+        for (const [sn, sd] of Object.entries(S)) {
+          need(sd && typeof sd === 'object', `Enemy "${d.id}" stance "${sn}": must be an object.`);
+          if (sd && 'altitude' in sd) need(num(sd.altitude) && sd.altitude >= 0 && sd.altitude <= 12, `Enemy "${d.id}" stance "${sn}": altitude must be 0..12 m.`);
+          for (const tr of (sd && sd.transitions) || [])
+            need(tr && tr.to in S, `Enemy "${d.id}" stance "${sn}": transition target "${tr && tr.to}" is not a known stance.`);
+        }
+        for (const a of d.attacks || []) {
+          if ('stances' in a) need(Array.isArray(a.stances) && a.stances.length > 0 && a.stances.every(s => s in S), `Enemy "${d.id}" attack "${a.id}": stances must list known stance ids.`);
+          if ('endStance' in a) need(a.endStance in S, `Enemy "${d.id}" attack "${a.id}": unknown endStance "${a.endStance}".`);
+          if (a.timeline) {
+            const tl = a.timeline;
+            for (const c of tl.cues || []) need(c && num(c.at) && c.at >= 0, `Enemy "${d.id}" attack "${a.id}": cue needs non-negative at (s).`);
+            for (const sp of tl.spawns || []) need(sp && num(sp.at) && sp.at >= 0 && ['hazard', 'volley'].includes(sp.kind), `Enemy "${d.id}" attack "${a.id}": spawn needs at >= 0 and kind 'hazard'|'volley'.`);
+            for (const m of tl.motion || []) need(m && num(m.from) && num(m.to) && m.to > m.from, `Enemy "${d.id}" attack "${a.id}": motion needs from < to.`);
+            for (const eh of tl.extraHits || []) need(eh && num(eh.from) && num(eh.to) && eh.to > eh.from && eh.box && num(eh.box.w) && num(eh.box.h) && num(eh.box.d), `Enemy "${d.id}" attack "${a.id}": extraHits needs from < to and valid box.`);
+          }
+        }
+      }
+    }
     if ('arena' in d) {   // a duel fought on a room level: both starts must stand on its floors
       const L = ALL_LEVELS.find(l => l.id === d.arena), ok = p => p && num(p.x) && num(p.z) && num(p.yaw)
         && L && L.layout === 'rooms' && Number.isFinite(terrainFor(L).floorY(p.x, p.z, p.y));
@@ -777,8 +802,15 @@ function validateData({ visual = true } = {}) {
   if (visual) {
     checkVisualData(need, num);   // optional look fields (section 9b)
     checkRealmData(need, num);    // levels' set pieces (js/realms.js, v7.0)
-    for (const [id, M] of Object.entries(MODEL_DEFS)) for (const o of M.parts || [])   // models built in Blender (js/baked.js)
-      if (o.use === 'baked') need(o.mesh in BAKED, `Model "${id}": baked mesh "${o.mesh}" is not packed (run node tools/pack-baked.cjs).`);
+    for (const [id, M] of Object.entries(MODEL_DEFS)) {
+      if (M.skinnedV2) {
+        need(typeof M.rigId === 'string' && typeof BAKED_RIGS !== 'undefined' && M.rigId in BAKED_RIGS,
+          `Model "${id}": skinnedV2 rig "${M.rigId}" is not packed (run node tools/pack-baked.cjs).`);
+        continue;
+      }
+      for (const o of M.parts || [])   // models built in Blender (js/baked.js)
+        if (o.use === 'baked') need(o.mesh in BAKED, `Model "${id}": baked mesh "${o.mesh}" is not packed (run node tools/pack-baked.cjs).`);
+    }
     // A baked model sets every body piece to null; a model extending it without its own `body` would lose its limbs.
     const inherited = (id, k) => { for (let M = MODEL_DEFS[id]; M; M = MODEL_DEFS[M.extends]) if (k in M) return M[k]; };
     for (const id of Object.keys(MODEL_DEFS)) {

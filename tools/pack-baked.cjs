@@ -39,6 +39,7 @@ const FILES = {
   'hound': { sources: ['hound'] },
   'guardian': { sources: ['guardian'] },
   'lancer-of-ash': { sources: ['lancer_of_ash'] },
+  'ashwing': { sources: ['ashwing'], skinned: true },
 };
 
 function readGlb(file) {
@@ -48,7 +49,7 @@ function readGlb(file) {
   return { json, bin: b.subarray(20 + jsonLen + 8) };
 }
 const COMPONENT = { 5120: Int8Array, 5121: Uint8Array, 5122: Int16Array, 5123: Uint16Array, 5125: Uint32Array, 5126: Float32Array };
-const SIZE = { SCALAR: 1, VEC2: 2, VEC3: 3, VEC4: 4 };
+const SIZE = { SCALAR: 1, VEC2: 2, VEC3: 3, VEC4: 4, MAT4: 16 };
 function accessor({ json, bin }, i) {
   const a = json.accessors[i], v = json.bufferViews[a.bufferView], T = COMPONENT[a.componentType], n = a.count * SIZE[a.type];
   const at = (v.byteOffset || 0) + (a.byteOffset || 0), out = new T(n), step = T.BYTES_PER_ELEMENT;
@@ -75,7 +76,114 @@ function pack(glb, prim) {
   }
   return out;
 }
-function packFile(file, { sources, places }) {
+function packSkinnedMesh(glb, prim, slot) {
+  const out = pack(glb, prim);
+  out.slot = slot;
+  const jIdx = prim.attributes.JOINTS_0, wIdx = prim.attributes.WEIGHTS_0;
+  if (jIdx !== undefined && wIdx !== undefined) {
+    const joints = accessor(glb, jIdx), weights = accessor(glb, wIdx), n = out.n;
+    const j8 = new Uint8Array(n * 4), w8 = new Uint8Array(n * 4);
+    for (let i = 0; i < n; i++) {
+      const o = i * 4;
+      let sum = 0;
+      for (let k = 0; k < 4; k++) { j8[o + k] = joints[o + k] & 255; sum += weights[o + k]; }
+      if (sum > 1e-6) {
+        let rem = 255, best = 0;
+        for (let k = 0; k < 4; k++) {
+          const q = Math.round((weights[o + k] / sum) * 255);
+          w8[o + k] = q; rem -= q;
+          if (weights[o + k] > weights[o + best]) best = k;
+        }
+        w8[o + best] = Math.max(0, Math.min(255, w8[o + best] + rem));
+      } else { w8[o] = 255; }
+    }
+    out.j = b64(j8); out.w = b64(w8);
+  }
+  return out;
+}
+function packSkinnedRig(glb, stem) {
+  const { json } = glb;
+  if (!json.skins || !json.skins.length) throw new Error(`${stem}: skinned export requires an armature/skin in GLB`);
+  const skin = json.skins[0], joints = skin.joints;
+  const nodeToBone = new Map(joints.map((ni, bi) => [ni, bi]));
+  const parentOf = new Map();
+  for (let ni = 0; ni < json.nodes.length; ni++) {
+    for (const ch of json.nodes[ni].children || []) parentOf.set(ch, ni);
+  }
+  const ibmRaw = skin.inverseBindMatrices !== undefined ? accessor(glb, skin.inverseBindMatrices) : null;
+  const bones = joints.map((ni, bi) => {
+    const nd = json.nodes[ni], pNi = parentOf.get(ni);
+    const parent = pNi !== undefined && nodeToBone.has(pNi) ? nodeToBone.get(pNi) : -1;
+    const b = { name: nd.name, parent };
+    if (nd.translation) b.p = nd.translation.map(round);
+    if (nd.rotation) b.r = nd.rotation.map(round);
+    if (nd.scale && nd.scale.some(v => Math.abs(v - 1) > 1e-4)) b.s = nd.scale.map(round);
+    if (ibmRaw) b.ibm = Array.from(ibmRaw.subarray(bi * 16, bi * 16 + 16), round);
+    return b;
+  });
+  const meshes = [];
+  for (const node of json.nodes) {
+    if (node.mesh === undefined) continue;
+    const mesh = json.meshes[node.mesh];
+    glb.keepUv = true;
+    for (let pi = 0; pi < mesh.primitives.length; pi++) {
+      const prim = mesh.primitives[pi];
+      const matName = prim.material !== undefined && json.materials?.[prim.material]?.name
+        ? json.materials[prim.material].name : (node.name.includes('__') ? node.name.split('__').pop() : 'body');
+      const slot = matName.split('.')[0];
+      meshes.push(packSkinnedMesh(glb, prim, slot));
+    }
+  }
+  const clips = {};
+  for (const anim of json.animations || []) {
+    const tracks = [];
+    let duration = 0;
+    for (const ch of anim.channels || []) {
+      const bi = nodeToBone.get(ch.target.node);
+      if (bi === undefined) continue;
+      const pathName = ch.target.path;
+      if (pathName !== 'rotation' && pathName !== 'translation' && pathName !== 'scale') continue;
+      const samp = anim.samplers[ch.sampler];
+      const times = accessor(glb, samp.input), vals = accessor(glb, samp.output);
+      const count = times.length;
+      if (!count) continue;
+      duration = Math.max(duration, times[count - 1]);
+      const tMs = new Uint16Array(count);
+      for (let i = 0; i < count; i++) tMs[i] = Math.min(65535, Math.round(times[i] * 1000));
+      if (pathName === 'rotation') {
+        const q16 = new Int16Array(count * 4);
+        for (let i = 0; i < count * 4; i++) q16[i] = Math.max(-32767, Math.min(32767, Math.round(vals[i] * 32767)));
+        tracks.push({ b: bi, k: 'r', t: b64(tMs), v: b64(q16) });
+      } else {
+        let min = [Infinity, Infinity, Infinity], max = [-Infinity, -Infinity, -Infinity];
+        for (let i = 0; i < count * 3; i++) { const c = i % 3; min[c] = Math.min(min[c], vals[i]); max[c] = Math.max(max[c], vals[i]); }
+        const span = max.map((v, c) => Math.max(v - min[c], 1e-6));
+        const v16 = new Int16Array(count * 3);
+        for (let i = 0; i < count * 3; i++) { const c = i % 3; v16[i] = Math.round((vals[i] - min[c]) / span[c] * 65534 - 32767); }
+        tracks.push({ b: bi, k: pathName === 'translation' ? 'p' : 's', t: b64(tMs), min: min.map(round), span: span.map(round), v: b64(v16) });
+      }
+    }
+    clips[anim.name] = { duration: round(duration), tracks };
+  }
+  return { bones, meshes, clips };
+}
+function packFile(file, { sources, places, skinned }) {
+  if (skinned) {
+    const rigs = {};
+    for (const stem of sources) {
+      const glb = readGlb(path.join(SRC, `${stem}.glb`));
+      rigs[stem] = packSkinnedRig(glb, stem);
+    }
+    const body = Object.entries(rigs).map(([k, r]) => `  ${JSON.stringify(k)}: ${JSON.stringify(r)},`).join('\n');
+    const text = `'use strict';\n// Generated by tools/pack-baked.cjs (skinned v2) from tools/blender/out/: do not edit. Decoded by js/baked.js.\nvar BAKED_RIGS = BAKED_RIGS || {};\nObject.assign(BAKED_RIGS, {\n${body}\n});\n`;
+    const out = path.join(ROOT, 'js/baked', `${file}.js`);
+    fs.mkdirSync(path.dirname(out), { recursive: true });
+    fs.writeFileSync(out, text);
+    const totalClips = Object.values(rigs).reduce((s, r) => s + Object.keys(r.clips).length, 0);
+    const totalBones = Object.values(rigs).reduce((s, r) => s + r.bones.length, 0);
+    console.log(`${path.relative(ROOT, out)}: ${(text.length / 1024).toFixed(1)} KB, ${totalBones} bones, ${totalClips} clips (skinned v2)`);
+    return;
+  }
   const meshes = {};
   for (const stem of sources) {
     const glb = readGlb(path.join(SRC, `${stem}.glb`));
