@@ -9,6 +9,9 @@ plan before this one (to commit 9eed9bf) is in git history; what it held that st
 - **One pass at a time** until items 1 to 3 are done; then **two tracks** in parallel (`.claude/iterate.md`):
   track 1 bosses, track 2 abilities and crates. The tracks touch different files.
 - The bar is the vision's: AAA feel, runs on a toaster, anime action against fair, cunning bosses.
+- **Balance is the loop's** (Aleix, 2026-11-20: "current numbers are not final"): every number in the game and in
+  this plan (damage, health, timings, windows, odds, the starter set's counts, the difficulty curve) is a starting
+  point. Any pass may change one, with its evidence (bot runs, replays, a judge, Aleix's feedback) in the commit.
 - Work done outside the loop (other tools, other models) is a draft like any other: the loop reads it into `STATE.md`
   and judges it like its own. Nothing reaches players without green CI.
 
