@@ -8,7 +8,8 @@
 // attack from wind-up to recovery, filmed from the side at a fixed camera, the player standing in front out of reach,
 // `frames` spread over the attack; `every` unused). With CLIP=<file.mp4> every step is also written as a 60 fps clip
 // (ffmpeg on PATH). For boss:<attackId> clips (pass 113): REPEAT=<n> plays the attack n times (the strip keeps the first),
-// VIEW=game films through the game's own camera behind the player instead of from the side.
+// VIEW=game films through the game's own camera behind the player instead of from the side. HOLD=<s> (pass 115): every
+// hit with a `hold` takes it, for exactly that long (0: never), so a delayed wind-up can be filmed the same way twice.
 // One headless Edge, closed at the end; idle priority. Take the browser lock (.claude/iterate.md) before running it.
 require('../tests/low-priority.cjs');
 const fs = require('node:fs');
@@ -19,7 +20,7 @@ const { createServer } = require('../server/index.cjs');
 const [move = 'dash', out = '.scratch/strip.jpg', frames = '14', every = '2', zoom = '1', width = '640', height = '480'] = process.argv.slice(2);
 const CLIP = process.env.CLIP || '';
 const NOVIA = !!process.env.NOVIA;   // NOVIA=1: every key pose's in-between keys left out (a before/after of a `via`)
-const REPEAT = Math.max(1, +process.env.REPEAT || 1), VIEW = process.env.VIEW || 'side';
+const REPEAT = Math.max(1, +process.env.REPEAT || 1), VIEW = process.env.VIEW || 'side', HOLD = process.env.HOLD ?? null;
 
 (async () => {
   const app = createServer({ dev: true }); await new Promise(r => app.server.listen(0, '127.0.0.1', r));
@@ -30,7 +31,7 @@ const REPEAT = Math.max(1, +process.env.REPEAT || 1), VIEW = process.env.VIEW ||
     await page.addInitScript(() => localStorage.setItem('combat-arena-3d.settings', JSON.stringify({ graphics: 'normal', volume: 0 })));
     await page.goto(`http://127.0.0.1:${app.server.address().port}/combat-arena-3d.html#dev`);
     await page.waitForFunction(() => window.__arenaReady, null, { timeout: 120000 });
-    const data = await page.evaluate(async ([move, frames, every, zoom, clip, novia, repeat, view]) => {
+    const data = await page.evaluate(async ([move, frames, every, zoom, clip, novia, repeat, view, hold]) => {
       const trace = [];
       if (novia) for (const P of Object.values(ATTACK_POSES)) for (const h of P.hits || []) delete h.via;
       const STEP = CONFIG.step; let clock = 0;
@@ -109,7 +110,9 @@ const REPEAT = Math.max(1, +process.env.REPEAT || 1), VIEW = process.env.VIEW ||
         e.x = e.px = 0; e.z = e.pz = 0; e.yaw = Math.PI / 2;
         p.x = p.px = far; p.z = p.pz = 0; p.yaw = p.pyaw = -Math.PI / 2; p.vx = p.vz = 0;
         aim = () => { cam.pos.set(e.x + 1.2 * k, 1.7 * k, 7.5 * k); cam.look.set(e.x + 1.2 * k, 1.1 * k, e.z); };
-        const total = Math.round((phaseSpan(a, 'recovery', a.hits.length - 1)[0] + a.recovery) / STEP) + 6;
+        let held = 0;
+        if (hold !== null) for (const h of a.hits) if (h.hold) { h.hold = { ...h.hold, chance: +hold > 0 ? 1 : 0, time: [+hold, +hold] }; held += +hold; }
+        const total = Math.round((phaseSpan(a, 'recovery', a.hits.length - 1)[0] + a.recovery + held) / STEP) + 6;
         const pick = new Set(Array.from({ length: frames }, (_, j) => Math.round(j * (total - 1) / Math.max(1, frames - 1))));
         for (let n = 0; n < repeat; n++) {
           e.update = function () {}; step(view === 'game' && !n ? 120 : 40); delete e.update;   // the game's camera settles behind the player first
@@ -140,7 +143,7 @@ const REPEAT = Math.max(1, +process.env.REPEAT || 1), VIEW = process.env.VIEW ||
         g.fillStyle = '#ff0'; g.font = '16px sans-serif'; g.fillText(String(i), (i % cols) * W + 4, Math.floor(i / cols) * H + 18);
       });
       return { strip: cv.toDataURL('image/jpeg', 0.82), film, trace };
-    }, [move, +frames, +every, +zoom, !!CLIP, NOVIA, REPEAT, VIEW]);
+    }, [move, +frames, +every, +zoom, !!CLIP, NOVIA, REPEAT, VIEW, HOLD]);
     if (process.env.TRACE) console.log(data.trace.join('\n'));   // TRACE=1: the boss's state each step
     fs.mkdirSync(path.dirname(path.resolve(out)), { recursive: true });
     fs.writeFileSync(out, Buffer.from(data.strip.split(',')[1], 'base64'));

@@ -122,7 +122,9 @@
 
   // Overhead Cleave: the bill heaved up and back behind his head, his back arched, held; brought down into the floor
   // ahead with all his weight.
-  const arched = { crouch: 0.15, lean: -0.35, legL: [-0.55, 0, 0], legR: [0.4, 0, 0], chest: [-0.4, 0, 0], neck: [-0.15, 0, 0], head: [-0.1, 0, 0],
+  // (pass 115, the judge's round 2: "tips back from the ankles like a stiff plank") The hips stay over his feet and sink, the
+  // knees bend, the hips and shoulders coil to the bill's side, and the arch is in his upper back: the blow unwinds from there.
+  const arched = { crouch: 0.22, lean: -0.1, legL: [-0.6, 0, 0], kneeL: [0.35, 0, 0], legR: [0.45, 0, 0], kneeR: [0.3, 0, 0], spin: [0, -0.35, 0], chest: [-0.55, -0.2, 0], neck: [-0.1, 0.25, 0], head: [-0.05, 0.25, 0],
     armR: [-3.0, 0, 0.15], elbowR: [-1.1, 0, 0], haft: [-2.75, 0, 3.14], armL: [-2.9, 0, -0.15], elbowL: [-1.2, 0, 0] };
   // (pass 66) It ends with the blade buried in the floor ahead, his back bent over the haft and his eyes up at you; then he
   // wrenches it out, haft twisting.
@@ -252,7 +254,7 @@
     recovery: 0.95, damage: 22, poise: 30, knock: 5, lunge: 1.8, range: 2.8, box: CUT };
   // Overhead Cleave: heaved back behind his head, held; down into the floor. Roll it.
   const cleave = { id: 'captainOverhead', name: 'Overhead Cleave', anim: 'chop', pose: 'pillagerCleave', tracking: { rate: 2.2, commit: 0.5 }, rollOnly: true, chance: 0.4,
-    hits: [{ startup: 1.45, active: 0.14, follow: 0.4, hold: { at: 0.55, time: [0.4, 1], chance: 0.6 }, impact: { ring: 2.6, crack: 1.4, dust: 12, shake: 0.1 } }],
+    hits: [{ startup: 1.45, active: 0.14, follow: 0.4, hold: { at: 0.55, time: [0.4, 1], chance: 0.6, creep: 0.22 }, impact: { ring: 2.6, crack: 1.4, dust: 12, shake: 0.1 } }],
     recovery: 1.32, damage: 58, heavy: true, poise: 80, knock: 8, lunge: 1.4, range: 3.2, box: CLEAVE };
   // The Hook: laid out low on his right; swept at your shins and hauled in, you with it (roll it: nothing stops it but a
   // roll); then a short chop where it dragged you (parry it).

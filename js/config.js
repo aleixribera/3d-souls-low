@@ -201,7 +201,9 @@ const CONFIG = {
            ringAfterLanding: 0.14,
            // A ground ring's hit is active as long as the ring spreads, but the blow that starts it lands at once: its
            // strike pose plays over the first this many s of the active phase (js/attack-anim.js, v7.64.0).
-           ringStrike: 0.1 },
+           ringStrike: 0.1,
+           holdCreep: { slow: 0.25, cap: 0.6 },   // a hit's hold.creep (js/enemy.js creepTime): s to slow to the creep; most of the wind-up's rest it may creep through
+         },
   // Seams in the floor (pass 47, Oswin; a hit's `seam` / `erupt`, js/enemy.js noteSeams): at most `max` stay open (the
   // oldest closes); each erupts as a wall of fire `width` m wide and `height` m tall along it; `callAt` open seams let an
   // attack with `when: 'seamed'` be chosen; an erupting hit's wind-up (the seams' tell, js/ember-seams.js) is at least

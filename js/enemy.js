@@ -781,7 +781,7 @@ class Enemy {
     if (attack.learns && this.learned.includes(attack.id)) attack = this.attackById(attack.learns);
     if (attack.cue) this.cueKin(attack.cue);
     this.moveRun = base.id === this.lastMove ? (this.moveRun || 0) + 1 : 1; this.lastMove = base.id; this.landed = false; this.dashedThrough = false; this.recoverMul = 1;
-    this.attack = attack; this.hitIndex = 0; this.stepIn = false; this.holdLeft = null; this.leapHit = -1; this.blinkHit = -1; this.burrowHit = -1; this.setState(ES.WINDUP);
+    this.attack = attack; this.hitIndex = 0; this.stepIn = false; this.holdLeft = null; this.holdH = this.holdC = 0; this.leapHit = -1; this.blinkHit = -1; this.burrowHit = -1; this.setState(ES.WINDUP);
     this.attackNo++;
     if (attack.when === 'resonant') { this.resonance = 0; this.resonanceRest = this.def.resonance ? this.def.resonance.rest || 0 : 0; }   // the answer gives the ringing back
     crowd.started(this);
@@ -963,7 +963,7 @@ class Enemy {
     const h = this.attack.hits[this.hitIndex];
     if (this.stateTime < h.active + (h.follow || 0)) return;
     this.hitbox = null;
-    if (this.hitIndex + 1 < this.attack.hits.length) { this.hitIndex++; this.holdLeft = null; this.setState(ES.WINDUP); }
+    if (this.hitIndex + 1 < this.attack.hits.length) { this.hitIndex++; this.holdLeft = null; this.holdH = this.holdC = 0; this.setState(ES.WINDUP); }
     else if (!this.followUp()) {
       this.recoverMul = 1; this.setState(ES.RECOVER);
       if (this.dashedThrough) this.dashedThroughBy();
@@ -1191,6 +1191,24 @@ class Enemy {
     lookup(IDLE_STYLES, this.def.idle || 'none', 'idle style', 'none')(r, t, w);
   }
 
+  // A held wind-up's drawn clock (pass 115, a hit's `hold.creep`): through the hold the body keeps creeping on through its
+  // wind-up at `creep` times its pace (slowing to it over CONFIG.enemy.holdCreep.slow s), never frozen; after the hold the
+  // rest of the wind-up is drawn over the time left, so the strike lands on the frame it always did. Without `creep` a held
+  // wind-up is drawn perfectly still. Drawing only: the hold, the hitbox and the strike's timing are the simulation's.
+  // holdH / holdC: seconds held so far and seconds of wind-up crept (cleared with each new hit, and on any client before the
+  // hold point); dt is 0 through a hit-pause, as the player's visual clocks.
+  creepTime(W, wt, dt) {
+    const tH = W.startup * W.hold.at, C = CONFIG.enemy.holdCreep;
+    if (!(this.holdLeft > 0) && this.stateTime < tH) { this.holdH = this.holdC = 0; return wt; }   // not there yet: reset
+    if (this.holdLeft > 0 || (this.holdH > 0 && wt <= tH)) {   // (the hold's last step leaves the clock at tH once more)
+      const rate = W.hold.creep + (1 - W.hold.creep) * Math.max(0, 1 - (this.holdH || 0) / C.slow);
+      this.holdH = (this.holdH || 0) + dt; this.holdC = Math.min((this.holdC || 0) + rate * dt, (W.startup - tH) * C.cap);
+      return tH + this.holdC;
+    }
+    const c = this.holdC || 0, left = W.startup - tH;
+    return tH + c + (wt - tH) * (left - c) / left;
+  }
+
   pose(tt, ctx) {
     const r = this.rig, d = this.def, E = CONFIG.enemy;
     r.reset(); r.setOpacity(1); r.root.visible = true;
@@ -1213,8 +1231,7 @@ class Enemy {
         const W = this.state === ES.WINDUP ? a.hits[this.hitIndex] : null, held = W && !W.burrow && areaHit(a, this.hitIndex);
         const wt = held ? Math.min(W.startup, tt / CONFIG.area.held) : tt;
         if (a.pose) {   // four-phase key poses (js/attack-anim.js) on the attack's own clock
-          const still = this.holdLeft > 0 ? this.stateTime : wt;   // a held wind-up is drawn perfectly still
-          const at = phaseSpan(a, this.state === ES.WINDUP ? 'windup' : this.state === ES.ACTIVE ? 'active' : 'recovery', this.hitIndex)[0] + still;
+          const at = phaseSpan(a, this.state === ES.WINDUP ? 'windup' : this.state === ES.ACTIVE ? 'active' : 'recovery', this.hitIndex)[0] + (W && W.hold && W.hold.creep ? this.creepTime(W, wt, Game.hitstop > 0 ? 0 : Math.min(ctx.dt || 0, 0.1)) : wt);
           glint = poseAttackKeys(r, a, at);
         } else if (this.state === ES.WINDUP) poseAttack(r, a, PHASE.STARTUP, wt / W.startup, this.hitIndex);
         else if (this.state === ES.ACTIVE) poseAttack(r, a, PHASE.ACTIVE, tt / a.hits[this.hitIndex].active, this.hitIndex);

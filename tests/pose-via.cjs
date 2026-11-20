@@ -3,7 +3,8 @@
 // - a phase with via keys starts and ends on the same key poses as without them, and passes through each key;
 // - `rel` keys add to the straight blend; a library name resolves to its keys (the Pillager Captain's Overhead Cleave);
 // - the curve has no jump from one 60 Hz frame to the next, through the keys and across phase changes;
-// - validation refuses a via with an unknown name, keys out of order, or a bone the skeleton lacks.
+// - validation refuses a via with an unknown name, keys out of order, or a bone the skeleton lacks;
+// - a held wind-up with `hold.creep` (pass 115) keeps moving through the hold and still strikes on time.
 const assert = require('node:assert/strict');
 const fs = require('node:fs'), path = require('node:path'), vm = require('node:vm');
 const { root } = require('../server/headless.cjs');
@@ -16,7 +17,7 @@ Object.assign(V, { console, performance, THREE: { Vector3: class { constructor()
   location: { hash: '' }, window: { addEventListener() {} }, projectiles: { fire() {} }, bindLabel: () => '' });
 for (const f of files.filter(f => engine.has(f) || f.startsWith('data/') || f.startsWith('levels/'))) vm.runInContext(fs.readFileSync(path.join(root, 'js', f), 'utf8'), V, { filename: f });
 vm.runInContext(fs.readFileSync(path.join(root, 'js', 'validate.js'), 'utf8'), V, { filename: 'validate.js' });
-const G = vm.runInContext('({ ENEMY_DEFS, ATTACK_POSES, POSE_LIBRARY, poseAttackKeys, checkAttackAnim, validateData, phaseSpan })', V);
+const G = vm.runInContext('({ ENEMY_DEFS, ATTACK_POSES, POSE_LIBRARY, poseAttackKeys, checkAttackAnim, validateData, phaseSpan, Enemy, CONFIG })', V);
 assert.deepEqual([...G.validateData({ visual: false })], [], 'the data as shipped passes');
 
 // A rig of plain numbers: each bone's rotation, crouch and lean summed, the haft's line.
@@ -60,13 +61,14 @@ assert.ok(strike > 0.1 && follow > 0.05, `the strike's and follow-through's keys
 const steps = [];
 let prev = sample(cleave, 0);
 for (let t = 1 / 60; t < end; t += 1 / 60) { const s = sample(cleave, t); steps.push({ t, d: s.map((v, i) => Math.abs(v - prev[i])) }); prev = s; }
+const CH = ['crouch', 'lean', 'haft0', 'haft1', 'haft2', ...BONES.flatMap(b => [b + '.x', b + '.y', b + '.z'])], spikeAt = [];
 let spikes = 0, worstWind = 0, worstAll = 0;
 steps.forEach((st, k) => st.d.forEach((d, i) => {
   worstAll = Math.max(worstAll, d); if (st.t <= w0 + wLen) worstWind = Math.max(worstWind, d);
   const a = steps[k - 1], b = steps[k + 1];
-  if (a && b && d > 0.03 && d > 2.5 * Math.max(a.d[i], b.d[i])) spikes++;
+  if (a && b && d > 0.03 && d > 2.5 * Math.max(a.d[i], b.d[i])) { spikes++; spikeAt.push(`${CH[i]} at ${st.t.toFixed(3)} s`); }
 }));
-assert.equal(spikes, 0, 'no single-frame jump in any channel');
+assert.equal(spikes, 0, `no single-frame jump in any channel (${spikeAt.join(', ')})`);
 assert.ok(worstWind < worstAll, `the wind-up's fastest frame (${worstWind.toFixed(3)} rad) is slower than the strike's (${worstAll.toFixed(3)})`);
 
 // 3. Absolute keys are passed through; rel keys add to the blend.
@@ -88,5 +90,29 @@ G.ATTACK_POSES.__bad3 = { hits: [{ windup: {}, strike: {}, via: { windup: [{ t: 
 G.ATTACK_POSES.__bad4 = { hits: [{ windup: {}, strike: {}, via: { swing: [] } }] };
 for (const [id, word] of [['__bad1', 'POSE_LIBRARY'], ['__bad2', 'rising'], ['__bad3', 'bone'], ['__bad4', 'via must be']])
   assert.ok(errs(id).some(m => m.includes(word)), `${id} refused (${errs(id).join(' | ') || 'no error'})`);
+
+// 5. The cleave held for 0.4 s and 1 s (its hold's range): the drawn wind-up clock rises every frame through the hold (the body
+// never freezes), creeps at most CONFIG.enemy.holdCreep.cap of the wind-up's rest, and meets the simulation's clock at the strike.
+const W = cleave.hits[0], tH = W.startup * W.hold.at, dt = 1 / 60;
+assert.ok(W.hold.creep > 0, 'the cleave creeps through its hold');
+for (const hold of [0.4, 1]) {
+  const e = { stateTime: 0, holdLeft: null };   // the simulation's side, as js/enemy.js steps it
+  let last = -1, minStep = Infinity, crept = 0;
+  while (e.stateTime < W.startup - 1e-9) {
+    if (e.holdLeft === null && e.stateTime + dt >= tH) e.holdLeft = hold;
+    e.stateTime += dt;
+    if (e.holdLeft > 0) { e.holdLeft -= dt; e.stateTime = Math.min(e.stateTime, tH); }
+    const drawn = G.Enemy.prototype.creepTime.call(e, W, e.stateTime, dt);
+    if (last >= 0) minStep = Math.min(minStep, drawn - last);
+    if (e.holdLeft > 0) crept = drawn - tH;
+    last = drawn;
+  }
+  assert.ok(minStep > dt * W.hold.creep * 0.5, `held ${hold} s: the drawn clock never stops (slowest frame ${(minStep / dt).toFixed(2)}x)`);
+  assert.ok(crept > 0 && crept <= (W.startup - tH) * G.CONFIG.enemy.holdCreep.cap + 1e-9, `held ${hold} s: crept ${crept.toFixed(2)} s of the wind-up`);
+  assert.ok(Math.abs(last - W.startup) < 0.02, `held ${hold} s: the drawn wind-up ends with the simulation's (${last.toFixed(3)} of ${W.startup})`);
+}
+const bad = one('__viaTest'); bad.hits[0].hold = { at: 0.5, time: [0.2, 0.4], chance: 1, creep: 1.5 };
+const badErrs = []; G.checkAttackAnim(bad, 'creep', (ok, msg) => { if (!ok) badErrs.push(msg); });
+assert.ok(badErrs.some(m => m.includes('creep')), 'a creep of 1 or more is refused');
 
 console.log(`pose via: the Captain's cleave raise ${mid.toFixed(2)} rad off the straight blend at most, fastest wind-up frame ${worstWind.toFixed(3)} rad, all checks pass`);

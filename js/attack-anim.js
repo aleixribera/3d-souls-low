@@ -206,6 +206,8 @@ function checkAttackAnim(a, tag, need) {
   need(a.hits.every(h => !('hold' in h) || (h.hold && num(h.hold.at) && h.hold.at > 0 && h.hold.at < 1 && Array.isArray(h.hold.time)
     && num(h.hold.time[0]) && num(h.hold.time[1]) && h.hold.time[0] <= h.hold.time[1] && num(h.hold.chance))),
     `${tag}: a hit's hold needs at (0 to 1 of its wind-up), time [min, max] (s) and chance (0 to 1).`);
+  need(a.hits.every(h => !h.hold || !('creep' in h.hold) || (num(h.hold.creep) && h.hold.creep > 0 && h.hold.creep < 1)),
+    `${tag}: a hold's creep must be between 0 and 1 (the share of its pace the wind-up keeps while held).`);
   if ('tracking' in a) need(a.tracking && num(a.tracking.rate) && a.tracking.rate > 0 && num(a.tracking.commit) && a.tracking.commit >= 0 && a.tracking.commit <= 1,
     `${tag}: tracking needs rate (rad/s) and commit (0 to 1: the share of the wind-up spent turning before it locks).`);
   if (a.markers && a.markers.some(m => m && m.parry)) need(canParryAttack(a), `${tag}: a parry glint on an attack that cannot be parried.`);

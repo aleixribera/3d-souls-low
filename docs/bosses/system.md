@@ -43,6 +43,9 @@ with in-between keys where a straight blend looks stiff:
      from the wrists and is left out while the hands are close: check it, and keep the authored haft where it is wrong.
   4. `node tools/motion/via-keys.cjs <fit.json> <from s> <to s> --keys 3 --only crouch,spin,chest,head,armR,elbowR`:
      the stretch as `rel` keys, pasted into the pose library under a name.
+- **Delayed wind-ups:** a hit's `hold` freezes the wind-up's clock for a while (the delay players read); with
+  `hold.creep` (0 to 1) the body keeps creeping on through the wind-up at that share of its pace instead of freezing,
+  and the strike still lands on time (`Enemy.creepTime`). Film one with `HOLD=<s>` on `tools/anim-strip.cjs`.
 - Check: `node tools/anim-strip.cjs boss:<attackId> <out.jpg> 14 2 1.9` (and `NOVIA=1` for the same attack without its
   in-between keys) shows the move; `tests/pose-via.cjs` holds the curve smooth.
 
