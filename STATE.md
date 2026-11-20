@@ -8,7 +8,10 @@ The iterate loop's working note (`.claude/iterate.md`). Cap: 8,000 characters.
   (`js/ability-touch.js`, sounds in `js/audio.js`). Checks: in-page `plain commons`; frames
   `docs/scorecard/now/touch-*.jpg` (`node tools/now-frames.cjs touches`). Next on track 2: batch 2 (Commons I: the
   blade).
-- Track 1, pass 108: item 4, art style exploration (own line when it ships).
+- Track 1, pass 108: item 4 (pass 1 of 1), art style exploration, done: the Captain fight in four styles,
+  `docs/style/` (`index.html`, `side-by-side.jpg`, MP4s, `frame-times.json`). Normal 1280x720 on this PC, mean ms:
+  control 2.4, cel 8.4, dark 6.8, paint 3.8. Laptop bench unreachable (SSH timeout): 60 fps there unverified. Waits on
+  Aleix's pick; track 1 takes the next item meanwhile.
 - CI: v7.162.0 red on `calling-browser`'s Time Rift bubble wait (SwiftShader); pass 109 holds the boss frozen for
   the wait. Next pass reads CI first.
 - Item 1 left: `PLAY-LINK.txt` at the public `/souls/` address, and Pages retired (workflow off, page gone or
@@ -52,6 +55,8 @@ The iterate loop's working note (`.claude/iterate.md`). Cap: 8,000 characters.
   `docs/design-audit/2026-11-15.md`.
 - Abilities and crates (pass 107, v7.162.0): `js/data/crates.js`, `js/progress.js` (save `v` 2), `js/crate-screen.js`;
   `tests/crates.cjs`. Plain commons' touches (pass 109): `js/ability-touch.js`; in-page `plain commons`.
+- Art styles (pass 108): `?style=cel|dark|paint`, `js/data/styles.js`, `js/style-lab.js`; `tests/style-browser.cjs`;
+  retake `node tools/style-frames.cjs [styles] [still,fight,clip,time]`.
 - Scorecard frames: `tools/scorecard-frames.cjs`; current frames `docs/scorecard/now/` (`tools/now-frames.cjs`).
 
 ## Broken
@@ -68,4 +73,7 @@ None (read the newest CI run).
 
 ## Needs Aleix
 
-Nothing open. Answered: the home server's `/souls/` address is PUBLIC (Aleix, 2026-11-20).
+- Pick an art style (PLAN item 4): cel, dark, painterly or today's look, from `docs/style/index.html` (or
+  `side-by-side.jpg` and the four MP4s). Your taste, so no judge decides it.
+
+Answered: the home server's `/souls/` address is PUBLIC (Aleix, 2026-11-20).
