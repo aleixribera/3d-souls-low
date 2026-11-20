@@ -47,7 +47,7 @@ const Game = {
     this.player = null; this.teacher = null; this.companion = null; companions.hide(); this.enemies = []; this.zones = []; this.duel = null;
     for (const p of particles) { p.life = 0; p.mesh.visible = false; }
     particleBatch.visible = false; particleBatch.count = 0;
-    groundFx.clear(); swordTrail.clear(); projectiles.clear(); if (typeof BossHazards !== 'undefined') BossHazards.clear();
+    groundFx.clear(); swordTrail.clear(); projectiles.clear();
     return retired;
   },
   // Spawn options for a level entry: the one place placement rules live. Every placement stands on the
@@ -131,7 +131,8 @@ const Game = {
     if (it && it.max < fl) it.max = it.count = fl;
     companions.reset(this);
     this.deathTimer = 0; this.hitstop = 0; this.hazardTimers.clear();   // a new body: no death sequence or hit-pause carries over
-    this.worldWaiting = this.kind !== 'bossBattle';
+    // the sparring ring runs at once: its teacher shows each drill before the player does it
+    this.worldWaiting = this.kind !== 'bossBattle' && !(this.kind === 'level' && this.level && this.level.sparring);
     if (this.worldWaiting) input.clear();
     this.cam.yaw = this.player.yaw;
     this.updateCamera(0, true);
@@ -283,7 +284,6 @@ const Game = {
     companions.resolve(this);
     projectiles.update(this, dt);
     burnInFires(this, dt, p, this.companion && this.companion.body);   // the fires left on the floor (a hit's `fire`, js/enemy.js)
-    if (typeof BossHazards !== 'undefined') BossHazards.step(dt, [p, this.companion && this.companion.body], true);
     if (alerting) this.spreadAlert(unaware);
     for (const e of this.enemies) if (!e.alive() && !e.rewarded) { e.rewarded = true; events.emit('enemyDeath', { enemy: e }); }
     if (this.kind === 'level') { this.updateLevel(dt); finale.update(this, dt); lore.update(this, dt); }

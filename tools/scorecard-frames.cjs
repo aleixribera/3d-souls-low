@@ -1,7 +1,7 @@
 'use strict';
 // Evidence frames: the title menu at desktop and phone width, one frame per Ashmere level from
 // its start (with frame time, draw calls and triangles on High), and one frame per boss in a Practice duel, front-lit at
-// fighting distance. Usage: node tools/scorecard-frames.cjs [outDir=docs/scorecard] [levels|bosses|menu ...]
+// fighting distance. Usage: node tools/scorecard-frames.cjs [outDir=docs/scorecard] [levels|bosses|fights|menu ...]
 // One headless Edge, closed at the end; idle priority through tests/low-priority.cjs.
 require('../tests/low-priority.cjs');
 const fs = require('node:fs');
@@ -69,6 +69,18 @@ const measure = (page, ms) => page.evaluate(ms => new Promise(done => {
       });
       await page.waitForTimeout(1800);
       await shot(page, `boss-${id}`); report.bosses.push(id); console.log('boss', id);
+    }
+    // Each boss fights for real (the world awake, the player unkillable): 5 s, then past its phase change for 6 s more,
+    // a frame taken while it attacks. Page errors are counted below (PLAN.md item 2: no console error).
+    if (want('fights')) for (const id of await page.evaluate(() => ENEMY_DEFS.filter(isBossDef).map(d => d.id))) {
+      await page.evaluate(id => { Game.startFight(id); }, id); await settle(page, 300);
+      await page.evaluate(() => { Game.worldWaiting = false; const p = Game.player; p.maxHp = p.hp = 1e7; Game.setLock?.(Game.enemies[0]); });
+      await page.waitForTimeout(5000);
+      await page.evaluate(() => { for (const e of Game.enemies) if (e.alive() && e.def.phases) { e.hp = e.def.hp * 0.4; e.checkPhaseAt?.(); } Game.player.hp = Game.player.maxHp; });
+      await page.waitForFunction(() => Game.enemies.some(e => e.alive() && e.attack && e.state !== ES.RECOVER), null, { timeout: 6000 }).catch(() => {});
+      await shot(page, `fight-${id}`);
+      await page.waitForTimeout(3000);
+      console.log('fight', id, errors.length ? `${errors.length} page errors so far` : 'clean');
     }
     await page.close();
   } finally { await browser.close(); app.server.close(); }

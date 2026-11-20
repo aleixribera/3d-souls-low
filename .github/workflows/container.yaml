@@ -12,9 +12,28 @@ concurrency:
   group: publish-game-container
   cancel-in-progress: false
 
-# CI already tests the release commit on main; this workflow only builds, smoke-tests the image and publishes it.
+# CI tests the release commit on main; this workflow publishes only once that run is green (tools/ci-gate.sh),
+# then builds, smoke-tests the image and publishes it.
 jobs:
+  ci-green:
+    name: CI passed on this commit
+    runs-on: ubuntu-latest
+    timeout-minutes: 75
+    permissions:
+      contents: read
+      actions: read
+    steps:
+      - name: Check out
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+      - name: Wait for CI on this commit and require success
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: bash tools/ci-gate.sh "${{ github.sha }}" 70
+
   publish:
+    needs: ci-green
     runs-on: ubuntu-latest
     timeout-minutes: 25
     permissions:

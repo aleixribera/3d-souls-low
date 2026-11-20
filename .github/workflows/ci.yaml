@@ -10,9 +10,10 @@ on:
 permissions:
   contents: read
 
-# Two passes push to main: a run on main always completes (the next one waits); a PR's newer push cancels its old run.
+# Every commit on main gets its own complete run: the container publishes only from a green one (tools/ci-gate.sh),
+# and a shared group would cancel a release run left waiting. A PR's newer push cancels its old run.
 concurrency:
-  group: ci-${{ github.ref }}
+  group: ci-${{ github.ref == 'refs/heads/main' && github.sha || github.ref }}
   cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
 
 jobs:

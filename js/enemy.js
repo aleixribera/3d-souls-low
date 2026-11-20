@@ -142,8 +142,7 @@ class Enemy {
   constructor(def, opts) {
     const E = CONFIG.enemy, B = lookup(BEHAVIORS, opts.behavior, 'behaviour', 'gated');
     this.def = def;
-    const isV2Skinned = !!(def.v2 && typeof SkinnedBossRig === 'function' && typeof MODEL_DEFS !== 'undefined' && MODEL_DEFS[def.model] && MODEL_DEFS[def.model].skinnedV2);
-    this.rig = isV2Skinned ? new SkinnedBossRig(def) : new Rig({ scale: def.scale, bulk: def.bulk, color: def.color, weapon: def.weapon, offhand: def.offhand, visual: def.visual, model: def.model, variant: opts.variant });
+    this.rig = new Rig({ scale: def.scale, bulk: def.bulk, color: def.color, weapon: def.weapon, offhand: def.offhand, visual: def.visual, model: def.model, variant: opts.variant });
     this.radius = def.radius; this.height = BODY_HEIGHT * def.scale;
     this.behavior = opts.behavior; this.notice = opts.notice; this.wide = !!opts.wide;   // wide: sees all round even unaware (a lookout)
     this.leash = opts.leash ?? Infinity; this.homeLeash = opts.homeLeash ?? Infinity;
@@ -208,7 +207,6 @@ class Enemy {
     this.phaseIds = def.phases ? (this.boss && this.boss.phases) || def.defaultPhases || null : null;
     this.phase = -1;
     if (this.phaseIds) this.enterPhase(0);
-    if (typeof BossV2 !== 'undefined') BossV2.init(this);
     this.savePrev();
   }
   // A phase's definition: the base def with the phase's own fields over it (name, hp, cooldown, speed...) and its
@@ -309,7 +307,7 @@ class Enemy {
   }
   invulnerable() { return this.in('invulnerable') || this.blinkLeft > 0 || this.burrowed() || (!!this.attack && !!this.attack.invulnerable && (this.state === ES.WINDUP || this.state === ES.ACTIVE)); }
   savePrev() { this.px = this.x; this.py = this.y; this.pz = this.z; this.pyaw = this.yaw; }
-  setState(s) { this.parriedFor = null; this.state = s; this.stateTime = 0; this.leaping = false; this.blinkLeft = 0; this.markerSeen = null; if (s !== ES.CHASE) this.cued = null; if (this.v2 && s !== ES.WINDUP && s !== ES.ACTIVE && s !== ES.RECOVER) BossV2.clearAttack(this); }
+  setState(s) { this.parriedFor = null; this.state = s; this.stateTime = 0; this.leaping = false; this.blinkLeft = 0; this.markerSeen = null; if (s !== ES.CHASE) this.cued = null; }
   in(group) { return ENEMY_GROUPS[group].has(this.state); }
   alive() { return this.state !== ES.DEAD && this.state !== ES.GONE; }
   isAttacking() { return this.in('attacking'); }
@@ -543,12 +541,10 @@ class Enemy {
         } else if (this.cooldown <= 0 && dist <= this.holdReach() && Math.random() < (d.approach ?? CONFIG.ai.approach) * (this.isBoss() ? CONFIG.bossMove.close.approach * this.moveRate() : 1) * dt) {
           this.stepIn = true; this.stepInNearest = dist; this.strikeFrom = this.attackReach.short;   // holding, ready to strike: now and then it steps in
         }
-        if (this.v2) BossV2.stepStance(this, dt, player, dist);
         [tx, tz] = this.holdVelocity(player, dist, dt);
         break;
       }
       case ES.WINDUP: {
-        if (this.v2) { BossV2.stepStance(this, dt, player, dist); BossV2.stepAttack(this, dt, player); }
         const a = this.attack, hit = a.hits[this.hitIndex];
         if (hit.bolt) this.noteBolt(player);
         if (hit.prismFire) this.notePrismAim(player);
@@ -607,7 +603,6 @@ class Enemy {
         break;
       }
       case ES.ACTIVE: {   // the strike, then (hitbox closed) its follow-through
-        if (this.v2) { BossV2.stepStance(this, dt, player, dist); BossV2.stepAttack(this, dt, player); }
         if (this.isTracking()) this.yaw = turnToward(this.yaw, toPlayer, this.attack.track * this.moveRate() * dt);
         const striking = this.stateTime < this.attack.hits[this.hitIndex].active;
         if (!striking) this.hitbox = null;
@@ -617,13 +612,11 @@ class Enemy {
         break;
       }
       case ES.RECOVER: {
-        if (this.v2) { BossV2.stepStance(this, dt, player, dist); BossV2.stepAttack(this, dt, player); }
         // Mashed through its recovery (CONFIG.enemy.mash): past `recoverCut` of it, it breaks off at once.
         const b = playerAlive && this.recoverMul === 1 && this.stateTime >= this.attack.recovery * E.mash.recoverCut && this.breakOff(dist);   // dashed through: no break-off
         if (b) { this.learn(); this.yaw = toPlayer; this.beginAttack(b); break; }
         if (this.stateTime >= this.attack.recovery) {   // attack over: cool down
           this.learn();
-          if (this.v2) BossV2.onAttackEnd(this);
           this.cooldown = rand(d.cooldown[0], d.cooldown[1]); this.setState(ES.CHASE); this.regroup(dist);
         }
         break;
@@ -763,9 +756,8 @@ class Enemy {
   // Returns the attack to start now, or null. `shotsOnly`: projectiles only.
   chooseAttack(dist, toPlayer, dt, shotsOnly = false) {
     if (this.cooldown > 0 || Math.abs(angDiff(toPlayer, this.yaw)) >= CONFIG.enemy.attackFacing || !crowd.mayStart()) return null;
-    const rawReach = this.def.attacks.filter(a => !a.when && !a.learned && !this.spent(a) && (!shotsOnly || a.projectile) && dist >= (a.minRange || 0) && dist <= a.range
+    const inReach = this.def.attacks.filter(a => !a.when && !a.learned && !this.spent(a) && (!shotsOnly || a.projectile) && dist >= (a.minRange || 0) && dist <= a.range
       && (!a.hpBelow || this.hp <= this.def.hp * a.hpBelow));   // `hpBelow` (v5.9): only once its health is that low
-    const inReach = this.v2 ? BossV2.filterAttacks(this, rawReach) : rawReach;
     const close = inReach.filter(isClose);
     const chance = this.grouped ? groupedChance : attackChance;
     if (close.some(strikesAtOnce) && !(this.stepIn && dist > this.strikeFrom)) return pickByChance(close, chance);
@@ -790,7 +782,6 @@ class Enemy {
     if (attack.cue) this.cueKin(attack.cue);
     this.moveRun = base.id === this.lastMove ? (this.moveRun || 0) + 1 : 1; this.lastMove = base.id; this.landed = false; this.dashedThrough = false; this.recoverMul = 1;
     this.attack = attack; this.hitIndex = 0; this.stepIn = false; this.holdLeft = null; this.leapHit = -1; this.blinkHit = -1; this.burrowHit = -1; this.setState(ES.WINDUP);
-    if (this.v2) BossV2.onAttackStart(this);
     this.attackNo++;
     if (attack.when === 'resonant') { this.resonance = 0; this.resonanceRest = this.def.resonance ? this.def.resonance.rest || 0 : 0; }   // the answer gives the ringing back
     crowd.started(this);
@@ -1202,10 +1193,6 @@ class Enemy {
 
   pose(tt, ctx) {
     const r = this.rig, d = this.def, E = CONFIG.enemy;
-    if (r && r.isSkinnedV2) {
-      r.updateAnimation(this, ctx.dt || CONFIG.step, typeof Game !== 'undefined' ? Game.player : null);
-      return;
-    }
     r.reset(); r.setOpacity(1); r.root.visible = true;
     let warn = 0, glint = -1, heavy = 0;
     const a = this.attack;

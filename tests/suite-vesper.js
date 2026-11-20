@@ -14,7 +14,7 @@
     const parts = KIT.modelParts('paleMeridian');
     expect.ok(parts.tris > 4000 && parts.tris <= 14000, `paleMeridian tris (${parts.tris}) within boss budget`);
 
-    Game.startFight('vesper'); Game.loading = 0;
+    Game.startFight('vesper'); Game.loading = 0; Game.worldWaiting = false;
     const e = Game.enemies[0], p = Game.player;
     p.maxHp = p.hp = 1e5;
     expect.ok(!!e.rig && !!e.rig.bones.haloA && !!e.rig.bones.haloB, 'astrolabe halo bones exist on rig');
@@ -37,7 +37,7 @@
 
   test('Vesper: astralPrisms renders sightlines, fired lances and clears on Counter shatter', () => {
     sim.begin();
-    Game.startFight('vesper'); Game.loading = 0;
+    Game.startFight('vesper'); Game.loading = 0; Game.worldWaiting = false;
     const e = Game.enemies[0], p = Game.player;
     p.maxHp = p.hp = 1e5;
     e.x = e.px = 0; e.z = e.pz = 0; e.yaw = 0; e.cooldown = 99; e.setState(ES.IDLE);

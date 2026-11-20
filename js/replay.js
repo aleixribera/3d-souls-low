@@ -226,7 +226,6 @@ const replayView = (() => {
     if (a.frame.embers !== embersOf && (embersOf?.length || a.frame.embers?.length)) {
       embersOf = a.frame.embers;
       revive.set((embersOf || []).map(m => ({ ...m, saved: '', reviving: '', standIn: '' })), SELF);
-      if (typeof BossHazards !== 'undefined') BossHazards.applySnapshot(a.frame?.hazards || []);
     }
   }
   function presentFrame(p) {

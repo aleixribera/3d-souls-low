@@ -723,7 +723,6 @@ const GAME_FILES = [
   'data/bosses/kindling-tree.js',   // after move-sources.js: the Rootbound fight with the Zealot's moves
   'data/bosses/kings-blade.js',   // the Oath Guard and its answer; the torch past half
   'data/bosses/vesper.js',   // Boss Rush & Practice: Vesper, the Pale Meridian (floating silver prisms & eclipse)
-  'data/bosses/ashwing.js',   // Boss v2 flagship: Veyra, the Ashwing (26-bone skinned wyvern, stances, timeline tracks)
   'data/rush.js',   // Endless Boss Rush: the opening bosses and the modifiers
   'data/showcase.js',   // the showcase's script (js/showcase.js)
   'levels/arena.js',
@@ -773,18 +772,16 @@ const GAME_FILES = [
   'baked/hollow.js',
   'baked/lancer.js',
   'baked/knight.js',
-  'baked/rogue.js', 'baked/duelist.js', 'baked/warden.js', 'baked/bowman.js', 'baked/wisp.js', 'baked/executioner.js', 'baked/shover.js', 'baked/gargoyle.js', 'baked/sentinel.js', 'baked/captain.js', 'baked/bellwarden.js', 'baked/giant.js', 'baked/aldric.js', 'baked/ostrey.js', 'baked/castellans.js', 'baked/ringer.js', 'baked/hollis.js', 'baked/oswin.js', 'baked/agathe.js', 'baked/kindling-tree.js', 'baked/kings-blade.js', 'baked/vesper.js', 'baked/ashwing.js',
+  'baked/rogue.js', 'baked/duelist.js', 'baked/warden.js', 'baked/bowman.js', 'baked/wisp.js', 'baked/executioner.js', 'baked/shover.js', 'baked/gargoyle.js', 'baked/sentinel.js', 'baked/captain.js', 'baked/bellwarden.js', 'baked/giant.js', 'baked/aldric.js', 'baked/ostrey.js', 'baked/castellans.js', 'baked/ringer.js', 'baked/hollis.js', 'baked/oswin.js', 'baked/agathe.js', 'baked/kindling-tree.js', 'baked/kings-blade.js', 'baked/vesper.js',
   'baked/hound.js',   // the Grave Hound summon's own model (js/summon-hound.js)
   'baked/guardian.js',   // the Stone Guardian summon's own model (js/summon-figures.js)
   'baked/lancer-of-ash.js',   // the Lancer of Ash summon's own model (js/summon-figures.js)
   'baked.js',
-  'boss-rig.js',   // Boss v2: arbitrary 4-bone skinned rigs & hybrid Blender clip animator
   'animator.js',
   'attack-anim.js',
   'character.js',
   'player.js',
   'player-pose.js',   // the player's look each frame (drawing only; after player.js)
-  'boss-v2.js',   // Boss v2 simulation: stances, timeline tracks, multi-hitboxes, synced world hazards
   'enemy.js',
   'crowd.js',
   'combat.js',
@@ -826,7 +823,6 @@ const GAME_FILES = [
   'ultra-post.js',
   'ultra-fx.js',
   'ultra-boss.js',
-  'boss-fx-v2.js',   // Boss v2 modular cue-driven FX, multi-bone smears, synced hazard renderers
   'ring-waves.js',
   'area-marks.js',
   'tether.js',
@@ -861,7 +857,7 @@ const GAME_FILES = [
   'replay.js',     // the replay viewer: the replay door's /watch only (server/replays.cjs)
   'boot.js',
 ];
-const LOAD_STAMP = '7.160.0';   // bump for each release; stable within a release so browsers can cache scripts
+const LOAD_STAMP = '7.161.0';   // bump for each release; stable within a release so browsers can cache scripts
 const loadScript = (file, dir = 'js/') => new Promise(resolve => {
   const s = document.createElement('script');
   s.src = dir + file + '?v=' + LOAD_STAMP;

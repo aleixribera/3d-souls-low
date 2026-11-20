@@ -77,8 +77,6 @@ globalThis.host = (() => {
     if (['attackStart', 'attackPhase', 'bossPhase', 'bossRetreat', 'bossGone', 'enemyBlink', 'impact'].includes(type))
       eventList.push({ type, enemy: e && e.netId, attack: e && e.netAttack, out: d.out, seamless: d.seamless,
         x: d.x, y: d.y, z: d.z, fx: d.fx, hitIndex: e && e.hitIndex });
-    if (type === 'bossCue' && e)
-      eventList.push({ type: 'bossCue', enemy: e.netId, attackId: d.attack?.id || null, cueIndex: d.cueIndex });
     // Enemy key-pose markers (tolls, chimes): the marker's index in its attack's own list.
     if (type === 'attackMarker' && e?.netId && Array.isArray(d.attack?.markers) && d.attack.markers.includes(d.marker))
       eventList.push({ type, enemy: e.netId, attack: e.netAttack, attackId: d.attack.id, marker: d.attack.markers.indexOf(d.marker) });
@@ -221,7 +219,6 @@ globalThis.host = (() => {
     Game.kind = kind; Game.story = false; Game.duelId = id; Game.duelPartners = [...partners];
     Game.level = level; world = nextWorld;
     Game.cleared = new Set(); Game.complete = false; crowd.reset(); crowdClocks.clear();
-    if (typeof BossHazards !== 'undefined') BossHazards.clear();
     const s = Game.level.playerStart || Game.level.start;
     checkpoint = { ...s, y: world.floorY(s.x, s.z, s.y) };
     Game.zones = [];
@@ -609,7 +606,6 @@ globalThis.host = (() => {
       crowdClocks.set(id, crowd.sinceStart);
     }
     for (let i = 0; i < Game.enemies.length; i++) for (let j = i + 1; j < Game.enemies.length; j++) separatePair(Game.enemies[i], Game.enemies[j], 0.5);
-    if (typeof BossHazards !== 'undefined') BossHazards.step(dt, [...players, ...[...bots.values()].map(b => b.body)], true);
     abilityPowers.tick(dt);   // lightning and blades still striking
     if (pendingClaims.length) retryClaims();
     for (const e of Game.enemies) if (!e.alive() && !e.rewarded) { e.rewarded = true; eventList.push({ type: 'enemyDeath', enemy: e.netId }); }
@@ -628,10 +624,8 @@ globalThis.host = (() => {
       vx: e.vx, vy: e.vy, vz: e.vz, ...(e.def.resonance ? { resonance: Math.round(e.resonance * 100) / 100 } : null),   // pass 68: his bronze's glow and ring
       ...(e.mendPool > 0 ? { mend: Math.round(e.mendPool) } : null),   // pass 75: Aldric's open wounds (his bar, his cracks)
       ...(e.learned.length ? { learned: e.learned.slice() } : null),   // pass 77: the attacks the Antlered Hunger has learned (its antlers)
-      ...(e.v2 ? { v2s: e.v2.stance, v2a: Math.round(e.v2.altitude * 100) / 100 } : null),
       exec: e.netExec ? { player: e.netExec.player, time: e.stateTime } : null,
     })), events: drain ? eventList.splice(0) : [], shots: drain ? bolts.splice(0) : [],
-      hazards: typeof BossHazards !== 'undefined' ? BossHazards.snapshot() : [],
       embers: [...embers].map(([id, m]) => ({ id, x: m.x, y: m.y, z: m.z, t: Math.min(1, m.t / CONFIG.revive.time), by: m.by })) };
     return result;
   }
