@@ -6,6 +6,7 @@
 //   title    a few words
 //   text     one to three sentences, shown under the list when the entry is selected
 const CHANGELOG = [
+  { version: 'v7.166.0', title: 'The Captain\'s cleave, alive', text: 'When the Pillager Captain delays his overhead cleave, he no longer freezes: he keeps coiling slowly back, then brings it down. His wind-up now sinks into his knees and twists his hips and shoulders, so the blow comes from his whole body.' },
   { version: 'v7.165.0', title: 'A clearer Pillager Captain', text: 'The Pillager Captain\'s warning glow now sits on the edge of his bill, so you can see his whole body as he winds up. His overhead cleave swings from the hips and carries his weight through the blow.' },
   { version: 'v7.164.0', title: 'Six blade commons', text: 'Six new commons, each a small strike with its own look and sound: Spark Step (dash past the boss), Ember Lick (the fourth light hit), Hot Iron (a full heavy), Petal Cut (a dash attack that cuts again a beat later), Echo Step (your dodge\'s afterimage swings) and Dust Devil (jump beside the boss).' },
   { version: 'v7.163.0', title: 'Plainer, sharper abilities', text: 'Legendaries now have one level and hit at full strength from the start. Swift Charge and Long Shadow are gone. The plain commons turn up less often, and each now shows a small sign when it works: a glint on your blade, a feather when a dash comes back, frost on a riposte, an ink stroke behind a finished foe, and more.' },

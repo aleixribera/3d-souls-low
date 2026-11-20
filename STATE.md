@@ -8,12 +8,13 @@ The iterate loop's working note (`.claude/iterate.md`). Cap: 8,000 characters.
   (`js/common-fx.js`) and sound; the server checks dash and jump claims against pose trails (`js/lobby-sim.js`).
   Acceptance: each fires on the Captain, is drawn and heard: in-page `blade commons`, `tests/blade-commons.cjs`;
   frames `docs/scorecard/now/blade-*.jpg` (`node tools/now-frames.cjs blades`). Next on track 2: batch 3.
-- Track 1, pass 113: item 5 (pass 2 of 3), the Captain, v7.165.0: his wind-up tell on the bill's edge (`edgeTell`, no
-  body tint); the cleave's strike and follow-through as `via` keys. Acceptance: `node tools/anim-strip.cjs
-  boss:captainOverhead` shows his body its own colour through the wind-up and the chest leading the arms into the blow
-  (`docs/scorecard/now/captain-cleave.jpg`, `.mp4` side and player camera). Judge round 1: caught 9/10, motion 3 (flat;
-  `docs/scorecard/boss-judge.csv`); giveaway: the frozen hold snaps into the strike. Next: keep the body moving through
-  holds (breath, a slow coil), then the Captain's cel model (pass 111 built the pipeline: `docs/bosses/system.md`).
+- Track 1, pass 115: item 5 (the cleave's motion, pass 2 of the judge's motion gap), the Captain, v7.166.0: a delayed
+  wind-up creeps on through its hold (`hold.creep`, `Enemy.creepTime`) instead of freezing, and the cleave's wind-up is
+  coiled (knees, hips, shoulders) not tipped back. Acceptance: `HOLD=0.8 node tools/anim-strip.cjs
+  boss:captainOverhead` shows him moving through every held frame (`docs/scorecard/now/captain-cleave.jpg`, `.mp4`);
+  `tests/pose-via.cjs`. Judge rounds 2-3: motion 3 to 4, caught 9/10 (`docs/scorecard/boss-judge.csv`); giveaway: the
+  strike skips from raised to down and the flat opaque trail hides the swing. Next: the strike's trail and impact, then
+  the Captain's cel model (`docs/bosses/system.md`).
 - Pass 110, the retro (track 2 slot): v7.163.0's CI green (run 44830197524), its container published, and players
   are on it at last (they had v7.159.0 until now). Item 1 done: `PLAY-LINK.txt` is https://aleix.tailfef0f7.ts.net/souls/,
   Pages unpublished (old address 404). Step 1 of every pass: `node tools/live-check.cjs`. Items 1-3 done.
