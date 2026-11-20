@@ -3,11 +3,11 @@
 The iterate loop's working note (`.claude/iterate.md`). Cap: 8,000 characters.
 
 ## Now
-- Track 2, pass 109, PLAN item 8 batch 1 (pass 1 of 1), done in v7.163.0: legendaries one level, Swift Charge and Long
-  Shadow cut, the eight plain commons (`plain: true`, offer weight `plainWeight`) with their touches
-  (`js/ability-touch.js`, sounds in `js/audio.js`). Checks: in-page `plain commons`; frames
-  `docs/scorecard/now/touch-*.jpg` (`node tools/now-frames.cjs touches`). Next on track 2: batch 2 (Commons I: the
-  blade).
+- Track 2, pass 112, PLAN item 8 batch 2 (pass 1 of 1), done in v7.164.0: the six blade commons (Spark Step, Ember
+  Lick, Hot Iron, Petal Cut, Echo Step, Dust Devil), each a small power with its own cel-ink effect
+  (`js/common-fx.js`) and sound; the server checks dash and jump claims against pose trails (`js/lobby-sim.js`).
+  Acceptance: each fires on the Captain, is drawn and heard: in-page `blade commons`, `tests/blade-commons.cjs`;
+  frames `docs/scorecard/now/blade-*.jpg` (`node tools/now-frames.cjs blades`). Next on track 2: batch 3.
 - Track 1, pass 111: item 5 (pass 1 of 3), the boss creation system on the Captain, style-independent half done:
   `docs/bosses/system.md` and `pillager-captain.md`; in-between keys (`via`) and the pose library; the video-to-motion
   tools (`tools/motion/`); the cleave's wind-up from a filmed halberd drill; the blind boss judge, round 0: caught 9/10,
@@ -58,7 +58,7 @@ The iterate loop's working note (`.claude/iterate.md`). Cap: 8,000 characters.
   (REPLAY_PORT, homelab :3083), list `replays/`; notes `node tools/replays.cjs`; `tests/server-replays.cjs`; audit
   `docs/design-audit/2026-11-15.md`.
 - Abilities and crates (pass 107, v7.162.0): `js/data/crates.js`, `js/progress.js` (save `v` 2), `js/crate-screen.js`;
-  `tests/crates.cjs`. Plain commons' touches (pass 109): `js/ability-touch.js`; in-page `plain commons`.
+  `tests/crates.cjs`. Plain commons' touches (pass 109): `js/ability-touch.js`; in-page `plain commons`. Blade commons (pass 112): `js/common-fx.js`; `tests/blade-commons.cjs`, in-page `blade commons`.
 - Art styles (pass 108): `?style=cel|dark|paint`, `js/data/styles.js`, `js/style-lab.js`; `tests/style-browser.cjs`;
   retake `node tools/style-frames.cjs [styles] [still,fight,clip,time]`.
 - Scorecard frames: `tools/scorecard-frames.cjs`; current frames `docs/scorecard/now/` (`tools/now-frames.cjs`).
