@@ -142,7 +142,7 @@ function resolveCombat(game) {
     return { x: (c.x + target.x) / 2, y: clamp(c.y, target.y + 0.3, target.y + target.height - 0.2), z: (c.z + target.z) / 2 };
   };
   // 0. Deflect (the `parry` event and claim keep the old name), before any damage: only the blow that lands first.
-  // A deflected blow never lands; the last blow of an attack deflected leaves the foe open for a riposte.
+  // A deflected blow never lands, and every deflect opens a counter (the last blow of a string also leaves the foe open).
   if (canDeflectNow(p)) {
     let target = null, soonest = Infinity;
     for (const e of live) { const t = parryTiming(p, e, 0); if (t !== null && t < soonest) { soonest = t; target = e; } }

@@ -11,6 +11,14 @@ function setup() {
   return e;
 }
 const claim = (e, id, attack = 'counter', swing = '1') => sim.hit(id, { enemy: e.netId, attack, charge: 0, riposte: true, swing });
+{ // Rule 5: the light counter is the only counter, worth about the old heavy counter (36).
+  const g = name => sim.inspect().Game.update.constructor(`return ${name}`)();
+  const PLAYER_DEF = g('PLAYER_DEF'), makeStrike = g('makeStrike');
+  assert.deepEqual(Object.keys(PLAYER_DEF.moveset.counter), ['light'], 'one counter, on light');
+  assert.ok(!PLAYER_DEF.moveset.attacks.counterHeavy, 'the rising cut is gone');
+  const dmg = makeStrike(PLAYER_DEF.moveset.attacks.counter, true, 0).damage;
+  assert.ok(dmg >= 34 && dmg <= 38, `the counter deals about 36 (${dmg})`);
+}
 for (const index of [0, 1, 2]) {
   const e = setup(), a = e.def.attacks.find(a => a.hits.length === 3 && !a.noParry);
   e.beginAttack(a); e.hitIndex = index; sim.tick(dt);

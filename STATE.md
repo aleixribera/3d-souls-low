@@ -3,14 +3,18 @@
 The iterate loop's working note (`.claude/iterate.md`). Cap: 8,000 characters.
 
 ## Now
-- Pass 105, retro (pass 1 of 1), after CI on a6af2a4: `browser-smoke` failed (`alone-browser` line 61, a 250 ms
-  key press under SwiftShader); the test now holds W until the boss starts. Acceptance: `alone-browser` passes locally;
-  the loop file synced to the skill (ac6d70c) and cut; the next CI run on main shows `browser-smoke` green. CI on a6af2a4: only `browser-smoke` red, so the v7.161.0 container is
-  held by its green-CI gate; the next release publishes.
-- Item 1 left: Pages retires and `PLAY-LINK.txt` points at the home server (`/souls/` on the tailnet host; is it
-  public?); the gate shown failing on a real red push (so far only run against old red/green commits).
-- Item 2 left: the check's in-page tests for v7.160 behaviours ran green locally (`World start`); AGENTS.md has no Boss
-  v2 paragraph. Then item 3 (counters break strings).
+- Pass 106, PLAN item 3 (pass 1 of 1): counters break strings. Built out of loop in v7.139 (every deflect opens a
+  counter, a counter ends the string with a 0.5 s reel, light counter only at 36); this pass proved it. Acceptance met:
+  `tests/counters.cjs` (rules 1, 2, 3, 5), in-page `pass 85 deflect`/`pass 95 counter` (heavy stays normal, one cue on
+  dodge or deflect); bot run `TUNE='{"bot":{"parryChanceScale":12}}' node tools/bot-fights.cjs story 4`: 251 deflects
+  all opened, 234 counters, 33 mid-string, string went on 0 (8 with the rule broken on purpose); cue frames
+  `docs/scorecard/now/counter-*.jpg` (`tools/counter-cue-frames.cjs`).
+- CI: `browser-smoke` red on 2e7a8d6 at `calling-browser` line 173 (twice on CI, green locally): the Time Rift was
+  centred on player a, whose W-hold that wakes fight 5 walks further on SwiftShader; now centred on the boss. Next pass
+  reads CI first.
+- Item 1 left: Pages retires and `PLAY-LINK.txt` (waits on Aleix). The red-CI gate is shown: container run
+  44819283087 refused v7.161.0 on red CI. Item 2 done (v7.161.0, pass 104). Items 1-3 through but hosting: next the two
+  tracks (item 4 style exploration, item 7 crates and loadout), by `docs/two-tracks.md`.
 - The Finishing Blow (pass 100-103, `js/finisher.js`, `js/finisher-fx.js`): 3rd counter; judge 4, 4, 5; its look and
   the showcase finale are "Later" in the plan.
 
@@ -52,8 +56,7 @@ The iterate loop's working note (`.claude/iterate.md`). Cap: 8,000 characters.
 
 ## Broken
 
-- Not in CI: `lobby-polish-browser` (flaky), `experience-browser` (320x568), `calling-browser` (a swift mark on a
-  Crowned offer).
+- Not in CI: `lobby-polish-browser` (flaky), `experience-browser` (320x568). `calling-browser` runs in `browser-smoke`.
 
 ## Queued runs
 

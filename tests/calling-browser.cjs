@@ -169,7 +169,11 @@ const out = process.env.CALLING_SHOTS || '.scratch/calling';
     // a's Time Rift, fired as their dodge claim would fire it: both browsers draw the stopped boss's bubble. A legendary
     // on no enemy (a Meteor's blast) reaches every browser too, with its frame.
     const R = app.sim.inspect(), fireAs = (kit, when, ctx) => R.abilityPowers.trigger(aId, R.holderOf(aId), kit, when, ctx);
-    fireAs(app.sim.kitOf(aId), 'dodge', { enemy: R.Game.enemies[0] });
+    // Centred on the boss: a real perfect dodge is at the boss, and a's walk that woke the fight can leave them out of
+    // the rift's reach on a slow machine (CI's SwiftShader, pass 106).
+    const boss = R.Game.enemies[0];
+    fireAs(app.sim.kitOf(aId), 'dodge', { enemy: boss, x: boss.x, y: boss.y, z: boss.z });
+    assert.ok(boss.frozen > 0, `the rift froze the boss on the server (${boss.frozen}, ${boss.state})`);
     for (const page of [a, b]) await page.waitForFunction(() => abilityFx.info().bubbles > 0, null, { timeout: 5000 });
     fireAs({ powers: [{ id: 'meteor-fall', when: 'land', then: 'blast', action: 'heavy', v: { radius: 1, damage: 1, cooldown: 1 } }] }, 'land', { x: 0, y: 0, z: 0, action: 'heavy' });
     for (const page of [a, b]) await page.waitForFunction(() => abilityFx.info().meteors > 0, null, { timeout: 5000 });

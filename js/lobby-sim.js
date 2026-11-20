@@ -704,8 +704,8 @@ globalThis.host = (() => {
     const recent = history.filter(f => f.enemies.some(s => s.id === msg.enemy && s.attack === msg.serial && (s.state === ES.WINDUP || s.state === ES.ACTIVE)))
       .map(f => f.enemies.find(s => s.id === msg.enemy));
     const a = recent.length && e.baseDef.attacks.find(a => a.id === recent[0].attackId);
-    // The deflected blow (pass 85): `msg.hit`, its index in the attack. Only the last blow of an attack opens it; an
-    // earlier one is turned aside and the string goes on.
+    // The deflected blow (pass 85): `msg.hit`, its index in the attack. Every deflect allows this player a counter; the
+    // last blow of an attack also opens the foe, an earlier one is turned aside and the string goes on until a counter lands.
     const hit = msg.hit;
     if (!a || !Number.isSafeInteger(hit) || hit < 0 || hit >= a.hits.length || !canParryHit(a, hit)
       || !recent.some(s => (s.hit || 0) === hit)) return false;   // that very blow was under way

@@ -1240,7 +1240,8 @@ const multiplayer = (() => {
     return { blocked, opened: counter === 'break', died: false };
   }
   // A deflect (pass 85): the blow's index goes too, so the server knows a string's last blow (which opens the foe) from
-  // an earlier one (only turned aside, the string goes on). Returns { opened } like Enemy.getDeflected.
+  // an earlier one (turned aside, the string goes on until a counter lands). Every deflect opens a counter; returns
+  // { opened } like Enemy.getDeflected.
   function parry(e) {
     const hit = e.hitIndex || 0, last = !!e.attack && hit === e.attack.hits.length - 1;
     command('parry', { enemy: e.netId, serial: e.netSerial, hit });

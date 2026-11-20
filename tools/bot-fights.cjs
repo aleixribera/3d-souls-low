@@ -4,6 +4,8 @@
 // Per boss: wins, avg fight time, damage the party took, bot falls per fight, seconds each bot stayed alive, damage
 // the bots dealt per fight (and per second a bot was alive), falls per ten bot-minutes, rolls per bot-minute, roll chains (3+ rolls each within 1.2 s of the last), swings started
 // while the boss was mid-string, and hits taken while swinging.
+// Counters (pass 106, PLAN item 3): deflects and how many opened a counter, counters landed and how many of those came
+// mid-string, and how often a boss's string went on after a counter landed (the rule: never).
 // JSON=path writes the per-boss rows. MOODS=1 prints each bot's per-fight choices (if the brain exposes them).
 // PERSON=1 (pass 35): the first of the three stands in for a person (its body has no botId, so the other two treat it
 // as one; it still plays with a bot's brain). Adds the person's share of the damage, who landed Finishing Blows, and what the two
@@ -22,7 +24,29 @@ const rows = [];
 const person = !!process.env.PERSON, clean = !!process.env.CLEAN, fight = Number(process.env.FIGHT || 0);
 const count = Math.max(1, Math.min(4, Number(process.env.BOTS || 3)));
 const zero = () => ({ fights: 0, wins: 0, time: 0, anyFell: 0, dmg: 0, dealt: 0, rolls: 0, botMin: 0, chains: 0, swingsIn: 0, hitSwinging: 0, fell: 0,
-  personDealt: 0, execPerson: 0, execBots: 0, offered: 0, backup: 0, drew: 0, waiting: 0, judged: 0, needless: 0, swings: 0 });
+  personDealt: 0, execPerson: 0, execBots: 0, offered: 0, backup: 0, drew: 0, waiting: 0, judged: 0, needless: 0, swings: 0,
+  deflects: 0, deflectsOpened: 0, counters: 0, countersMid: 0, stringOn: 0 });
+// Watches an enemy's deflects and counters (wrapping its own methods: the fight runs unchanged).
+const watched = new WeakSet();
+function watchCounters(e, r) {
+  if (watched.has(e)) return; watched.add(e);
+  const deflected = e.getDeflected, hit = e.takeHit;
+  e.getDeflected = function (...a) { const res = deflected.apply(this, a); r.deflects++; if (res && res.opened) r.deflectsOpened++; return res; };
+  e.takeHit = function (strike, ...a) {
+    const counter = strike && strike.riposte && !strike.power && this.alive(), A = this.attack, i = this.hitIndex, no = this.attackNo, st = this.state;
+    // Blows still to come: those after this one, and this one too while it is only winding up.
+    const mid = counter && A && !A.projectile && ['windup', 'active', 'recover'].includes(st) && (i < A.hits.length - 1 || st === 'windup');
+    const res = hit.call(this, strike, ...a);
+    if (counter && !(res && res.blocked)) { r.counters++; if (mid) { r.countersMid++; this.afterCounter = { A, i, no, st }; } }
+    return res;
+  };
+}
+// After a counter that landed mid-string: a later blow of that same attack going active is the string going on.
+function stringGoesOn(e, r) {
+  const k = e.afterCounter; if (!k) return;
+  if (e.attack !== k.A || e.attackNo !== k.no) { e.afterCounter = null; return; }
+  if (e.state === 'active' && (e.hitIndex > k.i || (e.hitIndex === k.i && k.st === 'windup'))) { r.stringOn++; e.afterCounter = null; }
+}
 const tot = zero();
 // TUNE='{"bot":{"notice":[0.12,0.3]}}' (pass 46): merged into each fight's CONFIG before its bots join, to try a value
 // without editing js/config.js (objects merge, anything else replaces).
@@ -34,7 +58,8 @@ const tune = sim => { if (tuning) merge(sim.inspect().Game.update.constructor('r
 // follows the roll); judged: rolls with a melee blow coming. An upper bound: a roll that took the bot out of a tracking
 // blow's way can look needless too, and a roll at a bolt counts while a melee blow is also winding up.
 const extra = row => `  swings ${(row.swings / Math.max(1e-9, row.botMin * (person ? (count - 1) / count : 1))).toFixed(1)} a bot-min  waiting ${(row.waiting / Math.max(1e-9, row.botMin * (person ? (count - 1) / count : 1))).toFixed(1)} s a bot-min  needless rolls ${row.needless}/${row.judged} (${(100 * row.needless / Math.max(1, row.judged)).toFixed(0)}%)  Finishing Blows ${person ? `person ${row.execPerson} bots ${row.execBots}` : row.execBots}  left to a person: ${row.offered} openings  behind a boss on someone else ${(row.backup / Math.max(1e-9, row.botMin * (person ? (count - 1) / count : 1))).toFixed(1)} s a bot-min  drew ${row.drew}` +
-  (person ? `  person's share of damage ${(100 * row.personDealt / Math.max(1, row.dealt)).toFixed(0)}%` : '');
+  (person ? `  person's share of damage ${(100 * row.personDealt / Math.max(1, row.dealt)).toFixed(0)}%` : '') +
+  `  deflects ${row.deflects} (opened ${row.deflectsOpened})  counters ${row.counters} (mid-string ${row.countersMid}, string went on ${row.stringOn})`;
 for (const boss of bosses) {
   const r = { boss, ...zero() };
   const [first, ...partners] = boss.split('+');
@@ -55,6 +80,7 @@ for (const boss of bosses) {
       sim.setPlayers([]); sim.tick(1 / 60);
       if (clean) for (const b of bodies) if (b.alive()) b.hp = b.maxHp;
       const boss = Game.enemies.find(e => e.alive());
+      for (const e of Game.enemies) { watchCounters(e, r); stringGoesOn(e, r); }
       pending = pending.filter(p => {
         p.watch = p.watch.filter(w => w.e.attack === w.attack && blowing(w.e));
         const now = p.body.alive() && { x: p.body.x, y: p.body.y, z: p.body.z, radius: p.body.radius, height: p.body.height, grounded: p.body.grounded };
