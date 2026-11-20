@@ -13,8 +13,9 @@ The loop file for the `iterate` skill. Where it differs from the skill, this fil
 
 ## Plan
 
-`PLAN.md` (written by the director chat): the order of work, two tracks run in parallel (two passes at a time, each in
-its own worktree), and each item's check. Cuts and finds go to `BACKLOG.md`.
+`PLAN.md` (written by the director chat): the order of work and each item's check. One pass at a time until its items
+1 to 3 are done, then two tracks in parallel (two passes at a time, each in its own worktree). Cuts and finds go to
+`BACKLOG.md`.
 
 ## Notes
 

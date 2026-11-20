@@ -38,11 +38,14 @@ side by side, and each should feel like the main event.
   menu between runs. It's multiplayer, so one player's abilities don't affect the other players too much: no
   slowing, moving, linking or taking over a teammate's fight. Players stack strong abilities, and the difficulty curve is
   balanced with that in mind. Playing earns levels; each level gives a crate, opened
-  on the end-of-run screen, with a small chance of something cool that joins your pool for later runs. A small
-  Collection page shows what you own. No money and no shop: menus are not where the game is played.
+  on the end-of-run screen, and each crate unlocks one ability you don't own yet (Aleix, 2026-11-20). A new player
+  starts with a small starter set; the starter set's count per rarity is the minimum each player keeps active. From a
+  panel in the lobby (and Boss Rush alone's start), without leaving it, each player picks which of their abilities are
+  active; it locks while a run is on. No cosmetics, no collectibles, no money and no shop: menus are not where the game
+  is played.
 - **The crates** must be addictive: players play again just to open the next one. Opening one is a roll, like the old
-  CS case opening (a strip of rewards spinning past and slowing onto one). One reward per crate, shown with its name,
-  description and everything it does. The crates look great: cool animations, cool effects, all of it.
+  CS case opening (a strip of rewards spinning past and slowing onto one). One ability per crate, never a duplicate, shown with its
+  name, card and everything it does. The crates look great: cool animations, cool effects, all of it.
 - **Practice**: one small, fast mode to fight any enemy or boss (one or several, or bosses against each other) or start
   any level. Aleix uses it to test.
 
@@ -60,7 +63,10 @@ side by side, and each should feel like the main event.
   its tell. Nothing hits without warning. Each of a boss's attacks has its own wind-up, so players rarely mistake one
   attack for another.
 - **Spectacular bosses.** Each boss is its own idea, with its own meaning and backstory, its own moveset, big effects
-  and high-quality animation. No two bosses share attacks. Don't hold back on boss effects.
+  and high-quality animation. No two bosses share attacks. Big effects on impacts, signature moments and phase
+  changes; during a wind-up nothing covers the boss's body or weapon (Aleix, 2026-11-20).
+- **One art style for the whole game,** chosen by Aleix from built examples (cel-shaded anime among them); until he
+  picks, today's look stands (Aleix, 2026-11-20).
 - **Exceptional models,** the big bosses most of all: the best detail and art direction.
 - **Smooth animation.** No hard edges: motion follows smooth curves with real-world acceleration and easing.
 - **A compelling story,** told in whatever way works best, without ever taking control from the player: movement and
@@ -78,7 +84,8 @@ side by side, and each should feel like the main event.
 
 ## Rules
 
-- Every character is a real Blender model, with no stock-AI UI (Aleix's `~/.claude/CLAUDE.md`). Textures and concept art may use ChatGPT's image generation (Aleix, 2026-11-14).
+- Every character is a real Blender model, with no stock-AI UI (Aleix's `~/.claude/CLAUDE.md`). Textures, concept art and animation may use free tools; the agent is responsible for the final result. No ChatGPT
+  (Aleix, 2026-11-20).
 - A new model or boss is seen working in a preview, standing and through every attack, and judged on whether it will
   work in the game.
 - Everything is original. The Elden Ring bosses and the Lands Between leave the game (Aleix, 2026-11-13).
