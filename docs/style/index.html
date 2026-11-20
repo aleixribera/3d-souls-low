@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Art style exploration</title>
+<!-- PLAN.md item 4: the same fight drawn four ways (js/data/styles.js, js/style-lab.js). Retaken by tools/style-frames.cjs.
+     Open it served from the repo root (python -m http.server), or open the files beside it. -->
+<style>
+  :root { color-scheme: dark; --bg: #0d0c0b; --ink: #e9e3d8; --dim: #a39a8c; --line: #2b2722; }
+  body { margin: 0; background: var(--bg); color: var(--ink); font: 15px/1.45 Georgia, 'Times New Roman', serif; }
+  main { max-width: 1400px; margin: 0 auto; padding: 24px 16px 48px; }
+  h1 { font-size: 26px; font-weight: 400; margin: 0 0 18px; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 560px), 1fr)); gap: 18px; }
+  figure { margin: 0; border-top: 1px solid var(--line); padding-top: 10px; }
+  figcaption { display: flex; justify-content: space-between; gap: 12px; margin-bottom: 8px; }
+  figcaption b { font-weight: 400; font-size: 18px; }
+  figcaption span { color: var(--dim); font-variant-numeric: tabular-nums; }
+  video, img { width: 100%; display: block; background: #000; aspect-ratio: 16 / 9; }
+  .pair { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-top: 6px; }
+  .pair img { aspect-ratio: auto; }
+  p { color: var(--dim); max-width: 75ch; }
+</style>
+</head>
+<body>
+<main>
+  <h1>Art style exploration</h1>
+  <div class="grid" id="grid"></div>
+  <p id="note"></p>
+</main>
+<script>
+  const STYLES = [['control', "Today's look"], ['cel', 'Cel-shaded anime'], ['dark', 'Stylized dark'], ['paint', 'Painterly']];
+  const grid = document.getElementById('grid');
+  for (const [id, name] of STYLES) {
+    const f = document.createElement('figure');
+    f.innerHTML = `<figcaption><b>${name}</b><span id="t-${id}"></span></figcaption>
+      <video src="${id}.mp4" controls loop muted playsinline preload="metadata"></video>
+      <div class="pair"><img src="${id}-still.jpg" alt="${name}: both fighters at rest"><img src="${id}-fight.jpg" alt="${name}: the Captain attacking"></div>`;
+    grid.append(f);
+  }
+  fetch('frame-times.json').then(r => r.json()).then(T => {
+    for (const [id] of STYLES) if (T[id]) document.getElementById('t-' + id).textContent = `${T[id].meanMs} ms a frame, 1% slowest ${T[id].p99Ms} ms`;
+    document.getElementById('note').textContent = `Frame times: ${T.measured}.`;
+  }).catch(() => {});
+  // Play the four clips together.
+  const vids = [...document.querySelectorAll('video')];
+  vids.forEach(v => v.addEventListener('play', () => vids.forEach(o => { if (o !== v && o.paused) { o.currentTime = v.currentTime; o.play().catch(() => {}); } })));
+</script>
+</body>
+</html>

@@ -17,6 +17,25 @@ function validateData({ visual = true } = {}) {
   }
   for (const id of [ArenaNet.config.calling.id, ArenaNet.config.weekly.id]) need(introIds.has(id), `Missing lobby intro: ${id}.`);
   // The player's look (pass 91, js/player-pose.js, Rig.settle): blend times, the deflect's pose, the player's easings.
+  // The art style exploration (js/data/styles.js, js/style-lab.js): numbers it writes into shaders must be numbers.
+  if (visual) {
+    const n = v => Number.isFinite(v), pos = v => n(v) && v > 0, rgb = c => Array.isArray(c) && c.length === 3 && c.every(n), seen = new Set();
+    for (const S of STYLE_DEFS) {
+      const at = `Style "${S.id}"`, P = S.post, B = S.bands;
+      need(typeof S.id === 'string' && /^[a-z]+$/.test(S.id) && !seen.has(S.id) && typeof S.name === 'string', `${at}: a unique lower-case id and a name.`); seen.add(S.id);
+      need([null, 'bands', 'soft'].includes(S.shade), `${at}: shade is null, 'bands' or 'soft'.`);
+      if (S.shade === 'bands') need(B && Array.isArray(B.at) && Array.isArray(B.level) && B.at.length === B.level.length && B.at.every(n) && B.level.every(pos) && pos(B.keep) && pos(B.soft)
+        && B.at.every((a, i) => !i || a > B.at[i - 1]), `${at}: bands need rising \`at\`, one positive \`level\` each, \`keep\` and \`soft\`.`);
+      if (S.shade === 'soft') need(pos(S.knee), `${at}: a soft shade needs a positive knee.`);
+      if (S.flat) need(pos(S.flat.bias) && n(S.flat.keep) && S.flat.keep >= 0 && S.flat.keep <= 1, `${at}: flat needs a positive mip bias and keep 0 to 1.`);
+      if (!P) continue;
+      need(pos(P.prepass) && P.prepass <= 1 && (P.sat === undefined || n(P.sat)) && (P.exposure === undefined || pos(P.exposure)) && (P.tint === undefined || rgb(P.tint)), `${at}: post.prepass is 0 to 1 of the screen; sat a number; exposure above 0; tint [r, g, b].`);
+      if (P.ink) need(['depth', 'width', 'color', 'fade'].every(k => n(P.ink[k])) && (P.ink.fold === undefined || pos(P.ink.fold)), `${at}: ink needs depth, width, color and fade (fold optional).`);
+      if (P.haze) need(n(P.haze.from) && P.haze.to > P.haze.from && rgb(P.haze.color) && n(P.haze.amount), `${at}: haze needs from < to, an [r, g, b] color and amount.`);
+      if (P.rim) need(rgb(P.rim.color) && ['power', 'strength', 'near'].every(k => pos(P.rim[k])), `${at}: rim needs an [r, g, b] color, power, strength and near.`);
+      if (P.brush) need(Number.isInteger(P.brush.radius) && P.brush.radius >= 1 && P.brush.radius <= 6 && n(P.brush.wobble) && n(P.brush.canvas), `${at}: brush needs a whole radius 1 to 6, wobble and canvas.`);
+    }
+  }
   if (visual) {
     const A = ANIM_SETTINGS, num = v => typeof v === 'number' && v > 0 && v < 1, rot = P => P && typeof P === 'object' && Object.values(P).every(v => Array.isArray(v) && v.length === 3 && v.every(Number.isFinite));
     need(A.settle && num(A.settle.time) && Object.entries(A.settle.into || {}).every(([s, t]) => Object.values(PS).includes(s) && num(t)), 'ANIM_SETTINGS.settle: time and every `into` time must be 0 to 1 s (states from PS).');

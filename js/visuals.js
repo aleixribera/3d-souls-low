@@ -310,19 +310,23 @@ vec3 wTri() {
 // Weathered materials, so a quality change can rebuild them with the cheap or the full surface (simpleSurfaces).
 const WEATHERED = [];
 const WEATHER_MODE = { simple: false };
-const WEATHER_FRAG = `vec3 wT = wTri(); float wD = wT.r, wC = wT.g, wB = wT.b;
+// ART_DETAIL (1 unless js/style-lab.js defines it): how much of the stone's grain and cracks a flat-colour style keeps.
+const WEATHER_FRAG = `#ifndef ART_DETAIL
+#define ART_DETAIL 1.0
+#endif
+  vec3 wT = wTri(); float wD = wT.r, wC = wT.g, wB = wT.b;
   float wUp = smoothstep(0.5, 0.95, normalize(vWNrm).y);
   float wWet = 0.0;
 #ifndef W_SIMPLE
   // Broad weathering breaks repetition across slabs. One shared packed lookup,
   // independent of tile size, also defines the damp polished patches.
   float wMacro = texture2D(wTop, vWPos.xz * ${VIS.cinematic.surface.macroScale}).b;
-  diffuseColor.rgb *= 1.0 + (wMacro - 0.5) * ${VIS.cinematic.surface.variation};
+  diffuseColor.rgb *= 1.0 + (wMacro - 0.5) * ${VIS.cinematic.surface.variation} * ART_DETAIL;
   wWet = smoothstep(0.46, 0.68, wMacro) * wUp * (1.0 - wC) * wMossAmt * ${VIS.cinematic.surface.damp};
   diffuseColor.rgb *= 1.0 - wWet * 0.3;
 #endif
-  diffuseColor.rgb *= mix(1.0, 0.45 + wD * 1.1, wDetailAmt);
-  diffuseColor.rgb *= 1.0 - wC * wCrack;
+  diffuseColor.rgb *= mix(1.0, 0.45 + wD * 1.1, wDetailAmt * ART_DETAIL);
+  diffuseColor.rgb *= 1.0 - wC * wCrack * ART_DETAIL;
   // Mineral colour and recessed mortar reuse the packed sample on every preset.
   diffuseColor.rgb *= mix(vec3(1.0), vec3(${VIS.cinematic.stone.mineral.join(',')}),
     smoothstep(0.3, 0.72, wB) * ${VIS.cinematic.stone.variation});
