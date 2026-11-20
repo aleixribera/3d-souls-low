@@ -254,7 +254,7 @@
     recovery: 0.95, damage: 22, poise: 30, knock: 5, lunge: 1.8, range: 2.8, box: CUT };
   // Overhead Cleave: heaved back behind his head, held; down into the floor. Roll it.
   const cleave = { id: 'captainOverhead', name: 'Overhead Cleave', anim: 'chop', pose: 'pillagerCleave', tracking: { rate: 2.2, commit: 0.5 }, rollOnly: true, chance: 0.4,
-    hits: [{ startup: 1.45, active: 0.14, follow: 0.4, hold: { at: 0.55, time: [0.4, 1], chance: 0.6, creep: 0.22 }, impact: { ring: 2.6, crack: 1.4, dust: 12, shake: 0.1 } }],
+    hits: [{ startup: 1.45, active: 0.14, follow: 0.4, hold: { at: 0.55, time: [0.4, 1], chance: 0.6, creep: 0.22 }, impact: { ring: 2.6, crack: 1.4, dust: 12, shake: 0.1, at: 0.85 } }],
     recovery: 1.32, damage: 58, heavy: true, poise: 80, knock: 8, lunge: 1.4, range: 3.2, box: CLEAVE };
   // The Hook: laid out low on his right; swept at your shins and hauled in, you with it (roll it: nothing stops it but a
   // roll); then a short chop where it dragged you (parry it).

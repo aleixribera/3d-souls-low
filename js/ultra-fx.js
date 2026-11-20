@@ -29,7 +29,7 @@ const ultraFx = (() => {
   const chest = b => ({ x: b.x, y: b.y + b.height * 0.6, z: b.z });
   const isBoss = e => !!(e.boss || e.baseDef.phases);
   // js/ultra-boss.js plugs in here: a boss's colour of the moment, its blade ribbon, and whether it draws a ground blow itself.
-  const hooks = { aura: null, trail: null, playerTrail: null, impact: null, bolt: null };
+  const hooks = { aura: null, trail: null, trailShape: null, playerTrail: null, impact: null, bolt: null };
   const auraColor = e => (hooks.aura && hooks.aura(e)) ?? U.auraColors[e.baseDef.id] ?? U.aura.color;
 
   // ---- streaks: sparks (additive, HDR) and blood drops (opaque), stretched along their flight -------------------------
@@ -271,12 +271,12 @@ void main() {
     };
     return {
       mesh, owner: null,
-      update(active, rig, now, color, boost, life = T.life) {
+      update(active, rig, now, color, boost, life = T.life, from = 0.25) {   // from: where along the blade the ribbon starts (0.25 the hilt, 1.2 the tip)
         if (active) {
           rig.weapon.updateWorldMatrix(true, false);
           const m = rig.weapon.matrixWorld;
           const p = spare.pop() || { b: new THREE.Vector3(), t: new THREE.Vector3(), time: 0 };
-          p.b.set(0, 0, 0.25).applyMatrix4(m); p.t.set(0, 0, 1.2).applyMatrix4(m); p.time = now;
+          p.b.set(0, 0, from).applyMatrix4(m); p.t.set(0, 0, 1.2).applyMatrix4(m); p.time = now;
           pts.unshift(p);
           if (pts.length > T.samples) spare.push(pts.pop());
         }
@@ -304,7 +304,9 @@ void main() {
       clear() { while (pts.length) spare.push(pts.pop()); mesh.visible = false; this.owner = null; },
     };
   }
-  const ribbons = Array.from({ length: T.max }, makeRibbon), ribbonOf = new Map();
+  // The ribbons age on the effect clock (pass 116): a strip or clip stepped by hand ages them a frame a step, as the game
+  // does at 60 fps, not by the wall clock (which left a band hanging over the whole swing in every filmed strip).
+  const ribbons = Array.from({ length: T.max }, makeRibbon), ribbonOf = new Map(); let ribbonClock = 0;
   function trailColor(b) {
     if (b instanceof Player) return (hooks.playerTrail && hooks.playerTrail(b)) || [T.player, T.playerBoost];
     const a = b.attack, own = hooks.trail && hooks.trail(b);
@@ -618,6 +620,7 @@ void main() {
     const fogC = scene.fog ? scene.fog.color : col.set(0);
     for (const m of fogged) m.uniforms.uFogC.value.copy(fogC);
     const cam = camera.position;
+    ribbonClock += real;
     if (ribbonOf.size) {   // ribbons of bodies no longer in the game (one Set of the living, not a search per ribbon)
       inGame.clear(); for (const b of game.allies()) inGame.add(b); for (const b of game.enemies) inGame.add(b);
       for (const [b, r] of ribbonOf) if (!inGame.has(b)) { r.clear(); ribbonOf.delete(b); }
@@ -634,8 +637,9 @@ void main() {
       let r = ribbonOf.get(b);
       if (!r && act) { r = ribbons.slice(0, budget().ribbons).find(x => !x.owner); if (r) { r.owner = b; ribbonOf.set(b, r); } }
       if (r) {
-        const K = ANIM_SETTINGS.counterFx.trail, own = counter ? null : trailColor(b);
-        if (!r.update(act, b.rig, now / 1000, own ? own[0] : K.color, own ? own[1] : K.boost, counter ? T.life * K.life : T.life)) { r.owner = null; ribbonOf.delete(b); }
+        const K = ANIM_SETTINGS.counterFx.trail, own = counter ? null : trailColor(b), shape = !isP && hooks.trailShape ? hooks.trailShape(b) : null;
+        const life = counter ? T.life * K.life : shape ? shape.life : T.life, from = shape ? 1.2 - 0.95 * shape.edge : 0.25;
+        if (!r.update(act, b.rig, ribbonClock, own ? own[0] : K.color, own ? own[1] : K.boost, life, from)) { r.owner = null; ribbonOf.delete(b); }
       }
     }
     // living bosses: an aura of motes; burning phases shed embers; big bodies kick up dust; dying bodies crumble to ash

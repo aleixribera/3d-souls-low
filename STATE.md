@@ -8,13 +8,13 @@ The iterate loop's working note (`.claude/iterate.md`). Cap: 8,000 characters.
   Guard); the server checks the block claim. Cel hit flash in the body's own colours (`tintFromSkin`). Acceptance: each
   fires on the Captain, drawn and heard: `tests/guard-commons.cjs`; clips `docs/scorecard/now/{blade,guard}-commons.mp4`
   (`node tools/ability-clips.cjs`). Next on track 2: batch 3 pass 2, Mirror Shard (a reflected bolt the server lacks).
-- Track 1, pass 115: item 5 (the cleave's motion, pass 2 of the judge's motion gap), the Captain, v7.166.0: a delayed
-  wind-up creeps on through its hold (`hold.creep`, `Enemy.creepTime`) instead of freezing, and the cleave's wind-up is
-  coiled (knees, hips, shoulders) not tipped back. Acceptance: `HOLD=0.8 node tools/anim-strip.cjs
-  boss:captainOverhead` shows him moving through every held frame (`docs/scorecard/now/captain-cleave.jpg`, `.mp4`);
-  `tests/pose-via.cjs`. Judge rounds 2-3: motion 3 to 4, caught 9/10 (`docs/scorecard/boss-judge.csv`); giveaway: the
-  strike skips from raised to down and the flat opaque trail hides the swing. Next: the strike's trail and impact, then
-  the Captain's cel model (`docs/bosses/system.md`).
+- Track 1, pass 116: item 5 (the cleave's strike, pass 3 of the judge's motion gap), the Captain: the floor burst waits
+  for the bill to land (`impact.at`), his swing leaves a thin arc at the bill's edge (`BOSS_FX` `trail`), and weapon
+  ribbons age on the effect clock (filmed strips had shown them as a band over the whole swing). Acceptance:
+  `HOLD=0.8 node tools/anim-strip.cjs boss:captainOverhead` shows the burst with the bill down and the arc of the swing
+  (`docs/scorecard/now/captain-cleave.jpg`, `.mp4`); in-page `floor burst`. Judge round 4: motion 4, readability 7,
+  spectacle 4, caught 9/10; giveaway: the body moves as rigid parts, no weight shift or smear on the swing. Next: the
+  Captain's cel model (`docs/bosses/system.md`), which the judge's "blocky, toy-like" points at too.
 - Pass 110, the retro (track 2 slot): v7.163.0's CI green (run 44830197524), its container published, and players
   are on it at last (they had v7.159.0 until now). Item 1 done: `PLAY-LINK.txt` is https://aleix.tailfef0f7.ts.net/souls/,
   Pages unpublished (old address 404). Step 1 of every pass: `node tools/live-check.cjs`. Items 1-3 done.

@@ -6,6 +6,8 @@
 // BOSS_FX_IMPACTS), whether its blade smokes or burns. Each boss has an element, optionally one per phase, and any
 // attack may name its own element and impact; `windup: 'gather'` draws power into the weapon through a heavy wind-up
 // (every heavy, held, leaping or ringing hit gathers anyway), `aura` overrides the colour of the motes round the body.
+// `trail: { edge, life }` (a boss's or an attack's): its swing ribbon runs only along the outer `edge` share of the blade
+// (1: hilt to tip) and fades in `life` s, a thin quick arc instead of a band hiding the swing (pass 116).
 // Checked at load (js/validate.js): every boss, phase and attack named here must exist.
 const BOSS_FX_IMPACTS = ['quake', 'pillar', 'blaze', 'geyser', 'bloom', 'void', 'gale', 'roar', 'toll', 'shatter', 'prism'];
 const FX_ELEMENTS = {
@@ -28,8 +30,8 @@ const BOSS_FX = {
   giant: { element: 'bone', aura: 0xd8d0c0, phases: { gathered: 'fire' }, attacks: { stomp: { impact: 'shatter', windup: 'gather' },
     giantSlam: { impact: 'shatter', windup: 'gather' }, giantClubClaw: { impact: 'shatter' }, giantGathering: { impact: 'shatter', windup: 'gather' },
     giantPitStomps: { impact: 'shatter' }, giantReach: { impact: 'shatter', windup: 'gather' } } },
-  pillagerCaptain: { element: 'steel', aura: 0xff9a50, phases: { lit: 'fire' }, attacks: { captainOverhead: { impact: 'quake', windup: 'gather' },
-    captainKindling: { element: 'fire', impact: 'blaze', windup: 'gather' }, captainOverheadLit: { impact: 'blaze', windup: 'gather' } } },
+  pillagerCaptain: { element: 'steel', aura: 0xff9a50, phases: { lit: 'fire' }, attacks: { captainOverhead: { impact: 'shatter', windup: 'gather', trail: { edge: 0.12, life: 0.36 } },
+    captainKindling: { element: 'fire', impact: 'blaze', windup: 'gather' }, captainOverheadLit: { impact: 'blaze', windup: 'gather', trail: { edge: 0.12, life: 0.36 } } } },
   bellWarden: { element: 'toll', aura: 0xb8d4f0, attacks: { wardenHammerfall: { impact: 'toll', windup: 'gather' }, wardenBackhand: { impact: 'toll' },
     wardenAnswer: { impact: 'toll', windup: 'gather' }, wardenAnswerTwice: { impact: 'toll', windup: 'gather' }, wardenWaking: { impact: 'toll', windup: 'gather' },
     wardenFall: { impact: 'toll' }, wardenThreeTolls: { impact: 'toll' } } },

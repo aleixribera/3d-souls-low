@@ -376,8 +376,8 @@ function validateData({ visual = true } = {}) {
     if ('when' in a) need(a.when in REACTIONS, `${tag}: when must be one of ${Object.keys(REACTIONS).join(', ')}.`);
     if ('followUps' in a) need(Array.isArray(a.followUps) && a.followUps.every(f => f && typeof f.attack === 'string' && num(f.chance) && f.chance >= 0 && f.chance <= 1
       && (!('if' in f) || f.if in FOLLOW_IF)), `${tag}: followUps must list { attack, chance (0 to 1), if? (${Object.keys(FOLLOW_IF).join(', ')}) }.`);
-    if ('impact' in a) need(a.impact && ['ring', 'crack', 'dust', 'shake'].every(k => num(a.impact[k]) && a.impact[k] >= 0),
-      `${tag}: impact needs ring, crack, dust and shake (numbers, 0 or more).`);
+    if ('impact' in a) need(a.impact && ['ring', 'crack', 'dust', 'shake'].every(k => num(a.impact[k]) && a.impact[k] >= 0) && (a.impact.at === undefined || (num(a.impact.at) && a.impact.at >= 0 && a.impact.at < 1)),
+      `${tag}: impact needs ring, crack, dust and shake (numbers, 0 or more), and at (0 to below 1) if given.`);
     // v7.62.0 (the Castellans): a kin answers with its own attack (js/enemy.js cueKin), another move than this one.
     if ('cue' in a) need(a.cue && typeof a.cue.attack === 'string' && a.cue.attack !== a.id && ENEMY_DEFS.some(d => d.attacks.some(x => x && x.id === a.cue.attack))
       && num(a.cue.delay) && a.cue.delay >= 0 && num(a.cue.chance) && a.cue.chance > 0 && a.cue.chance <= 1 && num(a.cue.near) && a.cue.near > 0,
@@ -502,7 +502,7 @@ function validateData({ visual = true } = {}) {
       if ('box' in h) need(h.box && ['w', 'h', 'd', 'fwd', 'y'].every(k => num(h.box[k])), `${tag}: a hit's box needs w, h, d, fwd and y.`);
       if (h.box && 'ring' in h.box) need(h.box.ring && ['from', 'to', 'width', 'time'].every(k => num(h.box.ring[k]) && h.box.ring[k] >= 0) && h.box.ring.time > 0,
         `${tag}: a hit's ring needs from, to, width and time (numbers; time above 0).`);
-      if ('impact' in h) need(h.impact && ['ring', 'crack', 'dust', 'shake'].every(k => num(h.impact[k]) && h.impact[k] >= 0), `${tag}: a hit's impact needs ring, crack, dust and shake.`);
+      if ('impact' in h) need(h.impact && ['ring', 'crack', 'dust', 'shake'].every(k => num(h.impact[k]) && h.impact[k] >= 0) && (h.impact.at === undefined || (num(h.impact.at) && h.impact.at >= 0 && h.impact.at < 1)), `${tag}: a hit's impact needs ring, crack, dust and shake, and at (0 to below 1, the share of its active when the blade lands) if given.`);
       if ('step' in h) need(h.step && num(h.step.from) && h.step.from >= 0 && h.step.from < 1 && num(h.step.speed) && h.step.speed >= 0 && num(h.step.side),
         `${tag}: a hit's step needs from (0 to 1 of its wind-up), speed (m/s, 0 or more) and side (m/s, + to its left).`);
       if ('blink' in h) need(h.blink && num(h.blink.from) && h.blink.from >= 0 && h.blink.from < 1 && (num(h.blink.dist) || num(h.blink.back)) && (!('time' in h.blink) || (num(h.blink.time) && h.blink.time > 0)) && !h.leap,
@@ -830,6 +830,8 @@ function validateData({ visual = true } = {}) {
   }
   // Boss effects (js/data/boss-fx.js, the Ultra preset): known elements, impacts, bosses, phases and attacks.
   const isCol = v => Number.isInteger(v) && v >= 0 && v <= 0xffffff;
+  const trailOk = t => !!t && typeof t === 'object' && Object.keys(t).every(k => k === 'edge' || k === 'life')
+    && num(t.edge) && t.edge > 0 && t.edge <= 1 && num(t.life) && t.life > 0 && t.life <= 1;
   for (const [n, E] of Object.entries(FX_ELEMENTS))
     need(['core', 'glow', 'mote', 'trail'].every(k => isCol(E[k])) && E.sparks in CONFIG.VISUALS.ultra.sparks.colors && BOSS_FX_IMPACTS.includes(E.impact)
       && (E.smoke === undefined || isCol(E.smoke)), `FX_ELEMENTS.${n}: core, glow, mote and trail colours, sparks (a spark palette) and an impact (${BOSS_FX_IMPACTS.join(', ')}).`);
@@ -839,6 +841,7 @@ function validateData({ visual = true } = {}) {
     if (!d) continue;
     need(B.element in FX_ELEMENTS, `${w}: unknown element "${B.element}".`);
     if ('aura' in B) need(isCol(B.aura), `${w}: aura must be a colour.`);
+    if ('trail' in B) need(trailOk(B.trail), `${w}: trail is { edge (0 to 1), life (s, above 0, at most 1) }.`);
     for (const [ph, el] of Object.entries(B.phases || {}))
       need(!!(d.phases && d.phases[ph]) && el in FX_ELEMENTS, `${w}.phases.${ph}: needs a phase of "${id}" and a known element ("${el}").`);
     const ids = new Set([...(d.attacks || []), ...Object.values(d.phases || {}).flatMap(P => P.attacks || [])].filter(a => a && typeof a === 'object').map(a => a.id));
@@ -848,6 +851,7 @@ function validateData({ visual = true } = {}) {
       if (A.impact !== undefined) need(BOSS_FX_IMPACTS.includes(A.impact), `${w}.attacks.${aid}: unknown impact "${A.impact}".`);
       if (A.windup !== undefined) need(['gather', 'none'].includes(A.windup), `${w}.attacks.${aid}: windup is "gather" or "none".`);
       if (A.aura !== undefined) need(isCol(A.aura), `${w}.attacks.${aid}: aura must be a colour.`);
+      if (A.trail !== undefined) need(trailOk(A.trail), `${w}.attacks.${aid}: trail is { edge (0 to 1), life (s, above 0, at most 1) }.`);
     }
   }
   // Story mode (js/data/story.js): each campaign's chapters name a real level, once each, with a title and

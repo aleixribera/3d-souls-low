@@ -2470,6 +2470,20 @@
     const fromHands = r.warnGlow.getWorldPosition(new THREE.Vector3()).distanceTo(r.weapon.getWorldPosition(new THREE.Vector3()));
     expect.ok(fromHands > 1, `the halo is out on the bill's head, ${fromHands.toFixed(2)} m from his hands`);
   });
+  // Pass 116 (the judge's round 3: the floor burst erupted while the bill was still raised): a hit's `impact.at` holds the
+  // ground burst until the drawn blade lands, while the hitbox opens on time.
+  test('Pillager Captain: the cleave\'s floor burst comes as the bill lands, not as the blow opens', () => {
+    Game.startFight('pillagerCaptain'); Game.loading = 0; sim.begin(); sturdy(Game.player);
+    const e = Game.duel, a = e.def.attacks.find(x => x.id === 'captainOverhead'), h = a.hits[0];
+    expect.ok(h.impact.at > 0.5, 'the cleave lands late in its active');
+    e.attack = a; e.hitIndex = 0; e.holdLeft = 0; e.setState(ES.WINDUP); e.stateTime = h.startup; log.length = 0;
+    e.strike(Game.player);
+    expect.ok(e.state === ES.ACTIVE && !!e.hitbox && !log.includes('impact'), 'the hitbox opens; no burst yet');
+    let steps = 0;
+    while (!log.includes('impact') && steps++ < 60) { e.stateTime += STEP; e.endStrikeWhenDone(); }
+    const at = steps * STEP;
+    expect.ok(Math.abs(at - h.impact.at * h.active) <= STEP + 1e-6, `the burst ${at.toFixed(3)} s in (${(h.impact.at * h.active).toFixed(3)} s)`);
+  });
   // Pass 100 (PLAN.md "Next, small" 2): the Finishing Blow, played through. Each deflected string leaves the Captain open;
   // the counter cracks its guard; the third counter is the Finishing Blow.
   test('Finishing Blow: each counter on the Pillager Captain cracks its guard, and the third is the Finishing Blow', () => {

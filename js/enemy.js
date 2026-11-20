@@ -806,12 +806,21 @@ class Enemy {
     if (this.attack.projectile && target) { this.hitbox = null; projectiles.fire(this, this.attack, target); }
     else this.hitbox = this.makeHitbox();
     if (this.leaping) { this.vx = this.vz = 0; }
-    if (impact) {   // a blow that strikes the ground: a ring, a crack and a jolt where it lands
-      const c = this.hitbox ? this.hitbox.center() : { x: this.x + Math.sin(this.yaw) * box.fwd, z: this.z + Math.cos(this.yaw) * box.fwd };   // where the hitbox is centred
-      events.emit('impact', { x: c.x, y: this.y, z: c.z, fx: impact, enemy: this });
-    }
     this.setState(ES.ACTIVE);
     events.emit('attackPhase', { actor: this, attack: this.attack, phase: PHASE.ACTIVE, hitIndex: this.hitIndex });   // the swing sound
+    // A blow that strikes the ground: a ring, a crack and a jolt where it lands, as the drawn blade meets the floor
+    // (`impact.at`: that share of the hit's active; pass 116: the floor burst no longer erupts while the bill is still up).
+    this.impactDue = impact ? (impact.at || 0) * hit.active : null;
+    // where the hitbox is centred as it opens (the fallback if it has closed by the time the blade lands)
+    if (impact) this.impactAt = this.hitbox ? this.hitbox.center() : { x: this.x + Math.sin(this.yaw) * box.fwd, z: this.z + Math.cos(this.yaw) * box.fwd };
+    this.landImpact();
+  }
+  landImpact() {
+    if (this.impactDue == null || this.state !== ES.ACTIVE || this.stateTime < this.impactDue - 1e-9) return;
+    const hit = this.attack.hits[this.hitIndex], impact = hit.impact || this.attack.impact;
+    this.impactDue = null;
+    const c = this.hitbox ? this.hitbox.center() : this.impactAt;
+    events.emit('impact', { x: c.x, y: this.y, z: c.z, fx: impact, enemy: this });
   }
   // The current hit's hitbox (a hit's own `box` and `damage`, v5.9), as its strike opens: here, and on a client for the
   // server's enemies (js/multiplayer.js). Notes where it stands first (`noteCut`).
@@ -960,6 +969,7 @@ class Enemy {
   // Where hit i of the current attack struck, or null if it has not yet (this attack).
   cutOf(i) { const c = this.cuts[i]; return c && c.no === this.attackNo ? c : null; }
   endStrikeWhenDone() {
+    this.landImpact();
     const h = this.attack.hits[this.hitIndex];
     if (this.stateTime < h.active + (h.follow || 0)) return;
     this.hitbox = null;

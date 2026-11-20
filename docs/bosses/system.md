@@ -54,7 +54,10 @@ with in-between keys where a straight blend looks stiff:
 On impact, signature moments and the phase change only (`js/data/boss-fx.js`, the phase's `revealBurst`, hits'
 `impact`). The wind-up's tell sits on the weapon's edge: the model's `edgeTell: { slot, size, along }` colours only that
 slot (red: parry it; blue: roll it), puts a small halo at `along` of the weapon, grows it through a heavy's wind-up, and
-never tints the body. Check: the attack's strip shows the boss's body clearly through every wind-up frame.
+never tints the body. A ground blow's burst waits for the drawn blade (`impact.at`: the share of the hit's active when it
+lands; the hitbox still opens on time). A heavy swing's ribbon is a thin arc at the blade's edge (`BOSS_FX` `trail: { edge,
+life }`), not a band over the swing. Check: the attack's strip shows the boss's body clearly through every wind-up frame,
+and the burst in the frame where the blade is down.
 
 ## 5. Data and in game
 

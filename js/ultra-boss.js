@@ -36,6 +36,7 @@ const ultraBoss = (() => {
     if (L.a && L.a.aura) return L.a.aura;
     return L.spec.phases && L.spec.phases[e.def?.phaseId] && L.spec.phases[e.def?.phaseId] !== L.spec.element ? L.el.mote : L.spec.aura ?? L.el.mote;
   };
+  fx.hooks.trailShape = b => { const L = look(b); return L && L.spec ? (L.a && L.a.trail) || L.spec.trail || null : null; };
   fx.hooks.trail = b => { const L = look(b); return L ? [L.el.trail, U.trails.enemyBoost * BB.trailBoost] : null; };
   fx.hooks.bolt = bolt => {
     const L = look(bolt.owner);

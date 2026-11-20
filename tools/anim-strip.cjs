@@ -10,6 +10,7 @@
 // (ffmpeg on PATH). For boss:<attackId> clips (pass 113): REPEAT=<n> plays the attack n times (the strip keeps the first),
 // VIEW=game films through the game's own camera behind the player instead of from the side. HOLD=<s> (pass 115): every
 // hit with a `hold` takes it, for exactly that long (0: never), so a delayed wind-up can be filmed the same way twice.
+// STYLE=<id> (pass 116): drawn in that art style (js/data/styles.js; cel is the game's chosen look).
 // One headless Edge, closed at the end; idle priority. Take the browser lock (.claude/iterate.md) before running it.
 require('../tests/low-priority.cjs');
 const fs = require('node:fs');
@@ -20,6 +21,7 @@ const { createServer } = require('../server/index.cjs');
 const [move = 'dash', out = '.scratch/strip.jpg', frames = '14', every = '2', zoom = '1', width = '640', height = '480'] = process.argv.slice(2);
 const CLIP = process.env.CLIP || '';
 const NOVIA = !!process.env.NOVIA;   // NOVIA=1: every key pose's in-between keys left out (a before/after of a `via`)
+const STYLE = process.env.STYLE ? `?style=${encodeURIComponent(process.env.STYLE)}` : '';
 const REPEAT = Math.max(1, +process.env.REPEAT || 1), VIEW = process.env.VIEW || 'side', HOLD = process.env.HOLD ?? null;
 
 (async () => {
@@ -29,7 +31,7 @@ const REPEAT = Math.max(1, +process.env.REPEAT || 1), VIEW = process.env.VIEW ||
     const page = await browser.newPage({ viewport: { width: +width, height: +height } });
     const errors = []; page.on('pageerror', e => errors.push(e.message));
     await page.addInitScript(() => localStorage.setItem('combat-arena-3d.settings', JSON.stringify({ graphics: 'normal', volume: 0 })));
-    await page.goto(`http://127.0.0.1:${app.server.address().port}/combat-arena-3d.html#dev`);
+    await page.goto(`http://127.0.0.1:${app.server.address().port}/combat-arena-3d.html${STYLE}#dev`);
     await page.waitForFunction(() => window.__arenaReady, null, { timeout: 120000 });
     const data = await page.evaluate(async ([move, frames, every, zoom, clip, novia, repeat, view, hold]) => {
       const trace = [];
