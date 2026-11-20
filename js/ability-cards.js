@@ -16,6 +16,13 @@ const ABILITY_ICONS = {
   'quick-draught': '<path d="M23 8 H31 M24 8 V16 C17 19 15 24 15 29 A12 12 0 0 0 39 29 C39 24 37 19 30 16 V8"/><path d="M17 28 H37"/><path d="M3 22 H9 M2 28 H9 M4 34 H10"/>',
   'cold-riposte': '<path d="M6 30 H34 L41 30 L34 33 H6 Z"/><path d="M11 25 V38"/><path d="M33 6 V18 M27 12 H39 M29 8 L37 16 M37 8 L29 16"/>',
   'headsman': '<path d="M12 42 L32 10"/><path d="M27 14 C33 8 42 11 42 19 C42 25 37 28 32 26 Z"/><path d="M9 36 L15 40"/>',
+  // The blade's commons (batch 2)
+  'spark-step': '<circle cx="28" cy="20" r="9"/><path d="M4 40 L12 32 L10 28 L20 22 L18 18 L44 6"/><path d="M20 22 L22 15 M20 22 L27 23 M20 22 L18 29 M20 22 L13 21"/>',
+  'ember-lick': '<path d="M5 30 C7 22 11 18 15 16 M13 34 C15 26 19 22 23 20 M21 38 C23 30 27 26 31 24"/><path d="M29 40 C31 32 35 28 41 26 C40 20 36 16 38 9 C44 14 46 22 43 30 C40 36 34 40 29 40 Z"/>',
+  'hot-iron': '<path d="M24 4 V30 M19 9 H29"/><path d="M8 40 H40"/><path d="M24 34 L12 22 M24 34 L17 18 M24 34 L24 16 M24 34 L31 18 M24 34 L36 22"/>',
+  'petal-cut': '<path d="M4 30 L44 18"/><path d="M4 38 L12 38 M2 34 L9 34"/><path d="M20 26 C23 21 27 20 30 22 C27 26 23 27 20 26 Z"/><path d="M28 31 C31 30 34 32 34 35 C31 35 29 34 28 31 Z"/><path d="M33 11 C36 12 37 15 36 18 C33 17 32 14 33 11 Z"/>',
+  'echo-step': '<path d="M12 12 A4 4 0 1 1 12 20 A4 4 0 1 1 12 12 Z M12 22 V34 M6 26 H18 M12 34 L7 42 M12 34 L17 42" stroke-dasharray="3 3"/><path d="M14 30 C24 30 30 24 32 14"/><path d="M38 14 A3 3 0 1 1 38 20 A3 3 0 1 1 38 14 Z M38 21 V32 M38 32 L34 40 M38 32 L42 40"/>',
+  'dust-devil': '<path d="M24 6 A3 3 0 1 1 24 12 A3 3 0 1 1 24 6 Z M24 13 V22 M19 16 L29 16 M24 22 L20 28 M24 22 L28 28"/><path d="M6 42 H42"/><path d="M10 38 C10 32 38 32 38 36 C38 40 14 40 14 36 C14 34 32 33 33 35"/><path d="M15 33 L19 29 M28 38 L32 34 M34 31 L36 28"/>',
   // Rares
   'counterstep': '<path d="M8 36 C8 22 16 14 28 14"/><path d="M28 14 L23 10 M28 14 L23 18"/><path d="M22 34 H40 L44 34 L40 36 H22 Z"/><path d="M26 30 V40"/>',
   'vengeance': '<path d="M17 10 C11 19 9 24 9 28 A8 8 0 0 0 25 28 C25 24 23 19 17 10 Z"/><path d="M36 40 V12 M30 18 L36 12 L42 18"/><path d="M30 26 L36 20 L42 26"/>',

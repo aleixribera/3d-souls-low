@@ -55,7 +55,7 @@ const PLAYER_DEF = {
                 markers: [{ at: 'windup', t: 0.75, event: 'sound', sound: 'swingLight', vel: 0.65 }, { at: 'active', t: 0, event: 'glint' }],
                 damage: 16, poise: 22, knock: 3, lunge: 2.6, hitstop: 0.07, riposte: { damage: 2.4 },
                 box: { w: 1.4, h: 2.2, d: 2.2, fwd: 1.35, y: 1.2 } },
-      light4: { id: 'light4', flow: true, anim: 'stab', pose: 'enemyStab', hits: [{ startup: 0.24, active: 0.09, follow: 0.12 }], recovery: 0.3,
+      light4: { id: 'light4', flow: true, stringEnd: true, anim: 'stab', pose: 'enemyStab', hits: [{ startup: 0.24, active: 0.09, follow: 0.12 }], recovery: 0.3,
                 next: { heavy: 'finisher4' },
                 markers: [{ at: 'windup', t: 0.7, event: 'sound', sound: 'swingLight', vel: 0.75 }, { at: 'active', t: 0, event: 'glint' }],
                 damage: 20, poise: 26, knock: 4, lunge: 3.4, hitstop: 0.08, riposte: { damage: 2.4 },

@@ -508,7 +508,7 @@
       } else if (msg.type === 'ability') {   // an ability's trigger only this player's browser sees (ABILITY_CLAIMS)
         if (typeof msg.when === 'string' && (msg.enemy === undefined || net.id(msg.enemy)) && (msg.action === undefined || net.id(msg.action)) &&
           (msg.key === undefined || net.id(msg.key)) &&
-          claim(p, `ability/${msg.when}/${msg.enemy}/${msg.when === 'press' ? msg.seq : msg.serial ?? msg.seq}`)) sim.abilityClaim(p.id, msg);   // presses: each its own (the charge limits them)
+          claim(p, `ability/${msg.when}/${msg.enemy}/${msg.when === 'dodge' ? msg.serial ?? msg.seq : msg.seq}`)) sim.abilityClaim(p.id, msg);   // a dodge: one a blow; the rest each its own (charges and cooldowns limit them)
       } else if (msg.type === 'lifesteal') {
         if (net.id(msg.enemy) && claim(p, `heal/${msg.enemy}/${msg.serial}/${msg.hitIndex}`)) sim.lifesteal(p.id, msg);
       } else if (msg.type === 'landed') {   // pass 77: an attack the Antlered Hunger would learn struck this player

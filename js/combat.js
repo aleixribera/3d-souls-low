@@ -179,6 +179,9 @@ function resolveCombat(game) {
       abilityLanded(p, strike);
       if (strike.charge >= 1 && !strike.air) abilityReport(p, 'fullHeavy', { enemy: e });   // Storm King
       abilityReport(p, 'hits', { enemy: e, strike });   // Static Edge, Gale Crescent, an Ember Twin's echo
+      const a = PLAYER_DEF.moveset.attacks[strike.attackId];
+      if (a && a.stringEnd) abilityReport(p, 'stringEnd', { enemy: e, strike });   // Ember Lick
+      if (a && (a.id === PLAYER_DEF.moveset.dash.light || a.id === PLAYER_DEF.moveset.dash.heavy)) abilityReport(p, 'dashStrike', { enemy: e, strike });   // Petal Cut
     }
     if (strike.riposte && !res.blocked) abilityReport(p, 'counter', { enemy: e });   // a counter landed (Pyre, Breaker's mark)
     if (res.opened) p.openCounter(CONFIG.parry.riposteTime, 'break', e);   // a stance broken, a wind-up faltered: open

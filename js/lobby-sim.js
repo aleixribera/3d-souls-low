@@ -34,6 +34,9 @@ globalThis.host = (() => {
   // repeated by upgrades) and the open offer, by player id; each one's kit (kitOf); and, for people (a bot's body keeps
   // its own), the perk clocks and their last health (abilityHurt) and their last accepted perfect dodge (Counterstep).
   const owned = new Map(), offers = new Map(), gear = new Map(), kits = new Map(), perks = new Map(), lastDodge = new Map(), pendingClaims = [];
+  const trails = new Map();   // person id -> their recent poses' places and states: [{ t, x, y, z, state }]
+  const DASH_ATTACKS = new Set(Object.values(PLAYER_DEF.moveset.dash));   // Petal Cut's dash attacks
+  const AIRBORNE = new Set([PS.JUMP, PS.JUMP_ATTACK]);   // a jump's, not a fall off a ledge
   const C = ArenaNet.config;
   const proxy = (s, id) => ({ ...s, id, radius: PLAYER_DEF.radius, height: BODY_HEIGHT * PLAYER_DEF.look.scale,
     alive() { return this.hp > 0 && this.state !== PS.DEAD; },
@@ -71,7 +74,7 @@ globalThis.host = (() => {
     if (acting && type === 'finisherStart' && d.player === acting.body) feat(acting.id).finishers++;   // a bot's Finishing Blow
     // A legendary fired or striking, for every browser to draw (js/ability-fx.js).
     if (type === 'abilityPower') eventList.push({ type, power: d.power, then: d.then, holder: d.holder, enemy: d.enemy?.netId || null,
-      x: d.x, y: d.y, z: d.z, v: d.v, strike: d.strike, draw: d.draw || undefined });
+      x: d.x, y: d.y, z: d.z, v: d.v, strike: d.strike, draw: d.draw || undefined, path: d.path });
     const e = d.enemy || d.actor;
     if (type === 'attackStart' && e) e.netAttack = ++attackSerial;
     if (['attackStart', 'attackPhase', 'bossPhase', 'bossRetreat', 'bossGone', 'enemyBlink', 'impact'].includes(type))
@@ -224,7 +227,7 @@ globalThis.host = (() => {
     Game.zones = [];
     Game.enemies = Game.makeEnemies();
     for (const e of Game.enemies) { e.netId = enemyId(e); e.netAttack = 0; e.netTarget = null; }
-    epoch++; time = 0; completedFor = 0; fought = 0; eventList = []; bolts = []; flying.length = 0; history = []; players = [];
+    epoch++; time = 0; completedFor = 0; fought = 0; eventList = []; bolts = []; flying.length = 0; history = []; players = []; trails.clear();
     damage = new Map(); closed = false; deaths = new Map(); fightBots = new Set();
     feats = new Map(); lastHit = null; killer = null; embers.clear(); risen.length = 0;
     hitBudget.clear(); lastParry.clear(); spentOpening.clear(); defended.clear(); sleeping = false; settleCheck = 0;
@@ -235,7 +238,21 @@ globalThis.host = (() => {
     for (const b of bots.values()) { registerPlayer(b.id, b.name); spawnBot(b, index++); }
     return { epoch, kind, id, ...(partners.length ? { partners: [...partners] } : {}), spawn: checkpoint, teamWipeOnly: isBossDef(d) };
   }
-  function setPlayers(list) { players = list.map(s => proxy(s, s.id)).concat(botBodies()); }
+  function setPlayers(list) {
+    players = list.map(s => proxy(s, s.id)).concat(botBodies());
+    for (const s of list) {   // each person's recent places (C.trailSeconds), for the claims of a dash or a jump
+      if (![s.x, s.y, s.z].every(Number.isFinite)) continue;
+      let t = trails.get(s.id);
+      if (!t) trails.set(s.id, t = []);
+      const last = t[t.length - 1];
+      if (last && last.t === time && last.state === s.state) continue;
+      t.push({ t: time, x: s.x, y: s.y, z: s.z, state: s.state });
+      while (t.length && (time - t[0].t > C.trailSeconds || t.length > 120)) t.shift();
+    }
+  }
+  const trailOf = id => (trails.get(id) || []).filter(f => time - f.t <= C.trailSeconds);
+  // A claimed place: { x, z } of finite numbers, or null.
+  const point = q => q && typeof q === 'object' && Number.isFinite(q.x) && Number.isFinite(q.z) ? { x: q.x, z: q.z } : null;
   const botBodies = () => [...bots.values()].filter(b => b.body).map(b => b.body);
   // Beside the checkpoint, alternating sides, as a party member arriving with everyone else.
   function spawnBot(b, index) {
@@ -389,6 +406,25 @@ globalThis.host = (() => {
       if (p.state !== 'roll') return wait();
       // The separate dodged claim owns the counter window; an ability report must not refresh a spent opening.
       abilityPowers.trigger(id, body, kit, 'dodge', { enemy: e });
+    } else if (msg.when === 'dashPast') {   // Spark Step: a dash their poses showed lately, along the path claimed, past that enemy
+      const e = enemy(msg.enemy), from = point(msg.from), to = point(msg.to), K = CONFIG.abilities.commons, P = CONFIG.player;
+      if (!e || !from || !to || Math.hypot(to.x - from.x, to.z - from.z) > P.rollSpeed * P.rollTime + C.claimNear * 2) return false;
+      const trail = trailOf(id), dashed = trail.some(f => f.state === PS.ROLL && time - f.t <= C.claimDash);
+      if (!dashed) return wait();
+      // its start is where they stood as the roll began, its end where the roll went: not any two recent places
+      const began = trail.findIndex(f => f.state === PS.ROLL), near = (f, q) => Math.hypot(f.x - q.x, f.z - q.z) <= C.claimNear;
+      if (!trail.slice(Math.max(0, began - 2), began + 1).some(f => near(f, from)) || !trail.slice(began).some(f => near(f, to))) return false;
+      if (dashPastOf(from, to, [e], K.pastGap + C.claimPast) !== e) return false;
+      abilityPowers.trigger(id, body, kit, 'dashPast', { enemy: e, from, to, x: to.x, y: p.y, z: to.z });
+    } else if (msg.when === 'jump') {   // Dust Devil: their pose leaving the ground lately, from the place claimed
+      const at = point(msg), K = CONFIG.abilities.commons;
+      if (!at || !Number.isFinite(msg.y)) return false;
+      const trail = trailOf(id);
+      if (!trail.some(f => AIRBORNE.has(f.state) && time - f.t <= C.claimJump)) return wait();
+      if (!trail.some(f => Math.hypot(f.x - at.x, f.z - at.z) <= C.claimNear && Math.abs(f.y - msg.y) <= C.claimNear)) return false;
+      const e = enemyNear(Game.enemies, at.x, msg.y, at.z, K.whirlRadius);
+      if (!e) return false;
+      abilityPowers.trigger(id, body, kit, 'jump', { enemy: e, x: at.x, y: msg.y, z: at.z });
     } else if (msg.when === 'flask') {
       if (p.state !== PS.USE_ITEM) return wait();
       abilityPowers.trigger(id, body, kit, 'flask', {});
@@ -692,6 +728,8 @@ globalThis.host = (() => {
       at: { x: e.x, y: e.y + e.height * EYE, z: e.z } });
     if (a.charge && msg.charge >= 1 && !result.blocked) abilityPowers.trigger(id, holderOf(id), kit, 'fullHeavy', { enemy: e });   // Storm King
     if (!result.blocked && kit.whens.has('hits')) abilityPowers.trigger(id, holderOf(id), kit, 'hits', { enemy: e, strike });   // Static Edge, Gale Crescent, a twin
+    if (!result.blocked && a.stringEnd && kit.whens.has('stringEnd')) abilityPowers.trigger(id, holderOf(id), kit, 'stringEnd', { enemy: e, strike });   // Ember Lick
+    if (!result.blocked && DASH_ATTACKS.has(a.id) && kit.whens.has('dashStrike')) abilityPowers.trigger(id, holderOf(id), kit, 'dashStrike', { enemy: e, strike });   // Petal Cut
     if (riposte && !result.blocked && kit.whens.has('counter')) abilityPowers.trigger(id, holderOf(id), kit, 'counter', { enemy: e });   // Pyre
     if (result.finisher) beginFinisher(id, e);
     return true;

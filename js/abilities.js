@@ -62,6 +62,15 @@ function abilityHeal(p, share, perk) {
 //                        every `every` s.
 //   press/flare, press/gale, press/blades, press/lightning, press/blast: pressed (key 1 or 4), the power of that name
 //                        on the enemy (the blast round its holder).
+// The effect commons (design/abilities, batch 2: the blade), each a small blow of `damage` (CONFIG.abilities.commons):
+//   dashPast/spark:      a dash that went past an enemy (dashPastOf) sparks it, once every `cooldown` s.
+//   stringEnd/lick:      the last blow of a full light string (an attack with `stringEnd`) licks that enemy with flame.
+//   fullHeavy/molten:    a fully charged heavy that lands sprays molten sparks into that enemy.
+//   dashStrike/lateCut:  a dash attack that lands: its cut opens again on that enemy `lateCut` s later.
+//   dodge/afterimage:    a perfect dodge: `imageDelay` s later the afterimage left where the holder stood strikes the
+//                        dodged enemy, if it is within `imageReach` m of that place.
+//   jump/whirl:          a jump with an enemy close by: a dust whirl cuts every enemy within `whirlRadius` m of the
+//                        take-off, once every `cooldown` s.
 // A summon (CONFIG.abilities.summons) stands at its own place round the enemy, worked out here, where the enemies are
 // owned. Once it has arrived it draws that enemy's eye for `draw` s: the enemy fights it instead of anyone (it can't be
 // hurt), and an attack begun on it is finished on it. One summon a holder at a time: another kind's call waits until
@@ -79,6 +88,8 @@ const ABILITY_POWERS = {
   'press/flare': ['charge', 'damage'], 'press/gale': ['charge', 'damage', 'reach', 'width'],
   'press/blades': ['charge', 'time', 'every', 'damage'], 'press/lightning': ['charge', 'strikes', 'lead', 'every', 'damage'],
   'press/blast': ['charge', 'radius', 'damage'],
+  'dashPast/spark': ['damage', 'cooldown'], 'stringEnd/lick': ['damage'], 'fullHeavy/molten': ['damage'],
+  'dashStrike/lateCut': ['damage'], 'dodge/afterimage': ['damage'], 'jump/whirl': ['damage', 'cooldown'],
 };
 const SUMMONS = new Set(['twin', 'hound', 'guardian', 'lancer']);
 // The summons that strike on their own, every `every` s from `reach` m off their enemy's body (the twin echoes its holder).
@@ -104,7 +115,32 @@ function summonStep(s, e, body, dt) {
 }
 // The triggers a person's browser reports to the server (the rest it sees itself: a parry, a landed blow, a counter).
 // A press is a key's power fired (below); the server checks it against its own count of that key's charge.
-const ABILITY_CLAIMS = ['land', 'dodge', 'low', 'flask', 'press'];
+const ABILITY_CLAIMS = ['land', 'dodge', 'low', 'flask', 'press', 'dashPast', 'jump'];
+// The enemy a dash from `from` to `to` (each { x, z }) went past (Spark Step's `dashPast`): the nearest live one whose
+// body's edge came within `gap` m of the path at a point strictly between its ends (past it, not into it), else null.
+function dashPastOf(from, to, enemies, gap = CONFIG.abilities.commons.pastGap) {
+  const dx = to.x - from.x, dz = to.z - from.z, len2 = dx * dx + dz * dz;
+  if (len2 < 0.25) return null;   // under half a metre: no dash to speak of
+  let best = null, near = Infinity;
+  for (const e of enemies) {
+    if (!e.alive() || e.invulnerable()) continue;
+    const t = ((e.x - from.x) * dx + (e.z - from.z) * dz) / len2;
+    if (!(t > 0.02 && t < 0.98)) continue;
+    const d = Math.hypot(from.x + dx * t - e.x, from.z + dz * t - e.z) - (e.radius || 0);
+    if (d <= gap && d < near) { near = d; best = e; }
+  }
+  return best;
+}
+// The nearest live enemy whose body is within `r` m of (x, y, z) (Dust Devil's take-off), else null.
+function enemyNear(enemies, x, y, z, r) {
+  let best = null, near = Infinity;
+  for (const e of enemies) {
+    if (!e.alive() || e.invulnerable() || Math.abs(e.y - y) > CONFIG.height.reach) continue;
+    const d = Math.hypot(e.x - x, e.z - z) - (e.radius || 0);
+    if (d <= r && d < near) { near = d; best = e; }
+  }
+  return best;
+}
 
 // ---- The number keys (PLAN.md, the player rework's controls) --------------------------------------------------------
 // A pressed ability (`key` in its data, `when: 'press'`) belongs to one of four keys, always the same one: 1 Strike, 2
@@ -245,7 +281,9 @@ function abilityReport(body, when, ctx) {
 // its number), the first `lead` s after it fires (the time its dragon takes to reach the boss), then every `every` s; damage goes through Enemy.takeHit like any blow and `credit` (the server's) counts it to the holder.
 const ECHO_DELAY = 0.06;   // s from its holder's blow to the twin's: the two land as one
 // The powers that need a live enemy to strike (the one parried, struck, broken or dodged).
-const ON_ENEMY = new Set(['lightning', 'blades', 'flare', 'spark', 'gale', 'pyre', 'hound', 'lancer']);
+const ON_ENEMY = new Set(['lightning', 'blades', 'flare', 'spark', 'gale', 'pyre', 'hound', 'lancer', 'lick', 'molten', 'lateCut', 'afterimage']);
+// The powers whose blow lands a beat after they fire: each tells every browser again as it lands (`strike`).
+const DELAYED = new Set(['lightning', 'lateCut', 'afterimage']);
 const abilityPowers = (() => {
   // The powers still striking (lightning, blades, a pyre, a twin's echo): { pw, holder, enemy, left, next, n }, an echo
   // with its own `damage` and `twin`.
@@ -312,10 +350,16 @@ const abilityPowers = (() => {
     const x = ctx.x ?? at.x, y = ctx.y ?? at.y, z = ctx.z ?? at.z, e = ctx.enemy || null, enemies = Game.enemies;
     if (ON_ENEMY.has(pw.then) && !(e && e.alive())) return false;
     if (SUMMONS.has(pw.then) && blocked(holder, pw)) return false;
-    events.emit('abilityPower', { power: pw.id, then: pw.then, holder, body, enemy: e, x, y, z, v });
+    if (pw.then === 'afterimage' && Math.hypot(e.x - x, e.z - z) - (e.radius || 0) > CONFIG.abilities.commons.imageReach) return false;   // out of the copy's reach
+    // A spark along a dash carries its path (drawn as a line on the ground).
+    const path = ctx.from && ctx.to ? { from: { x: ctx.from.x, z: ctx.from.z }, to: { x: ctx.to.x, z: ctx.to.z } } : undefined;
+    events.emit('abilityPower', { power: pw.id, then: pw.then, holder, body, enemy: e, x, y, z, v, path });
     switch (pw.then) {
       case 'blast': for (const o of enemies) if (near(o, x, y, z, v.radius)) wound(o, v.damage, holder, pw.id); break;
-      case 'flare': case 'spark': wound(e, v.damage, holder, pw.id); break;
+      case 'flare': case 'spark': case 'lick': case 'molten': wound(e, v.damage, holder, pw.id); break;
+      case 'whirl': for (const o of enemies) if (near(o, x, y, z, CONFIG.abilities.commons.whirlRadius)) wound(o, v.damage, holder, pw.id); break;
+      case 'lateCut': running.push({ pw, holder, body, enemy: e, left: 1, next: CONFIG.abilities.commons.lateCut, n: 0 }); break;
+      case 'afterimage': running.push({ pw, holder, body, enemy: e, left: 1, next: CONFIG.abilities.commons.imageDelay, n: 0, x, y, z }); break;
       case 'gale': {   // from the holder through the enemy and on: everything within `width` m of the path
         const from = body || e, dx = e.x - from.x, dz = e.z - from.z, len = Math.hypot(dx, dz) || 1, ux = dx / len, uz = dz / len;
         for (const o of enemies) {
@@ -403,7 +447,8 @@ const abilityPowers = (() => {
       if (!e.alive()) { running.splice(i, 1); continue; }
       r.next += r.pw.v.every || 0; r.left--; r.n++;
       // A bolt, and a twin's blow, each tell every browser (`strike`: its number): drawn and heard as it lands.
-      if (r.pw.then === 'lightning' || r.twin) events.emit('abilityPower', { power: r.pw.id, then: r.pw.then, holder: r.holder, body: r.body, enemy: e, x: e.x, y: e.y, z: e.z, v: r.pw.v, strike: r.twin ? ++r.twin.n : r.n });
+      if (DELAYED.has(r.pw.then) || r.twin) events.emit('abilityPower', { power: r.pw.id, then: r.pw.then, holder: r.holder, body: r.body, enemy: e,
+        x: r.x ?? e.x, y: r.y ?? e.y, z: r.z ?? e.z, v: r.pw.v, strike: r.twin ? ++r.twin.n : r.n });
       wound(e, r.damage ?? r.pw.v.damage, r.holder, r.pw.id);
       if (r.left <= 0) running.splice(i, 1);
     }

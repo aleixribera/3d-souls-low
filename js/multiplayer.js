@@ -1257,7 +1257,8 @@ const multiplayer = (() => {
     if (!ABILITY_CLAIMS.includes(when)) return;   // a parry or a landed heavy: the server sees those itself
     publishPose();
     command('ability', { when, ...(ctx.enemy ? { enemy: ctx.enemy.netId, serial: ctx.enemy.netSerial } : {}), ...(ctx.action ? { action: ctx.action } : {}),
-      ...(ctx.key ? { key: ctx.key } : {}) });   // a number key's press: the server checks its charge and aims it
+      ...(ctx.key ? { key: ctx.key } : {}),   // a number key's press: the server checks its charge and aims it
+      ...(when === 'dashPast' ? { from: ctx.from, to: ctx.to } : {}), ...(when === 'jump' ? { x: ctx.x, y: ctx.y, z: ctx.z } : {}) });   // checked against the poses
   }
   // The server granted this player's Finishing Blow on enemy `id` (Simulation.hit): run it here (js/finisher.js).
   function startFinisher(id) {

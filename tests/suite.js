@@ -876,6 +876,43 @@
     expect.ok(T().strokes === 1, 'Headsman: a brush stroke behind the foe');
     abilityTouch.clear(); p.grantAbilities([]);
   });
+  // Pass 112 (PLAN.md item 8, batch 2): the blade's commons, each fired on the boss in a fight alone, drawn by
+  // js/common-fx.js, its strike landing and its sound asked for.
+  test('blade commons: each fires on the boss, is drawn and heard', () => {
+    Game.startFight('pillagerCaptain'); Game.loading = 0; sim.begin(); commonFx.clear(); abilityPowers.reset();
+    const p = Game.player, e = Game.duel, F = () => commonFx.state, K = CONFIG.abilities.commons, played = [];
+    const play = audio.play; audio.play = (id, o) => { played.push(id); return play.call(audio, id, o); };
+    try {
+      p.grantAbilities(['spark-step', 'ember-lick', 'hot-iron', 'petal-cut', 'echo-step', 'dust-devil']);
+      sturdy(p); e.cooldown = 30; faceOff(e, p, 1.2); e.hp = e.maxHp = 1e6;
+      const hp = () => e.hp, fire = (when, ctx) => abilityPowers.trigger('self', p, p.kit, when, { enemy: e, ...ctx });
+      let was = hp();
+      // Spark Step, through the body's own dash past the boss.
+      const side = e.radius + K.pastGap * 0.5;
+      p.dashFromX = e.x - 3; p.dashFromZ = e.z + side; p.x = e.x + 3; p.z = e.z + side; p.dashEnded(Game.enemies);
+      Game.render(1, STEP);
+      expect.ok(hp() < was && F().line, `Spark Step: a line along the dash, the boss cut (${JSON.stringify(F())})`);
+      for (let i = 0; i < 8; i++) Game.render(1, STEP);
+      expect.ok(F().star && played.includes('abilitySpark'), 'its star snaps on the flank, with its crack');
+      faceOff(e, p, 1.2);
+      was = hp(); fire('stringEnd'); Game.render(1, STEP);
+      expect.ok(hp() < was && F().tongue && played.includes('abilityFlare'), 'Ember Lick: a flame tongue');
+      was = hp(); fire('fullHeavy'); Game.render(1, STEP);
+      expect.ok(hp() < was && played.includes('abilitySizzle'), 'Hot Iron: molten sparks, a sizzle');
+      was = hp(); fire('dashStrike'); Game.render(1, STEP);
+      expect.ok(hp() === was && F().lens === 'hanging', `Petal Cut: the line hangs (${F().lens})`);
+      for (let i = 0; i < Math.ceil(K.lateCut / STEP) + 2; i++) { abilityPowers.tick(STEP); Game.render(1, STEP); }
+      expect.ok(hp() < was && F().lens === 'open' && F().flakes > 0 && played.includes('cutOpen'), `then opens, shedding petals (${JSON.stringify(F())})`);
+      was = hp(); fire('dodge');
+      for (let i = 0; i < Math.ceil(K.imageDelay / STEP) + 2; i++) { abilityPowers.tick(STEP); Game.render(1, STEP); }
+      expect.ok(hp() < was && F().crescent && played.includes('abilityEcho'), 'Echo Step: the afterimage swings');
+      was = hp(); p.tookOff(Game.enemies); Game.render(1, STEP);
+      expect.ok(hp() < was && F().whirl && played.includes('abilityWhirl'), 'Dust Devil: a whirl round the take-off');
+      for (let i = 0; i < 60; i++) Game.render(1, STEP);
+      const left = F();
+      expect.ok(!left.line && !left.star && !left.tongue && !left.lens && !left.crescent && !left.whirl && !left.flakes, `all gone within a second (${JSON.stringify(left)})`);
+    } finally { audio.play = play; commonFx.clear(); p.grantAbilities([]); }
+  });
   // Pass 97 (PLAN.md 3d): the sparring scene. The player's part of each drill is the teacher's own demonstration, played
   // on the player's keys (a swing drill's steps from the moment the partner's blow begins), so a demo that cannot do
   // its drill fails here too.

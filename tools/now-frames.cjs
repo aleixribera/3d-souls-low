@@ -7,6 +7,7 @@
 //   crate-roll                    a crate's roll landing on its reward
 //   abilities-desktop / -phone    the Abilities page (PLAN.md item 7) opened from the lobby: a few unlocked, one off;
 //   abilities-phone-end           the phone page scrolled to its legendaries; abilities-locked: opened during a run
+//   blade-*                       the blade commons' effects (pass 112) in the cel style, on the Pillager Captain
 require('../tests/low-priority.cjs');
 const fs = require('node:fs');
 const path = require('node:path');
@@ -23,7 +24,7 @@ const shot = (page, name, clip) => page.screenshot({ path: path.join(out, name +
   const url = `http://127.0.0.1:${app.server.address().port}/combat-arena-3d.html`;
   const browser = await chromium.launch({ channel: 'msedge', headless: true });
   const errors = [];
-  const open = async (w, h, crates = 0, save = null) => {
+  const open = async (w, h, crates = 0, save = null, query = '') => {
     const page = await browser.newPage({ viewport: { width: w, height: h } });
     page.on('pageerror', e => errors.push(e.message.slice(0, 200)));
     await page.addInitScript(([crates, save]) => {
@@ -32,7 +33,7 @@ const shot = (page, name, clip) => page.screenshot({ path: path.join(out, name +
       if (crates) localStorage.setItem('arena.progress', JSON.stringify({ xp: 0, crates, owned: [], runs: [] }));
       if (save) localStorage.setItem('arena.progress', JSON.stringify(save));
     }, [crates, save]);
-    await page.goto(url); await page.waitForFunction(() => window.__arenaReady, null, { timeout: 120000 });
+    await page.goto(url + query); await page.waitForFunction(() => window.__arenaReady, null, { timeout: 120000 });
     return page;
   };
   const joinLobby = async page => {
@@ -122,6 +123,53 @@ const shot = (page, name, clip) => page.screenshot({ path: path.join(out, name +
       await page.evaluate(() => { Game.player.dashes = 1.99; }); await page.waitForTimeout(110); await shot(page, 'touch-feather', { x: 440, y: 300, width: 400, height: 380 });
       await page.keyboard.press('j'); await page.waitForTimeout(230); await shot(page, 'touch-glint', { x: 440, y: 160, width: 400, height: 400 });
       await page.close(); console.log('touches', JSON.stringify(ink));
+    }
+    if (want('blades')) for (const [w, h, tag] of [[1280, 720, ''], [390, 844, '-phone']]) {
+      // The blade commons (pass 112) in the cel style, on a Pillager Captain held 2.8 m ahead and to the right. The clock is stepped by
+      // hand (Game.manualClock) so each frame is caught at the same moment of its effect every time.
+      const page = await open(w, h, 0, null, '?style=cel');
+      await page.evaluate(() => Game.startFight('pillagerCaptain'));
+      await page.waitForFunction(() => Game.mode === 'play' && Game.player && Game.duel && !Game.loading, null, { timeout: 60000 });
+      await page.waitForTimeout(800);
+      await page.evaluate(() => {
+        const p = Game.player, e = Game.duel; e.cooldown = 999; e.hp = e.maxHp = 1e6;
+        p.grantAbilities(['spark-step', 'ember-lick', 'hot-iron', 'petal-cut', 'echo-step', 'dust-devil']);
+        Game.manualClock = true; Game.worldWaiting = false;   // the world goes on without a key press
+        window.__blade = (setup, steps) => {
+          commonFx.clear(); abilityPowers.reset();
+          for (let i = 0; i < 40; i++) Game.update(CONFIG.step);   // the last frame's hit glow gone
+          e.x = e.px = p.x + Math.sin(p.yaw + 0.6) * 2.8; e.z = e.pz = p.z + Math.cos(p.yaw + 0.6) * 2.8; e.y = p.y; e.yaw = Math.atan2(p.x - e.x, p.z - e.z);
+          setup(p, e);
+          for (let i = 0; i < steps; i++) { Game.update(CONFIG.step); Game.render(1, CONFIG.step); }
+          return JSON.stringify(commonFx.state);
+        };
+        window.__fire = when => abilityPowers.trigger('self', p, p.kit, when, { enemy: e });
+      });
+      const K = await page.evaluate(() => CONFIG.abilities.commons), STEP = 1 / 60;
+      const past = (p, e) => {   // a dash past the boss's flank, ending beside it
+        const fx = Math.sin(p.yaw), fz = Math.cos(p.yaw), side = e.radius + CONFIG.abilities.commons.pastGap * 0.5;
+        p.dashFromX = e.x - fz * 2.4 - fx * side; p.dashFromZ = e.z + fx * 2.4 - fz * side;   // across the view, on the near side
+        const tx = e.x + fz * 2.4 - fx * side, tz = e.z - fx * 2.4 - fz * side;
+        const ox = p.x, oz = p.z; p.x = tx; p.z = tz; p.dashEnded(Game.enemies); p.x = ox; p.z = oz;
+      };
+      const frames = [
+        ['cut-open', `() => __fire('dashStrike')`, Math.ceil(K.lateCut / STEP) + 12],
+        ['whirl', `p => p.tookOff(Game.enemies)`, 9],
+      ];
+      if (!tag) frames.unshift(
+        ['spark', `(${past})`, 7],
+        ['lick', `() => __fire('stringEnd')`, 4],
+        ['molten', `() => __fire('fullHeavy')`, 3],
+        ['cut-hang', `() => __fire('dashStrike')`, 8],
+        ['echo', `() => __fire('dodge')`, Math.ceil(K.imageDelay / STEP) + 3],
+      );
+      const states = {};
+      for (const [name, setup, steps] of frames) {
+        states[name] = await page.evaluate(([setup, steps]) => __blade(eval(setup), steps), [setup, steps]);
+        await shot(page, `blade-${name}${tag}`);
+      }
+      console.log('blades', tag || 'desktop', JSON.stringify(states));
+      await page.close();
     }
   } finally { await browser.close(); app.server.close(); }
   if (errors.length) { console.log('page errors:\n' + [...new Set(errors)].slice(0, 8).join('\n')); process.exitCode = 1; }

@@ -309,6 +309,11 @@ const CONFIG = {
     rarity: { common: { levels: 4, weight: 75, grow: 0 }, rare: { levels: 3, weight: 22, grow: 1.2 }, legendary: { levels: 1, weight: 3, grow: 0.25 } },
     // A plain common (a bare number, `plain: true`) is drawn at `plainWeight` of another common's chance (PLAN.md item 6).
     plainWeight: 0.5,
+    // The effect commons (design/abilities, batch 2): a dash passes an enemy when its path comes within `pastGap` m of
+    // the body's edge between its ends (Spark Step); a dash attack's cut opens again `lateCut` s later (Petal Cut); a
+    // perfect dodge's afterimage strikes `imageDelay` s after it, if the enemy is within `imageReach` m of where the
+    // holder stood (Echo Step); a jump with an enemy within `whirlRadius` m whirls dust round the take-off (Dust Devil).
+    commons: { pastGap: 1.2, lateCut: 0.35, imageDelay: 0.15, imageReach: 2.8, whirlRadius: 2.4 },
     // Summons (js/abilities.js summonStep): each kind stands `gap` m off its enemy's body, `flank` rad round from the
     // side away from its holder (+ toward the enemy's left), and runs there at up to `speed` m/s. It has arrived
     // `arrive` s after it is called (one that `rises` comes up where it will stand; the others run there); a hound,
@@ -716,6 +721,18 @@ const CONFIG = {
         ring: { radius: 0.9, gap: 0.4, color: 0xf4f1e8, peak: 0.7 },
         frost: { length: 1.5, grow: 0.25, flakeAt: 0.25, fadeAt: 0.3, life: 0.55, flakes: 10, color: 0xe8ecea },
         ink: { length: 4, width: 0.5, tilt: 0.52, sweep: 0.08, fadeAt: 0.2, life: 0.5 },
+      },
+      // The blade's commons (js/common-fx.js), each in s and m: Spark Step's line `draw`s on, its star snaps `snapAt` s
+      // after; Ember Lick's tongue `sweep`s out `length` m; Petal Cut's line hangs `thin` m wide (up to `wait` s for its
+      // opening), `widen`s to `wide` and is gone at `show`; Echo Step's crescent is `size` m at `height` m; Dust Devil's
+      // band turns `turns` times in `spin` s to `reach` of the whirl radius, `height` m tall. Counts are on Ultra.
+      common: {
+        spark: { width: 0.45, draw: 0.08, snapAt: 0.08, star: 0.6, sparks: 12, fadeAt: 0.2, life: 0.5 },
+        lick: { length: 1.4, sweep: 0.1, life: 0.25, embers: 8 },
+        molten: { star: 0.5, drops: 20 },
+        cut: { length: 1.6, thin: 0.03, wide: 0.14, widen: 0.06, show: 0.25, wait: 1, petals: 6 },
+        image: { size: 1.4, height: 1.1, life: 0.4, flakes: 16 },
+        whirl: { reach: 0.75, height: 1.2, turns: 1.5, spin: 0.35, life: 0.55, grit: 14 },
       },
       meteor: { color: 0xff7a2a, core: 0xffe6b8, column: 22, width: 1.8, glow: 1.8, fall: 0.5, ring: 0.55, crater: 3.2, shake: [0.45, 0.35],
         burst: { count: 40, speed: 9, color: 0xff8a3a } },

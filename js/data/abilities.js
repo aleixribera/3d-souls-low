@@ -7,7 +7,7 @@
 // A `text` is only the trigger and the effect, in the fewest plain words ("Parry: a hound hunts the boss for {time}."):
 // no flavour, nothing the name or rarity already shows. validate.js holds it to ABILITY_TEXT_MAX (Aleix, 2026-11-14).
 // In `text`, {key} is that key's number at the card's level: a percentage, or in ABILITY_UNITS's unit.
-//   common:    `mods`: every key of a level is a Player number it raises (ABILITY_MODS).
+//   common:    `mods`: every key of a level is a Player number it raises (ABILITY_MODS); or a small `power` (below).
 //   rare:      `perk: { when, then }`: when something happens to its holder, something useful follows (ABILITY_PERKS);
 //              or a small `power` (below).
 //   legendary: `power: { when, then }`: when it happens, a drawn power strikes the boss (ABILITY_POWERS). The server
@@ -38,6 +38,21 @@ const ABILITIES = [
     levels: [{ riposte: 0.15 }, { riposte: 0.3 }, { riposte: 0.45 }, { riposte: 0.6 }] },
   { id: 'headsman', name: 'Headsman', rarity: 'common', plain: true, text: 'Finishing Blow: {finisher} more damage.', mods: true,
     levels: [{ finisher: 0.15 }, { finisher: 0.3 }, { finisher: 0.45 }, { finisher: 0.6 }] },
+  // The blade (design/abilities batch 2): one move made a small strike of its own, drawn in bone ink (js/common-fx.js).
+  { id: 'spark-step', name: 'Spark Step', rarity: 'common', text: 'Dash past the boss: a spark cuts it.',
+    power: { when: 'dashPast', then: 'spark' },
+    levels: [{ damage: 10, cooldown: 1 }, { damage: 13, cooldown: 1 }, { damage: 16, cooldown: 1 }, { damage: 19, cooldown: 1 }] },
+  { id: 'ember-lick', name: 'Ember Lick', rarity: 'common', text: 'Fourth light hit: a lick of flame.',
+    power: { when: 'stringEnd', then: 'lick' }, levels: [{ damage: 10 }, { damage: 13 }, { damage: 16 }, { damage: 19 }] },
+  { id: 'hot-iron', name: 'Hot Iron', rarity: 'common', text: 'Full heavy: molten sparks spray the boss.',
+    power: { when: 'fullHeavy', then: 'molten' }, levels: [{ damage: 16 }, { damage: 21 }, { damage: 26 }, { damage: 31 }] },
+  { id: 'petal-cut', name: 'Petal Cut', rarity: 'common', text: 'Dash attack: the cut opens again a beat later.',
+    power: { when: 'dashStrike', then: 'lateCut' }, levels: [{ damage: 12 }, { damage: 15 }, { damage: 18 }, { damage: 21 }] },
+  { id: 'echo-step', name: 'Echo Step', rarity: 'common', text: 'Perfect dodge: your afterimage strikes once.',
+    power: { when: 'dodge', then: 'afterimage' }, levels: [{ damage: 14 }, { damage: 18 }, { damage: 22 }, { damage: 26 }] },
+  { id: 'dust-devil', name: 'Dust Devil', rarity: 'common', text: 'Jump: a dust whirl cuts around you.',
+    power: { when: 'jump', then: 'whirl' },
+    levels: [{ damage: 10, cooldown: 2 }, { damage: 13, cooldown: 2 }, { damage: 16, cooldown: 2 }, { damage: 19, cooldown: 2 }] },
 
   // ---- Rares: useful perks that happen when something does ----
   { id: 'counterstep', name: 'Counterstep', rarity: 'rare', text: 'Perfect dodge: next hit in {window} is a riposte.',

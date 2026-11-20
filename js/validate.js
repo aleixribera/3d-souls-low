@@ -202,8 +202,11 @@ function validateData({ visual = true } = {}) {
         `${where}: its text is ${words} words and ${b.text.length} characters; at most ${ABILITY_TEXT_MAX.words} and ${ABILITY_TEXT_MAX.chars}: only the trigger and the effect.`); }
     need(!!R, `${where}: unknown rarity ${b.rarity} (CONFIG.abilities.rarity).`);
     need(b.plain === undefined || b.plain === true && b.mods && b.rarity === 'common', `${where}: plain is only true, and only on a common with mods.`);
-    need(kinds.length === 1 && (b.mods ? b.rarity === 'common' : b.perk ? b.rarity === 'rare' : b.rarity !== 'common'),
-      `${where}: one of mods (a common), perk (a rare) or power (a rare or a legendary).`);
+    need(kinds.length === 1 && (b.mods ? b.rarity === 'common' : b.perk ? b.rarity === 'rare' : true),
+      `${where}: one of mods (a common), perk (a rare) or power (any rarity).`);
+    // A common's power (pass 112) is one of the small strikes js/common-fx.js draws, never pressed.
+    if (b.power && b.rarity === 'common') need(b.power.when !== 'press' && ['spark', 'lick', 'molten', 'lateCut', 'afterimage', 'whirl'].includes(b.power.then),
+      `${where}: a common's power is not pressed and is one js/common-fx.js draws (spark, lick, molten, lateCut, afterimage, whirl).`);
     // The number keys (pass 87): every pressed ability names exactly one key, always the same; nothing else names one.
     const pressed = (b.perk || b.power || {}).when === 'press';
     need(pressed === (b.key !== undefined) && (b.key === undefined || ABILITY_KEYS.includes(b.key)),
@@ -234,6 +237,9 @@ function validateData({ visual = true } = {}) {
     need(!/\{[^}]*$|^[^{]*\}/.test(b.text), `${where}: unbalanced braces in its text.`);
     if (visual) need(typeof ABILITY_ICONS === 'object' && typeof ABILITY_ICONS[b.id] === 'string', `${where}: no icon in ABILITY_ICONS (js/ability-cards.js).`);
   }
+  const BC = BL.commons;
+  need(BC && ['pastGap', 'lateCut', 'imageDelay', 'imageReach', 'whirlRadius'].every(k => num(BC[k]) && BC[k] > 0),
+    'CONFIG.abilities.commons: pastGap, lateCut, imageDelay, imageReach and whirlRadius, each above 0.');
   for (const k of Object.keys(ABILITY_UNITS)) need(['s', 'm', 'n'].includes(ABILITY_UNITS[k]), `ABILITY_UNITS ${k}: s, m or n.`);
   const BP = BL.press, PG = BP && BP.gain;
   need(PG && ['hit', 'skill', 'deflect', 'dodge', 'finisher'].every(k => num(PG[k]) && PG[k] >= 0) && PG.hit > 0 && num(BP.range) && BP.range > 0
@@ -640,6 +646,7 @@ function validateData({ visual = true } = {}) {
     checkAttack(a, 'Player');
     need(a.feel === undefined || a.feel === 'heavy', `Player attack "${a.id}": feel must be 'heavy' or left out.`);
     need(a.flow === undefined || a.flow === true, `Player attack "${a.id}": flow must be true or left out.`);
+    need(a.stringEnd === undefined || a.stringEnd === true, `Player attack "${a.id}": stringEnd (the last blow of a full string: Ember Lick) must be true or left out.`);
     for (const [action, id] of Object.entries(a.next || {})) need(id in M.attacks && action in M.ground, `Player attack "${a.id}": next.${action} -> "${id}" is not a ground action and attack.`);
   }
   const PC = CONFIG.pace;   // a boss's pace and Boss Rush's curve (v7.65.0): it only ever speeds a boss up

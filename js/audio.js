@@ -385,7 +385,7 @@ const AUDIO_CUES = ['hitFlesh', 'hitHurt', 'hitBlock', 'riposteBoom', 'parry', '
   'abilityTwin', 'abilityEcho', 'abilityGale', 'abilityPyre', 'abilityFlare', 'abilitySpark', 'abilityStep', 'abilityEmpower',
   'abilityHeal', 'abilityCharge', 'abilityHound', 'abilityBite', 'abilityHowl', 'abilityTaunt', 'abilityGuardian', 'abilityBash', 'abilityChallenge',
   'abilityLancer', 'abilityThrust', 'crateOpen', 'crateTick', 'crateLand', 'counterOpen', 'cutOpen',
-  'abilityClank', 'abilityChime', 'abilityGulp', 'abilityFrost', 'abilityInk'];
+  'abilityClank', 'abilityChime', 'abilityGulp', 'abilityFrost', 'abilityInk', 'abilitySizzle', 'abilityWhirl'];
 // A power's sound by its `then`, its later blows' (`strike`: a lightning bolt, a twin's echo, a hound's bite) by
 // STRIKE_SOUNDS, a summon drawing the boss's eye (`draw`) by DRAW_SOUNDS; a rare's perk its own (ABILITY_PERK_SOUNDS,
 // at a pitch), a pick's pitch by its rarity.
@@ -398,6 +398,12 @@ const ABILITY_PERK_SOUNDS = { empower: ['abilityEmpower', 1], 'streak/heal': ['a
   'dodge/riposte': ['abilityStep', 1], 'block/charge': ['abilityCharge', 1],
   'execute/heal': ['abilityHeal', 0.8], 'parry/heal': ['abilityHeal', 1.2], 'press/heal': ['abilityHeal', 0.9], 'press/stance': ['abilityCharge', 0.8] };
 const ABILITY_PICK_PITCH = { common: 1, rare: 0.84, legendary: 0.67 };
+// A common's power (the blade's, design/abilities batch 2): [sound, pitch, vel], lighter than a rare's of the same
+// family; `fire` as it fires, `strike` as a late blow lands (Petal Cut's opening, Echo Step's slash).
+const ABILITY_COMMON_SOUNDS = {
+  fire: { spark: ['abilitySpark', 1.15, 0.6], lick: ['abilityFlare', 1.3, 0.5], molten: ['abilitySizzle', 1, 0.55], whirl: ['abilityWhirl', 1, 0.5] },
+  strike: { lateCut: ['cutOpen', 1.3, 0.45], afterimage: ['abilityEcho', 1.2, 0.55] },
+};
 function registerAudioListeners() {
   // Sound is never allowed to break the game: a listener that throws is reported once and skipped.
   const on = (type, fn) => events.on(type, d => { try { fn(d); } catch (e) { if (!audio.warned.has(type)) { audio.warned.add(type); console.warn(`audio: the "${type}" sound failed:`, e); } } });
@@ -477,6 +483,11 @@ function registerAudioListeners() {
   // Thousand Blades rings once for each blow of its rain, as the drawn swords land (every `every` s, js/ability-fx.js).
   const rains = [];   // { e, left, next, every }
   on('abilityPower', d => {
+    if (ABILITY_BY_ID[d.power] && ABILITY_BY_ID[d.power].rarity === 'common') {
+      const c = ABILITY_COMMON_SOUNDS[d.strike ? 'strike' : 'fire'][d.then];
+      if (c) audio.play(c[0], { pitch: c[1], vel: c[2], pos: d.body === Game.player ? null : d.enemy && d.then !== 'whirl' ? chest(d.enemy) : spot(d) });
+      return;
+    }
     const id = d.draw ? ABILITY_DRAW_SOUNDS[d.then] : d.strike ? ABILITY_STRIKE_SOUNDS[d.then] : ABILITY_SOUNDS[d.then];
     if (!id) return;
     // A summon's howl or taunt comes from the summon (`x`, `z`), never from its holder's ears.

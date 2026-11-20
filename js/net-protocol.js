@@ -9,6 +9,10 @@
     heartbeat: 15000, idleTimeout: 45000, connectTimeout: 10000,
     messagesPerSecond: 100, maxName: 24, maxCoordinate: 100000,
     maxCharge: 1, remoteRange: 100, maxClaims: 2048, claimWait: 0.4, maxPendingClaims: 64,
+    // A dash or a jump claimed (Spark Step, Dust Devil) is checked against the person's poses of the last `trailSeconds`
+    // s: a roll within `claimDash` s (a take-off within `claimJump` s), each claimed place within `claimNear` m of one of
+    // them, and the enemy passed within the gap plus `claimPast` m of the claimed path.
+    trailSeconds: 1, claimDash: 0.5, claimJump: 0.3, claimNear: 1.5, claimPast: 0.5,
     targetHysteresis: 0.8, maxBots: 3, contactTolerance: 1.5,
     wirePrecision: 1000, compressionThreshold: 512, compressionLevel: 3, compressionConcurrency: 2,
     metricsInterval: 1000, pingInterval: 2000, metricsSamples: 120,

@@ -655,6 +655,7 @@ const abilityFx = (() => {
 
   events.on('abilityPower', d => {
     const e = d.enemy;
+    if (ABILITY_BY_ID[d.power]?.rarity === 'common') return;   // a common's are js/common-fx.js's (Spark Step shares 'spark')
     if (d.then === 'blast') meteor(d);
     else if (d.then === 'lightning' && e && d.strike) bolt(d, e);
     else if (d.then === 'lightning' && e) dragon(d, e);

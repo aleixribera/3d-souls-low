@@ -151,7 +151,20 @@ class Player {
     if (!this.freeDash()) this.dashes = Math.max(0, this.dashes - 1);
     this.hitbox = null; this.chainPose = null; this.setState(PS.ROLL);
     this.dashNo = (this.dashNo || 0) + 1;   // which dash this is: a blow is weighed for a perfect dodge once per dash (js/combat.js)
+    this.dashFromX = this.x; this.dashFromZ = this.z;   // where it began (Spark Step's path)
     events.emit('dash', { player: this });
+  }
+  // A dash that went past an enemy (Spark Step's `dashPast`, js/abilities.js dashPastOf): told once, as it ends.
+  dashEnded(enemies) {
+    if (!this.kit.whens.has('dashPast') || this.dashFromX === undefined) return;
+    const from = { x: this.dashFromX, z: this.dashFromZ }, to = { x: this.x, z: this.z }, e = dashPastOf(from, to, enemies || []);
+    if (e) abilityReport(this, 'dashPast', { enemy: e, from, to, x: this.x, y: this.y, z: this.z });
+  }
+  // A jump off the ground with an enemy close by (Dust Devil's `jump`).
+  tookOff(enemies) {
+    if (!this.kit.whens.has('jump')) return;
+    const e = enemyNear(enemies || [], this.x, this.y, this.z, CONFIG.abilities.commons.whirlRadius);
+    if (e) abilityReport(this, 'jump', { enemy: e, x: this.x, y: this.y, z: this.z });
   }
   // Dash charges come back one at a time (Light Step: faster).
   refillDashes(dt) {
@@ -244,7 +257,7 @@ class Player {
     for (const [id, item] of Object.entries(ITEMS)) {
       if (this.item(id).count > 0 && this.ctl.consume(item.action)) { this.useItem(id); return true; }
     }
-    if (this.ctl.consume('jump')) { this.vy = C.jumpVelocity; this.setState(PS.JUMP); return true; }
+    if (this.ctl.consume('jump')) { this.vy = C.jumpVelocity; this.setState(PS.JUMP); this.tookOff(enemies); return true; }
     if (this.ctl.isHeld('block')) { this.setState(PS.BLOCK); return true; }
     return false;
   }
@@ -326,8 +339,8 @@ class Player {
         // A dash attack: an attack pressed in the dash (held in the buffer) comes out of it once past dashAttackFrom;
         // after a perfect dodge in this dash, the counter instead.
         const dashAttack = this.buffer && ((this.riposte > 0 && M.counter && M.counter[this.buffer.action]) || M.dash[this.buffer.action]);
-        if (dashAttack && this.stateTime >= C.dashAttackFrom) { this.startAttack(M.attacks[dashAttack], mv, face, enemies); break; }
-        if (this.stateTime >= C.rollTime) { this.vx *= C.rollExitKeep; this.vz *= C.rollExitKeep; this.setState(PS.IDLE); }
+        if (dashAttack && this.stateTime >= C.dashAttackFrom) { this.dashEnded(enemies); this.startAttack(M.attacks[dashAttack], mv, face, enemies); break; }
+        if (this.stateTime >= C.rollTime) { this.dashEnded(enemies); this.vx *= C.rollExitKeep; this.vz *= C.rollExitKeep; this.setState(PS.IDLE); }
         break;
       }
       case PS.ATTACK: {

@@ -480,6 +480,21 @@ const AUDIO = {
       { noise: 'pink', filter: { type: 'bandpass', freq: 1500, to: 500, q: 1.5 }, glide: 0.18, a: 0.02, d: 0.18, gain: 0.5 },
       { wave: 'sine', freq: 70, at: 0.16, a: 0.003, d: 0.06, gain: 0.5 },
     ] },
+    // The blade's commons (js/common-fx.js), small and under the move's own sound. Hot Iron: a hiss, then spitting
+    // sizzle grains slowing as the drops cool.
+    abilitySizzle: { bus: 'sfx', priority: 2, cooldown: 0.2, max: 1, verb: 0.15, heat: 0.2, jitter: 90, layers: [
+      { noise: 'white', filter: { type: 'bandpass', freq: 5500, q: 1.6 }, a: 0.0005, d: 0.02, gain: 0.55, drive: 2 },
+      { noise: 'white', filter: { type: 'bandpass', freq: 4200, q: 4 }, at: 0.02, a: 0.002, d: 0.05, gain: 0.3 },
+      { noise: 'white', filter: { type: 'bandpass', freq: 3200, q: 4 }, at: 0.09, a: 0.002, d: 0.06, gain: 0.25 },
+      { noise: 'white', filter: { type: 'bandpass', freq: 2600, q: 4 }, at: 0.19, a: 0.002, d: 0.07, gain: 0.18 },
+      { noise: 'white', filter: { type: 'bandpass', freq: 2100, q: 4 }, at: 0.31, a: 0.002, d: 0.06, gain: 0.1 },
+    ] },
+    // Dust Devil: a gritty scrape, then a short spinning whoosh that swells twice.
+    abilityWhirl: { bus: 'sfx', priority: 2, cooldown: 0.2, max: 1, verb: 0.2, heat: 0.1, jitter: 50, layers: [
+      { noise: 'white', filter: { type: 'bandpass', freq: 2000, q: 2 }, a: 0.0005, d: 0.02, gain: 0.5, drive: 2 },
+      { noise: 'pink', filter: { type: 'bandpass', freq: 400, to: 900, q: 1.2 }, a: 0.04, d: 0.14, gain: 0.45 },
+      { noise: 'pink', filter: { type: 'bandpass', freq: 900, to: 500, q: 1.2 }, at: 0.12, a: 0.04, d: 0.2, gain: 0.4 },
+    ] },
     // An ability picked: a struck note, lower and fuller the rarer it is.
     abilityPick: { bus: 'ui', priority: 2, cooldown: 0.1, verb: 0.4, jitter: 0, heat: 0, layers: [
       { wave: 'sine', freq: 523, partials: [[1, 1, 1], [2, 0.4, 0.7], [3, 0.2, 0.5], [4.2, 0.08, 0.3]], a: 0.002, d: 1.1, gain: 0.3 },
