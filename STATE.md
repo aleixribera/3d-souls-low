@@ -12,10 +12,9 @@ The iterate loop's working note (`.claude/iterate.md`). Cap: 8,000 characters.
   `docs/style/` (`index.html`, `side-by-side.jpg`, MP4s, `frame-times.json`). Normal 1280x720 on this PC, mean ms:
   control 2.4, cel 8.4, dark 6.8, paint 3.8. Laptop bench unreachable (SSH timeout): 60 fps there unverified. Waits on
   Aleix's pick; track 1 takes the next item meanwhile.
-- CI: v7.162.0 red on `calling-browser`'s Time Rift bubble wait (SwiftShader); pass 109 holds the boss frozen for
-  the wait. Next pass reads CI first.
-- Item 1 left: `PLAY-LINK.txt` at the public `/souls/` address, and Pages retired (workflow off, page gone or
-  redirecting): next pass. Items 2-3 done.
+- Pass 110, the retro (track 2 slot): v7.163.0's CI green (run 44830197524), its container published, and players
+  are on it at last (they had v7.159.0 until now). Item 1 done: `PLAY-LINK.txt` is https://aleix.tailfef0f7.ts.net/souls/,
+  Pages unpublished (old address 404). Step 1 of every pass: `node tools/live-check.cjs`. Items 1-3 done.
 - The Finishing Blow (pass 100-103, `js/finisher.js`, `js/finisher-fx.js`): 3rd counter; judge 4, 4, 5; its look and
   the showcase finale are "Later" in the plan.
 
@@ -62,10 +61,6 @@ The iterate loop's working note (`.claude/iterate.md`). Cap: 8,000 characters.
 ## Broken
 
 - Not in CI: `lobby-polish-browser` (flaky), `experience-browser` (320x568). `calling-browser` runs in `browser-smoke`.
-
-## Queued runs
-
-None (read the newest CI run).
 
 ## wip// branches
 
