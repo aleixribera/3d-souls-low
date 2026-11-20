@@ -779,7 +779,7 @@ const multiplayer = (() => {
     el('lobbyLeave').lastElementChild.textContent = 'Leave lobby';
     try {
       if (!/^https?:$/.test(location.protocol)) throw new Error('Open the game’s home server link to join the public lobby.');
-      const response = await fetch('/api/lobby', { cache: 'no-store', signal: AbortSignal.timeout(C.connectTimeout) });
+      const response = await fetch('api/lobby', { cache: 'no-store', signal: AbortSignal.timeout(C.connectTimeout) });
       if (!response.ok || !response.headers.get('content-type')?.includes('application/json')) throw new Error('The public lobby is available on the home server link. This address only hosts solo play.');
       const info = await response.json();
       if (!starting || attempt !== joinAttempt) return;
@@ -788,7 +788,9 @@ const multiplayer = (() => {
       const pageBuild = document.querySelector('meta[name="arena-build"]')?.content;
       if (info.version !== VERSION || pageBuild !== info.build) { reconnectWanted = false; needsReload = true; throw new Error('The game has updated. Reload this page before joining.'); }
       if (!starting || attempt !== joinAttempt) return;
-      attach(new WebSocket(`${location.protocol === 'https:' ? 'wss:' : 'ws:'}//${location.host}${C.path}`), info.build);
+      const wsUrl = new URL(C.path.replace(/^\/+/, ''), location.href);
+      wsUrl.protocol = wsUrl.protocol === 'https:' ? 'wss:' : 'ws:';
+      attach(new WebSocket(wsUrl.href), info.build);
     } catch (e) {
       if (attempt !== joinAttempt) return;
       starting = false;
@@ -865,7 +867,7 @@ const multiplayer = (() => {
     if (!/^https?:$/.test(location.protocol)) { setPeek({ state: 'absent' }); return; }
     peekBusy = true;
     try {
-      const response = await fetch('/api/lobby', { cache: 'no-store', signal: AbortSignal.timeout(CONFIG.titleLobby.timeout * 1000) });
+      const response = await fetch('api/lobby', { cache: 'no-store', signal: AbortSignal.timeout(CONFIG.titleLobby.timeout * 1000) });
       if (!response.ok || !response.headers.get('content-type')?.includes('application/json')) setPeek({ state: 'absent' });
       else {
         const info = await response.json();

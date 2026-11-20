@@ -28,7 +28,7 @@ const versionCheck = (() => {
     if (!busy && !document.hidden) {
       busy = true;
       try {
-        const response = await fetch('/api/lobby', { cache: 'no-store', signal: AbortSignal.timeout(CONFIG.versionCheck.timeout * 1000) });
+        const response = await fetch('api/lobby', { cache: 'no-store', signal: AbortSignal.timeout(CONFIG.versionCheck.timeout * 1000) });
         // No lobby on this host (a static host answers 404, or a page); a failing server is asked again later.
         const json = response.headers.get('content-type')?.includes('application/json');
         if (response.status === 404 || response.ok && !json) absent = true;

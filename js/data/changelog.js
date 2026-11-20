@@ -6,6 +6,7 @@
 //   title    a few words
 //   text     one to three sentences, shown under the list when the entry is selected
 const CHANGELOG = [
+  { version: 'v7.156.0', title: 'Standard HTTPS port', text: 'The public lobby now works behind a standard HTTPS subpath (/souls/) as well as :8443, so players on restricted Wi-Fi networks can join.' },
   { version: 'v7.155.0', title: 'Gemini, Neon High VFX revamp', text: 'Revamped Gemini, Neon High / The Eclipsed with vibrant neon ice-cyan lunar and cosmic ultraviolet eclipse palettes, inclined celestial orbital aura, astrolabe floor seals, crystalline prism spire rings, Mirror Step X-slashes, and Eclipse singularity cataclysms (plus feral learned-mark and arson spark-allocation fixes).' },
   { version: 'v7.154.0', title: 'King\'s Blade VFX revamp', text: 'Revamped The King\'s Blade / Ember-Worn with Ashmere oath-steel shock-lances and ice-spire cleaves, sword-to-shield ember arc aura, and Corvel Burns blazing twin fire-ring cataclysms.' },
   { version: 'v7.153.0', title: 'Kindling Tree VFX revamp', text: 'Revamped The Kindling Tree / Ablaze with ancient heartwood and wildfire palettes, bark-spore and canopy-arc roots aura, thorny root-spire eruptions, blazing Kindling Mark arcane seals, and world-tree Uprooted and Great Kindling infernos.' },
