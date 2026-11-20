@@ -3,14 +3,16 @@
 The iterate loop's working note (`.claude/iterate.md`). Cap: 8,000 characters.
 
 ## Now
-- Track 2, pass 107, PLAN item 7 (pass 1 of 1), done in v7.162.0: crates unlock abilities; starter set
-  (`CRATES.starter`), active pool with per-rarity minimums, the Abilities page (title, lobby; locked during a run), the
-  server offers only the pool (`cratePool`, `setGear`; a change mid-run waits for its end or restart). Checks:
-  `tests/crates.cjs`; `node tools/now-frames.cjs abilities` (clicks the toggles, checks the lock); frames
-  `docs/scorecard/now/abilities-*.jpg`, `crate-roll.jpg`. Next on track 2: item 8, the ability pool.
+- Track 2, pass 109, PLAN item 8 batch 1 (pass 1 of 1), done in v7.163.0: legendaries one level, Swift Charge and Long
+  Shadow cut, the eight plain commons (`plain: true`, offer weight `plainWeight`) with their touches
+  (`js/ability-touch.js`, sounds in `js/audio.js`). Checks: in-page `plain commons`; frames
+  `docs/scorecard/now/touch-*.jpg` (`node tools/now-frames.cjs touches`). Next on track 2: batch 2 (Commons I: the
+  blade).
 - Track 1, pass 108: item 4, art style exploration (own line when it ships).
-- CI: green on e029f3b (run 44823752212): `calling-browser`'s Time Rift fix holds. Next pass reads CI first.
-- Item 1 left: Pages retires and `PLAY-LINK.txt` (waits on Aleix). Items 2-3 done.
+- CI: v7.162.0 red on `calling-browser`'s Time Rift bubble wait (SwiftShader); pass 109 holds the boss frozen for
+  the wait. Next pass reads CI first.
+- Item 1 left: `PLAY-LINK.txt` at the public `/souls/` address, and Pages retired (workflow off, page gone or
+  redirecting): next pass. Items 2-3 done.
 - The Finishing Blow (pass 100-103, `js/finisher.js`, `js/finisher-fx.js`): 3rd counter; judge 4, 4, 5; its look and
   the showcase finale are "Later" in the plan.
 
@@ -49,7 +51,7 @@ The iterate loop's working note (`.claude/iterate.md`). Cap: 8,000 characters.
   (REPLAY_PORT, homelab :3083), list `replays/`; notes `node tools/replays.cjs`; `tests/server-replays.cjs`; audit
   `docs/design-audit/2026-11-15.md`.
 - Abilities and crates (pass 107, v7.162.0): `js/data/crates.js`, `js/progress.js` (save `v` 2), `js/crate-screen.js`;
-  `tests/crates.cjs`.
+  `tests/crates.cjs`. Plain commons' touches (pass 109): `js/ability-touch.js`; in-page `plain commons`.
 - Scorecard frames: `tools/scorecard-frames.cjs`; current frames `docs/scorecard/now/` (`tools/now-frames.cjs`).
 
 ## Broken
@@ -66,5 +68,4 @@ None (read the newest CI run).
 
 ## Needs Aleix
 
-- Is the home server's `/souls/` address public or tailnet-only? Blocks `PLAY-LINK.txt` and retiring Pages (PLAN item
-  1). Who may reach the game is an access choice, not something a pass can settle.
+Nothing open. Answered: the home server's `/souls/` address is PUBLIC (Aleix, 2026-11-20).

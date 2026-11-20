@@ -54,3 +54,5 @@ them (`git show 88f1abd:BACKLOG.md`).
 - Opt-in mechanics no content uses: `lifesteal`, hazard floors, flame `breath`.
 - Branches not adopted: `wip/p101-dash-clip`, `wip/p102-dash-lunge`, `wip/p102-deflect-keys` (unjudged),
   `wip/blessing-tall-cards`.
+- Deferred from item 8 batch 1 (pass 109): Iron Blood veins, Quick Draught smear, the level-IV streak, card hover
+  loops (design/abilities/BUILD-ORDER.md).
