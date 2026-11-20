@@ -257,13 +257,14 @@ globalThis.host = (() => {
   // `crownedOffer` cards, and one of them, at a random place, is a legendary while one is left to offer. With a `seed`
   // (offerSeed: a Boss Rush run's fight) the nth player's draw is mixSeed(seed, n)'s, so a weekly run offers the same
   // cards to everyone who holds the same abilities.
-  // `crates` false (the weekly run) leaves every crate ability out; else a player is offered the ones their crates gave
-  // them (setGear). `rarities` (a list) keeps the offer to those: the free pick before fight 1 (CONFIG.abilities.first).
+  // `pools` false (the weekly run: one pool for everyone) offers from every ability; else a player is offered only their
+  // own active pool (setGear), and one with none set (a bot) every ability. `rarities` (a list) keeps the offer to
+  // those: the free pick before fight 1 (CONFIG.abilities.first).
   // A number key (ABILITY_KEYS) holds one ability: once one is taken, no other for that key is offered (pass 87, Aleix).
   const offerSize = (crowned, extra = 0) => crowned
     ? Math.max(CONFIG.abilities.offer + extra, CONFIG.endless.crownedOffer)
     : CONFIG.abilities.offer + extra;
-  function offerAbilities(ids, withBots = true, extra = 0, won = 0, crowned = false, seed = null, crates = true, rarities = null) {
+  function offerAbilities(ids, withBots = true, extra = 0, won = 0, crowned = false, seed = null, pools = true, rarities = null) {
     const B = CONFIG.abilities;
     let random = Math.random, nth = -1;
     const pick = list => list[Math.floor(random() * list.length)];
@@ -273,12 +274,12 @@ globalThis.host = (() => {
       if (offers.has(id)) continue;
       random = seed === null ? Math.random : rushSeed(mixSeed(seed, nth));
       const held = owned.get(id) || [];
-      const mine = crates && gear.get(id)?.crates;
+      const pool = pools && gear.get(id);
       // A number key once filled stays: no other ability for it is offered, only the one held, as its next level.
       const keyOf = new Map(held.map(h => ABILITY_BY_ID[h]).filter(b => b && b.key).map(b => [b.key, b.id]));
       const open = ABILITIES.filter(b => abilityLevel(b, held) < b.levels.length
         && !(b.key && keyOf.has(b.key) && keyOf.get(b.key) !== b.id)
-        && (!b.crate || !!mine && mine.has(b.id)) && (!rarities || rarities.includes(b.rarity)));
+        && (!pool || pool.has(b.id)) && (!rarities || rarities.includes(b.rarity)));
       const offer = [], legend = crowned && pick(open.filter(b => b.rarity === 'legendary'));
       if (legend) offer.push(legend.id);
       for (let i = offer.length; i < cards; i++) {
@@ -296,14 +297,15 @@ globalThis.host = (() => {
       if (bots.has(id)) pickAbility(id, pick(offer));
     }
   }
-  // What a person's crates gave them (js/data/crates.js), as their browser says: the blade look they wear (shown to
-  // the others) and the crate abilities that join their pool. Anything unknown is dropped. Returns the look kept.
-  function setGear(id, look, crates) {
-    const L = typeof look === 'string' && CRATE_BY_ID[look]?.kind === 'look' ? look : null;
-    const list = Array.isArray(crates) ? crates.slice(0, CRATES.rewards.length).filter(a => typeof a === 'string' && ABILITY_BY_ID[a]?.crate === true) : [];
-    gear.set(id, { look: L, crates: new Set(list) });
-    return L;
+  // A person's active pool (PLAN.md item 7), as their browser says: the abilities Boss Rush may offer them. A list that
+  // isn't a pool (cratePool: unknown ids dropped, at least CRATE_MIN of each rarity) is the starter set. The lobby
+  // keeps it through a run (js/lobby-host.js). Returns the pool kept.
+  function setGear(id, list) {
+    const pool = cratePool(list) || [...CRATES.starter];
+    gear.set(id, new Set(pool));
+    return pool;
   }
+  const hasGear = id => gear.has(id);
   // The seed of a Boss Rush fight's offers: the run's seed and the fight; `round` sets a late arrival's apart.
   const offerSeed = (run, fight, round = 0) => mixSeed(run.seed, fight, round);
   // Takes one ability from this player's open offer; false for anything else.
@@ -783,7 +785,7 @@ globalThis.host = (() => {
     fall, dropEmber: id => embers.delete(id), takeRisen: () => risen.splice(0), get fightKiller() { return killer; },
     reviveHealth: id => maxHpOf(id) * CONFIG.revive.health, frame, hit, parry, dodged, endFinisher, lifesteal, landed,
     playerMaxHp: PLAYER_DEF.stats.maxHp,
-    offerAbilities, setGear, settleAbilities, pickAbility, giveAbilities, kitOf, maxHpOf, notePose, abilityClaim,
+    offerAbilities, setGear, hasGear, poolOf: id => gear.has(id) ? [...gear.get(id)] : null, settleAbilities, pickAbility, giveAbilities, kitOf, maxHpOf, notePose, abilityClaim,
     offerSize, abilityPickTime: CONFIG.abilities.pickTime, abilityPickHold: CONFIG.abilities.pickHold, abilityFirst: CONFIG.abilities.first,
     rushPar, rushHealth, partyMight, swiftExtra: CONFIG.swift.extra,
     abilities: () => Object.fromEntries(owned), abilityOffer: id => offers.get(id) || null,

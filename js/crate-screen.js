@@ -1,9 +1,9 @@
 'use strict';
 // ============================================================================
-// Levels and crates, drawn (PLAN.md track B item 7): the crate roll (a strip of rewards spins past a mark, eases to a
-// stop on one, and that reward is shown with what it is and does), the Collection (level, crates to open, every blade
-// look and crate ability, owned or locked; an owned look is worn by choosing it), the end-of-run screen's rewards, and
-// the blade look on a body. The store and the draw are js/progress.js; what a crate holds js/data/crates.js.
+// Levels, crates and abilities, drawn (PLAN.md item 7): the crate roll (a strip of abilities spins past a mark, eases
+// to a stop on one, and that ability is shown with what it does), the Abilities page (level, crates to open, every
+// ability by rarity, owned or locked, each owned one on or off for Boss Rush, never fewer on than CRATE_MIN), and the
+// end-of-run screen's rewards. The store and the draw are js/progress.js; the starter set js/data/crates.js.
 // Presentation only: the roll's effects are the one place menus keep animation (PLAN.md track B item 3).
 // ============================================================================
 const crateScreen = (() => {
@@ -13,58 +13,31 @@ const crateScreen = (() => {
   const hex = c => '#' + c.toString(16).padStart(6, '0');
   const calm = () => typeof reducedMotion === 'function' && reducedMotion();
 
-  // ---- the blade look on a body ----------------------------------------------------------------------------------
-  // A rig's blade (its weaponMat) in look `id`: the tint over the steel, its metal and roughness, and a glow that the
-  // wind-up and hit flashes add to (js/rig.js). Unknown or missing ids wear the steel as forged.
-  function wearLook(rig, id) {
-    const L = CRATE_BY_ID[id]?.kind === 'look' ? CRATE_BY_ID[id] : CRATES.rewards.find(r => r.start && r.kind === 'look');
-    if (!rig || !rig.weaponMat || !rig.weaponBase || !L) return;
-    rig.weaponBase.setHex(L.tint); rig.weaponMat.color.copy(rig.weaponBase);
-    rig.weaponMat.metalness = L.metal; rig.weaponMat.roughness = L.rough;
-    rig.weaponGlow = L.glow !== undefined ? new THREE.Color(L.glow).multiplyScalar(L.glowK) : null;
-    if (rig.weaponGlow) rig.weaponMat.emissive.copy(rig.weaponGlow); else rig.weaponMat.emissive.setRGB(0, 0, 0);
-  }
-
   // ---- tiles ----------------------------------------------------------------------------------------------------
-  let uid = 0;
-  // A look's blade, drawn: its colour is the tint over plain steel, lit from the top; a glow look glows.
-  function bladeSvg(L) {
-    const g = `cg${++uid}`, c = new THREE.Color(L.tint).multiply(new THREE.Color(0xb4b8be));
-    const hi = c.clone().lerp(new THREE.Color(0xffffff), 0.35 - L.rough * 0.15), lo = c.clone().multiplyScalar(0.55);
-    const glow = L.glow !== undefined ? ` style="filter:drop-shadow(0 0 ${(3 + L.glowK * 8).toFixed(1)}px ${hex(L.glow)})"` : '';
-    return `<svg viewBox="0 0 48 48" aria-hidden="true" focusable="false"${glow}><defs><linearGradient id="${g}" x1="0" y1="0" x2="1" y2="1">`
-      + `<stop offset="0" stop-color="#${hi.getHexString()}"/><stop offset="1" stop-color="#${lo.getHexString()}"/></linearGradient></defs>`
-      + `<path d="M14 31 L37.5 7.5 L41.5 6.5 L40.5 10.5 L17 34 Z" fill="url(#${g})" stroke="#000" stroke-opacity=".45" stroke-width=".6"/>`
-      + `<path d="M15.5 32.5 L39 9" stroke="#fff" stroke-opacity=".28" stroke-width=".7"/>`
-      + `<path d="M9.5 28.5 L19.5 38.5" stroke="#6e6656" stroke-width="3" stroke-linecap="round"/>`
-      + `<path d="M13 35 L7.5 40.5" stroke="#4a3a2a" stroke-width="3.2" stroke-linecap="round"/><circle cx="6.5" cy="41.5" r="2.2" fill="#6e6656"/></svg>`;
-  }
-  const abilitySvg = b => `<svg class="ctile-line" viewBox="0 0 48 48" aria-hidden="true" focusable="false">${ABILITY_ICONS[b.ability] || ''}</svg>`;
-  const iconOf = r => r.kind === 'look' ? bladeSvg(r) : abilitySvg(r);
-  const textOf = r => r.kind === 'look' ? r.text : ABILITY_BY_ID[r.ability].text;
-  // A reward's tile: its picture in a well edged in its rarity's colour, and its name.
-  function tile(r, tag = 'span') {
-    const t = make(tag, 'ctile'); t.dataset.rarity = crateRarity(r); t.dataset.reward = r.id;
-    const well = make('span', 'ctile-well'); well.innerHTML = iconOf(r);
-    t.append(well, make('span', 'ctile-name', crateName(r)));
+  const iconOf = b => `<svg class="ctile-line" viewBox="0 0 48 48" aria-hidden="true" focusable="false">${ABILITY_ICONS[b.id] || ''}</svg>`;
+  // An ability's tile: its picture in a well edged in its rarity's colour, and its name.
+  function tile(b, tag = 'span') {
+    const t = make(tag, 'ctile'); t.dataset.rarity = b.rarity; t.dataset.ability = b.id;
+    const well = make('span', 'ctile-well'); well.innerHTML = iconOf(b);
+    t.append(well, make('span', 'ctile-name', b.name));
     return t;
   }
-  // What a reward does, as the ability cards say it (its numbers in bold, at level 1).
-  function describe(r, into) {
+  // What an ability does, as the ability cards say it (its numbers in bold, at level 1).
+  function describe(b, into) {
     into.replaceChildren();
-    if (r.kind === 'look') { into.textContent = r.text; return; }
-    for (const part of abilityCardText(ABILITY_BY_ID[r.ability], 1, true)) into.appendChild(part.strong ? make('b', '', part.text) : document.createTextNode(part.text));
+    for (const part of abilityCardText(b, 1, true)) into.appendChild(part.strong ? make('b', '', part.text) : document.createTextNode(part.text));
   }
+  const plainText = b => abilityCardText(b, 1, true).map(p => p.text).join('');
 
   // ---- the screen --------------------------------------------------------------------------------------------------
   const root = make('section'); root.id = 'crates'; root.hidden = true;
   root.setAttribute('role', 'dialog'); root.setAttribute('aria-modal', 'true'); root.setAttribute('aria-labelledby', 'cratesTitle');
   root.innerHTML = `<div class="crates-view" id="cratesCollection">
-    <header class="crates-head"><h2 id="cratesTitle">Collection</h2><div class="crates-level"><span id="cratesLevel"></span>
+    <header class="crates-head"><h2 id="cratesTitle">Abilities</h2><div class="crates-level"><span id="cratesLevel"></span>
       <span class="crates-xp" aria-hidden="true"><span id="cratesXpFill"></span></span><span id="cratesXpText"></span></div></header>
     <div class="crates-open"><button type="button" id="cratesOpen" class="ui-primary"></button><p id="cratesNone"></p></div>
-    <h3 class="crates-section">Blade looks</h3><div class="crates-grid" id="cratesLooks" role="group" aria-label="Blade looks"></div>
-    <h3 class="crates-section">Abilities</h3><div class="crates-grid" id="cratesAbilities" role="group" aria-label="Crate abilities"></div>
+    <p id="cratesNote" class="crates-note" aria-live="polite"></p>
+    <div id="cratesPools"></div>
     <footer class="crates-foot"><button type="button" id="cratesBack" class="ui-text-button"><span class="ui-key crates-esc" aria-hidden="true"></span>Back</button></footer>
   </div>
   <div class="crates-view roll-view" id="cratesRoll" hidden>
@@ -93,8 +66,14 @@ const crateScreen = (() => {
   .crates-open{display:flex;flex-wrap:wrap;align-items:center;gap:12px 24px;margin:32px 0 8px}
   .crates-open .ui-primary{width:auto;min-width:240px}#cratesNone{margin:0;color:var(--ui-muted)}#cratesNone:empty{display:none}
   .crates-section{margin:32px 0 12px;padding-top:16px;border-top:1px solid var(--ui-line);font:400 var(--ui-size-row)/1.2 var(--ui-display);color:var(--ui-ink)}
-  .crates-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(132px,1fr));gap:10px}
+  .crates-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(168px,1fr));gap:10px}
   .crates-foot{margin-top:36px}
+  .crates-note{margin:16px 0 0;color:var(--ui-muted)}.crates-note:empty{display:none}.crates-note.warn{color:var(--ui-accent-hi)}
+  .crates-section{display:flex;flex-wrap:wrap;align-items:baseline;justify-content:space-between;gap:4px 16px}
+  .crates-on{font:400 var(--ui-size-hint)/1.2 var(--ui-text);color:var(--ui-muted);font-variant-numeric:tabular-nums}
+  .crates-grid .ctile{justify-content:flex-start}
+  .ctile-text{font:400 var(--ui-size-hint)/1.35 var(--ui-text);color:var(--ui-muted)}
+  .ctile[aria-pressed=false]:not(.locked){opacity:.62}.ctile[aria-pressed=false]:not(.locked) .ctile-well svg{opacity:.45}
   .ctile{--rc:var(--body);all:unset;box-sizing:border-box;display:flex;flex-direction:column;align-items:center;gap:8px;padding:12px 10px 10px;
     background:var(--ui-panel);border:1px solid var(--ui-line);text-align:center}
   .ctile[data-rarity=rare]{--rc:var(--rare)}.ctile[data-rarity=legendary]{--rc:var(--leg)}
@@ -143,7 +122,7 @@ const crateScreen = (() => {
     #crates{padding:max(32px,env(safe-area-inset-top)) 16px max(20px,env(safe-area-inset-bottom))}
     .crates-head h2{font-size:32px}.crates-xp{width:110px}
     .crates-open .ui-primary,.roll-actions .ui-primary{flex:1 1 100%}
-    .crates-grid{grid-template-columns:repeat(auto-fill,minmax(100px,1fr));gap:8px}
+    .crates-grid{grid-template-columns:repeat(auto-fill,minmax(136px,1fr));gap:8px}
     .ctile-well{width:64px;height:64px}.ctile-well svg{width:46px;height:46px}.ctile-name{font-size:14px}
     .roll-band{height:168px;margin:0 -16px}.roll-strip{top:16px;gap:8px}.roll-strip .ctile{width:112px;height:136px;gap:6px;padding:8px 6px}
     .roll-strip .ctile-well{width:72px;height:72px}.roll-strip .ctile-well svg{width:52px;height:52px}.roll-strip .ctile-name{font-size:13px}
@@ -151,59 +130,77 @@ const crateScreen = (() => {
   @media (hover:none) and (pointer:coarse){.crates-esc{display:none}}`;
   document.head.appendChild(style);
 
-  // ---- the Collection ------------------------------------------------------------------------------------------------
-  let opener = null, from = null, onClose = null;   // the element focused before, and where Done/Back leads ('collection' or out)
+  // ---- the Abilities page --------------------------------------------------------------------------------------------
+  const RARITIES = ['common', 'rare', 'legendary'];
+  const PLURAL = { common: 'commons', rare: 'rares', legendary: 'legendaries' };
+  let opener = null, from = null, onClose = null, locked = null;   // the element focused before, where Done/Back leads, and whether a run is on
+  const isLocked = () => !!locked && !!locked();
   function drawCollection() {
-    const L = progress.level, n = progress.crates;
+    const L = progress.level, n = progress.crates, full = progress.complete, lock = isLocked();
     $c('cratesLevel').textContent = `Level ${L.level}`;
     $c('cratesXpFill').style.transform = `scaleX(${Math.min(1, L.into / L.need)})`;
     $c('cratesXpText').textContent = `${L.into} / ${L.need}`;
     const open = $c('cratesOpen');
-    open.textContent = n ? `Open a crate` : 'No crates to open';
-    if (n) open.appendChild(make('span', 'crates-count', `· ${n}`));
-    open.disabled = !n;
-    $c('cratesNone').textContent = n ? '' : 'Each level gives one. Play Boss Rush to earn levels.';
-    for (const [grid, kind] of [[$c('cratesLooks'), 'look'], [$c('cratesAbilities'), 'ability']]) {
-      grid.replaceChildren();
-      for (const r of CRATES.rewards.filter(x => x.kind === kind)) {
-        const mine = progress.owns(r.id), t = tile(r, 'button');
+    open.textContent = full ? 'Collection complete' : n ? 'Open a crate' : 'No crates to open';
+    if (n && !full) open.appendChild(make('span', 'crates-count', `· ${n}`));
+    open.disabled = !n || full;
+    $c('cratesNone').textContent = full ? 'You own every ability.' : n ? '' : 'Each level gives one. Play Boss Rush to earn levels.';
+    const note = $c('cratesNote');
+    note.classList.remove('warn');
+    note.textContent = lock ? 'Locked while a run is on.' : '';
+    const pools = $c('cratesPools'); pools.replaceChildren();
+    for (const r of RARITIES) {
+      const all = ABILITIES.filter(b => b.rarity === r), on = all.filter(b => progress.isActive(b.id)).length;
+      const head = make('h3', 'crates-section'); head.id = `cratesHead-${r}`;
+      head.append(make('span', '', RAR_WORD[r]), make('span', 'crates-on', `${on} on · at least ${CRATE_MIN[r]}`));
+      const grid = make('div', 'crates-grid'); grid.setAttribute('role', 'group'); grid.setAttribute('aria-labelledby', head.id);
+      for (const b of all) {
+        const mine = progress.owns(b.id), active = progress.isActive(b.id), t = tile(b, 'button');
         t.type = 'button'; t.classList.toggle('locked', !mine);
-        // Its rarity in words (never by colour alone), then where it stands, unless it is simply yours.
-        const rarity = RAR_WORD[crateRarity(r)], state = !mine ? 'Locked' : kind === 'ability' ? 'In your pool' : progress.look === r.id ? 'Worn' : '';
-        t.appendChild(make('span', 'ctile-state', rarity));
-        if (state) t.appendChild(make('span', 'ctile-status', state));
-        t.setAttribute('aria-label', `${crateName(r)}, ${rarity}. ${textOf(r).replace(/\{\w+\}/g, '').replace(/\s+([.,:])/g, '$1')}${state ? ` ${state}.` : ''}`);
-        if (kind === 'look') { t.setAttribute('aria-pressed', String(progress.look === r.id)); t.disabled = !mine; t.onclick = () => wear(r.id); }
-        else t.disabled = true;
+        t.appendChild(make('span', 'ctile-text', plainText(b)));
+        const state = !mine ? 'Locked' : active ? 'On' : 'Off';
+        t.appendChild(make('span', 'ctile-status', state));
+        t.setAttribute('aria-label', `${b.name}, ${RAR_WORD[r]}. ${plainText(b)} ${state}.`);
+        if (mine) t.setAttribute('aria-pressed', String(active));
+        t.disabled = !mine || lock;
+        if (mine) t.onclick = () => toggle(b);
         grid.appendChild(t);
       }
+      pools.append(head, grid);
     }
   }
-  function wear(id) {
-    if (!progress.wear(id)) return;
+  // Turns an owned ability on or off; at a rarity's minimum, says why it stays on.
+  function toggle(b) {
+    if (isLocked()) return;
+    const on = !progress.isActive(b.id);
+    if (!on && !progress.canTurnOff(b.id)) {
+      events.emit('menuBack');
+      const note = $c('cratesNote'); note.textContent = `Keep at least ${CRATE_MIN[b.rarity]} ${PLURAL[b.rarity]} on.`; note.classList.add('warn');
+      return;
+    }
+    if (!progress.setActive(b.id, on)) return;
     events.emit('menuConfirm');
-    const at = document.activeElement?.dataset.reward;
     drawCollection();
-    if (at) root.querySelector(`.ctile[data-reward="${at}"]`)?.focus({ preventScroll: true });
+    root.querySelector(`.ctile[data-ability="${b.id}"]`)?.focus({ preventScroll: true });
   }
   function show(view) {
     $c('cratesCollection').hidden = view !== 'collection'; $c('cratesRoll').hidden = view !== 'roll';
     root.classList.toggle('pad', usingPad());
     for (const k of root.querySelectorAll('.crates-esc')) k.textContent = usingPad() ? 'B' : 'Esc';
   }
-  // `then` runs once the screen closes (the title redraws its line).
-  function openCollection(then) {
+  // `then` runs once the screen closes (the title redraws its line); `lockedFn` says whether a run is on (the lobby's).
+  function openCollection(then, lockedFn = null) {
     if (!root.hidden && from) return;
-    opener = root.hidden ? document.activeElement : opener; from = 'collection';
+    opener = root.hidden ? document.activeElement : opener; from = 'collection'; locked = lockedFn;
     if (typeof then === 'function') onClose = then;
     root.hidden = false; input.clear(); if (document.pointerLockElement) document.exitPointerLock();
-    drawCollection(); show('collection');
+    progress.sync(); drawCollection(); show('collection');
     const first = $c('cratesOpen');
     (first.disabled ? $c('cratesBack') : first).focus({ preventScroll: true });
   }
   function close() {
     if (root.hidden) return;
-    stopRoll(); root.hidden = true; from = null;
+    stopRoll(); root.hidden = true; from = null; locked = null;
     events.emit('menuBack');
     if (opener && opener.isConnected) opener.focus({ preventScroll: true });
     opener = null;
@@ -212,7 +209,7 @@ const crateScreen = (() => {
 
   // ---- the roll ------------------------------------------------------------------------------------------------------
   const fx = { canvas: $c('rollFx'), parts: [], raf: 0 };
-  let roll = null;   // { reward, fresh, start, end, settle, t, time, index, done }
+  let roll = null;   // { ability, strip, start, end, settle, t, time, index, done }
   function startRoll(after) {
     const result = progress.open();
     if (!result) return false;
@@ -221,7 +218,7 @@ const crateScreen = (() => {
     show('roll');
     const band = $c('rollBand'), strip = $c('rollStrip');
     band.classList.remove('landed', 'shake'); $c('rollReveal').hidden = true; $c('rollActions').classList.add('spinning');
-    strip.replaceChildren(...result.strip.map(id => tile(CRATE_BY_ID[id])));
+    strip.replaceChildren(...result.strip.map(id => tile(ABILITY_BY_ID[id])));
     const won = strip.children[CRATES.roll.land]; won.classList.add('won');
     const first = strip.children[0], P = first.offsetWidth + parseFloat(getComputedStyle(strip).columnGap || '10'), W = first.offsetWidth, cx = band.clientWidth / 2;
     const at = i => cx - (i * P + W / 2), jitter = (Math.random() * 2 - 1) * W * 0.36;
@@ -255,7 +252,7 @@ const crateScreen = (() => {
     if (!r.done || r.settle < 1 || fx.parts.length) fx.raf = requestAnimationFrame(step);
   }
   function land() {
-    const r = roll, rarity = crateRarity(r.reward), band = $c('rollBand');
+    const r = roll, rarity = r.ability.rarity, band = $c('rollBand');
     r.done = true;
     band.style.setProperty('--beam', hex(RAR_COLOUR[rarity]));
     band.classList.add('landed');
@@ -263,15 +260,13 @@ const crateScreen = (() => {
     audio.play('crateLand', { pitch: { common: 1, rare: 0.84, legendary: 0.7 }[rarity], vel: rarity === 'common' ? 0.6 : 0.95 });
     audio.play('abilityPick', { pitch: { common: 1, rare: 0.84, legendary: 0.67 }[rarity], vel: rarity === 'common' ? 0.5 : 0.9 });
     if (!calm()) burst(rarity);
-    const reveal = $c('rollReveal'), R = r.reward;
+    const reveal = $c('rollReveal'), B = r.ability;
     reveal.dataset.rarity = rarity; reveal.hidden = false;
-    $c('rollName').textContent = crateName(R);
-    describe(R, $c('rollText'));
+    $c('rollName').textContent = B.name;
+    describe(B, $c('rollText'));
     // What it is and what it did, its rarity first in the rarity's colour (no label above the name).
-    const what = R.kind === 'look' ? ' blade look' : ' ability';
-    $c('rollKind').replaceChildren(make('span', 'roll-rarity', RAR_WORD[rarity]),
-      !r.fresh ? `${what}, already yours.` : R.kind === 'look' ? `${what}. You wear it now.` : `${what}. It can now be offered in Boss Rush.`);
-    const again = $c('rollAgain'), left = progress.crates;
+    $c('rollKind').replaceChildren(make('span', 'roll-rarity', RAR_WORD[rarity]), ' ability. Added to your Boss Rush pool.');
+    const again = $c('rollAgain'), left = progress.complete ? 0 : progress.crates;
     again.hidden = !left; again.textContent = 'Open another'; if (left) again.appendChild(make('span', 'crates-count', `· ${left}`));
     $c('rollActions').classList.remove('spinning');
     (left ? again : $c('rollDone')).focus({ preventScroll: true });
@@ -393,12 +388,12 @@ const crateScreen = (() => {
     const row = (term, value) => { const d = make('div'); d.append(make('dt', '', term), make('dd', '', value)); list.appendChild(d); };
     if (earned) row('Experience', `+${earned.xp}`);
     row('Level', earned && earned.crates ? `${earned.before.level} → ${earned.after.level}` : String(L.level));
-    row('Crates', String(progress.crates));
+    if (!progress.complete) row('Crates', String(progress.crates));
     into.appendChild(list);
     const bar = make('span', 'crates-xp'); const fill = make('span'); fill.style.cssText = `display:block;height:100%;background:var(--ui-accent);transform-origin:left;transform:scaleX(${Math.min(1, L.into / L.need)})`;
     bar.appendChild(fill); bar.title = `${L.into} / ${L.need} to level ${L.level + 1}`; into.appendChild(bar);
     const open = make('button', 'ui-button summary-crate', 'Open a crate'); open.type = 'button'; open.id = 'runSummaryCrate';
-    open.hidden = !progress.crates;
+    open.hidden = !progress.crates || progress.complete;
     open.onclick = () => { events.emit('menuConfirm'); if (startRoll(null)) onClose = () => runRewardsRefresh(into); else runRewardsRefresh(into); };
     into.appendChild(open);
     return open;
@@ -406,17 +401,15 @@ const crateScreen = (() => {
   // After a roll from the end screen: the counts again, nothing earned twice.
   function runRewardsRefresh(into) {
     const crates = into.querySelector('.summary-rewards div:last-child dd'); if (crates) crates.textContent = String(progress.crates);
-    const open = into.querySelector('#runSummaryCrate'); if (open) open.hidden = !progress.crates;
-    (progress.crates ? open : document.getElementById('runSummaryAgain'))?.focus?.({ preventScroll: true });
+    const open = into.querySelector('#runSummaryCrate'), more = progress.crates && !progress.complete; if (open) open.hidden = !more;
+    (more ? open : document.getElementById('runSummaryAgain'))?.focus?.({ preventScroll: true });
   }
 
   // The title's Collection row: the level, and the crates waiting.
-  const titleLine = () => `Level ${progress.level.level}` + (progress.crates ? ` · ${progress.crates} ${progress.crates === 1 ? 'crate' : 'crates'} to open` : '');
-  // Your own blade takes a new look at once (the others see it through the lobby's roster).
-  progress.onChange(() => { if (typeof Game !== 'undefined' && Game.player && Game.player.rig) wearLook(Game.player.rig, progress.look); });
+  const titleLine = () => `Level ${progress.level.level}` + (progress.crates && !progress.complete ? ` · ${progress.crates} ${progress.crates === 1 ? 'crate' : 'crates'} to open` : '');
   return {
     get open() { return !root.hidden; },
-    collection: openCollection, close, pad, wearLook, runRewards, titleLine,
+    collection: openCollection, close, pad, runRewards, titleLine,
     roll: () => startRoll(null),
     get rolling() { return !!roll && !roll.done; },
   };

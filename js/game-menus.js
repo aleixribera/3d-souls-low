@@ -75,8 +75,9 @@ Object.assign(Game, {
         { name: 'Story', size: 'mode', line: S.main[0].line, go: S.main[0].newGame ? () => this.showMenu('storyPick') : S.main[0].go },
         { name: 'Tutorial (Recommended)', size: 'mode', line: 'Watch a fight, then learn the moves against a sparring partner.', go: () => this.playTutorial() },
         { name: 'Practice', size: 'mode', line: 'Any enemy, boss or level, straight away.', go: () => this.showMenu('practice') },
-        // The Collection (js/crate-screen.js): your level, the crates to open, what you own. Its line is redrawn on the way back.
-        ...(typeof crateScreen !== 'undefined' ? [{ name: 'Collection', size: 'mode', collection: true, line: crateScreen.titleLine(),
+        // Abilities (js/crate-screen.js): your level, the crates to open, the abilities you own and which are on. Its line
+        // is redrawn on the way back.
+        ...(typeof crateScreen !== 'undefined' ? [{ name: 'Abilities', size: 'mode', collection: true, line: crateScreen.titleLine(),
           go: () => crateScreen.collection(() => this.refreshTitleCollection()) }] : []),
         { name: 'Options', size: 'foot', go: () => { this.optionsFrom = 'main'; this.showMenu('options'); } },
         { name: 'Controls', size: 'foot', go: () => { this.controlsFrom = 'main'; this.showMenu('controls'); } },

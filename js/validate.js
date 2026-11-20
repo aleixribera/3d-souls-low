@@ -128,7 +128,7 @@ function validateData({ visual = true } = {}) {
     'CONFIG.abilities: offer a whole number of 1 or more, pickTime positive, pickHold 0 or more and under pickTime.');
   need(['common', 'rare', 'legendary'].every(r => RAR[r]) && Object.values(RAR).every(R => Number.isInteger(R.levels) && R.levels >= 1 && num(R.weight) && R.weight >= 0 && num(R.grow) && R.grow >= 0),
     'CONFIG.abilities.rarity: common, rare and legendary, each with whole levels of 1 or more and a weight and grow of 0 or more.');
-  need(Array.isArray(BL.first) && BL.first.length >= 1 && BL.first.every(r => RAR[r]) && ABILITIES.filter(b => BL.first.includes(b.rarity) && !b.crate).length >= BL.offer,
+  need(Array.isArray(BL.first) && BL.first.length >= 1 && BL.first.every(r => RAR[r]) && ABILITIES.filter(b => BL.first.includes(b.rarity)).length >= BL.offer,
     'CONFIG.abilities: first a list of rarities with enough abilities for an offer.');
   need(new Set(ABILITIES.map(b => b.id)).size === ABILITIES.length, 'Ability ids must be unique.');
   const SUM = BL.summons;   // where each summon stands and how fast it runs (js/abilities.js summonStep)
@@ -176,8 +176,8 @@ function validateData({ visual = true } = {}) {
     const pressed = (b.perk || b.power || {}).when === 'press';
     need(pressed === (b.key !== undefined) && (b.key === undefined || ABILITY_KEYS.includes(b.key)),
       `${where}: a pressed ability (when: 'press') names exactly one key (${ABILITY_KEYS.join(', ')}), and only a pressed one names a key.`);
-    if (b.key !== undefined) need((b.key === 'ultimate') === (b.rarity === 'legendary') && !b.crate,
-      `${where}: key ultimate is a legendary's, strike, guard and summon a rare's; no crate gives a pressed one.`);
+    if (b.key !== undefined) need((b.key === 'ultimate') === (b.rarity === 'legendary'),
+      `${where}: key ultimate is a legendary's, strike, guard and summon a rare's.`);
     if (!R || kinds.length !== 1 || !Array.isArray(b.levels)) { need(Array.isArray(b.levels), `${where}: levels must be a list.`); continue; }
     need(b.levels.length === R.levels, `${where}: ${R.levels} levels for a ${b.rarity}.`);
     const plan = b.perk ? ABILITY_PERKS[b.perk.when + '/' + b.perk.then] : b.power ? ABILITY_POWERS[b.power.when + '/' + b.power.then] : null;
@@ -207,30 +207,27 @@ function validateData({ visual = true } = {}) {
   need(PG && ['hit', 'skill', 'deflect', 'dodge', 'finisher'].every(k => num(PG[k]) && PG[k] >= 0) && PG.hit > 0 && num(BP.range) && BP.range > 0
     && num(BP.slack) && BP.slack >= 0 && BP.slack < 1 && num(BP.botReach) && BP.botReach > 0 && num(BP.botHeal) && BP.botHeal > 0 && BP.botHeal <= 1,
     'CONFIG.abilities.press: gain { hit above 0; skill, deflect, dodge, finisher 0 or more }, range above 0, slack from 0 to under 1, botReach above 0, botHeal above 0 up to 1.');
-  for (const key of ABILITY_KEYS) need(ABILITIES.some(b => b.key === key && !b.crate), `Abilities: key ${key} needs at least one ability to fill it.`);
+  for (const key of ABILITY_KEYS) need(ABILITIES.some(b => b.key === key), `Abilities: key ${key} needs at least one ability to fill it.`);
   if (visual) ABILITY_KEYS.forEach((k, i) => need(Object.hasOwn(DEFAULT_ACTIONS, `ability${i + 1}`), `Key ${k}: no ability${i + 1} binding (js/input.js).`));
-  // Levels and crates (js/data/crates.js): every crate ability is a reward, and every reward is whole.
-  const CR = CRATES, whole0 = x => Number.isInteger(x) && x >= 0, crateWords = t => t.trim().split(/\s+/).length;
+  // Levels and crates (js/data/crates.js): xp, levels, odds, the roll and the starter set.
+  const CR = CRATES, whole0 = x => Number.isInteger(x) && x >= 0;
   need(CR && ['fight', 'crowned', 'minute', 'least'].every(k => whole0(CR.xp?.[k])) && ['first', 'step', 'most'].every(k => whole0(CR.level?.[k])) && CR.level.first > 0 && CR.level.most >= CR.level.first,
     'CRATES: xp fight, crowned, minute and least, and level first, step and most, whole numbers of 0 or more (first above 0, most at least first).');
   need(Object.keys(RAR).every(r => num(CR.odds?.[r]) && CR.odds[r] >= 0) && Object.values(CR.odds).some(w => w > 0), 'CRATES.odds: a weight of 0 or more for each rarity, one above 0.');
   need(Number.isInteger(CR.roll?.tiles) && Number.isInteger(CR.roll.land) && CR.roll.land > 0 && CR.roll.land < CR.roll.tiles - 2 && num(CR.roll.time) && CR.roll.time > 0 && num(CR.roll.still) && CR.roll.still > 0,
     'CRATES.roll: whole tiles, the reward at a whole land with tiles after it, a time and a still above 0.');
-  need(new Set(CR.rewards.map(r => r.id)).size === CR.rewards.length, 'CRATES: reward ids must be unique.');
-  for (const r of CR.rewards) {
-    const where = `Crate reward ${r.id}`;
-    need(typeof r.id === 'string' && /^[a-z0-9-]+$/.test(r.id) && ['look', 'ability'].includes(r.kind) && [undefined, true].includes(r.start), `${where}: an id (a-z, 0-9, -), a kind (look or ability), start only true.`);
-    if (r.kind === 'look') {
-      need(typeof r.name === 'string' && r.name.trim() && typeof r.text === 'string' && r.text.trim() && crateWords(r.text) <= ABILITY_TEXT_MAX.words && r.text.length <= ABILITY_TEXT_MAX.chars,
-        `${where}: a name, and a text of at most ${ABILITY_TEXT_MAX.words} words and ${ABILITY_TEXT_MAX.chars} characters.`);
-      need(!!RAR[r.rarity] && whole0(r.tint) && r.tint <= 0xffffff && num(r.metal) && r.metal >= 0 && r.metal <= 1 && num(r.rough) && r.rough > 0 && r.rough <= 1.5
-        && (r.glow === undefined ? r.glowK === undefined : whole0(r.glow) && r.glow <= 0xffffff && num(r.glowK) && r.glowK > 0 && r.glowK <= 1),
-        `${where}: a rarity, a tint colour, metal 0..1 and rough above 0 up to 1.5, and a glow colour only with a glowK above 0, at most 1.`);
-    } else need(ABILITY_BY_ID[r.ability]?.crate === true && !r.start && r.rarity === undefined, `${where}: an ability with crate: true, never a start, its rarity the ability's.`);
+  // The starter set (PLAN.md item 7): known abilities, each once, some of each rarity, every number key filled (a fresh
+  // player can be offered something for each) and a pick before fight 1.
+  const STARTER = CR.starter;
+  need(Array.isArray(STARTER) && STARTER.every(id => Object.hasOwn(ABILITY_BY_ID, id)) && new Set(STARTER).size === STARTER.length, 'CRATES.starter: ability ids, each once.');
+  need(Number.isInteger(CR.save) && CR.save >= 1, 'CRATES.save: a whole version of 1 or more.');
+  if (Array.isArray(STARTER)) {
+    need(Object.keys(RAR).every(r => CRATE_MIN[r] >= 1) && cratePool(STARTER)?.length === STARTER.length, 'CRATES.starter: at least one of each rarity.');
+    for (const key of ABILITY_KEYS) need(STARTER.some(id => ABILITY_BY_ID[id]?.key === key), `CRATES.starter: an ability for key ${key}.`);
+    need(STARTER.filter(id => BL.first.includes(ABILITY_BY_ID[id]?.rarity)).length >= BL.offer, 'CRATES.starter: a whole offer for the first pick (CONFIG.abilities.first).');
+    need(ABILITIES.length > STARTER.length, 'CRATES.starter: a crate needs abilities outside the starter set.');
   }
-  need(CR.rewards.some(r => r.kind === 'look' && r.start), 'CRATES: one blade look owned from the start.');
-  for (const b of ABILITIES) if (b.crate !== undefined) need(b.crate === true && CR.rewards.some(r => r.ability === b.id), `Ability ${b.id}: crate is only true, and a crate reward must give it.`);
-  for (const r of Object.keys(RAR)) need(ABILITIES.filter(b => b.rarity === r && !b.crate).length >= BL.offer + CONFIG.swift.extra, `Abilities: at least ${BL.offer + CONFIG.swift.extra} of rarity ${r} outside the crates, to fill an offer.`);
+  for (const r of Object.keys(RAR)) need(ABILITIES.filter(b => b.rarity === r).length >= BL.offer + CONFIG.swift.extra, `Abilities: at least ${BL.offer + CONFIG.swift.extra} of rarity ${r}, to fill an offer.`);
   need(num(botConfig.parryChanceScale) && botConfig.parryChanceScale >= 0 && botConfig.parryChanceScale <= 1, 'Bot parryChanceScale must be 0..1.');
   for (const [group, fields] of Object.entries({ tempo: ['comboBase', 'comboAggression', 'punishCombo', 'finishBelow'],
     defence: ['walkMargin', 'walkLead', 'margin', 'clear'], string: ['outrun'], yieldTo: ['range', 'late'], jumpDodge: ['clearance', 'timingMargin', 'followMargin', 'maxSpeed'] }))

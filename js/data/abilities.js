@@ -129,12 +129,11 @@ const ABILITIES = [
     power: { when: 'press', then: 'blast' },
     levels: [{ charge: 40, radius: 7, damage: 180 }, { charge: 36, radius: 8, damage: 240 }] },
 
-  // ---- Crate abilities (pass 71, js/data/crates.js): `crate: true` keeps one out of every run's offers until a crate
-  // has given it to that player; then it joins their pool like any other. Never offered in the weekly run (one pool
-  // for everyone). ----
-  { id: 'grave-feast', name: 'Grave Feast', rarity: 'rare', crate: true, text: 'Finishing Blow: heal {heal}.',
+  // ---- Two more rares (pass 71, once crate-only; since PLAN.md item 7 every ability outside the starter set comes from a
+  // crate, js/data/crates.js) ----
+  { id: 'grave-feast', name: 'Grave Feast', rarity: 'rare', text: 'Finishing Blow: heal {heal}.',
     perk: { when: 'finisher', then: 'heal' }, levels: [{ heal: 0.25 }, { heal: 0.35 }, { heal: 0.45 }] },
-  { id: 'iron-mercy', name: 'Iron Mercy', rarity: 'rare', crate: true, text: 'Deflect: heal {heal}, once per {cooldown}.',
+  { id: 'iron-mercy', name: 'Iron Mercy', rarity: 'rare', text: 'Deflect: heal {heal}, once per {cooldown}.',
     perk: { when: 'parry', then: 'heal' }, levels: [{ heal: 0.06, cooldown: 3 }, { heal: 0.09, cooldown: 2.5 }, { heal: 0.12, cooldown: 2 }] },
 ];
 const ABILITY_BY_ID = Object.fromEntries(ABILITIES.map(b => [b.id, b]));

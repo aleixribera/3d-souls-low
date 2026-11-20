@@ -56,7 +56,7 @@ const gamepad = {
     for (const c of released) input.up(c);
     if (typeof showcase !== 'undefined' && showcase.pad(pressed)) { input.clear(); return; }   // the showcase and its gate, over everything
     if (typeof nameAsk !== 'undefined' && nameAsk.pad(pressed, dt)) return;   // the name ask, over everything
-    if (typeof crateScreen !== 'undefined' && crateScreen.pad(pressed, dt)) return;   // the Collection and the crate roll, over anything
+    if (typeof crateScreen !== 'undefined' && crateScreen.pad(pressed, dt)) return;   // the Abilities page and the crate roll, over anything
     if (typeof multiplayer !== 'undefined' && multiplayer.runIntroActive) { input.clear(); return; }
     if (typeof multiplayer !== 'undefined' && multiplayer.panelOpen) { multiplayer.pad(pressed, dt); return; }
     if (typeof multiplayer !== 'undefined' && multiplayer.abilityPad(pressed)) return;

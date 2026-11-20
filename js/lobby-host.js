@@ -53,7 +53,7 @@
     const replays = options.replays || null;
     let recording = null;
     function endRecording(outcome, summary = null) { if (recording) { recording.end(outcome, summary); recording = null; } }
-    const replayRoster = r => r.players.map(p => ({ id: p.id, name: p.name, ...(p.look ? { look: p.look } : {}), ...(p.bot ? { bot: true } : {}) }));
+    const replayRoster = r => r.players.map(p => ({ id: p.id, name: p.name, ...(p.bot ? { bot: true } : {}) }));
     // `clients` holds players who said hello (they own a slot); `pending` sockets are still joining.
     const clients = new Map(), pending = new Set(), hellos = new Map();   // address -> { count, at } joins this minute
     const memories = new Map(); // Private browser credentials; never included in roster or pose broadcasts.
@@ -117,7 +117,7 @@
     let metrics = { hz: 0, tickMs: 0, bytesPerSecond: 0, websocketBytesPerSecond: 0, bufferedBytes: 0 };
     let rosterAt = -Infinity, rosterTimer = null, lastKick = -Infinity;
     const kicked = new Map();   // player id -> when the leader last removed them
-    const roster = () => ({ type: 'roster', leader, capacity, session, players: [...clients.values()].map(p => ({ id: p.id, name: p.name, ready: p.ready, hp: p.pose?.hp ?? null, ...(p.look ? { look: p.look } : {}) })).concat(sim.botList()) });
+    const roster = () => ({ type: 'roster', leader, capacity, session, players: [...clients.values()].map(p => ({ id: p.id, name: p.name, ready: p.ready, hp: p.pose?.hp ?? null })).concat(sim.botList()) });
     function send(p, data) {
       if (p.ws.readyState !== OPEN) return;
       if (p.ws.bufferedAmount > C.maxBuffered) { p.ws.close(1013, 'Connection too slow. Rejoin the lobby.'); return; }
@@ -175,6 +175,13 @@
       sim.setPlayers([...clients.values()].filter(p => p.foreground && freshPose(p)).map(p => ({ ...p.pose, id: p.id, poseAge: (now - p.lastPose) / 1000 })));
     };
     const error = (p, message) => send(p, { type: 'error', message });
+    // A player's active pool (PLAN.md item 7) is locked while a run is on: a change then waits for the run's end (stop).
+    function pool(p, list) {
+      if (session && sim.hasGear(p.id)) { p.nextPool = list; return; }
+      sim.setGear(p.id, list); p.nextPool = undefined;
+    }
+    // A run's end, or a new run over one (restart, start): the changes kept for it count now.
+    const takePools = () => { for (const p of clients.values()) if (p.nextPool !== undefined) { sim.setGear(p.id, p.nextPool); p.nextPool = undefined; } };
     function stop(message, reason = null, extra = {}) {
       let summary = extra.summary;
       if (!summary && tally && reason !== 'error') summary = abandonedRun();
@@ -183,6 +190,7 @@
       endRecording(summary?.outcome || (reason === 'error' ? 'error' : 'left'), summary);
       session = null; abilityFor = null; abilityRound.clear(); tally = null;
       for (const p of clients.values()) { p.ready = false; p.pose = null; p.encoder.reset(); }
+      takePools();
       broadcast({ type: 'stop', message, reason, ...(summary ? { summary } : {}) }); sendRoster();
     }
     // Boss Rush's end of a fight: its damage and falls join the run's totals, and a won fight counts once (a fight of two
@@ -238,6 +246,7 @@
       // Ids are resolved and validated before the shared simulation changes; a refused request keeps the run.
       const gauntlet = sim.calling(run, fight);
       const abandoned = fight === 0 && tally ? abandonedRun() : null;
+      if (fight === 0) takePools();
       // A later fight of the run keeps the run's abilities; a new run starts without.
       try { session = sim.start('arena', gauntlet.boss, gauntlet.partners, fight > 0); } catch (e) {
         // A failure after validation leaves the simulation half-built: end the run properly for everyone.
@@ -307,9 +316,9 @@
     // This round's offers to `ids`: after a fight, its own (a swift kill's extra card, a Crowned win's legendary); before
     // fight 1, the free pick (seeded apart from the fights' offers, so the weekly run's is the same for everyone).
     function offerRound(ids, withBots, round) {
-      const g = session.gauntlet, crates = !g.run?.week;
-      if (firstPick) sim.offerAbilities(ids, withBots, 0, 0, false, sim.offerSeed(g.run, -1, round), crates, sim.abilityFirst);
-      else sim.offerAbilities(ids, withBots, swiftKill() ? sim.swiftExtra : 0, g.fight + 1, !!g.crowned, sim.offerSeed(g.run, g.fight, round), crates);
+      const g = session.gauntlet, pools = !g.run?.week;   // the weekly run: one pool for everyone
+      if (firstPick) sim.offerAbilities(ids, withBots, 0, 0, false, sim.offerSeed(g.run, -1, round), pools, sim.abilityFirst);
+      else sim.offerAbilities(ids, withBots, swiftKill() ? sim.swiftExtra : 0, g.fight + 1, !!g.crowned, sim.offerSeed(g.run, g.fight, round), pools);
     }
     // Boss Rush's par for this fight (rushPar): its pace, its bosses and what the party holds (CONFIG.swift.might).
     const rushParNow = () => sim.rushPar(session.gauntlet.fight, 1 + session.gauntlet.partners.length,
@@ -358,7 +367,7 @@
       p.name = `Player ${clients.size + 1}`;
       identify(p, memory, token);
       p.name = net.name(msg.name) || p.name; p.hello = true; p.foreground = msg.foreground !== false;
-      p.look = sim.setGear(p.id, msg.look, msg.crates);   // what this browser's crates gave it (js/data/crates.js)
+      pool(p, msg.abilities);   // their active pool (js/data/crates.js)
       p.loadingSince = performance.now(); remember(p);
       recording?.resume();
       if (session) sim.registerPlayer(p.id, p.name);
@@ -453,7 +462,7 @@
       }
       // Poses, transport keepalives, loading and animation clocks are not input.
       if (msg.type === 'activity') { noteActivity(p); return; }
-      if (msg.type === 'gear') { const look = sim.setGear(p.id, msg.look, msg.crates); if (look !== p.look) { p.look = look; queueRoster(); } return; }   // a crate opened in the lobby
+      if (msg.type === 'gear') { pool(p, msg.abilities); return; }   // the pool changed in the lobby
       if (msg.type === 'ping') { send(p, { type: 'pong', sent: msg.sent }); return; }
       if (msg.type === 'name') {
         noteActivity(p);

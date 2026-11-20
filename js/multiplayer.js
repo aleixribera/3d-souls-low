@@ -7,7 +7,6 @@ const multiplayer = (() => {
   let socket = null, self = null, leader = null, catalog = null, session = null, connected = false, capacity = C.defaultCapacity;
   let loaded = false, ready = false, starting = false, seq = 0, swing = 0, playback = null, ping = null;
   let embers = [], rescuer = null;   // the latest frame's revive embers (js/revive.js draws them), and who is reviving this player
-  let looks = new Map(), looksOf = null;   // each player's blade look, rebuilt when a new roster arrives
   let remotes = new Map(), roster = [], lastPose = 0, lastPing = 0;
   let intentionalClose = false, grantedEnemy = null, deferredStart = null, latestFrame = null, receivedFrames = 0, lastStats = 0;
   let reconnectWanted = false, reconnectTimer = null, reconnectAttempt = 0, joinAttempt = 0;
@@ -58,7 +57,7 @@ const multiplayer = (() => {
     </section></div>
     <footer class="lobby-footer"><div class="lobby-footer-actions"><button id="lobbyLeave" class="ui-text-button"><span class="ui-key" aria-hidden="true"></span><span>Leave lobby</span></button>
     <button id="lobbyHelp" class="ui-text-button" aria-expanded="false" aria-controls="lobbyControls">Controls</button>
-    <button id="lobbyOptions" class="ui-text-button">Options</button><button id="lobbyCollection" class="ui-text-button">Collection</button><button id="lobbyTutorial" class="ui-text-button">Tutorial</button></div><p id="lobbyPadHint" class="ui-hints"></p></footer>
+    <button id="lobbyOptions" class="ui-text-button">Options</button><button id="lobbyCollection" class="ui-text-button">Abilities</button><button id="lobbyTutorial" class="ui-text-button">Tutorial</button></div><p id="lobbyPadHint" class="ui-hints"></p></footer>
     <section id="lobbyControls" class="lobby-controls" aria-labelledby="lobbyControlsTitle" hidden><div class="lobby-controls-head"><h2 id="lobbyControlsTitle">Controls</h2>
     <button id="lobbyControlsClose" class="ui-text-button"><span class="ui-key" aria-hidden="true"></span>Close</button></div>
     <dl id="lobbyControlsList"></dl>
@@ -974,7 +973,7 @@ const multiplayer = (() => {
       roster = msg.players; leader = msg.leader; updateRoster(); drawRunSummary();
       if (msg.notice && roster.length > 1) notice(msg.notice, true);
     } else if (msg.type === 'start') {
-      clearControlPending(); notice(''); crateScreen.close();   // a fight starting takes over from the Collection or a roll
+      clearControlPending(); notice(''); crateScreen.close();   // a fight starting takes over from the Abilities page or a roll
       const tipsRemaining = session && !msg.opening ? hud.controlsTipsTimer : CONFIG.hud.controlsTipsTime;
       session = msg.session; loaded = false; seq = 0; resetStream(); clearRemotes(); closeAbilities();
       const current = session;
@@ -1131,11 +1130,8 @@ const multiplayer = (() => {
         label.className = 'online-name'; label.dataset.playerId = s.id; document.body.appendChild(label);
         const name = document.createElement('span'); name.className = 'online-name-text'; label.appendChild(name);
         const health = makeAllyHealth(label, s.id);
-        r = { body, label, name, health, samples: [], look: undefined }; remotes.set(s.id, r);
+        r = { body, label, name, health, samples: [] }; remotes.set(s.id, r);
       }
-      if (looksOf !== roster) { looksOf = roster; looks = new Map(roster.map(p => [p.id, p.look])); }
-      const look = looks.get(s.id);   // the blade look their crates gave them
-      if (r.look !== look) { r.look = look; crateScreen.wearLook(r.body.rig, look); }
       if (r.poseSeq !== s.poseSeq) { r.samples.push({ ...s, view: ArenaNet.cameraView(s.view), at: performance.now() / 1000 }); r.poseSeq = s.poseSeq; }
       while (r.samples.length > C.maxHistory) r.samples.shift();
       r.name.textContent = s.name + (s.hp <= 0 ? ' · defeated' : '');
@@ -1283,10 +1279,10 @@ const multiplayer = (() => {
   el('lobbyHelp').onclick = () => toggleLobbyHelp();
   el('lobbyControlsClose').onclick = () => toggleLobbyHelp(false);
   el('lobbyOptions').onclick = () => { closePanel(); Game.optionsFrom = 'lobby'; Game.showMenu('options'); };
-  el('lobbyCollection').onclick = () => crateScreen.collection();
-  // What this browser's crates gave it (js/progress.js): the server shows the look to the others and offers the
-  // crate abilities in Boss Rush. Sent with hello, and again whenever it changes in the lobby.
-  const gear = () => ({ look: progress.look, crates: progress.abilities() });
+  el('lobbyCollection').onclick = () => crateScreen.collection(null, () => !!session);
+  // This browser's active pool (js/progress.js): Boss Rush offers it only those abilities. Sent with hello, and again
+  // whenever it changes; the server keeps a change made during a run for the run's end.
+  const gear = () => ({ abilities: progress.active() });
   // The name lives with the save too (js/name-ask.js): a change made in Options while online reaches the party at once.
   progress.onChange(() => {
     if (!connected) return;

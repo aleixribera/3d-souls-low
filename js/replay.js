@@ -252,8 +252,6 @@ const replayView = (() => {
     const label = document.createElement('div'); label.className = 'online-name rv-name'; label.hidden = true;
     const labelText = document.createElement('span'); labelText.className = 'online-name-text'; label.appendChild(labelText);
     document.body.appendChild(label);
-    const look = chapters.flatMap(c => c.roster).find(p => p.id === s.id)?.look;
-    try { crateScreen.wearLook(body.rig, look); } catch (e) { /* an old look: the plain blade */ }
     const r = { body, label, labelText, text: '', name: s.name, s, q: s, stamp, down: false, pair: [body, { x: 0, y: 0, z: 0, yaw: 0 }] };
     bodies.set(s.id, r);
     ui.changed(true);
