@@ -63,6 +63,11 @@ node tools/pack-baked.cjs <stem>
 - If the built-in browser refuses localhost, drive headless Edge over CDP (`--headless=new --use-angle=swiftshader`,
   fresh `--user-data-dir`) and `Page.captureScreenshot`. Close Edge right after.
 - Check it in a level too: a frame with the enemy in play (e.g. Level 2 or 3 for the bowman).
+- **Current frames:** `docs/scorecard/now/`, one latest frame per screen under a fixed name. `node tools/now-frames.cjs
+  [lobby|rush|crate]` retakes the lobby (desktop, phone), a Boss Rush fight and a crate roll;
+  `node tools/scorecard-frames.cjs docs/scorecard/now fights` every boss fighting in Practice.
+- **References for judges:** `.scratch/ref-clips` (never committed); the panel's lineup and prompt are
+  `docs/scorecard/panel/` (`lineup.py`, `prompt.txt`).
 
 ## Ship and release
 

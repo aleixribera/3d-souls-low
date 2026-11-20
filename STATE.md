@@ -3,27 +3,19 @@
 The iterate loop's working note (`.claude/iterate.md`). Cap: 8,000 characters.
 
 ## Now
-
-- v7.139.0 (2026-11-16): audit repairs shipped outside the loop; `docs/audit-repairs.md` lists what is left, as backlog.
-- v7.134.0: online is Boss Rush and the Weekly Run only. Single-Quad Boss, co-op Story, rests, gates and the old wipe
-  screens went (code too); a wipe ends the run on its summary. Protocol 3.
-- v7.135.0: Boss Rush alone, no server (`js/alone.js` hosts `js/lobby-host.js` in a frame).
-- Track A (pass 102): the dash stops at 5 (Aleix's last try, a deep lunge, judged 3, 3, 5 vs 4, 5, 4; BACKLOG).
-  `tools/anim-strip.cjs` draws every step; `finisher` films the 3-counter chain (`CLIP=` an mp4). Deflect (in-page
-  `pass 99`); sparring (pass 97). `.scratch/locked.sh` guards the browser lock. After the pause: deflect frames 5-9,
-  Controls clips, the blow's look.
-- Track B (pass 100): no posture/stagger bar; executions gone. The Finishing Blow (`js/finisher.js`,
-  `CONFIG.finisher`): a counter cracks the guard (`crackGuard`), cracks fade after `fade` s, the 3rd counter is the
-  blow: 90 (boss 480, cap half a bar) + 8% heal, 1.06 s + 0.14 s hitstop, then control. Online the server counts
-  (`cracks`/`crackBy` in snapshots), grants it (`beginFinisher`, frame `finisher`), one counter an opening
-  (`spentOpening`). Breaker: longer counter window. In-page `Finishing Blow`; pass 98's dodge holds.
-- The Finishing Blow's look (pass 103, `js/finisher-fx.js`, `ANIM_SETTINGS.finisherFx`): glowing body cracks per
-  counter; the blow stops time (grey, darker, foe frozen mid-pose), red flash-step copies,
-  dim cuts all opening at once in a white-to-red X, camera swing and punch, own sounds. Blind judge
-  4, 4, 5; left: the freeze is a grey clump (camera far, no crisp silhouettes), the X a soft bloom pasted on, the
-  foe's reaction hidden behind the player.
-- Showcase: its finale is still a plain killing counter (hp 1); as the Finishing Blow it needs `cracks` at the
-  last and its health left alone (`js/showcase.js` 165-170).
+- Pass 104, PLAN item 1 (Broken), pass 1 of 2, with item 2's cuts and "Process first". Acceptance: a green CI run
+  on main; `tools/ci-gate.sh` refuses a red commit; every boss fights in Practice with no page error.
+  Shipped v7.161.0 (a6af2a4): extreme VFX (v7.141-v7.155) and Boss v2/Veyra (v7.158-v7.159) cut back to v7.140 code,
+  v7.156/157/160 kept; Gemini in its v7.140 form; texture fingerprints; sparring exempt from the world wait; container
+  job `ci-green` waits for CI on its commit (ci.yaml: one concurrency group per main commit); changelog v7.140-v7.160
+  in players' words. Locally: the 13 failing in-page tests and `textures` pass; 15 bosses clean
+  (`docs/scorecard/now/fight-*.jpg`). CI on a6af2a4 not yet read: the next pass reads it first.
+- Item 1 left: Pages retires and `PLAY-LINK.txt` points at the home server (`/souls/` on the tailnet host; is it
+  public?); the gate shown failing on a real red push (so far only run against old red/green commits).
+- Item 2 left: the check's in-page tests for v7.160 behaviours ran green locally (`World start`); AGENTS.md has no Boss
+  v2 paragraph. Then item 3 (counters break strings).
+- The Finishing Blow (pass 100-103, `js/finisher.js`, `js/finisher-fx.js`): 3rd counter; judge 4, 4, 5; its look and
+  the showcase finale are "Later" in the plan.
 
 ## Works
 
@@ -59,7 +51,7 @@ The iterate loop's working note (`.claude/iterate.md`). Cap: 8,000 characters.
   starred kept; 11.5-13.3 MB/h, ~0.09 ms a snapshot), viewer `js/replay.js` behind the tailnet-only door
   (REPLAY_PORT, homelab :3083), list `replays/`; notes `node tools/replays.cjs`; `tests/server-replays.cjs`; audit
   `docs/design-audit/2026-11-15.md`.
-- Scorecard frames: `tools/scorecard-frames.cjs`.
+- Scorecard frames: `tools/scorecard-frames.cjs`; current frames `docs/scorecard/now/` (`tools/now-frames.cjs`).
 
 ## Broken
 
