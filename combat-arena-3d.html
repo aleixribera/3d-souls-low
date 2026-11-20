@@ -289,6 +289,9 @@
   #pBars::after { content: ''; position: absolute; left: 0; top: 10px; bottom: 8px; width: 1px;   /* gilt spine, a diamond at its head */
     background: linear-gradient(#c9a85e00, var(--gilt) 25%, var(--gilt) 75%, #c9a85e00); }
   #pHp { width: 320px; height: 14px; transform-origin: left center; }
+  /* Iron Blood: an iron frame round the health bar, 1-4 px by level, a lighter top edge (js/hud.js). */
+  #pHp[data-iron] { outline: 1px solid #4a4740; outline-offset: 1px; border-top-color: #8c877b; }
+  #pHp[data-iron="2"] { outline-width: 2px; } #pHp[data-iron="3"] { outline-width: 3px; } #pHp[data-iron="4"] { outline-width: 4px; }
   #pHp.hit { animation: barShake var(--hit-shake, 0.3s) linear; }
   #pHp.heal { border-color: #f0dca0; box-shadow: 0 0 0 1px #000000d8, 0 0 14px 2px #ffd88a90, inset 0 0 8px #ffe8b080; }
   #pHp.heal .hp { filter: brightness(1.45) saturate(0.85); }
@@ -852,6 +855,7 @@ const GAME_FILES = [
   'afterimage.js',   // the dash's pale copies of the body (drawing only)
   'counter-fx.js',   // the counter window and the counter's cut (drawing only)
   'finisher-fx.js',  // the Finishing Blow's look (drawing only)
+  'ability-touch.js',  // the plain commons' small touches (drawing only; after counter-fx.js, whose cut it reads)
   'showcase-music.js',   // the showcase's music cue
   'showcase.js',   // the showcase: 30 s of the game played live (js/data/showcase.js)
   'replay.js',     // the replay viewer: the replay door's /watch only (server/replays.cjs)

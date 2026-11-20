@@ -101,7 +101,7 @@ function deflectPose(p, r, dt, yaw) {
 function counterGlow(p, r) {
   const G = ANIM_SETTINGS.counterGlow;
   if (!(p.riposte > 0)) {
-    r.cwFull = r.cwLeft = 0;
+    r.cwFull = r.cwLeft = r.cwBone = 0;
     if (p.state === PS.ATTACK && p.payload && p.payload.riposte && p.attack) {   // the counter swinging
       const tl = attackTimeline(p.attack, p.attackT);
       return tl.phase === PHASE.RECOVERY ? 1 - tl.p : 1;
@@ -110,12 +110,17 @@ function counterGlow(p, r) {
   }
   if (p.riposte > (r.cwLeft || 0) + 1e-6) r.cwFull = p.riposte;   // opened, or opened again
   r.cwLeft = p.riposte;
+  // Breaker (a plain common): for the share of the window it added, the glow turns bone white (`cwBone`, eased in).
+  const more = (p.kit && p.kit.mods.counterWindow) || 0, tail = r.cwFull * more / (1 + more);
+  r.cwBone = more > 0 && p.riposte < tail ? clamp((tail - p.riposte) / 0.08, 0, 1) : 0;
   const since = r.cwFull - p.riposte, flare = G.flare * Math.pow(clamp(1 - since / G.flareTime, 0, 1), 2);
   return G.min + (1 - G.min) * clamp(p.riposte / r.cwFull, 0, 1) + flare;
 }
 function drawCounterGlow(r, k) {
   if (!(k > 0)) return;
-  const G = ANIM_SETTINGS.counterGlow, c = r.cwColor || (r.cwColor = new THREE.Color(G.color)), m = r.weaponMat, e = G.emissive * k;
+  const G = ANIM_SETTINGS.counterGlow, m = r.weaponMat, e = G.emissive * k;
+  const c = (r.cwColor || (r.cwColor = new THREE.Color())).setHex(G.color);
+  if (r.cwBone > 0) c.lerp(r.cwBoneColor || (r.cwBoneColor = new THREE.Color(G.bone)), r.cwBone);
   m.emissive.r += c.r * e; m.emissive.g += c.g * e; m.emissive.b += c.b * e;
   m.color.lerp(c, 0.5 * Math.min(1, k));
 }

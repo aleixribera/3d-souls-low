@@ -268,6 +268,13 @@ globalThis.host = (() => {
     const B = CONFIG.abilities;
     let random = Math.random, nth = -1;
     const pick = list => list[Math.floor(random() * list.length)];
+    // Within a rarity, a plain common (`plain: true`) weighs CONFIG.abilities.plainWeight of the others.
+    const pickCard = list => {
+      const w = b => b.plain ? B.plainWeight : 1, total = list.reduce((n, b) => n + w(b), 0);
+      let roll = random() * total;
+      for (const b of list) if ((roll -= w(b)) < 0) return b;
+      return list[list.length - 1];
+    };
     const cards = offerSize(crowned, extra);
     for (const id of [...ids, ...(withBots ? bots.keys() : [])]) {
       nth++;
@@ -289,7 +296,7 @@ globalThis.host = (() => {
         if (total <= 0) break;
         let roll = random() * total, rarity = weights[0][0];
         for (const [r, w] of weights) { if (w > 0 && roll < w) { rarity = r; break; } roll -= w; }
-        offer.push(pick(left.filter(b => b.rarity === rarity)).id);
+        offer.push(pickCard(left.filter(b => b.rarity === rarity)).id);
       }
       if (legend && offer.length > 1) { const at = Math.floor(random() * offer.length); [offer[0], offer[at]] = [offer[at], offer[0]]; }
       if (!offer.length) continue;

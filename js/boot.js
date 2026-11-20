@@ -44,6 +44,7 @@ function registerListeners() {
   afterimage.attach();  // the dash's afterimages (js/afterimage.js)
   counterFx.attach();   // the counter window's dim and mark, the counter's cut (js/counter-fx.js)
   finisherFx.attach();  // the Finishing Blow's cracks, stopped time, steps and cuts (js/finisher-fx.js)
+  abilityTouch.attach(); // the plain commons' small touches (js/ability-touch.js)
   summonFigures.attach(); // the Stone Guardian and the Lancer of Ash drawn (js/summon-figures.js)
   registerAudioListeners();
 }

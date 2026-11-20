@@ -61,6 +61,7 @@ const counterFx = (() => {
     s.visible = false; s.renderOrder = order; scene.add(s); pooledFx.push(s); return s;
   };
   const cuts = [], marks = [];
+  let last = null;   // the cut drawn last: { age, rot, ... }
   let made = false, aura = null, ring = null, auraK = 0;
   const auraColor = new THREE.Color();
   function make() {
@@ -120,6 +121,7 @@ const counterFx = (() => {
     C.s.material.map = a.cut.kind === 'arc' ? ARC : LINE; C.s.material.needsUpdate = true;
     C.s.material.color.setHex(S().cut.color); C.s.material.rotation = C.rot; C.s.visible = true;
     C.big = Math.max(1, (t.radius || 0.5) / 0.6) ** 0.5;
+    last = C;   // Cold Riposte's crust lies along it (js/ability-touch.js)
     if (typeof ultraFx !== 'undefined' && ultraFx.on()) {
       ultraFx.sparkBurst(at, reducedMotion() ? 14 : 34, 'storm');
       ultraFx.flashAt(at, S().cut.color, 5, 6);
@@ -188,6 +190,7 @@ const counterFx = (() => {
   return {
     attach() { make(); Game.renderHooks.push(render); visuals.hooks.stage.push(clear); },
     clear,
+    get lastCut() { return last; },
     // tests: what shows now
     get state() { return { dim, cuts: cuts.filter(c => c.age !== Infinity).map(c => ({ kind: c.kind, age: c.age, open: c.age >= c.open, w: c.s.scale.y })),
                            marks: marks.filter(m => m.age !== Infinity).length, aura: aura && aura.visible ? auraK : 0,

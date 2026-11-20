@@ -384,7 +384,8 @@ const AUDIO_CUES = ['hitFlesh', 'hitHurt', 'hitBlock', 'riposteBoom', 'parry', '
   'abilityBlast', 'abilityDragon', 'abilityThunder', 'abilityFreeze', 'abilityBlades', 'abilityBlade', 'abilityMoon', 'abilityPerk', 'abilityPick',
   'abilityTwin', 'abilityEcho', 'abilityGale', 'abilityPyre', 'abilityFlare', 'abilitySpark', 'abilityStep', 'abilityEmpower',
   'abilityHeal', 'abilityCharge', 'abilityHound', 'abilityBite', 'abilityHowl', 'abilityTaunt', 'abilityGuardian', 'abilityBash', 'abilityChallenge',
-  'abilityLancer', 'abilityThrust', 'crateOpen', 'crateTick', 'crateLand', 'counterOpen', 'cutOpen'];
+  'abilityLancer', 'abilityThrust', 'crateOpen', 'crateTick', 'crateLand', 'counterOpen', 'cutOpen',
+  'abilityClank', 'abilityChime', 'abilityGulp', 'abilityFrost', 'abilityInk'];
 // A power's sound by its `then`, its later blows' (`strike`: a lightning bolt, a twin's echo, a hound's bite) by
 // STRIKE_SOUNDS, a summon drawing the boss's eye (`draw`) by DRAW_SOUNDS; a rare's perk its own (ABILITY_PERK_SOUNDS,
 // at a pitch), a pick's pitch by its rarity.
@@ -486,6 +487,13 @@ function registerAudioListeners() {
   });
   on('abilityPerk', d => { if (d.body === Game.player) { const [id, pitch] = ABILITY_PERK_SOUNDS[d.perk] || ['abilityPerk', 1]; audio.play(id, { pitch }); } });
   on('abilityPicked', d => audio.play('abilityPick', { pitch: ABILITY_PICK_PITCH[d.rarity] || 1, vel: d.rarity === 'common' ? 0.6 : 0.9 }));
+  // The plain commons' touches (js/ability-touch.js): the holder's own, quiet, each on its moment.
+  const held = (p, mod) => p && p === Game.player && p.kit && p.kit.mods[mod] > 0;
+  on('abilityPicked', d => { if (d.id === 'iron-blood') audio.play('abilityClank', { vel: 0.7, delay: 0.1 }); });
+  on('dashReady', d => { if (held(d.body, 'dashRefill')) audio.play('abilityChime', { vel: 0.35 }); });
+  on('itemUsed', d => { if (d.item === 'flask' && held(d.player, 'flaskSpeed')) audio.play('abilityGulp', { vel: 0.6, delay: 0.05 }); });
+  on('strike', d => { if (!d.blocked && d.strike && d.strike.riposte && held(d.attacker, 'riposte')) audio.play('abilityFrost', { vel: 0.45 }); });
+  on('finisher', d => { if (held(d.player, 'finisher')) audio.play('abilityInk', { vel: 0.5 }); });
   on('respawn', () => { rains.length = 0; });
   const rainTick = dt => {
     // The rain falls while the world runs: in play, and online in the menus too (the server goes on striking).

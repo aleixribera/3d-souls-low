@@ -43,9 +43,9 @@ function validateData({ visual = true } = {}) {
         && ['legL', 'legR', 'armL', 'armR', 'weapon'].every(b => r3(k[b])) && ['kneeL', 'kneeR', 'elbowL', 'elbowR'].every(b => Number.isFinite(k[b]))),
       'ANIM_SETTINGS.dash: rise (s), lift (0 to 0.3 m) and keys (at least two, `at` rising from 0 to 1), each with lean and tip (rad), head, [x, y, z] for legL, legR, armL, armR and weapon, and a bend for each knee and elbow.');
     const Cg = A.counterGlow;
-    need(Cg && Number.isInteger(Cg.color) && Cg.emissive > 0 && Cg.emissive <= 4 && Cg.min >= 0 && Cg.min < 1 && Cg.glint >= 0 && Cg.glint <= 1
+    need(Cg && Number.isInteger(Cg.color) && Number.isInteger(Cg.bone) && Cg.emissive > 0 && Cg.emissive <= 4 && Cg.min >= 0 && Cg.min < 1 && Cg.glint >= 0 && Cg.glint <= 1
       && Cg.flare >= 0 && Cg.flare <= 4 && num(Cg.flareTime),
-      'ANIM_SETTINGS.counterGlow: a colour, emissive (above 0, at most 4), min (0 to 1), glint (0 to 1), flare (0 to 4) and flareTime (s).');
+      'ANIM_SETTINGS.counterGlow: a colour and a bone colour, emissive (above 0, at most 4), min (0 to 1), glint (0 to 1), flare (0 to 4) and flareTime (s).');
     const Cf = A.counterFx, hex = c => Number.isInteger(c) && c >= 0 && c <= 0xffffff, pos = v => typeof v === 'number' && v > 0 && v < 20;
     need(Cf && Cf.dim && Cf.dim.peak >= 0 && Cf.dim.peak <= 0.8 && num(Cf.dim.in) && num(Cf.dim.out) && Cf.mark && pos(Cf.mark.size) && num(Cf.mark.time) && hex(Cf.mark.color)
       && Cf.trail && hex(Cf.trail.color) && pos(Cf.trail.boost) && Cf.trail.life >= 1 && Cf.trail.life < 6 && Cf.cut && pos(Cf.cut.length) && num(Cf.cut.thin) && Cf.cut.wide > Cf.cut.thin
@@ -130,6 +130,7 @@ function validateData({ visual = true } = {}) {
     'CONFIG.abilities.rarity: common, rare and legendary, each with whole levels of 1 or more and a weight and grow of 0 or more.');
   need(Array.isArray(BL.first) && BL.first.length >= 1 && BL.first.every(r => RAR[r]) && ABILITIES.filter(b => BL.first.includes(b.rarity)).length >= BL.offer,
     'CONFIG.abilities: first a list of rarities with enough abilities for an offer.');
+  need(num(BL.plainWeight) && BL.plainWeight > 0 && BL.plainWeight <= 1, 'CONFIG.abilities.plainWeight: above 0, at most 1 (a plain common against another common).');
   need(new Set(ABILITIES.map(b => b.id)).size === ABILITIES.length, 'Ability ids must be unique.');
   const SUM = BL.summons;   // where each summon stands and how fast it runs (js/abilities.js summonStep)
   need(SUM && [SUM.arrive, SUM.near, SUM.side, SUM.radius].every(x => num(x) && x >= 0) && [...SUMMONS].every(k => SUM[k] && num(SUM[k].gap) && SUM[k].gap >= 0
@@ -160,6 +161,17 @@ function validateData({ visual = true } = {}) {
         `CONFIG.VISUALS.abilityFx.${k}: model must be a model definition, bulk above 0, slots { <its material slot>: colour } and glows a list of its material slots, every slot its parts use in one of them.`);
     }
   }
+  // The plain commons' touches (js/ability-touch.js): times and sizes above 0, each fade ending after it starts, the
+  // Keen Eye ring under 3 Hz.
+  if (visual) {
+    const Tc = CONFIG.VISUALS.abilityFx.touch, pos = (o, ks) => o && ks.every(k => num(o[k]) && o[k] > 0), hx = c => Number.isInteger(c) && c >= 0 && c <= 0xffffff;
+    need(Tc && pos(Tc.edge, ['run', 'fade', 'size', 'step']) && hx(Tc.edge.color) && Array.isArray(Tc.edge.bright) && Tc.edge.bright.length >= 1 && Tc.edge.bright.every(b => num(b) && b > 0 && b <= 1)
+      && pos(Tc.iron, ['sparks']) && hx(Tc.iron.color) && pos(Tc.feather, ['flick', 'fadeAt', 'life', 'lift', 'size']) && pos(Tc.flask, ['hold', 'fade', 'size']) && hx(Tc.flask.color)
+      && pos(Tc.ring, ['radius', 'gap', 'peak']) && Tc.ring.gap >= 1 / 3 && hx(Tc.ring.color)
+      && pos(Tc.frost, ['length', 'grow', 'flakeAt', 'fadeAt', 'life', 'flakes']) && hx(Tc.frost.color) && pos(Tc.ink, ['length', 'width', 'sweep', 'fadeAt', 'life']) && num(Tc.ink.tilt)
+      && [Tc.feather, Tc.frost, Tc.ink].every(o => o.fadeAt < o.life),
+      'CONFIG.VISUALS.abilityFx.touch: edge, iron, feather, flask, ring, frost and ink, their times and sizes above 0, colours as hex, edge.bright 0 to 1, fadeAt before life, ring.gap at least 1/3 s.');
+  }
   // An ability's text is only its trigger and effect, in the fewest plain words (Aleix, 2026-11-14; a {key} is one word).
   const ABILITY_TEXT_MAX = { words: 9, chars: 56 };
   for (const b of ABILITIES) {
@@ -170,6 +182,7 @@ function validateData({ visual = true } = {}) {
       need(words <= ABILITY_TEXT_MAX.words && b.text.length <= ABILITY_TEXT_MAX.chars,
         `${where}: its text is ${words} words and ${b.text.length} characters; at most ${ABILITY_TEXT_MAX.words} and ${ABILITY_TEXT_MAX.chars}: only the trigger and the effect.`); }
     need(!!R, `${where}: unknown rarity ${b.rarity} (CONFIG.abilities.rarity).`);
+    need(b.plain === undefined || b.plain === true && b.mods && b.rarity === 'common', `${where}: plain is only true, and only on a common with mods.`);
     need(kinds.length === 1 && (b.mods ? b.rarity === 'common' : b.perk ? b.rarity === 'rare' : b.rarity !== 'common'),
       `${where}: one of mods (a common), perk (a rare) or power (a rare or a legendary).`);
     // The number keys (pass 87): every pressed ability names exactly one key, always the same; nothing else names one.

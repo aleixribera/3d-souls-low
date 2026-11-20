@@ -111,7 +111,7 @@ const ANIM_SETTINGS = {
   // The counter window on the blade (pass 94, js/player-pose.js): `color` glowing at `emissive` times its strength,
   // which runs from 1 as the window opens down to `min` as it shuts; the blade's glint held at `glint` of that.
   // Pass 95: it flares as the window opens, `flare` times brighter on top, easing off over `flareTime` s.
-  counterGlow: { color: 0xcfe6ff, emissive: 2.4, min: 0.45, glint: 0.85, flare: 2.2, flareTime: 0.3 },
+  counterGlow: { color: 0xcfe6ff, emissive: 2.4, min: 0.45, glint: 0.85, flare: 2.2, flareTime: 0.3, bone: 0xf0e2c4 },   // bone: Breaker's added time
   // The counter, impossible to miss (pass 95, js/counter-fx.js). As the window opens: the screen's edges dim (`dim`:
   // peak darkness, in and out s) while it lasts; the foe shows an open mark at its chest (`mark`: size m, s); the blade
   // leaves a trail (`trail`: colour, brightness, how much longer it lasts than a swing's). The counter's cut: a thin line

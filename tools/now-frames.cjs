@@ -15,7 +15,7 @@ const { createServer } = require('../server/index.cjs');
 
 const out = path.join(__dirname, '..', 'docs', 'scorecard', 'now');
 const parts = process.argv.slice(2), want = p => !parts.length || parts.includes(p);
-const shot = (page, name) => page.screenshot({ path: path.join(out, name + '.jpg'), type: 'jpeg', quality: 70 });
+const shot = (page, name, clip) => page.screenshot({ path: path.join(out, name + '.jpg'), type: 'jpeg', quality: 70, clip });
 
 (async () => {
   fs.mkdirSync(out, { recursive: true });
@@ -99,6 +99,29 @@ const shot = (page, name) => page.screenshot({ path: path.join(out, name + '.jpg
       await page.locator('#lobbyCollection').click(); await page.waitForTimeout(500);
       if (!await page.evaluate(() => [...document.querySelectorAll('#crates .ctile[aria-pressed]')].every(b => b.disabled))) throw new Error('the Abilities page is not locked during a run');
       await shot(page, 'abilities-locked'); await page.close(); console.log('abilities locked');
+    }
+    if (want('touches')) {
+      // The plain commons' touches (pass 109) in a Practice fight with the Pillager Captain held back: all eight held.
+      const page = await open(1280, 720);
+      await page.evaluate(() => Game.startFight('pillagerCaptain'));
+      await page.waitForFunction(() => Game.mode === 'play' && Game.player && Game.duel && !Game.loading, null, { timeout: 60000 });
+      await page.evaluate(() => {
+        const p = Game.player, e = Game.duel; e.cooldown = 999;
+        p.grantAbilities(['keen-edge', 'iron-blood', 'iron-blood', 'light-step', 'quick-draught', 'breaker', 'keen-eye', 'cold-riposte', 'headsman']);
+        p.yaw = Math.atan2(e.x - p.x, e.z - p.z);
+      });
+      await page.waitForTimeout(800);
+      const ink = await page.evaluate(() => {
+        const p = Game.player, e = Game.duel, at = { x: e.x, y: e.y + e.height * 0.6, z: e.z };
+        events.emit('strike', { attacker: p, target: e, strike: { riposte: true, damage: 1 }, at });
+        events.emit('finisher', { player: p, enemy: e, damage: 1, lethal: false, at, exit: at });
+        return abilityTouch.state;
+      });
+      await page.waitForTimeout(160); await shot(page, 'touch-ink-frost', { x: 400, y: 120, width: 480, height: 300 });
+      await shot(page, 'touch-iron-hud', { x: 30, y: 25, width: 360, height: 80 });
+      await page.evaluate(() => { Game.player.dashes = 1.99; }); await page.waitForTimeout(110); await shot(page, 'touch-feather', { x: 440, y: 300, width: 400, height: 380 });
+      await page.keyboard.press('j'); await page.waitForTimeout(230); await shot(page, 'touch-glint', { x: 440, y: 160, width: 400, height: 400 });
+      await page.close(); console.log('touches', JSON.stringify(ink));
     }
   } finally { await browser.close(); app.server.close(); }
   if (errors.length) { console.log('page errors:\n' + [...new Set(errors)].slice(0, 8).join('\n')); process.exitCode = 1; }

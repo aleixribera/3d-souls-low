@@ -1766,6 +1766,8 @@ const KIT = (() => {
       const len = box.max.z - box.min.z, sprite = glowSprite(0xfff2d0, 2.0, 0.5 + 0.18 * len, 0, null);
       sprite.position.set((box.min.x + box.max.x) / 2, (box.min.y + box.max.y) / 2, box.min.z + len * 0.78); sprite.visible = false;
       rig.weapon.add(sprite); rig.glint = { sprite, size: 0.5 + 0.18 * len };
+      // The blade's line in the weapon's own space, hilt (z0) to tip (z1): Keen Edge's glint runs along it (js/ability-touch.js).
+      rig.blade = { x: (box.min.x + box.max.x) / 2, y: (box.min.y + box.max.y) / 2, z0: box.min.z, z1: box.max.z };
     } else if (M.hidden && built.parts.some(p => p.weapon)) {   // (v7.62.0) a weapon still hidden: the fist glints
       const sprite = glowSprite(0xfff2d0, 2.0, 0.5, 0, null); sprite.position.set(0, -0.05, 0.05); sprite.visible = false;
       rig.weapon.add(sprite); rig.glint = { sprite, size: 0.5 };

@@ -43,14 +43,14 @@ const KITS = {
     'breaker', 'static-edge', 'meteor-fall', 'iron-blood', 'opportunist', 'keen-edge', 'static-edge', 'iron-blood', 'opportunist',
     'keen-edge', 'ash-lancer', 'iron-blood', 'ash-lancer', 'keen-edge', 'iron-blood', 'ash-lancer', 'bloodthirst', 'bloodthirst',
     'bloodthirst', 'light-step', 'light-step', 'light-step'],
-  strong: ['bloodthirst', 'iron-blood', 'keen-edge', 'time-rift', 'keen-edge', 'iron-blood', 'keen-edge', 'long-shadow', 'time-rift',
-    'iron-blood', 'bloodthirst', 'keen-edge', 'blood-moon', 'long-shadow', 'iron-blood', 'keen-edge', 'bloodthirst',
-    'quick-draught', 'opportunist', 'blood-moon', 'long-shadow', 'quick-draught', 'opportunist', 'vengeance', 'vengeance',
+  strong: ['bloodthirst', 'iron-blood', 'keen-edge', 'time-rift', 'keen-edge', 'iron-blood', 'keen-edge', 'keen-eye', 'time-rift',
+    'iron-blood', 'bloodthirst', 'keen-edge', 'blood-moon', 'keen-eye', 'iron-blood', 'keen-edge', 'bloodthirst',
+    'quick-draught', 'opportunist', 'blood-moon', 'keen-eye', 'quick-draught', 'opportunist', 'vengeance', 'vengeance',
     'opportunist', 'vengeance', 'quick-draught', 'quick-draught', 'light-step', 'light-step'],
   best: ['bloodthirst', 'gale-crescent', 'breaker', 'iron-blood', 'gale-crescent', 'keen-edge', 'meteor-fall', 'iron-blood',
     'iron-blood', 'breaker', 'meteor-fall', 'iron-blood', 'static-edge', 'keen-edge', 'bloodthirst', 'breaker', 'opportunist',
-    'keen-edge', 'static-edge', 'bloodthirst', 'breaker', 'keen-edge', 'opportunist', 'static-edge', 'long-shadow', 'long-shadow',
-    'opportunist', 'long-shadow', 'light-step', 'light-step', 'light-step'],
+    'keen-edge', 'static-edge', 'bloodthirst', 'breaker', 'keen-edge', 'opportunist', 'static-edge', 'keen-eye', 'keen-eye',
+    'opportunist', 'keen-eye', 'light-step', 'light-step', 'light-step'],
 };
 const kitList = process.env.KIT ? KITS[process.env.KIT] || process.env.KIT.split(',') : [];
 const probe = createSimulation();

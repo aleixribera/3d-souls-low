@@ -294,7 +294,7 @@ const CONFIG = {
   // as its next level; one at its last level never comes back. The next fight waits until everyone has chosen, or
   // `pickTime` s; a player who hasn't chosen by then gets the first offered. Each card's rarity is drawn by `weight`,
   // plus `grow` for each fight won (rarer as the run goes on); a rarity with nothing left to offer gives way to the
-  // others. `levels`: how many levels an ability of that rarity has. Any number of legendaries, by anyone (v7.160.0).
+  // others. `levels`: how many levels an ability of that rarity has (a legendary one: Aleix). Any number of legendaries, by anyone (v7.160.0).
   // A swift kill's extra card (CONFIG.swift) is never common. Once everyone has chosen, the pick stays up `pickHold` s
   // after the last choice (Aleix, 2026-11-14: see what you took, and read the others), never past `pickTime`.
   // Pass 73 (PLAN.md item 11): every run opens with one free pick of `first` (rarities) before fight 1: rares since pass
@@ -306,7 +306,9 @@ const CONFIG = {
     // at least 1 - `slack` of the charge it counted (a claim it refused is a point the browser still counted). A bot
     // presses a full key with its foe within `botReach` m (Guard's heal under `botHeal` of its bar, its stance at a wind-up).
     press: { gain: { hit: 1, skill: 2, deflect: 3, dodge: 3, finisher: 6 }, range: 18, slack: 0.25, botReach: 6, botHeal: 0.6 },
-    rarity: { common: { levels: 4, weight: 75, grow: 0 }, rare: { levels: 3, weight: 22, grow: 1.2 }, legendary: { levels: 2, weight: 3, grow: 0.25 } },
+    rarity: { common: { levels: 4, weight: 75, grow: 0 }, rare: { levels: 3, weight: 22, grow: 1.2 }, legendary: { levels: 1, weight: 3, grow: 0.25 } },
+    // A plain common (a bare number, `plain: true`) is drawn at `plainWeight` of another common's chance (PLAN.md item 6).
+    plainWeight: 0.5,
     // Summons (js/abilities.js summonStep): each kind stands `gap` m off its enemy's body, `flank` rad round from the
     // side away from its holder (+ toward the enemy's left), and runs there at up to `speed` m/s. It has arrived
     // `arrive` s after it is called (one that `rises` comes up where it will stand; the others run there); a hound,
@@ -700,6 +702,21 @@ const CONFIG = {
     // preset's particles (js/fx.js).
     abilityFx: {
       near: 14, cool: 0x2a0c06,
+      // The plain commons' touches (js/ability-touch.js), seconds of real time and metres. Keen Edge (`edge`): the glint
+      // runs hilt to tip in `run`, gone in `fade`, at `bright` by level (a level each `step` of the damage mod). Iron
+      // Blood: `sparks` off the forearm. Light Step (`feather`): it flicks `lift` m back and up in `flick`, fading from
+      // `fadeAt` to `life`. Quick Draught (`flask`): held `hold`, gone in `fade`. Keen Eye (`ring`): `radius` m, one
+      // every `gap` s at most (under 3 Hz). Cold Riposte (`frost`): the crust `length` m, grown in `grow`, `flakes` off
+      // at `flakeAt`. Headsman (`ink`): the stroke `length` by `width` m at `tilt` rad, wiped on in `sweep`.
+      touch: {
+        edge: { run: 0.18, fade: 0.08, size: 0.32, color: 0xf4f1e8, bright: [0.4, 0.55, 0.7, 0.85], step: 0.08 },
+        iron: { sparks: 6, color: 0xf4f1e8 },
+        feather: { flick: 0.3, fadeAt: 0.2, life: 0.45, lift: 0.4, size: 0.45 },
+        flask: { hold: 0.06, fade: 0.08, size: 0.5, color: 0xe8b56a },
+        ring: { radius: 0.9, gap: 0.4, color: 0xf4f1e8, peak: 0.7 },
+        frost: { length: 1.5, grow: 0.25, flakeAt: 0.25, fadeAt: 0.3, life: 0.55, flakes: 10, color: 0xe8ecea },
+        ink: { length: 4, width: 0.5, tilt: 0.52, sweep: 0.08, fadeAt: 0.2, life: 0.5 },
+      },
       meteor: { color: 0xff7a2a, core: 0xffe6b8, column: 22, width: 1.8, glow: 1.8, fall: 0.5, ring: 0.55, crater: 3.2, shake: [0.45, 0.35],
         burst: { count: 40, speed: 9, color: 0xff8a3a } },
       storm: { color: 0xa9c9ff, core: 0xffffff, height: 16, jitter: 2.4, width: 0.14, life: 0.32, scorch: 1.6, shake: [0.18, 0.12],
@@ -919,7 +936,7 @@ const CONFIG = {
       sparks: { max: 1200, life: [0.25, 0.7], speed: [4, 13], width: 0.034, stretch: 0.06, gravity: 14, bounce: 0.35, drag: 1.4,
                 colors: { clash: [0xfff2c0, 0xffb040], parry: [0xffffff, 0xfff0a0], gold: [0xffe08a, 0xffa020], ember: [0xffa040, 0xff4010], holy: [0xfff6d0, 0xffd060],
                           blood: [0xff6a40, 0xc00808], rot: [0xffa080, 0xff2a20], storm: [0xffffff, 0x9ec0ff],
-                          lunar: [0xf4fbff, 0x70c4ff], eclipse: [0xfff0ff, 0x9c54ff] },
+                          lunar: [0xf4fbff, 0x70c4ff], eclipse: [0xfff0ff, 0x9c54ff], bone: [0xf4f1e8, 0xcfc8b6], frost: [0xffffff, 0xe8ecea] },
                 boost: 4.5 },
       blood: { max: 900, life: [0.5, 1.1], speed: [2.5, 7.5], width: 0.065, stretch: 0.04, gravity: 13, color: 0xb01010, dark: 0x5a0404,
                splats: 0.3, mist: 4, mistColor: 0x6a0808, sawdust: 0xa08a60 },

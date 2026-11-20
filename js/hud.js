@@ -25,6 +25,7 @@ class LagMeter {
 // Retriggers a CSS animation class (hit shake, empty pulse): drop it, force a reflow, add it back.
 const restart = (el, cls) => { el.classList.remove(cls); void el.offsetWidth; el.classList.add(cls); };
 const keycap = label => label.replace(/^\[\s*|\s*\]$/g, '');   // "[ F ]" -> "F"
+const IRON_FRAME = ['', '1', '2', '3', '4'];   // Iron Blood's frame by level (no string made per frame)
 const hud = {
   root: $('hud'), pHp: $('pHp'), pHpFill: $('pHpFill'), pHpTrail: $('pHpTrail'), pHpCut: $('pHpCut'),
   diedTip: $('diedTip'), flaskRow: $('pFlasks'), flasks: [],
@@ -300,6 +301,9 @@ const hud = {
     this.pHp.classList.toggle('low', low);
     this.pHp.classList.toggle('heal', this.healTimer > 0);
 
+    // Iron Blood (a plain common): the bar's iron frame, thicker by level (CSS `#pHp[data-iron]`).
+    const iron = IRON_FRAME[p.kit && p.kit.mods.maxHp > 0 ? clamp(Math.round(p.kit.mods.maxHp / 0.08), 1, 4) : 0];
+    if ((this.pHp.dataset.iron || '') !== iron) { if (iron) this.pHp.dataset.iron = iron; else delete this.pHp.dataset.iron; }
     this.syncDashes(p);
     this.syncAbilityKeys(p);
     this.syncFlasks(p.item('flask'));

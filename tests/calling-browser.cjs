@@ -174,7 +174,11 @@ const out = process.env.CALLING_SHOTS || '.scratch/calling';
     const boss = R.Game.enemies[0];
     fireAs(app.sim.kitOf(aId), 'dodge', { enemy: boss, x: boss.x, y: boss.y, z: boss.z });
     assert.ok(boss.frozen > 0, `the rift froze the boss on the server (${boss.frozen}, ${boss.state})`);
-    for (const page of [a, b]) await page.waitForFunction(() => abilityFx.info().bubbles > 0, null, { timeout: 5000 });
+    // Held frozen while the browsers catch up: under CI's SwiftShader a page can take longer than the rift's seconds to
+    // draw a frame that carries it (v7.162.0's CI); what is checked here is that both draw it, not how fast.
+    boss.frozen = 60;
+    for (const page of [a, b]) await page.waitForFunction(() => abilityFx.info().bubbles > 0, null, { timeout: 20000 });
+    boss.frozen = 0;
     fireAs({ powers: [{ id: 'meteor-fall', when: 'land', then: 'blast', action: 'heavy', v: { radius: 1, damage: 1, cooldown: 1 } }] }, 'land', { x: 0, y: 0, z: 0, action: 'heavy' });
     for (const page of [a, b]) await page.waitForFunction(() => abilityFx.info().meteors > 0, null, { timeout: 5000 });
     R.abilityPowers.reset();

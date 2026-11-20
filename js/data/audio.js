@@ -454,6 +454,32 @@ const AUDIO = {
       { noise: 'white', filter: { type: 'bandpass', freq: 1800, to: 4800, q: 6 }, a: 0.08, d: 0.12, gain: 0.35 },
       { wave: 'sine', freq: 740, fm: { ratio: 1.41, index: 1.5, decay: 0.4 }, at: 0.12, a: 0.002, d: 0.6, gain: 0.14 },
     ] },
+    // The plain commons' touches (js/ability-touch.js), quiet and the holder's only. Iron Blood picked: an iron clank.
+    abilityClank: { bus: 'sfx', priority: 2, cooldown: 0.2, max: 1, verb: 0.3, heat: 0.1, jitter: 40, layers: [
+      { noise: 'white', filter: { type: 'bandpass', freq: 1200, q: 3 }, a: 0.0005, d: 0.025, gain: 0.6, drive: 3 },
+      { wave: 'sine', freq: 180, partials: [[1, 1, 1], [2.76, 0.5, 0.6]], a: 0.002, d: 0.35, gain: 0.3 },
+    ] },
+    // Light Step: a dash charge back, a small chime.
+    abilityChime: { bus: 'sfx', priority: 1, cooldown: 0.3, max: 1, verb: 0.1, heat: 0, jitter: 30, layers: [
+      { noise: 'white', filter: { type: 'highpass', freq: 6000 }, a: 0.0005, d: 0.01, gain: 0.25 },
+      { wave: 'sine', freq: 1320, partials: [[1, 1, 1], [2.76, 0.3, 0.5]], a: 0.002, d: 0.15, gain: 0.12 },
+    ] },
+    // Quick Draught: one quick swallow after the flask.
+    abilityGulp: { bus: 'sfx', priority: 1, cooldown: 0.3, max: 1, verb: 0.05, heat: 0, jitter: 60, layers: [
+      { wave: 'sine', freq: 160, a: 0.002, d: 0.04, gain: 0.35 },
+      { noise: 'pink', filter: { type: 'bandpass', freq: 400, to: 700, q: 2 }, at: 0.02, a: 0.01, d: 0.12, gain: 0.35 },
+    ] },
+    // Cold Riposte: a crisp crack and a crystalline crackle under the counter.
+    abilityFrost: { bus: 'sfx', priority: 2, cooldown: 0.15, max: 1, verb: 0.3, heat: 0.1, jitter: 80, layers: [
+      { noise: 'white', filter: { type: 'highpass', freq: 5000 }, a: 0.0005, d: 0.015, gain: 0.6, drive: 2 },
+      { noise: 'white', filter: { type: 'bandpass', freq: [3000, 6000], q: 6 }, at: 0.01, a: 0.005, d: 0.25, gain: 0.35 },
+      { noise: 'white', filter: { type: 'highpass', freq: 7000 }, at: 0.1, a: 0.05, d: 0.2, gain: 0.12 },
+    ] },
+    // Headsman: a wet brush swish ending in a low thud, under the Finishing Blow.
+    abilityInk: { bus: 'sfx', priority: 2, cooldown: 0.3, max: 1, verb: 0.15, heat: 0.1, jitter: 30, layers: [
+      { noise: 'pink', filter: { type: 'bandpass', freq: 1500, to: 500, q: 1.5 }, glide: 0.18, a: 0.02, d: 0.18, gain: 0.5 },
+      { wave: 'sine', freq: 70, at: 0.16, a: 0.003, d: 0.06, gain: 0.5 },
+    ] },
     // An ability picked: a struck note, lower and fuller the rarer it is.
     abilityPick: { bus: 'ui', priority: 2, cooldown: 0.1, verb: 0.4, jitter: 0, heat: 0, layers: [
       { wave: 'sine', freq: 523, partials: [[1, 1, 1], [2, 0.4, 0.7], [3, 0.2, 0.5], [4.2, 0.08, 0.3]], a: 0.002, d: 1.1, gain: 0.3 },

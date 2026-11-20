@@ -156,7 +156,11 @@ class Player {
   // Dash charges come back one at a time (Light Step: faster).
   refillDashes(dt) {
     const C = CONFIG.player;
-    if (this.dashes < C.dashCharges) this.dashes = Math.min(C.dashCharges, this.dashes + dt * (1 + (this.kit.mods.dashRefill || 0)) / C.dashRefill);
+    if (!(this.dashes < C.dashCharges)) return;
+    const was = this.dashes, more = this.kit.mods.dashRefill || 0;
+    this.dashes = Math.min(C.dashCharges, this.dashes + dt * (1 + more) / C.dashRefill);
+    // A whole charge back, with Light Step held: its chime and feather listen (js/audio.js, js/ability-touch.js).
+    if (more > 0 && Math.floor(this.dashes) > Math.floor(was)) events.emit('dashReady', { body: this });
   }
   // Heading toward the best nearby enemy in the direction the player means to swing, or null.
   autoAim(mv, enemies) {

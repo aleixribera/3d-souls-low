@@ -13,9 +13,7 @@ const ABILITY_ICONS = {
   'breaker': '<circle cx="24" cy="24" r="15"/><path d="M24 9 L21 18 L27 23 L21 30 L24 39"/><path d="M27 23 L34 21"/>',
   'keen-eye': '<path d="M5 26 C11 16 37 16 43 26 C37 36 11 36 5 26 Z"/><circle cx="24" cy="26" r="5"/><path d="M24 6 V11 M12 9 L15 13 M36 9 L33 13"/>',
   'light-step': '<path d="M38 8 C24 8 14 18 14 34 C28 34 38 24 38 8 Z"/><path d="M38 8 L9 40"/><path d="M19 27 H27 M24 22 H32"/>',
-  'long-shadow': '<circle cx="32" cy="24" r="9"/><path d="M20 17 A10 10 0 0 0 20 31" stroke-dasharray="2 3"/><path d="M12 19 A8 8 0 0 0 12 29" stroke-dasharray="2 3"/><path d="M6 39 H42"/>',
   'quick-draught': '<path d="M23 8 H31 M24 8 V16 C17 19 15 24 15 29 A12 12 0 0 0 39 29 C39 24 37 19 30 16 V8"/><path d="M17 28 H37"/><path d="M3 22 H9 M2 28 H9 M4 34 H10"/>',
-  'swift-charge': '<path d="M24 6 V33 M18 33 H30 M24 33 V42"/><path d="M8 24 L13 19 L18 24 M8 32 L13 27 L18 32"/><path d="M30 24 L35 19 L40 24 M30 32 L35 27 L40 32"/>',
   'cold-riposte': '<path d="M6 30 H34 L41 30 L34 33 H6 Z"/><path d="M11 25 V38"/><path d="M33 6 V18 M27 12 H39 M29 8 L37 16 M37 8 L29 16"/>',
   'headsman': '<path d="M12 42 L32 10"/><path d="M27 14 C33 8 42 11 42 19 C42 25 37 28 32 26 Z"/><path d="M9 36 L15 40"/>',
   // Rares

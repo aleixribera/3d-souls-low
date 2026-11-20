@@ -838,6 +838,44 @@
       W.reload();
     }
   });
+  // Pass 109 (PLAN.md item 8, batch 1): each plain common shows one small touch for its holder (js/ability-touch.js).
+  test('plain commons: each shows its touch for its holder, and no touch without it', () => {
+    Game.startFight('pillagerCaptain'); Game.loading = 0; sim.begin(); abilityTouch.clear();
+    const p = Game.player, e = Game.duel, T = () => abilityTouch.state;
+    p.grantAbilities([]); sim.step(); Game.render(1, STEP);
+    p.dashes = 1.995; sim.step(2); Game.render(1, STEP);
+    expect.ok(!log.includes('dashReady') && T().feathers === 0 && !document.getElementById('pHp').dataset.iron, 'none held: no chime event, no feather, no iron frame');
+    p.grantAbilities(['keen-edge', 'iron-blood', 'light-step', 'quick-draught', 'breaker', 'keen-eye', 'cold-riposte', 'headsman']);
+    sturdy(p); e.cooldown = 30; Game.render(1, STEP);
+    expect.ok(document.getElementById('pHp').dataset.iron === '1', 'Iron Blood: the health bar wears its iron frame');
+    // Light Step: a charge back rings and flicks a feather.
+    log.length = 0; p.dashes = 1.995; sim.step(2); Game.render(1, STEP);
+    expect.ok(log.includes('dashReady') && T().feathers === 1, `Light Step: a charge back, a feather (${JSON.stringify(T())})`);
+    // Keen Edge: the glint as a swing goes active.
+    sim.press('light'); sim.until(() => p.attack && p.attackPhase() === PHASE.ACTIVE, 1); Game.render(1, STEP);
+    expect.ok(T().glints === 1, `Keen Edge: a glint runs along the blade (${JSON.stringify(T())})`);
+    sim.until(() => p.isFree(), 2);
+    // Quick Draught: the flask's glint.
+    A.events.emit('itemUsed', { item: 'flask', player: p }); Game.render(1, STEP);
+    expect.ok(T().flares === 1, 'Quick Draught: a glint on the flask');
+    // Breaker: the glow's last share turns bone white.
+    p.riposte = 1; Game.render(1, STEP); const early = p.rig.cwBone;
+    p.riposte = 0.02; Game.render(1, STEP);
+    expect.ok(early === 0 && p.rig.cwBone > 0, `Breaker: bone white only in its added time (${early}, ${p.rig.cwBone})`);
+    p.riposte = 0;
+    // Keen Eye: a ring as a blow enters the deflect window, once a blow.
+    const combo = e.def.attacks.find(a => a.hits.length === 3); e.cooldown = 0;   // deflectable (the overhead is roll-only)
+    faceOff(e, p, 1.6); e.beginAttack(combo);
+    sim.until(() => { Game.render(1, STEP); return T().ringKey !== -1; }, 3);
+    expect.ok(T().ringKey !== -1, 'Keen Eye: the ring as the blow comes into the window');
+    // Cold Riposte and Headsman: the crust on a counter, the stroke behind the foe on a Finishing Blow.
+    const at = { x: e.x, y: e.y + e.height * 0.6, z: e.z };
+    A.events.emit('strike', { attacker: p, target: e, strike: { riposte: true, damage: 30 }, at }); Game.render(1, STEP);
+    expect.ok(T().crusts === 1, 'Cold Riposte: frost along the counter');
+    A.events.emit('finisher', { player: p, enemy: e, damage: 1, lethal: false, at, exit: at }); Game.render(1, STEP);
+    expect.ok(T().strokes === 1, 'Headsman: a brush stroke behind the foe');
+    abilityTouch.clear(); p.grantAbilities([]);
+  });
   // Pass 97 (PLAN.md 3d): the sparring scene. The player's part of each drill is the teacher's own demonstration, played
   // on the player's keys (a swing drill's steps from the moment the partner's blow begins), so a demo that cannot do
   // its drill fails here too.
