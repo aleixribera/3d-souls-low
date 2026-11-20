@@ -14,6 +14,17 @@ plan before this one (to commit 9eed9bf) is in git history; what it held that st
 
 ## Now
 
+### Process first (review 2026-11-20)
+
+The review found no current-frames folder (333 files in `docs/scorecard/`, newest from before the pause) and no
+reference set: its blind panel had to cut references from `.scratch/ref-clips` videos by hand. Without both, no
+judge can score PLAN 4-5 the same way twice. In the pass that does item 1 or 2, at no extra pass:
+- `.claude/iterate.md` names the current folder (`docs/scorecard/now/`, one latest frame per screen, retaken by any
+  pass that changes the screen) and the reference set (`.scratch/ref-clips`, never committed) with the panel's lineup and prompt
+  (`docs/scorecard/panel/`).
+- Seed `now/` from what exists (a Boss Rush fight, the lobby desktop and phone, a crate roll) after item 2's cuts.
+Check: the loop file names both; `now/` holds a frame per screen dated after item 2.
+
 ### 1. Main green, and nothing ships red
 
 CI has failed on every push since v7.151 (textures `astralSilver`, "Ultra models" `shoulderX`, "Ultra performance",

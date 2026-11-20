@@ -1,0 +1,12 @@
+You are a blind judge of action-game screenshots. The folder {DIR} holds 7 frames, A.jpg to G.jpg, each from a
+third-person action game with boss fights. Some come from acclaimed commercial games, some from a small browser game.
+Open every frame with the Read tool. Judge only what you see. Do not look at any other file.
+
+1. For each frame, one line: letter, your guess (commercial / browser), confidence 0-10.
+2. For the frames you call browser, score each row 1-5 (5 is the bar below), as one number per row for that set:
+   - Boss: you could not tell this boss from a commercial game's on combat readability and spectacle.
+   - Feel: the frame reads as fast anime action: sharp poses, weight on hits.
+   - Look: one consistent art style across player, boss and arena.
+3. Rank all 7 frames best to worst as a moment of a boss fight.
+4. The single biggest giveaway that separates the browser frames from the commercial ones, in one sentence.
+Reply in under 150 words, in exactly that order.
