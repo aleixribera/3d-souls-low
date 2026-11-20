@@ -4,7 +4,7 @@ A Souls-like in the browser, alone or with friends online.
 
 ## Play
 
-- In the browser: https://aleixribera.github.io/3d-souls-low/ (single player), or open `combat-arena-3d.html` from
+- In the browser: https://aleix.tailfef0f7.ts.net/souls/ (the home server: alone or online), or open `combat-arena-3d.html` from
   a checkout. Nothing to install.
 - **Story** is the one road: Ashmere, then over the pass into Thrale. It saves itself at every bonfire you rest at.
   **Boss Rush** joins the public lobby, where friends fight boss after boss together. Solo play is available if the lobby cannot be used.

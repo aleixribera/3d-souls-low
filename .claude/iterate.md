@@ -1,7 +1,7 @@
 # Iterate: Combat Arena 3D
 
 Model: opus, effort medium
-Skill synced: ac6d70c
+Skill synced: aa63afa
 Parts: judge (panel: `docs/scorecard/panel/`), review (weekly, from 2026-11-20), incidents (the game is played online).
 
 ## Vision and plan
@@ -11,7 +11,7 @@ Parts: judge (panel: `docs/scorecard/panel/`), review (weekly, from 2026-11-20),
 - Two tracks at once (when `PLAN.md` says so): each pass in its own worktree, by `docs/two-tracks.md`.
 - No per-release or per-model docs: the commit message holds the details, and the in-game changelog
   (`js/data/changelog.js`) is the one changelog. A model's notes are its `tools/blender/<name>.py` header.
-- Third-party assets: none so far; any would be logged in the header of the file that uses it.
+- Third-party assets: logged in the header of the file that uses it.
 
 ## Build
 
@@ -35,7 +35,7 @@ node tools/pack-baked.cjs <stem>
 
 ## See it working
 
-- Serve: `python -m http.server 8123 --bind 127.0.0.1` (or `.claude/launch.json` "static"), open
+- Serve: `python -m http.server 8123 --bind 127.0.0.1`, open
   `combat-arena-3d.html#dev`, then `MODELLAB.open('<modelId>')` (F9): front, back, side and silhouette.
 - If the built-in browser refuses localhost, drive headless Edge over CDP (`--headless=new --use-angle=swiftshader`,
   fresh `--user-data-dir`) and `Page.captureScreenshot`. Close Edge right after.
@@ -51,7 +51,8 @@ node tools/pack-baked.cjs <stem>
 - Commit to `main` and push; CI runs on the push.
 - A release whenever a pass ships something players notice: `node tools/release.cjs "<title>" "<text>"` (AGENTS.md
   "Release"), commit, push, tag `v*`, push the tag, check that the container workflow started.
-- **Don't wait on CI after your push.** CI (about 12 minutes) belongs to the next pass, which reads the newest run first.
+- **Don't wait on CI after your push.** The next pass starts with `node tools/live-check.cjs`: players' version
+  and the newest CI and container runs (why: players sat on v7.159.0 through three held releases unseen, retro 110).
 - A test that fails on CI and passes locally gets hardened in that pass (a wait on the state it needs, not a fixed
   delay), not just noted (why: a 250 ms key press in `alone-browser` failed under CI's SwiftShader and held v7.161.0's
   container behind the green-CI gate, retro 105).

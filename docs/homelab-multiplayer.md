@@ -93,15 +93,11 @@ Opening a menu does not pause an online fight. Personal death respawns only that
 
 The lobby state is in memory. Returning everyone to the lobby, the last player leaving, or restarting the container ends that online run. Offline campaign saves remain separate in each browser. Co-op does not overwrite them.
 
-## 5. Move away from GitHub Pages
+## 5. The game's link
 
-Once the public link works, use it as the game's link/bookmark. The home server now serves both the game files and the lobby. GitHub can continue to hold the source code.
-
-To unpublish the old Pages site, open the [repository](https://github.com/aleixribera/3d-souls-low), then **Settings → Pages → Unpublish site**. If Pages is built by a GitHub Actions workflow, disable that publishing workflow as well so a later push does not republish it. [GitHub's unpublishing instructions](https://docs.github.com/en/pages/getting-started-with-github-pages/unpublishing-a-github-pages-site)
-
-Do not set a GitHub Pages custom domain to a `100.x` Tailscale IP. Funnel already provides the working public HTTPS address.
-
-Browser saves belong to their website's address. Existing solo saves on the GitHub Pages address do not automatically appear on the new address. Keep the old site available while you finish any run you want to retain; multiplayer uses its own session and does not require those saves.
+The game's link is the home server's https://aleix.tailfef0f7.ts.net/souls/ (Funnel on port 443; `:8443/` serves
+the same). GitHub Pages is unpublished (2026-11-20): GitHub keeps the code, CI and the container build. Solo saves
+made on the old Pages address stayed with that address.
 
 ## Operation and updates
 
