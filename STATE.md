@@ -10,8 +10,8 @@ The iterate loop's working note (`.claude/iterate.md`). Cap: 8,000 characters.
   blade).
 - Track 1, pass 108: item 4 (pass 1 of 1), art style exploration, done: the Captain fight in four styles,
   `docs/style/` (`index.html`, `side-by-side.jpg`, MP4s, `frame-times.json`). Normal 1280x720 on this PC, mean ms:
-  control 2.4, cel 8.4, dark 6.8, paint 3.8. Laptop bench unreachable (SSH timeout): 60 fps there unverified. Waits on
-  Aleix's pick; track 1 takes the next item meanwhile.
+  control 2.4, cel 8.4, dark 6.8, paint 3.8. Laptop bench unreachable (SSH timeout): 60 fps there unverified. Aleix picked cel
+  (2026-11-20): item 4 done.
 - Pass 110, the retro (track 2 slot): v7.163.0's CI green (run 44830197524), its container published, and players
   are on it at last (they had v7.159.0 until now). Item 1 done: `PLAY-LINK.txt` is https://aleix.tailfef0f7.ts.net/souls/,
   Pages unpublished (old address 404). Step 1 of every pass: `node tools/live-check.cjs`. Items 1-3 done.
@@ -68,7 +68,4 @@ The iterate loop's working note (`.claude/iterate.md`). Cap: 8,000 characters.
 
 ## Needs Aleix
 
-- Pick an art style (PLAN item 4): cel, dark, painterly or today's look, from `docs/style/index.html` (or
-  `side-by-side.jpg` and the four MP4s). Your taste, so no judge decides it.
-
-Answered: the home server's `/souls/` address is PUBLIC (Aleix, 2026-11-20).
+Answered: the art style is cel-shaded anime, for the whole game (Aleix, 2026-11-20; item 4 done). The home server's `/souls/` address is PUBLIC (Aleix, 2026-11-20).

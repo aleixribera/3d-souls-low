@@ -103,3 +103,7 @@ took it (once taken).
   judge: "Yes, download them". Kept in `.scratch/`, never committed.
 
 - 2026-11-16, Aleix: model change Opus 5.5 -> Astra; resume now with full authority. Astra runs audit repairs itself. Online first, offline only if unavailable. No new Story, level/enemy content, ability/crate systems, or boss/attack redesign. Approved repair plan: docs/audit-repairs.md. Stopped by Aleix the same day: the Astra run is over; the Friday pause and the plan stand again.
+
+- 2026-11-20, Aleix's art style pick (PLAN item 4), from `docs/style/`: "Let's go with Cel-shaded anime!! It looks
+  great!! This is the new style for the entire game!" So cel (`?style=cel`, `js/data/styles.js`) is the game's style:
+  the Pillager Captain's model and effects are built in it (item 5), then player and bosses, enemies, levels.
