@@ -25,11 +25,27 @@ const ABILITY_MODS = { damage: 'more', maxHp: 'more', counterWindow: 'more',
 //   parry/heal:       a parry heals `heal` of the bar, at most once every `cooldown` s (a crate's).
 //   press/heal:       pressed (its key full: `charge` points): heals `heal` of the bar.
 //   press/stance:     pressed: for `time` s every blow that can be deflected is, as if timed (canDeflectNow).
+// The commons' perks (design/abilities batch 3, the guard and the run), each on its holder's own body:
+//   parry/freeDash:      a deflect banks one free dash (the next dash costs no charge), at most once every `cooldown` s.
+//   low/veil:            once a fight, at or under `below` of the bar: the next enemy blow does `cut` less.
+//   hurt/ironSkin:       losing health: for `time` s enemy blows do `cut` less (not renewed while it holds).
+//   parry/keys:          a deflect gives every key `charge` more points.
+//   finisher/keys:       a Finishing Blow gives every key `charge` more points.
+//   ready/empower:       a key filling makes the next landed blow do `damage` more (no time limit; never stacks).
+//   fightStart/freeDash: the fight begins (the holder first moves or acts): dashes cost no charge for `time` s.
+//   revive/reviveHeal:   a friend this holder revives rises with `heal` more of their bar (the server's, a party's only).
 const ABILITY_PERKS = {
   'dodge/riposte': ['window'], 'hurt/empower': ['window', 'damage'], 'streak/heal': ['hits', 'heal'],
   'low/freeDash': ['below'], 'open/damage': ['damage'], 'block/charge': ['window'], 'unhurt/empower': ['after', 'damage'],
   'finisher/heal': ['heal'], 'parry/heal': ['heal', 'cooldown'], 'press/heal': ['charge', 'heal'], 'press/stance': ['charge', 'time'],
+  'parry/freeDash': ['cooldown'], 'low/veil': ['below', 'cut'], 'hurt/ironSkin': ['cut', 'time'], 'parry/keys': ['charge'],
+  'finisher/keys': ['charge'], 'ready/empower': ['damage'], 'fightStart/freeDash': ['time'], 'revive/reviveHeal': ['heal'],
 };
+// The `abilityPerk` cues of the commons' perks: drawn in bone ink (js/common-fx.js), never a camera kick (camera-feel.js).
+const COMMON_PERKS = new Set(['parry/freeDash', 'freeDash/spent', 'low/veil', 'veil/spent', 'hurt/ironSkin', 'ironSkin/glance',
+  'parry/keys', 'finisher/keys', 'ready/empower', 'glint/spent', 'fightStart/freeDash']);
+// A key's extra points from a commons' `<when>/keys` perk (Kindling's deflect, Tithe's Finishing Blow).
+const abilityKeysFor = (kit, when) => (kit.perks[when + '/keys'] || {}).charge || 0;
 // A heal of `share` of the bar from a perk (Grave Feast, Iron Mercy), told as that perk.
 function abilityHeal(p, share, perk) {
   if (!p.alive()) return;
@@ -71,6 +87,11 @@ function abilityHeal(p, share, perk) {
 //                        dodged enemy, if it is within `imageReach` m of that place.
 //   jump/whirl:          a jump with an enemy close by: a dust whirl cuts every enemy within `whirlRadius` m of the
 //                        take-off, once every `cooldown` s.
+// Batch 3 (the guard and the run):
+//   block/thorns:        an enemy's blow on the raised guard, from within `thornReach` m: thorns hit that enemy.
+//   flask/burnHits:      a flask lights the holder's next `hits` landed blows (perk clocks `burn`, renewed, not added):
+//                        each burns its enemy for `damage` more, told as a `strike`.
+//   crack/shards:        a blow of the holder's cracks an enemy's guard: `shardDelay` s later its shards cut it.
 // A summon (CONFIG.abilities.summons) stands at its own place round the enemy, worked out here, where the enemies are
 // owned. Once it has arrived it draws that enemy's eye for `draw` s: the enemy fights it instead of anyone (it can't be
 // hurt), and an attack begun on it is finished on it. One summon a holder at a time: another kind's call waits until
@@ -90,6 +111,7 @@ const ABILITY_POWERS = {
   'press/blast': ['charge', 'radius', 'damage'],
   'dashPast/spark': ['damage', 'cooldown'], 'stringEnd/lick': ['damage'], 'fullHeavy/molten': ['damage'],
   'dashStrike/lateCut': ['damage'], 'dodge/afterimage': ['damage'], 'jump/whirl': ['damage', 'cooldown'],
+  'block/thorns': ['damage', 'cooldown'], 'flask/burnHits': ['hits', 'damage'], 'crack/shards': ['damage'],
 };
 const SUMMONS = new Set(['twin', 'hound', 'guardian', 'lancer']);
 // The summons that strike on their own, every `every` s from `reach` m off their enemy's body (the twin echoes its holder).
@@ -115,7 +137,7 @@ function summonStep(s, e, body, dt) {
 }
 // The triggers a person's browser reports to the server (the rest it sees itself: a parry, a landed blow, a counter).
 // A press is a key's power fired (below); the server checks it against its own count of that key's charge.
-const ABILITY_CLAIMS = ['land', 'dodge', 'low', 'flask', 'press', 'dashPast', 'jump'];
+const ABILITY_CLAIMS = ['land', 'dodge', 'low', 'flask', 'press', 'dashPast', 'jump', 'block'];
 // The enemy a dash from `from` to `to` (each { x, z }) went past (Spark Step's `dashPast`): the nearest live one whose
 // body's edge came within `gap` m of the path at a point strictly between its ends (past it, not into it), else null.
 function dashPastOf(from, to, enemies, gap = CONFIG.abilities.commons.pastGap) {
@@ -157,8 +179,16 @@ function pressGain(strike) {
   return G.hit + (strike.riposte || a && (a.charge && strike.charge >= 1 || a.feel === 'heavy') ? G.skill : 0);   // a charge counts only on a chargeable attack
 }
 // `n` points toward each key the kit holds, each up to its ability's `charge`.
+// Returns true when a key filled just now woke Glint (`ready/empower`, not already waiting).
 function abilityGain(kit, st, n) {
-  for (const key in kit.pressed) st.charge[key] = Math.min(kit.pressed[key].v.charge, st.charge[key] + n);
+  let filled = false;
+  for (const key in kit.pressed) {
+    const full = kit.pressed[key].v.charge, was = st.charge[key];
+    st.charge[key] = Math.min(full, was + n);
+    if (was < full && st.charge[key] >= full) filled = true;
+  }
+  if (!filled || !kit.perks['ready/empower'] || st.glint) return false;
+  st.glint = 1; return true;
 }
 // The enemy a press strikes: the locked one if alive and in reach, else the nearest live one in reach (null: none).
 // One that can't be hurt now (between phases, held through a Finishing Blow) is passed over.
@@ -207,7 +237,7 @@ function abilityKit(held) {
     if (b.power) {
       powers.push({ id: b.id, when: b.power.when, then: b.power.then, once: !!b.power.once, action: b.power.action || null, key: b.key || null, v });
       whens.add(b.power.when);
-      if (b.power.then === 'twin') whens.add('hits');   // the twin strikes as its holder lands a blow
+      if (b.power.then === 'twin' || b.power.then === 'burnHits') whens.add('hits');   // the twin strikes, the burn burns, as its holder lands a blow
     }
   }
   for (const key of Object.keys(mods)) if (ABILITY_MODS[key] === 'less') mods[key] = Math.min(mods[key], 1);
@@ -223,9 +253,11 @@ function kitMight(held) {
 // A body's perk clocks (on the Player; the server keeps one per person): s since it last lost health (`calm`, reset
 // when Patience is spent), Vengeance's and Bastion's s left, the landed blows since it last lost health, and the
 // Blood Moon's s left with its level's numbers, Iron Mercy's s until it heals again, the deflecting stance's s left,
-// and each number key's charge (points).
+// each number key's charge (points), and the commons': Ringing Steel's banked dash (`bank`, 0 or 1) and s until it may
+// bank again (`ring`), Ash Veil's state (`veil`: 0 idle, 1 on, 2 spent), Grit's s left (`iron`), Hunter's Pace's s
+// left (`hunt`), Glint's waiting blow (`glint`, 0 or 1), Bitter Draught's burning blows left with its level (`burn`, `burnV`).
 const abilityPerkState = () => ({ calm: 0, vengeance: 0, bastion: 0, streak: 0, moon: 0, moonV: null, mercy: 0, stance: 0,
-  charge: { strike: 0, guard: 0, summon: 0, ultimate: 0 } });
+  charge: { strike: 0, guard: 0, summon: 0, ultimate: 0 }, bank: 0, ring: 0, veil: 0, iron: 0, hunt: 0, glint: 0, burn: 0, burnV: null });
 // Off balance, for Opportunist: reeling, opened by a parry, or stopped in time.
 const ABILITY_OPEN = new Set([ES.STAGGER, ES.PARRIED, ES.HURT]);
 const abilityOpen = e => e.frozen > 0 || ABILITY_OPEN.has(e.state);
@@ -237,23 +269,37 @@ function abilityHurt(kit, st) {
 }
 function abilityClocks(st, dt) {
   st.calm += dt; st.vengeance = Math.max(0, st.vengeance - dt); st.bastion = Math.max(0, st.bastion - dt); st.moon = Math.max(0, st.moon - dt); st.mercy = Math.max(0, st.mercy - dt);
-  st.stance = Math.max(0, st.stance - dt);
+  st.stance = Math.max(0, st.stance - dt); st.ring = Math.max(0, st.ring - dt); st.iron = Math.max(0, st.iron - dt); st.hunt = Math.max(0, st.hunt - dt);
+}
+// A deflect, on the deflecting body (js/combat.js; a bot's on the server): Iron Mercy's heal, Ringing Steel's bank,
+// Kindling's cue. (Kindling's points go with the deflect's own: abilityKeysFor.)
+function abilityParried(p, target) {
+  const P = p.kit.perks, st = p.perk;
+  const mercy = P['parry/heal'];   // Iron Mercy (a crate's)
+  if (mercy && st.mercy <= 0) { st.mercy = mercy.cooldown; abilityHeal(p, mercy.heal, 'parry/heal'); }
+  const ring = P['parry/freeDash'];   // Ringing Steel
+  if (ring && st.ring <= 0) { st.ring = ring.cooldown; st.bank = 1; events.emit('abilityPerk', { body: p, perk: 'parry/freeDash', target }); }
+  if (P['parry/keys'] && Object.keys(p.kit.pressed).length) events.emit('abilityPerk', { body: p, perk: 'parry/keys', target });
 }
 // The blow a body lands on `e`, with its kit: damage raised, and the one-shot perks it carries spent.
 // Returns `strike` itself when nothing changes it. `strike.riposte` (a parry's or Counterstep's) adds Cold Riposte.
 function abilityStrike(kit, st, e, strike) {
   if (kit === NO_KIT && !(st && st.moon > 0)) return strike;
   const m = kit.mods, P = kit.perks;
-  let more = m.damage + (strike.riposte ? m.riposte : 0), spent = 0;
+  let more = m.damage + (strike.riposte ? m.riposte : 0), spent = 0, glint = false;
   if (P['open/damage'] && abilityOpen(e)) more += P['open/damage'].damage;
   if (st) {
     const hurt = P['hurt/empower'], calm = P['unhurt/empower'];
     if (hurt && st.vengeance > 0) { more += hurt.damage; st.vengeance = 0; spent++; }
     if (calm && st.calm >= calm.after) { more += calm.damage; st.calm = 0; spent++; }
     if (st.moon > 0 && st.moonV) more += st.moonV.damage;
+    const g = P['ready/empower'];   // Glint: a key filled since the last blow
+    if (g && st.glint) { more += g.damage; st.glint = 0; spent++; glint = true; }
   }
   if (!more) return strike;
-  return { ...strike, damage: strike.damage * (1 + more), empowered: spent > 0 };
+  // Glint's own spend is told as its own cue (common-fx), not as the rares' empower.
+  return glint ? { ...strike, damage: strike.damage * (1 + more), empowered: spent > 1, glint }
+    : { ...strike, damage: strike.damage * (1 + more), empowered: spent > 0 };
 }
 // A blow this body landed (not blocked): Bloodthirst's count, and the Blood Moon's drink. Returns the health it healed.
 function abilityLanded(p, strike) {
@@ -281,9 +327,10 @@ function abilityReport(body, when, ctx) {
 // its number), the first `lead` s after it fires (the time its dragon takes to reach the boss), then every `every` s; damage goes through Enemy.takeHit like any blow and `credit` (the server's) counts it to the holder.
 const ECHO_DELAY = 0.06;   // s from its holder's blow to the twin's: the two land as one
 // The powers that need a live enemy to strike (the one parried, struck, broken or dodged).
-const ON_ENEMY = new Set(['lightning', 'blades', 'flare', 'spark', 'gale', 'pyre', 'hound', 'lancer', 'lick', 'molten', 'lateCut', 'afterimage']);
+const ON_ENEMY = new Set(['lightning', 'blades', 'flare', 'spark', 'gale', 'pyre', 'hound', 'lancer', 'lick', 'molten', 'lateCut', 'afterimage',
+  'thorns', 'shards']);
 // The powers whose blow lands a beat after they fire: each tells every browser again as it lands (`strike`).
-const DELAYED = new Set(['lightning', 'lateCut', 'afterimage']);
+const DELAYED = new Set(['lightning', 'lateCut', 'afterimage', 'shards']);
 const abilityPowers = (() => {
   // The powers still striking (lightning, blades, a pyre, a twin's echo): { pw, holder, enemy, left, next, n }, an echo
   // with its own `damage` and `twin`.
@@ -321,7 +368,7 @@ const abilityPowers = (() => {
   // `ctx`: { enemy } (the one parried, struck, broken or dodged), { x, y, z } (where), { action } (a jump attack's
   // input), { strike } (a landed blow's, for `hits`: what a twin echoes), { key } (a press: that key's power only).
   function trigger(holder, body, kit, when, ctx = {}) {
-    if (when === 'hits') echo(holder, body, ctx.enemy, ctx.strike);
+    if (when === 'hits') { echo(holder, body, ctx.enemy, ctx.strike); burn(holder, body, kit, ctx.enemy); }
     for (const pw of kit.powers) {
       if (pw.when !== when || (pw.action && pw.action !== ctx.action) || (pw.key && pw.key !== ctx.key)) continue;
       const key = holder + '/' + pw.id;
@@ -356,7 +403,9 @@ const abilityPowers = (() => {
     events.emit('abilityPower', { power: pw.id, then: pw.then, holder, body, enemy: e, x, y, z, v, path });
     switch (pw.then) {
       case 'blast': for (const o of enemies) if (near(o, x, y, z, v.radius)) wound(o, v.damage, holder, pw.id); break;
-      case 'flare': case 'spark': case 'lick': case 'molten': wound(e, v.damage, holder, pw.id); break;
+      case 'flare': case 'spark': case 'lick': case 'molten': case 'thorns': wound(e, v.damage, holder, pw.id); break;
+      case 'burnHits': if (body && body.perk) { body.perk.burn = v.hits; body.perk.burnV = v; } break;   // a new flask renews the count
+      case 'shards': running.push({ pw, holder, body, enemy: e, left: 1, next: CONFIG.abilities.commons.shardDelay, n: 0 }); break;
       case 'whirl': for (const o of enemies) if (near(o, x, y, z, CONFIG.abilities.commons.whirlRadius)) wound(o, v.damage, holder, pw.id); break;
       case 'lateCut': running.push({ pw, holder, body, enemy: e, left: 1, next: CONFIG.abilities.commons.lateCut, n: 0 }); break;
       case 'afterimage': running.push({ pw, holder, body, enemy: e, left: 1, next: CONFIG.abilities.commons.imageDelay, n: 0, x, y, z }); break;
@@ -388,6 +437,16 @@ const abilityPowers = (() => {
       case 'bloodMoon': if (body && body.perk) { body.perk.moon = v.time; body.perk.moonV = v; } break;
     }
     return true;
+  }
+  // Bitter Draught: a landed blow of a holder whose blade burns burns `e` too, one flame spent (`strike`: its number).
+  function burn(holder, body, kit, e) {
+    const st = body && body.perk;
+    if (!st || !(st.burn > 0) || !st.burnV || !e || !e.alive()) return;
+    const pw = kit.powers.find(q => q.then === 'burnHits'), v = st.burnV;
+    if (!pw) { st.burn = 0; return; }
+    st.burn--;
+    events.emit('abilityPower', { power: pw.id, then: 'burnHits', holder, body, enemy: e, x: e.x, y: e.y, z: e.z, v, strike: v.hits - st.burn });
+    wound(e, v.damage, holder, pw.id);
   }
   // A twin out for `holder` strikes `e` as they did, a beat later: `share` of the blow, with its own event.
   function echo(holder, body, e, strike) {

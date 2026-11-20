@@ -1,0 +1,115 @@
+'use strict';
+// Short clips of the effect commons (Aleix asked to see them moving, pass 114), in the cel style on a Pillager Captain,
+// each fired twice, its name in the corner: docs/scorecard/now/<set>-commons.mp4. The clock is stepped by hand
+// (Game.manualClock) and every other step is a frame, so a clip plays at real speed whatever the PC's speed. With
+// `--stills`, the guard set's current frames too (guard-*.jpg, desktop; -phone for two).
+// Usage: node tools/ability-clips.cjs [blade|guard ...] [--stills]   (no set = both). One headless Edge; needs ffmpeg.
+require('../tests/low-priority.cjs');
+const fs = require('node:fs');
+const os = require('node:os');
+const path = require('node:path');
+const { execFileSync } = require('node:child_process');
+const { chromium } = require('../tests/browser.cjs');
+const { createServer } = require('../server/index.cjs');
+
+const out = path.join(__dirname, '..', 'docs', 'scorecard', 'now');
+const args = process.argv.slice(2), stills = args.includes('--stills'), sets = args.filter(a => !a.startsWith('--'));
+const want = s => !sets.length || sets.includes(s);
+const FPS = 30, EVERY = 2;   // a frame every 2 steps of 1/60 s
+
+// Each beat: [name shown, setup (run in the page with p, e; returns nothing), steps to run after it]. Fired twice.
+const SETS = {
+  blade: { ids: ['spark-step', 'ember-lick', 'hot-iron', 'petal-cut', 'echo-step', 'dust-devil'], beats: [
+    ['Spark Step', `(p, e) => { const fx = Math.sin(p.yaw), fz = Math.cos(p.yaw), side = e.radius + CONFIG.abilities.commons.pastGap * 0.5;
+      p.dashFromX = e.x - fz * 2.4 - fx * side; p.dashFromZ = e.z + fx * 2.4 - fz * side;
+      const ox = p.x, oz = p.z; p.x = e.x + fz * 2.4 - fx * side; p.z = e.z - fx * 2.4 - fz * side; p.dashEnded(Game.enemies); p.x = ox; p.z = oz; }`, 40],
+    ['Ember Lick', `() => __fire('stringEnd')`, 30],
+    ['Hot Iron', `() => __fire('fullHeavy')`, 30],
+    ['Petal Cut', `() => __fire('dashStrike')`, 50],
+    ['Echo Step', `() => __fire('dodge')`, 40],
+    ['Dust Devil', `p => p.tookOff(Game.enemies)`, 40],
+  ] },
+  guard: { ids: ['ringing-steel', 'thorn-guard', 'ash-veil', 'bitter-draught', 'grit', 'kindling', 'tithe', 'glint', 'hunters-pace', 'kindred-ember', 'shatter-guard', 'fire-burst'], beats: [
+    ['Ringing Steel', `(p, e) => abilityParried(p, e)`, 30, 'ring'],
+    ['Thorn Guard', `() => __fire('block')`, 26, 'thorns'],
+    ['Ash Veil', `(p, e) => { p.perk.veil = 1; events.emit('abilityPerk', { body: p, perk: 'low/veil' }); __later(24, () => p.takeHit({ attackId: 'x', damage: 1, poise: 0, knock: 0, hitstop: 0 }, e)); }`, 46, 'veil'],
+    ['Bitter Draught', `(p, e) => { __fire('flask'); __later(14, () => __hit()); __later(28, () => __hit()); }`, 44, 'burn'],
+    ['Grit', `p => { p.hp -= 1; }`, 36, 'grit'],
+    ['Kindling', `(p, e) => abilityParried(p, e)`, 30, 'keys'],
+    ['Glint', `(p, e) => { p.perk.charge.strike = 0; p.gainCharge(99); __later(20, () => __glint()); }`, 40, 'glint'],
+    ['Shatter Guard', `() => __fire('crack')`, 30, 'shards'],
+    ['Hunter\'s Pace', `p => { p.perk.hunt = 0; events.emit('abilityPerk', { body: p, perk: 'fightStart/freeDash' }); }`, 34, 'pace'],
+    ['Kindred Ember', `p => events.emit('revive', { x: p.x + 1.2, y: p.y, z: p.z, kindred: true })`, 40, 'kindred'],
+  ] },
+};
+
+(async () => {
+  const ffmpeg = process.env.FFMPEG || 'ffmpeg';
+  const app = createServer({ dev: true }); await new Promise(r => app.server.listen(0, '127.0.0.1', r));
+  const url = `http://127.0.0.1:${app.server.address().port}/combat-arena-3d.html?style=cel`;
+  const browser = await chromium.launch({ channel: 'msedge', headless: true });
+  const errors = [];
+  try {
+    for (const [set, S] of Object.entries(SETS)) {
+      if (!want(set)) continue;
+      for (const [w, h, tag] of stills && set === 'guard' ? [[1280, 720, ''], [390, 844, '-phone']] : [[1280, 720, '']]) {
+        const page = await browser.newPage({ viewport: { width: w, height: h } });
+        page.on('pageerror', e => errors.push(e.message.slice(0, 200)));
+        await page.addInitScript(() => localStorage.setItem('combat-arena-3d.settings', JSON.stringify({ graphics: 'normal', volume: 0, lessons: false })));
+        await page.goto(url); await page.waitForFunction(() => window.__arenaReady, null, { timeout: 120000 });
+        await page.evaluate(() => Game.startFight('pillagerCaptain'));
+        await page.waitForFunction(() => Game.mode === 'play' && Game.player && Game.duel && !Game.loading, null, { timeout: 60000 });
+        await page.waitForTimeout(800);
+        await page.evaluate(ids => {
+          const p = Game.player, e = Game.duel; e.cooldown = 999; e.hp = e.maxHp = 1e6;
+          p.grantAbilities(ids); p.huntArmed = false;
+          Game.manualClock = true; Game.worldWaiting = false;
+          const tag = document.createElement('div'); tag.id = 'clipName';
+          tag.style.cssText = 'position:fixed;left:28px;bottom:26px;z-index:99;font:600 26px/1 Georgia,serif;color:#f4f1e8;text-shadow:0 2px 6px #000,0 0 2px #000';
+          document.body.appendChild(tag);
+          const later = [];
+          window.__later = (n, fn) => later.push({ n, fn });
+          window.__fire = when => abilityPowers.trigger('self', p, p.kit, when, { enemy: e });
+          window.__hit = () => { const s = { attackId: 'light', damage: 10, poise: 0, knock: 0, hitstop: 0 }; e.takeHit(s, p); abilityPowers.trigger('self', p, p.kit, 'hits', { enemy: e, strike: s }); };
+          window.__glint = () => { const s = abilityStrike(p.kit, p.perk, e, { attackId: 'light', damage: 10, poise: 0, knock: 0, hitstop: 0 }); e.takeHit(s, p); if (s.glint) events.emit('abilityPerk', { body: p, perk: 'glint/spent', target: e }); };
+          window.__reset = name => {
+            commonFx.clear(); abilityPowers.reset(); later.length = 0; tag.textContent = name;
+            p.hp = p.maxHp; p.lastHp = p.hp; p.perk = abilityPerkState(); p.tint = 0;
+            for (let i = 0; i < 30; i++) Game.update(CONFIG.step);
+            e.x = e.px = p.x + Math.sin(p.yaw + 0.6) * 2.8; e.z = e.pz = p.z + Math.cos(p.yaw + 0.6) * 2.8; e.y = p.y; e.yaw = Math.atan2(p.x - e.x, p.z - e.z);
+            Game.render(1, CONFIG.step);
+          };
+          window.__steps = n => {
+            for (let i = 0; i < n; i++) {
+              for (let j = later.length - 1; j >= 0; j--) if (--later[j].n <= 0) { const f = later[j].fn; later.splice(j, 1); f(); }
+              Game.update(CONFIG.step); Game.render(1, CONFIG.step);
+            }
+            return JSON.stringify(commonFx.state);
+          };
+        }, S.ids);
+        const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'clip-'));
+        let frame = 0;
+        const grab = async () => page.screenshot({ path: path.join(dir, `f${String(frame++).padStart(5, '0')}.jpg`), type: 'jpeg', quality: 85 });
+        for (const [name, setup, steps, still] of S.beats) {
+          for (let round = 0; round < (tag ? 1 : 2); round++) {
+            await page.evaluate(([setup, name]) => { __reset(name); eval(setup)(Game.player, Game.duel); }, [setup, name]);
+            for (let s = 0; s < steps; s += EVERY) {
+              await page.evaluate(n => __steps(n), EVERY);
+              if (!tag) await grab();
+              if (stills && still && round === 0 && s === EVERY * 3) await page.screenshot({ path: path.join(out, `guard-${still}${tag}.jpg`), type: 'jpeg', quality: 70 });
+            }
+          }
+        }
+        if (!tag) {
+          const mp4 = path.join(out, `${set}-commons.mp4`);
+          execFileSync(ffmpeg, ['-y', '-loglevel', 'error', '-framerate', String(FPS), '-i', path.join(dir, 'f%05d.jpg'),
+            '-c:v', 'libx264', '-pix_fmt', 'yuv420p', '-crf', '26', '-preset', 'veryfast', mp4]);
+          console.log(set, frame, 'frames ->', path.relative(process.cwd(), mp4));
+        }
+        fs.rmSync(dir, { recursive: true, force: true });
+        await page.close();
+      }
+    }
+  } finally { await browser.close(); app.server.close(); }
+  if (errors.length) { console.log('page errors:\n' + [...new Set(errors)].slice(0, 8).join('\n')); process.exitCode = 1; }
+})().catch(e => { console.error(e); process.exit(1); });

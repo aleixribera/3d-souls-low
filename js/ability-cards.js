@@ -23,6 +23,18 @@ const ABILITY_ICONS = {
   'petal-cut': '<path d="M4 30 L44 18"/><path d="M4 38 L12 38 M2 34 L9 34"/><path d="M20 26 C23 21 27 20 30 22 C27 26 23 27 20 26 Z"/><path d="M28 31 C31 30 34 32 34 35 C31 35 29 34 28 31 Z"/><path d="M33 11 C36 12 37 15 36 18 C33 17 32 14 33 11 Z"/>',
   'echo-step': '<path d="M12 12 A4 4 0 1 1 12 20 A4 4 0 1 1 12 12 Z M12 22 V34 M6 26 H18 M12 34 L7 42 M12 34 L17 42" stroke-dasharray="3 3"/><path d="M14 30 C24 30 30 24 32 14"/><path d="M38 14 A3 3 0 1 1 38 20 A3 3 0 1 1 38 14 Z M38 21 V32 M38 32 L34 40 M38 32 L42 40"/>',
   'dust-devil': '<path d="M24 6 A3 3 0 1 1 24 12 A3 3 0 1 1 24 6 Z M24 13 V22 M19 16 L29 16 M24 22 L20 28 M24 22 L28 28"/><path d="M6 42 H42"/><path d="M10 38 C10 32 38 32 38 36 C38 40 14 40 14 36 C14 34 32 33 33 35"/><path d="M15 33 L19 29 M28 38 L32 34 M34 31 L36 28"/>',
+  // Batch 3, the guard and the run (pass 114)
+  'ringing-steel': '<path d="M8 40 L30 18 M26 14 L34 22"/><path d="M34 10 C40 10 42 14 42 18 M38 6 C46 8 48 14 46 22"/><path d="M6 44 H22 M10 38 L4 38"/>',
+  'thorn-guard': '<path d="M24 6 L40 12 V24 C40 34 32 40 24 43 C16 40 8 34 8 24 V12 Z"/><path d="M40 18 L46 16 M40 26 L46 28 M8 18 L2 16 M8 26 L2 28 M24 6 L24 1"/>',
+  'ash-veil': '<path d="M24 8 A4 4 0 1 1 24 16 A4 4 0 1 1 24 8 Z M24 17 V30 M18 22 H30 M24 30 L20 40 M24 30 L28 40"/><path d="M10 42 C8 30 14 22 10 10 M38 42 C40 30 34 22 38 10 M14 44 C14 36 16 34 15 28 M34 44 C34 36 32 34 33 28"/>',
+  'bitter-draught': '<path d="M20 6 H28 V14 L34 22 V40 C34 42 32 44 30 44 H18 C16 44 14 42 14 40 V22 L20 14 Z"/><path d="M14 30 H34"/><path d="M24 26 C20 22 26 20 24 16 M40 16 C38 12 42 10 40 6"/>',
+  'grit': '<path d="M24 6 A4 4 0 1 1 24 14 A4 4 0 1 1 24 6 Z M24 15 V30 M16 20 H32 M24 30 L19 42 M24 30 L29 42"/><path d="M8 24 L14 22 M8 30 L14 30 M40 24 L34 22 M40 30 L34 30"/><path d="M12 14 L16 18 M36 14 L32 18"/>',
+  'kindling': '<rect x="6" y="30" width="10" height="12"/><rect x="19" y="30" width="10" height="12"/><rect x="32" y="30" width="10" height="12"/><path d="M24 24 C18 18 26 14 24 6 C30 12 30 18 24 24 Z M11 26 V22 M37 26 V22"/>',
+  'tithe': '<path d="M8 8 L30 30 M26 34 L34 26"/><path d="M30 30 L40 40"/><rect x="34" y="6" width="9" height="9"/><rect x="34" y="18" width="9" height="9"/><path d="M14 40 L22 40 M18 36 L18 44"/>',
+  'glint': '<path d="M8 40 L32 16 M28 12 L36 20"/><path d="M38 4 L40 10 L46 12 L40 14 L38 20 L36 14 L30 12 L36 10 Z"/><rect x="6" y="28" width="9" height="9"/>',
+  'hunters-pace': '<path d="M30 6 A4 4 0 1 1 30 14 A4 4 0 1 1 30 6 Z M29 15 L24 28 M27 19 L36 24 M27 19 L18 22 M24 28 L32 36 L30 44 M24 28 L16 36 L8 36"/><path d="M4 18 H12 M2 26 H10 M6 32 H12"/>',
+  'kindred-ember': '<path d="M16 10 A4 4 0 1 1 16 18 A4 4 0 1 1 16 10 Z M16 19 V32 M16 32 L12 42 M16 32 L20 42 M16 24 L28 30"/><path d="M28 36 H44"/><path d="M36 32 C31 27 38 24 36 18 C42 23 41 28 36 32 Z"/>',
+  'shatter-guard': '<path d="M24 6 L40 12 V24 C40 34 32 40 24 43 C16 40 8 34 8 24 V12 Z"/><path d="M24 6 L22 18 L28 24 L22 32 L24 43"/><path d="M42 30 L46 28 M42 36 L46 40 M6 34 L2 38"/>',
   // Rares
   'counterstep': '<path d="M8 36 C8 22 16 14 28 14"/><path d="M28 14 L23 10 M28 14 L23 18"/><path d="M22 34 H40 L44 34 L40 36 H22 Z"/><path d="M26 30 V40"/>',
   'vengeance': '<path d="M17 10 C11 19 9 24 9 28 A8 8 0 0 0 25 28 C25 24 23 19 17 10 Z"/><path d="M36 40 V12 M30 18 L36 12 L42 18"/><path d="M30 26 L36 20 L42 26"/>',

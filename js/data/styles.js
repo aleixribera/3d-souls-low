@@ -15,9 +15,13 @@
 //     brush: a Kuwahara filter of `radius` px (flat patches of colour with sharp edges, like paint), its sample point
 //       wobbled by `wobble` px of low noise (stroke direction); `canvas`: the strength of a canvas weave.
 //     exposure: the light multiplied (1 unchanged). tint: [r, g, b] the shadows take (coloured shadows).
+//   hitFlash: the white hit flash on a struck body, that much of today's (1 unchanged). tintFromSkin: a modelled body's
+//     tints (the hit flash among them) take its own texture's colours (its emissive map is its map): the flash brightens
+//     the body in its own colours. A plain white flash on these dark textures was the brightest thing on screen, and the
+//     struck boss went flat white in every frame of his abilities (Aleix, pass 114).
 const STYLE_DEFS = [
   { id: 'control', name: "Today's look", shade: null, post: null },
-  { id: 'cel', name: 'Cel-shaded anime', shade: 'bands',
+  { id: 'cel', name: 'Cel-shaded anime', shade: 'bands', hitFlash: 0.6, tintFromSkin: true,
     bands: { at: [0, 0.1, 0.38], level: [0.4, 0.8, 1.25], keep: 1.6, soft: 0.03 }, flat: { bias: 6, keep: 0.15 },
     post: { prepass: 1, ink: { depth: 0.04, fold: 0.35, width: 1.6, color: 0.05, fade: 45 }, exposure: 1.4, tint: [0.8, 0.78, 1.0], sat: 1.4 } },
   { id: 'dark', name: 'Stylized dark', shade: 'soft', knee: 0.45, flat: { bias: 3, keep: 0.35 },

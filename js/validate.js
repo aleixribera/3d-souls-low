@@ -27,6 +27,7 @@ function validateData({ visual = true } = {}) {
       if (S.shade === 'bands') need(B && Array.isArray(B.at) && Array.isArray(B.level) && B.at.length === B.level.length && B.at.every(n) && B.level.every(pos) && pos(B.keep) && pos(B.soft)
         && B.at.every((a, i) => !i || a > B.at[i - 1]), `${at}: bands need rising \`at\`, one positive \`level\` each, \`keep\` and \`soft\`.`);
       if (S.shade === 'soft') need(pos(S.knee), `${at}: a soft shade needs a positive knee.`);
+      need((S.hitFlash === undefined || n(S.hitFlash) && S.hitFlash >= 0 && S.hitFlash <= 1) && [undefined, true].includes(S.tintFromSkin), `${at}: hitFlash is 0 to 1; tintFromSkin only true.`);
       if (S.flat) need(pos(S.flat.bias) && n(S.flat.keep) && S.flat.keep >= 0 && S.flat.keep <= 1, `${at}: flat needs a positive mip bias and keep 0 to 1.`);
       if (!P) continue;
       need(pos(P.prepass) && P.prepass <= 1 && (P.sat === undefined || n(P.sat)) && (P.exposure === undefined || pos(P.exposure)) && (P.tint === undefined || rgb(P.tint)), `${at}: post.prepass is 0 to 1 of the screen; sat a number; exposure above 0; tint [r, g, b].`);
@@ -193,6 +194,7 @@ function validateData({ visual = true } = {}) {
   }
   // An ability's text is only its trigger and effect, in the fewest plain words (Aleix, 2026-11-14; a {key} is one word).
   const ABILITY_TEXT_MAX = { words: 9, chars: 56 };
+  const COMMON_POWERS = ['spark', 'lick', 'molten', 'lateCut', 'afterimage', 'whirl', 'thorns', 'burnHits', 'shards'];
   for (const b of ABILITIES) {
     const where = `Ability ${b.id}`, R = RAR[b.rarity], kinds = ['mods', 'perk', 'power'].filter(k => b[k]);
     need(typeof b.id === 'string' && /^[a-z0-9-]+$/.test(b.id) && typeof b.name === 'string' && b.name.trim() && typeof b.text === 'string' && b.text.trim(),
@@ -202,11 +204,15 @@ function validateData({ visual = true } = {}) {
         `${where}: its text is ${words} words and ${b.text.length} characters; at most ${ABILITY_TEXT_MAX.words} and ${ABILITY_TEXT_MAX.chars}: only the trigger and the effect.`); }
     need(!!R, `${where}: unknown rarity ${b.rarity} (CONFIG.abilities.rarity).`);
     need(b.plain === undefined || b.plain === true && b.mods && b.rarity === 'common', `${where}: plain is only true, and only on a common with mods.`);
-    need(kinds.length === 1 && (b.mods ? b.rarity === 'common' : b.perk ? b.rarity === 'rare' : true),
-      `${where}: one of mods (a common), perk (a rare) or power (any rarity).`);
+    need(kinds.length === 1 && (b.mods ? b.rarity === 'common' : b.perk ? b.rarity !== 'legendary' : true),
+      `${where}: one of mods (a common), perk (a common or a rare) or power (any rarity).`);
+    need(b.party === undefined || b.party === true, `${where}: party is only true.`);
+    // A common's perk (pass 114) is one js/common-fx.js draws: its cue in COMMON_PERKS (never a camera kick).
+    if (b.perk && b.rarity === 'common') need(COMMON_PERKS.has(b.perk.when + '/' + b.perk.then) || b.perk.when + '/' + b.perk.then === 'revive/reviveHeal',
+      `${where}: a common's perk is one of COMMON_PERKS (js/abilities.js) or revive/reviveHeal.`);
     // A common's power (pass 112) is one of the small strikes js/common-fx.js draws, never pressed.
-    if (b.power && b.rarity === 'common') need(b.power.when !== 'press' && ['spark', 'lick', 'molten', 'lateCut', 'afterimage', 'whirl'].includes(b.power.then),
-      `${where}: a common's power is not pressed and is one js/common-fx.js draws (spark, lick, molten, lateCut, afterimage, whirl).`);
+    if (b.power && b.rarity === 'common') need(b.power.when !== 'press' && COMMON_POWERS.includes(b.power.then),
+      `${where}: a common's power is not pressed and is one js/common-fx.js draws (${COMMON_POWERS.join(', ')}).`);
     // The number keys (pass 87): every pressed ability names exactly one key, always the same; nothing else names one.
     const pressed = (b.perk || b.power || {}).when === 'press';
     need(pressed === (b.key !== undefined) && (b.key === undefined || ABILITY_KEYS.includes(b.key)),
@@ -238,8 +244,8 @@ function validateData({ visual = true } = {}) {
     if (visual) need(typeof ABILITY_ICONS === 'object' && typeof ABILITY_ICONS[b.id] === 'string', `${where}: no icon in ABILITY_ICONS (js/ability-cards.js).`);
   }
   const BC = BL.commons;
-  need(BC && ['pastGap', 'lateCut', 'imageDelay', 'imageReach', 'whirlRadius'].every(k => num(BC[k]) && BC[k] > 0),
-    'CONFIG.abilities.commons: pastGap, lateCut, imageDelay, imageReach and whirlRadius, each above 0.');
+  need(BC && ['pastGap', 'lateCut', 'imageDelay', 'imageReach', 'whirlRadius', 'thornReach', 'shardDelay'].every(k => num(BC[k]) && BC[k] > 0),
+    'CONFIG.abilities.commons: pastGap, lateCut, imageDelay, imageReach, whirlRadius, thornReach and shardDelay, each above 0.');
   for (const k of Object.keys(ABILITY_UNITS)) need(['s', 'm', 'n'].includes(ABILITY_UNITS[k]), `ABILITY_UNITS ${k}: s, m or n.`);
   const BP = BL.press, PG = BP && BP.gain;
   need(PG && ['hit', 'skill', 'deflect', 'dodge', 'finisher'].every(k => num(PG[k]) && PG[k] >= 0) && PG.hit > 0 && num(BP.range) && BP.range > 0

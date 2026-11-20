@@ -1074,7 +1074,7 @@ const multiplayer = (() => {
     const m = embers.find(m => m.id === d.player), body = d.player === self ? Game.player : remotes.get(d.player)?.samples.at(-1);
     const at = m || body;
     if (at) revive.burst(at.x, at.y, at.z);
-    events.emit('revive', { x: at?.x ?? 0, y: at?.y ?? 0, z: at?.z ?? 0, self: d.player === self || d.by === self });
+    events.emit('revive', { x: at?.x ?? 0, y: at?.y ?? 0, z: at?.z ?? 0, self: d.player === self || d.by === self, kindred: !!d.kindred });
     const who = nameOf(d.by), whom = nameOf(d.player);
     hud.toast(d.by === self ? `You revived ${whom}` : `${who} revived ${whom}`);
   }
@@ -1088,6 +1088,8 @@ const multiplayer = (() => {
     p.item('flask').count = clamp(Math.floor(s.flasks), 0, p.item('flask').max);
     for (const key of ['doomTime', 'doomDrain']) if (ArenaNet.finite(s[key]) && s[key] >= 0) p[key] = s[key];
     p.grounded = !!s.grounded; p.peak = p.y; p.lastHp = p.hp;   // no health lost by coming back
+    p.huntArmed = false;   // a fight's once-only perks aren't won again by coming back (Hunter's Pace, Ash Veil)
+    const veil = p.kit.perks['low/veil']; if (veil && p.hp <= p.maxHp * veil.below) p.perk.veil = 2;
     for (const key of ['vx', 'vy', 'vz']) p[key] = !p.grounded && ArenaNet.finite(s[key]) ? s[key] : 0;
     p.setState(p.hp <= 0 || s.state === PS.DEAD ? PS.DEAD : p.grounded ? PS.IDLE : PS.FALL);
     p.savePrev(); Game.deathTimer = 0; Game.cam.yaw = p.yaw; Game.updateCamera(0, true);

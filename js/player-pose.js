@@ -202,5 +202,8 @@ Player.prototype.pose = function (tt, ctx) {
   if (r.anim) r.anim.finishPlayer(this, ctx);   // the cloth swings from the blended body, not the snapped one
   if (this.state === PS.JUMP_ATTACK && !this.hitbox) r.setWarning(1);   // same telegraph colour as enemy wind-ups
   else { r.setFlash(Math.max(this.flash, this.chargeGlow)); drawCounterGlow(r, cw); }
-  r.setTint(HURT_COLOR, this.tint * 0.9);
+  // Grit's iron skin greys the body while it holds (under the hurt flash); Glint's waiting blow glints on the blade.
+  if (this.perk.iron > 0 && this.tint < 0.25) r.setTint(IRON_SKIN, VIS.abilityFx.common.iron * Math.min(1, this.perk.iron * 4));
+  else r.setTint(HURT_COLOR, this.tint * 0.9 * styleLab.hitFlash, true);
+  if (this.perk.glint && r.anim) r.anim.glintK = Math.max(r.anim.glintK, ANIM_SETTINGS.counterGlow.glint * 0.6);
 };

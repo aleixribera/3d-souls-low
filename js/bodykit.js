@@ -32,6 +32,20 @@ function addDissolve(mat, rim, uniform) {
   mat.customProgramCacheKey = () => 'rimDissolve2';
   return mat;
 }
+// A style's tintFromSkin (js/data/styles.js): the hit flash takes the body's own texture colours (its emissive map is its
+// map), while uSkinK is 1 (Rig.setTint's `skin`). The tells (a heavy coming, a guard crack) keep their own colours at 0.
+function skinTint(mat) {
+  const patch = mat.onBeforeCompile, key = mat.customProgramCacheKey.bind(mat), u = { value: 0 };
+  mat.emissiveMap = mat.map; mat.userData.skinK = u;
+  mat.onBeforeCompile = function (sh, r) {
+    patch.call(this, sh, r); sh.uniforms.uSkinK = u;
+    sh.fragmentShader = 'uniform float uSkinK;\n' + sh.fragmentShader.replace('#include <emissivemap_fragment>', `#ifdef USE_EMISSIVEMAP
+  totalEmissiveRadiance *= mix(vec3(1.0), texture2D(emissiveMap, vEmissiveMapUv).rgb, uSkinK);
+#endif`);
+  };
+  const baseKey = key(); mat.customProgramCacheKey = () => baseKey + '|skinTint';
+  return mat;
+}
 // KIT binds every vertex rigidly to one bone (weight 1,0,0,0). Skip the three unused bone-texture fetches,
 // preserving the same geometry, pose and lighting. Other rigs and Three's shadow materials keep their own shaders.
 function rigidSkinning(mat) {
@@ -1695,6 +1709,7 @@ const KIT = (() => {
       if (!usedSlots.has(slot)) continue;   // unused inherited slots need no textures or material clones
       mats[slot] = makeMat(spec);
       if (!('glow' in spec)) rig.bodyMats.push(mats[slot]);   // hit tint: the body, never the weapon
+      if (!('glow' in spec) && mats[slot].map && typeof styleLab !== 'undefined' && styleLab.def && styleLab.def.tintFromSkin) skinTint(mats[slot]);
     }
     // The weapon's own copies of its slots' materials (see modelParts).
     const bakedWeapon = M.parts.filter(o => o.weapon).map(o => o.slot);   // a weapon built in Blender (`weapon: true` parts)

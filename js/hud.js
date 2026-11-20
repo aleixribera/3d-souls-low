@@ -139,7 +139,8 @@ const hud = {
       this.dashRow = document.getElementById('pDash'); this.dashPips = []; this.dashShown = [];
       for (let i = 0; i < n; i++) { const d = document.createElement('i'); this.dashRow.appendChild(d); this.dashPips.push(d); this.dashShown.push(-1); }
     }
-    const free = p.freeDash();
+    const free = p.freeDash(), banked = p.perk.bank > 0;
+    if (banked !== this.dashBanked) { this.dashBanked = banked; this.dashRow.classList.toggle('banked', banked); }   // Ringing Steel's dash waits
     for (let i = 0; i < n; i++) {
       const k = free ? 1 : Math.round(clamp01(p.dashes - i) * 20) / 20;
       if (k === this.dashShown[i]) continue;
@@ -438,6 +439,8 @@ function registerHudListeners() {
   events.on('rest', () => { hud.healTimer = H.healFlash; hud.dismissHealingTip(); });
   events.on('abilityPress', d => { if (d.body === Game.player) hud.keyPressed(d.key, true); });
   events.on('abilityNotReady', d => { if (d.body === Game.player) hud.keyPressed(d.key, false); });
+  // Kindling's and Tithe's points: every held key's cap flares.
+  events.on('abilityPerk', d => { if (d.body === Game.player && (d.perk === 'parry/keys' || d.perk === 'finisher/keys')) for (const k in d.body.kit.pressed) hud.keyPressed(k, true); });
   events.on('gateOpened', d => hud.toast(H.toasts[d.shortcut ? 'shortcut' : d.gate.style || 'portcullis']));   // by the gate's own look
   events.on('trapWarning', () => hud.toast(H.toasts.trapWarning));
   events.on('saveFailed', () => hud.toast(H.toasts.saveFailed));

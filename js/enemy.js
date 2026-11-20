@@ -1301,7 +1301,7 @@ class Enemy {
     if (this.state === ES.EXECUTED && this.exec) r.setTint(finishColor || (finishColor = new THREE.Color(ANIM_SETTINGS.finisherFx.cut.glow)), this.exec.impact ? this.crack * this.crack * 0.35 : 0);
     else if (this.crack > 0) r.setTint(CRACK_COLOR, this.crack * (this.cracks > 0 ? 0.6 : 1.6));   // a guard crack's own light is its cracks (js/finisher-fx.js)
     else if (heavy > this.tint && !r.edgeTell) r.setTint(heavyColor || (heavyColor = new THREE.Color(CONFIG.VISUALS.heavyTell.color)), heavy * heavy * CONFIG.VISUALS.heavyTell.tint);   // a heavy coming: it will stagger
-    else r.setTint(HIT_COLOR, this.tint * 0.8);
+    else r.setTint(HIT_COLOR, this.tint * 0.8 * styleLab.hitFlash, true);   // the style's share of it (js/data/styles.js)
     if (r.hum) { const R = this.def.resonance, f = R && this.alive() ? Math.min(1, this.resonance / R.max) : 0;   // pass 68: his bronze glows as the blows fill it
       r.hum.opacity = f * f * (0.75 + 0.25 * Math.sin(ctx.t * (6 + 10 * f))); }
   }

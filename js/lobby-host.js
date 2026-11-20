@@ -582,7 +582,7 @@
             // Revives finished this step: the fallen player rises at the ember with part of their bar (CONFIG.revive).
             for (const r of sim.takeRisen()) {
               const q = clients.get(r.id);
-              if (q?.arenaDefeated) { q.revive = { ...r, hp: sim.reviveHealth(q.id) }; send(q, { type: 'revive', epoch: session.epoch, hp: sim.reviveHealth(q.id), by: r.by }); }
+              if (q?.arenaDefeated) { const hp = sim.reviveHealth(q.id, r.by); q.revive = { ...r, hp }; send(q, { type: 'revive', epoch: session.epoch, hp, by: r.by }); }
             }
             const party = [...clients.values()].filter(p => p.hello && (p.arenaDefeated || participating(p)));
             // Active loaders get bounded time; away players do not prevent a real team defeat.

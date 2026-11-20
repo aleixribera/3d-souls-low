@@ -315,7 +315,9 @@ const CONFIG = {
     // the body's edge between its ends (Spark Step); a dash attack's cut opens again `lateCut` s later (Petal Cut); a
     // perfect dodge's afterimage strikes `imageDelay` s after it, if the enemy is within `imageReach` m of where the
     // holder stood (Echo Step); a jump with an enemy within `whirlRadius` m whirls dust round the take-off (Dust Devil).
-    commons: { pastGap: 1.2, lateCut: 0.35, imageDelay: 0.15, imageReach: 2.8, whirlRadius: 2.4 },
+    // Batch 3: thorns prick an enemy whose blow on the guard came from within `thornReach` m of its body (Thorn Guard);
+    // a cracked guard's shards cut `shardDelay` s after the crack (Shatter Guard).
+    commons: { pastGap: 1.2, lateCut: 0.35, imageDelay: 0.15, imageReach: 2.8, whirlRadius: 2.4, thornReach: 3.5, shardDelay: 0.12 },
     // Summons (js/abilities.js summonStep): each kind stands `gap` m off its enemy's body, `flank` rad round from the
     // side away from its holder (+ toward the enemy's left), and runs there at up to `speed` m/s. It has arrived
     // `arrive` s after it is called (one that `rises` comes up where it will stand; the others run there); a hound,
@@ -736,6 +738,14 @@ const CONFIG = {
         cut: { length: 1.6, thin: 0.03, wide: 0.14, widen: 0.06, show: 0.25, wait: 1, petals: 6 },
         image: { size: 1.4, height: 1.1, life: 0.4, flakes: 16 },
         whirl: { reach: 0.75, height: 1.2, turns: 1.5, spin: 0.35, life: 0.55, grit: 14 },
+        // Batch 3 (the guard and the run): a ring on the ground grows from `from` to `to` m across in `life` s; the
+        // thorns pop to `size` m and are gone by `life`; the veil stands `height` m round its holder, `width` m across;
+        // the shards burst `count` flakes; `motes` rise off the holder as the keys fill.
+        ring: { ringFrom: 0.6, ringTo: 2.2, dash: 0.25, start: 0.6, kindred: 3.2, life: 0.45 },
+        thorns: { size: 1.1, life: 0.32, flakes: 8 },
+        veil: { height: 2.1, width: 1.5, turn: 0.5, opacity: 0.55, ash: 18 },
+        shards: { count: 14, star: 0.75 },
+        motes: 10, burn: 6, iron: 0.35,   // `iron`: Grit's grey on the body (emissive)
       },
       meteor: { color: 0xff7a2a, core: 0xffe6b8, column: 22, width: 1.8, glow: 1.8, fall: 0.5, ring: 0.55, crater: 3.2, shake: [0.45, 0.35],
         burst: { count: 40, speed: 9, color: 0xff8a3a } },

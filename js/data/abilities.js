@@ -7,7 +7,9 @@
 // A `text` is only the trigger and the effect, in the fewest plain words ("Parry: a hound hunts the boss for {time}."):
 // no flavour, nothing the name or rarity already shows. validate.js holds it to ABILITY_TEXT_MAX (Aleix, 2026-11-14).
 // In `text`, {key} is that key's number at the card's level: a percentage, or in ABILITY_UNITS's unit.
-//   common:    `mods`: every key of a level is a Player number it raises (ABILITY_MODS); or a small `power` (below).
+//   common:    `mods`: every key of a level is a Player number it raises (ABILITY_MODS); or a small `power` (below);
+//              or a `perk` on its holder's own body (batch 3: the guard and the run, COMMON_PERKS).
+// `party: true`: offered only to a person in a run of two people or more (it helps a friend).
 //   rare:      `perk: { when, then }`: when something happens to its holder, something useful follows (ABILITY_PERKS);
 //              or a small `power` (below).
 //   legendary: `power: { when, then }`: when it happens, a drawn power strikes the boss (ABILITY_POWERS). The server
@@ -19,7 +21,7 @@
 // pressed ability to exactly one key. Its text is the effect only: the card and the HUD show its key.
 const ABILITY_UNITS = { window: 's', after: 's', time: 's', every: 's', lead: 's', cooldown: 's', draw: 's', radius: 'm', reach: 'm', width: 'm', hits: 'n', strikes: 'n', charge: 'n' };
 // The numbers that are a share of something whole (of the health bar, of the damage dealt): never above 1.
-const ABILITY_SHARES = ['below', 'heal', 'drain', 'share'];
+const ABILITY_SHARES = ['below', 'heal', 'drain', 'share', 'cut'];
 const ABILITIES = [
   // ---- Commons: half plain numbers, half one move made better ----
   { id: 'keen-edge', name: 'Keen Edge', rarity: 'common', plain: true, text: '{damage} more damage.', mods: true,
@@ -53,6 +55,35 @@ const ABILITIES = [
   { id: 'dust-devil', name: 'Dust Devil', rarity: 'common', text: 'Jump: a dust whirl cuts around you.',
     power: { when: 'jump', then: 'whirl' },
     levels: [{ damage: 10, cooldown: 2 }, { damage: 13, cooldown: 2 }, { damage: 16, cooldown: 2 }, { damage: 19, cooldown: 2 }] },
+  // The guard and the run (design/abilities batch 3): a defence or a moment of the fight made a little better, each
+  // with its own bone-ink cue (js/common-fx.js). A common may be a perk too: one on its holder's own body.
+  { id: 'ringing-steel', name: 'Ringing Steel', rarity: 'common', text: 'Deflect: your next dash is free.',
+    perk: { when: 'parry', then: 'freeDash' }, levels: [{ cooldown: 6 }, { cooldown: 5 }, { cooldown: 4 }, { cooldown: 3 }] },
+  { id: 'thorn-guard', name: 'Thorn Guard', rarity: 'common', text: 'Block: thorns hit the attacker.',
+    power: { when: 'block', then: 'thorns' },
+    levels: [{ damage: 8, cooldown: 0.8 }, { damage: 11, cooldown: 0.8 }, { damage: 14, cooldown: 0.8 }, { damage: 17, cooldown: 0.8 }] },
+  { id: 'ash-veil', name: 'Ash Veil', rarity: 'common', text: 'Low health: the next blow does {cut} less.',
+    perk: { when: 'low', then: 'veil' },
+    levels: [{ below: 0.33, cut: 0.4 }, { below: 0.33, cut: 0.5 }, { below: 0.33, cut: 0.6 }, { below: 0.33, cut: 0.7 }] },
+  { id: 'bitter-draught', name: 'Bitter Draught', rarity: 'common', text: 'Flask: your next {hits} hits burn.',
+    power: { when: 'flask', then: 'burnHits' },
+    levels: [{ hits: 3, damage: 9 }, { hits: 4, damage: 9 }, { hits: 5, damage: 9 }, { hits: 6, damage: 9 }] },
+  { id: 'grit', name: 'Grit', rarity: 'common', text: 'Get hit: take {cut} less for {time}.',
+    perk: { when: 'hurt', then: 'ironSkin' },
+    levels: [{ cut: 0.2, time: 1.5 }, { cut: 0.25, time: 1.5 }, { cut: 0.3, time: 1.5 }, { cut: 0.35, time: 1.5 }] },
+  { id: 'kindling', name: 'Kindling', rarity: 'common', text: 'Deflect: every key gains {charge} charge.',
+    perk: { when: 'parry', then: 'keys' }, levels: [{ charge: 1 }, { charge: 2 }, { charge: 3 }, { charge: 4 }] },
+  { id: 'tithe', name: 'Tithe', rarity: 'common', text: 'Finishing Blow: every key gains {charge} charge.',
+    perk: { when: 'finisher', then: 'keys' }, levels: [{ charge: 4 }, { charge: 6 }, { charge: 8 }, { charge: 10 }] },
+  { id: 'glint', name: 'Glint', rarity: 'common', text: 'A key fills: your next hit does {damage} more.',
+    perk: { when: 'ready', then: 'empower' }, levels: [{ damage: 0.4 }, { damage: 0.55 }, { damage: 0.7 }, { damage: 0.85 }] },
+  { id: 'hunters-pace', name: "Hunter's Pace", rarity: 'common', text: 'Fight start: free dashes for {time}.',
+    perk: { when: 'fightStart', then: 'freeDash' }, levels: [{ time: 4 }, { time: 5 }, { time: 6 }, { time: 7 }] },
+  // Offered only in a party (`party: true`): a revive is people only.
+  { id: 'kindred-ember', name: 'Kindred Ember', rarity: 'common', party: true, text: 'Revive a friend: they rise with {heal} more health.',
+    perk: { when: 'revive', then: 'reviveHeal' }, levels: [{ heal: 0.1 }, { heal: 0.15 }, { heal: 0.2 }, { heal: 0.25 }] },
+  { id: 'shatter-guard', name: 'Shatter Guard', rarity: 'common', text: 'Crack a guard: its shards cut the boss.',
+    power: { when: 'crack', then: 'shards' }, levels: [{ damage: 22 }, { damage: 28 }, { damage: 34 }, { damage: 40 }] },
 
   // ---- Rares: useful perks that happen when something does ----
   { id: 'counterstep', name: 'Counterstep', rarity: 'rare', text: 'Perfect dodge: next hit in {window} is a riposte.',

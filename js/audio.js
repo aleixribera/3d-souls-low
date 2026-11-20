@@ -396,13 +396,18 @@ const ABILITY_STRIKE_SOUNDS = { lightning: 'abilityThunder', twin: 'abilityEcho'
 const ABILITY_DRAW_SOUNDS = { twin: 'abilityTaunt', hound: 'abilityHowl', guardian: 'abilityChallenge', lancer: 'abilityChallenge' };
 const ABILITY_PERK_SOUNDS = { empower: ['abilityEmpower', 1], 'streak/heal': ['abilityHeal', 1],
   'dodge/riposte': ['abilityStep', 1], 'block/charge': ['abilityCharge', 1],
-  'execute/heal': ['abilityHeal', 0.8], 'parry/heal': ['abilityHeal', 1.2], 'press/heal': ['abilityHeal', 0.9], 'press/stance': ['abilityCharge', 0.8] };
+  'execute/heal': ['abilityHeal', 0.8], 'parry/heal': ['abilityHeal', 1.2], 'press/heal': ['abilityHeal', 0.9], 'press/stance': ['abilityCharge', 0.8],
+  // the commons' (batch 3): quiet ones, from sounds the plain commons already use
+  'parry/freeDash': ['abilityChime', 1.25], 'freeDash/spent': ['abilityChime', 1.6], 'fightStart/freeDash': ['abilityStep', 1.1],
+  'low/veil': ['abilityFrost', 0.8], 'veil/spent': ['abilityInk', 1], 'hurt/ironSkin': ['abilityClank', 1], 'ironSkin/glance': ['abilityClank', 1.35],
+  'parry/keys': ['abilityChime', 0.9], 'finisher/keys': ['abilityChime', 0.8], 'ready/empower': ['abilityChime', 1.5], 'glint/spent': ['abilitySpark', 1.4] };
 const ABILITY_PICK_PITCH = { common: 1, rare: 0.84, legendary: 0.67 };
 // A common's power (the blade's, design/abilities batch 2): [sound, pitch, vel], lighter than a rare's of the same
 // family; `fire` as it fires, `strike` as a late blow lands (Petal Cut's opening, Echo Step's slash).
 const ABILITY_COMMON_SOUNDS = {
-  fire: { spark: ['abilitySpark', 1.15, 0.6], lick: ['abilityFlare', 1.3, 0.5], molten: ['abilitySizzle', 1, 0.55], whirl: ['abilityWhirl', 1, 0.5] },
-  strike: { lateCut: ['cutOpen', 1.3, 0.45], afterimage: ['abilityEcho', 1.2, 0.55] },
+  fire: { spark: ['abilitySpark', 1.15, 0.6], lick: ['abilityFlare', 1.3, 0.5], molten: ['abilitySizzle', 1, 0.55], whirl: ['abilityWhirl', 1, 0.5],
+    thorns: ['abilitySpark', 0.8, 0.5], burnHits: ['abilityFlare', 1.1, 0.5], shards: ['abilitySpark', 0.7, 0.4] },
+  strike: { lateCut: ['cutOpen', 1.3, 0.45], afterimage: ['abilityEcho', 1.2, 0.55], burnHits: ['abilitySizzle', 1.25, 0.4], shards: ['cutOpen', 0.8, 0.55] },
 };
 function registerAudioListeners() {
   // Sound is never allowed to break the game: a listener that throws is reported once and skipped.

@@ -15,6 +15,15 @@
 //               copy's ink flakes away. The copy itself is js/afterimage.js's perfect-dodge figure.
 //   whirl       Dust Devil: a spiral of dust winds round the take-off, cut lines flicking inside it, grit thrown out.
 // Static Edge's spark (a rare's) is js/ability-fx.js's: this file draws only a common's.
+// Batch 3, the guard and the run (pass 114), the same ink:
+//   thorns      Thorn Guard: a cluster of bone thorns pops out of the attacker's flank facing the guard.
+//   burnHits    Bitter Draught: the flask lights an ember ring at the drinker's feet; each burning blow licks a flame.
+//   shards      Shatter Guard: the crack throws bone chips; a beat later the shards burst on the boss with a star.
+//   The commons' perks (`abilityPerk`, the holder's own): Ringing Steel and Hunter's Pace a bone ring at the feet (Hunter's
+//   wider, with grit), a banked dash spent a small one; Ash Veil a veil of ash wisps round its holder while it holds, torn
+//   to flakes as it takes a blow; Grit an iron ring and grey flakes (the body's iron tint: js/player-pose.js), a glance a
+//   small star; Kindling and Tithe motes rising (the key caps flare: js/hud.js); Glint's spent blow a star on the boss
+//   (its waiting blade glints: js/player-pose.js). Kindred Ember: an ember ring where the friend rises.
 const commonFx = (() => {
   const K = () => VIS.abilityFx.common;
   const isCommon = d => !!(ABILITY_BY_ID[d.power] && ABILITY_BY_ID[d.power].rarity === 'common');
@@ -31,8 +40,34 @@ const commonFx = (() => {
     path(); g.lineWidth = ink; g.strokeStyle = INK; g.stroke(); g.fillStyle = fill; g.fill();
     if (edge) { path(); g.lineWidth = rim; g.strokeStyle = edge; g.stroke(); }
   };
-  let ZIG, STAR, TONGUE, LENS, CRESCENT, BAND, CUTS, FLAKE, PETAL;
+  let ZIG, STAR, TONGUE, LENS, CRESCENT, BAND, CUTS, FLAKE, PETAL, THORN, RING, VEIL;
   function textures() {
+    THORN = canvasTex(128, 128, (g, w) => {   // seven bone thorns fanned from the base, inked
+      const m = w / 2;
+      for (let i = 0; i < 7; i++) {
+        const a = -Math.PI / 2 + (i - 3) * 0.36 + (rnd() - 0.5) * 0.12, r = m * (0.62 + rnd() * 0.3), s = 0.13;
+        const path = () => { g.beginPath(); g.moveTo(m + Math.cos(a - s) * m * 0.12, w * 0.9 + Math.sin(a - s) * m * 0.12);
+          g.lineTo(m + Math.cos(a) * r, w * 0.9 + Math.sin(a) * r); g.lineTo(m + Math.cos(a + s) * m * 0.12, w * 0.9 + Math.sin(a + s) * m * 0.12); g.closePath(); };
+        inked(g, path, BONE, CORE, 6, 1.5);
+      }
+    });
+    RING = canvasTex(256, 256, (g, w) => {   // a flat ring: ink under bone, a white core, eight ticks out of it
+      const m = w / 2, arc = (th, c) => { g.beginPath(); g.arc(m, m, m * 0.78, 0, Math.PI * 2); g.lineWidth = th; g.strokeStyle = c; g.stroke(); };
+      arc(22, INK); arc(13, BONE); arc(4, CORE);
+      g.lineCap = 'round';
+      for (let i = 0; i < 8; i++) {
+        const a = i * Math.PI / 4 + 0.2;
+        for (const [th, c] of [[9, INK], [4, BONE]]) { g.beginPath(); g.moveTo(m + Math.cos(a) * m * 0.84, m + Math.sin(a) * m * 0.84); g.lineTo(m + Math.cos(a) * m * 0.97, m + Math.sin(a) * m * 0.97); g.lineWidth = th; g.strokeStyle = c; g.stroke(); }
+      }
+    });
+    VEIL = canvasTex(256, 128, (g, w, h) => {   // ash wisps rising, pale grey with ink edges, gaps between
+      for (let i = 0; i < 9; i++) {
+        const x = (i + 0.2 + rnd() * 0.5) * w / 9, sway = (rnd() - 0.5) * 18, path = () => { g.beginPath(); g.moveTo(x, h);
+          g.bezierCurveTo(x + sway, h * 0.65, x - sway, h * 0.35, x + sway * 0.5, h * 0.05); g.lineTo(x + sway * 0.5 + 6, h * 0.08);
+          g.bezierCurveTo(x - sway + 8, h * 0.35, x + sway + 10, h * 0.65, x + 12, h); g.closePath(); };
+        inked(g, path, i % 2 ? '#b9b2a2' : '#8c877b', null, 3);
+      }
+    });
     ZIG = canvasTex(512, 64, (g, w, h) => {   // a zigzag bolt along the strip: ink, bone edge, white core
       const pts = [[4, h / 2]];
       for (let x = 30, up = true; x < w - 20; x += 26 + rnd() * 18, up = !up) pts.push([x, h / 2 + (up ? -1 : 1) * (8 + rnd() * 12)]);
@@ -105,8 +140,8 @@ const commonFx = (() => {
     const m = new THREE.Mesh(geo, material); m.visible = false; m.renderOrder = order; m.frustumCulled = false; scene.add(m); pooledFx.push(m); return m;
   };
   // One of each shape (a common fires at most once a second, or once a string or a charge); flakes and petals share a pool.
-  let line, star, tongue, lens, crescent, band, cuts, made = false;
-  const flakes = [];
+  let line, star, tongue, lens, crescent, band, cuts, thorn, veil, made = false;
+  const flakes = [], rings = [];
   function make() {
     if (made) return;
     made = true; textures();
@@ -120,6 +155,11 @@ const commonFx = (() => {
     const cone = new THREE.CylinderGeometry(1, 0.5, 1, 28, 1, true).translate(0, 0.5, 0);
     band = { m: mesh(cone, mat(BAND), 11), age: Infinity };
     cuts = { m: mesh(cone, mat(CUTS), 12), age: Infinity };
+    thorn = { s: sprite(THORN, 14), age: Infinity, x: 0, y: 0, z: 0 };
+    thorn.s.center.set(0.5, 0.1);   // it grows out of the body
+    veil = { m: mesh(new THREE.CylinderGeometry(1, 0.8, 1, 24, 1, true).translate(0, 0.5, 0), mat(VEIL), 12), body: null, age: Infinity };
+    const disc = new THREE.PlaneGeometry(1, 1).rotateX(-Math.PI / 2);
+    for (let i = 0; i < 3; i++) rings.push({ m: mesh(disc, mat(RING), 3), age: Infinity, life: 1, from: 1, to: 2, x: 0, y: 0, z: 0 });
     for (let i = 0; i < 24; i++) flakes.push({ s: sprite(FLAKE, 13), age: Infinity, life: 1, x: 0, y: 0, z: 0, vx: 0, vy: 0, vz: 0, spin: 0, size: 0.1, grav: 0 });
   }
   const freeFlake = () => flakes.find(f => f.age === Infinity) || flakes.reduce((a, b) => (b.age / b.life > a.age / a.life ? b : a));
@@ -140,6 +180,46 @@ const commonFx = (() => {
     else spawnBurst(at, { color: kind === 'ember' ? 0xe0a050 : 0xf4f1e8, count: Math.max(2, Math.round(n / 2)), speed: 5 * speed });
   };
   const spot = { x: 0, y: 0, z: 0 };
+  // A flat ring at (x, y, z) growing from `from` to `to` m across in `life` s, tinted `color`.
+  function ring(x, y, z, from, to, life, color = 0xffffff) {
+    const r = rings.find(q => q.age === Infinity) || rings.reduce((a, b) => (b.age / b.life > a.age / a.life ? b : a));
+    r.age = 0; r.life = life; r.from = from; r.to = reducedMotion() ? from + (to - from) * 0.6 : to; r.x = x; r.y = y + 0.05; r.z = z;
+    r.m.material.color.setHex(color); r.m.material.opacity = 1; r.m.position.set(r.x, r.y, r.z); r.m.scale.set(from, 1, from); r.m.visible = true;
+  }
+  const chest = (b, h = 0.6) => { spot.x = b.x; spot.y = b.y + (b.height || 1.8) * h; spot.z = b.z; return spot; };
+  // A common's perk on its holder (js/abilities.js COMMON_PERKS): drawn on the holder's own screen.
+  function perk(d) {
+    const b = d.body, C = K(), R = C.ring;
+    if (!b || !COMMON_PERKS.has(d.perk)) return;
+    switch (d.perk) {
+      case 'parry/freeDash': ring(b.x, b.y, b.z, R.ringFrom, R.ringTo * 0.7, R.life); break;
+      case 'freeDash/spent': ring(b.x, b.y, b.z, R.dash, R.ringFrom * 1.6, R.life * 0.6); break;
+      case 'fightStart/freeDash':
+        ring(b.x, b.y, b.z, R.start, R.ringTo, R.life * 1.4);
+        throwFlakes(b.x, b.y + 0.15, b.z, 10, [0xcfc8b6, 0x8c877b], { map: FLAKE, speed: 3, up: 0.6, grav: 5, size: 0.08, life: 0.45 });
+        break;
+      case 'low/veil': veil.body = b; veil.age = 0; veil.m.material.opacity = 0; veil.m.visible = true; break;
+      case 'veil/spent': {
+        veil.body = null; veil.age = Infinity; veil.m.visible = false;
+        const at = chest(b, 0.5);
+        throwFlakes(at.x, at.y, at.z, C.veil.ash, [0xb9b2a2, 0x8c877b, 0x16130f], { map: FLAKE, speed: 2.4, up: 1, grav: 1.2, size: 0.12, life: 0.6 });
+        break;
+      }
+      case 'hurt/ironSkin': {
+        ring(b.x, b.y, b.z, R.ringFrom, R.ringTo * 0.6, R.life, 0x8c8a86);
+        const at = chest(b, 0.55);
+        throwFlakes(at.x, at.y, at.z, 6, [0x5c5952, 0x8c8a86], { map: FLAKE, speed: 1.6, up: 0.4, grav: 4, size: 0.09, life: 0.35 });
+        break;
+      }
+      case 'ironSkin/glance': { const at = chest(b, 0.6); star.age = 0; star.x = at.x; star.y = at.y; star.z = at.z; star.size = 0.4; star.peak = 0; break; }
+      case 'parry/keys': case 'finisher/keys': bright(chest(b, 0.4), C.motes, 'bone', [0, 1, 0], 0.8, 0.5); break;
+      case 'glint/spent': {
+        const e = d.target; if (!e) break;
+        const at = flank(e, b.x, b.z, 0.6); star.age = 0; star.x = at.x; star.y = at.y; star.z = at.z; star.size = C.spark.star * 1.2; star.peak = 0;
+        break;
+      }
+    }
+  }
   // A point on the enemy's body facing (x, z), at `h` of its height.
   function flank(e, x, z, h) {
     const dx = x - e.x, dz = z - e.z, l = Math.hypot(dx, dz) || 1, r = (e.radius || 0.6) * 0.85;
@@ -179,6 +259,26 @@ const commonFx = (() => {
       crescent.age = 0; crescent.x = d.x + dx / l * reach; crescent.y = d.y + C.image.height; crescent.z = d.z + dz / l * reach;
       crescent.rot = (rnd() - 0.5) * 0.8; crescent.s.material.rotation = crescent.rot; crescent.s.material.opacity = 1; crescent.s.visible = true;
       throwFlakes(d.x, d.y + 1, d.z, C.image.flakes, [0x4a4740, 0x16130f, 0x16130f, 0xcfc8b6], { map: FLAKE, speed: 1.2, dir: { x: -dx / l * 0.6, z: -dz / l * 0.6 }, up: 0.4, grav: 1.6, size: 0.12, life: 0.55 });
+    } else if (d.then === 'thorns' && e) {
+      const b = d.body || e, at = flank(e, b.x, b.z, 0.5);
+      thorn.age = 0; thorn.x = at.x; thorn.y = at.y; thorn.z = at.z; thorn.s.material.opacity = 1; thorn.s.material.rotation = (rnd() - 0.5) * 0.6; thorn.s.visible = true;
+      const dx = at.x - e.x, dz = at.z - e.z, l = Math.hypot(dx, dz) || 1;
+      throwFlakes(at.x, at.y, at.z, C.thorns.flakes, [0xcfc8b6, 0x16130f], { map: FLAKE, speed: 1.8, dir: { x: dx / l, z: dz / l }, up: 0.6, grav: 4, size: 0.09, life: 0.35 });
+    } else if (d.then === 'burnHits' && !d.strike) {   // the flask: an ember ring at the drinker's feet
+      const b = d.body; if (!b) return;
+      ring(b.x, b.y, b.z, C.ring.ringFrom, C.ring.ringTo * 0.6, C.ring.life, 0xffb070);
+      bright(chest(b, 0.3), C.burn, 'ember', [0, 1, 0], 0.7, 0.5);
+    } else if (d.then === 'burnHits' && e) {   // a burning blow: a flame licks off it
+      const b = d.body || e, at = flank(e, b.x, b.z, 0.5);
+      tongue.age = 0; tongue.x = at.x; tongue.y = at.y; tongue.z = at.z; tongue.flip = rnd() < 0.5 ? 1 : -1; tongue.s.material.opacity = 1; tongue.s.visible = true;
+      bright(at, C.burn, 'ember', [0, 1, 0], 0.6, 0.6);
+    } else if (d.then === 'shards' && e) {
+      const b = d.body || e, at = flank(e, b.x, b.z, 0.6), dx = at.x - e.x, dz = at.z - e.z, l = Math.hypot(dx, dz) || 1;
+      if (!d.strike) throwFlakes(at.x, at.y, at.z, 5, [0xcfc8b6, 0xf4f1e8], { map: FLAKE, speed: 1.2, dir: { x: dx / l, z: dz / l }, up: 0.5, grav: 5, size: 0.08, life: 0.3 });
+      else {
+        star.age = 0; star.x = at.x; star.y = at.y; star.z = at.z; star.size = C.shards.star; star.peak = 0;
+        throwFlakes(at.x, at.y, at.z, C.shards.count, [0xcfc8b6, 0xf4f1e8, 0x16130f], { map: FLAKE, speed: 3.4, dir: { x: dx / l * 0.5, z: dz / l * 0.5 }, up: 1, grav: 7, size: 0.13, life: 0.45 });
+      }
     } else if (d.then === 'whirl') {
       band.age = 0; cuts.age = 0;
       for (const w of [band, cuts]) { w.m.position.set(d.x, d.y + 0.02, d.z); w.m.rotation.y = 0; w.m.material.opacity = 1; w.m.visible = true; }
@@ -255,6 +355,31 @@ const commonFx = (() => {
         cuts.m.material.opacity = band.age < 0.05 || band.age > 0.3 ? 0 : 1;
       }
     }
+    if (thorn.age !== Infinity) {   // pops out, holds, fades
+      thorn.age += real;
+      const T = C.thorns;
+      if (thorn.age > T.life) { thorn.age = Infinity; thorn.s.visible = false; }
+      else {
+        const k = calm ? 1 : Math.min(1, thorn.age / 0.05), out = clamp01((thorn.age - 0.12) / (T.life - 0.12));
+        thorn.s.position.set(thorn.x, thorn.y, thorn.z); thorn.s.scale.setScalar(T.size * (0.4 + 0.6 * k)); thorn.s.material.opacity = 1 - out;
+      }
+    }
+    if (veil.body) {   // stands round its holder while the veil holds (it goes with them, or with the next fight)
+      const b = veil.body, V = C.veil;
+      if (!b.alive() || !b.perk || b.perk.veil !== 1 || (game && game.player !== b)) { veil.body = null; veil.age = Infinity; veil.m.visible = false; }
+      else {
+        veil.age += real;
+        veil.m.position.set(b.x, b.y, b.z); veil.m.scale.set(V.width / 2, V.height, V.width / 2);
+        veil.m.rotation.y = calm ? 0 : veil.age * V.turn; veil.m.material.opacity = V.opacity * Math.min(1, veil.age / 0.2);
+      }
+    }
+    for (const r of rings) {
+      if (r.age === Infinity) continue;
+      r.age += real;
+      if (r.age > r.life) { r.age = Infinity; r.m.visible = false; continue; }
+      const k = r.age / r.life, s = lerp(r.from, r.to, 1 - (1 - k) * (1 - k));
+      r.m.scale.set(s, 1, s); r.m.material.opacity = 1 - k * k;
+    }
     for (const f of flakes) {
       if (f.age === Infinity) continue;
       f.age += real;
@@ -269,21 +394,25 @@ const commonFx = (() => {
   function clear() {
     if (!made) return;
     for (const q of [line, band, cuts]) { q.age = Infinity; q.m.visible = false; }
-    for (const q of [star, tongue, lens, crescent]) { q.age = Infinity; q.s.visible = false; }
-    lens.enemy = null;
+    for (const q of [star, tongue, lens, crescent, thorn]) { q.age = Infinity; q.s.visible = false; }
+    lens.enemy = null; veil.body = null; veil.age = Infinity; veil.m.visible = false;
+    for (const r of rings) { r.age = Infinity; r.m.visible = false; }
     for (const f of flakes) { f.age = Infinity; f.s.visible = false; }
   }
   return {
     attach() {
       make(); Game.renderHooks.push(render); visuals.hooks.stage.push(clear);
       events.on('abilityPower', d => { if (isCommon(d)) fire(d); });
+      events.on('abilityPerk', perk);
+      events.on('revive', d => { if (d.kindred) { const R = K().ring; ring(d.x, d.y, d.z, R.ringFrom, R.kindred, R.life * 1.6, 0xffb070); spot.x = d.x; spot.y = d.y + 0.8; spot.z = d.z; bright(spot, K().motes, 'ember', [0, 1, 0], 0.8, 0.6); } });
     },
     clear,
     // tests: what shows now
     get state() {
       if (!made) return {};
       return { line: line.age !== Infinity, star: star.age !== Infinity, tongue: tongue.age !== Infinity, lens: lens.age !== Infinity ? (lens.open === Infinity ? 'hanging' : 'open') : null,
-        crescent: crescent.age !== Infinity, whirl: band.age !== Infinity, flakes: flakes.filter(f => f.age !== Infinity).length };
+        crescent: crescent.age !== Infinity, whirl: band.age !== Infinity, flakes: flakes.filter(f => f.age !== Infinity).length,
+        thorns: thorn.age !== Infinity, veil: !!veil.body, rings: rings.filter(r => r.age !== Infinity).length };
     },
   };
 })();

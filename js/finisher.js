@@ -59,7 +59,8 @@ const finisher = (() => {
     e.hitbox = null; e.vx = e.vz = e.kx = e.kz = 0; e.exec = p.exec;
     e.setState(ES.EXECUTED);
     p.setState(PS.EXECUTE);
-    if (!net()) p.gainCharge(CONFIG.abilities.press.gain.finisher);   // the number keys fill (online, the server counts it)
+    if (!net()) p.gainCharge(CONFIG.abilities.press.gain.finisher + abilityKeysFor(p.kit, 'finisher'));   // the number keys fill, Tithe's too (online, the server counts it)
+    if (p.kit.perks['finisher/keys'] && Object.keys(p.kit.pressed).length) events.emit('abilityPerk', { body: p, perk: 'finisher/keys', target: e });
     events.emit('finisherStart', { player: p, enemy: e, time: p.attack.hits[0].startup, duration: p.exec.duration });
   }
 

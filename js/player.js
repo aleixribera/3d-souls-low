@@ -42,12 +42,16 @@ class Player {
   // it gives, full. Called once, on a fresh body.
   grantAbilities(ids) {
     this.kit = abilityKit(ids);
+    this.huntArmed = !!this.kit.perks['fightStart/freeDash'];   // Hunter's Pace: waits for this body's first move
     const S = this.def.stats, m = this.kit.mods;
     this.maxHp = S.maxHp * (1 + m.maxHp);
     this.hp = this.lastHp = this.maxHp;
   }
-  // Last Breath (a `low/freeDash` perk): this low, dashes cost no charge.
-  freeDash() { const v = this.kit.perks['low/freeDash']; return !!v && this.hp > 0 && this.hp <= this.maxHp * v.below; }
+  // Last Breath (a `low/freeDash` perk): this low, dashes cost no charge; Hunter's Pace's first seconds of a fight too.
+  freeDash() {
+    if (this.perk.hunt > 0) return true;
+    const v = this.kit.perks['low/freeDash']; return !!v && this.hp > 0 && this.hp <= this.maxHp * v.below;
+  }
   // A flask drunk this many times as fast (Quick Draught).
   drinkRate() { return 1 + (this.kit ? this.kit.mods.flaskSpeed : 0); }
   alive() { return this.state !== PS.DEAD; }
@@ -78,8 +82,8 @@ class Player {
   item(id) { return this.inventory[id] || { count: 0, max: 0 }; }
   refillItems() { for (const [id, it] of Object.entries(this.inventory)) if (ITEMS[id].refillOnRest) it.count = it.max; }
 
-  // A dash needs a whole charge (Last Breath: none).
-  canRoll() { return this.dashes >= 1 || this.freeDash(); }
+  // A dash needs a whole charge (Last Breath, Hunter's Pace: none; Ringing Steel's banked dash: that).
+  canRoll() { return this.dashes >= 1 || this.freeDash() || this.perk.bank > 0; }
   // A dash is wanted now: a queued press, or a fresh one (only consumed if a dash is possible).
   // A queued dash that can't happen the moment it's allowed (no charge) is dropped, never held.
   wantsRoll() {
@@ -148,7 +152,9 @@ class Player {
   startRoll(mv) {
     this.buffer = null;
     if (mv.has) this.yaw = Math.atan2(mv.x, mv.z);
-    if (!this.freeDash()) this.dashes = Math.max(0, this.dashes - 1);
+    if (this.freeDash()) { /* free */ }
+    else if (this.perk.bank > 0) { this.perk.bank = 0; events.emit('abilityPerk', { body: this, perk: 'freeDash/spent' }); }   // Ringing Steel's
+    else this.dashes = Math.max(0, this.dashes - 1);
     this.hitbox = null; this.chainPose = null; this.setState(PS.ROLL);
     this.dashNo = (this.dashNo || 0) + 1;   // which dash this is: a blow is weighed for a perfect dodge once per dash (js/combat.js)
     this.dashFromX = this.x; this.dashFromZ = this.z;   // where it began (Spark Step's path)
@@ -448,9 +454,19 @@ class Player {
   // body this low first reports it (Blood Moon).
   abilityStep(dt) {
     const st = this.perk;
-    if (this.hp < this.lastHp - 1e-9) abilityHurt(this.kit, st);
+    const hurt = this.hp < this.lastHp - 1e-9, P = this.kit.perks;
+    if (hurt) abilityHurt(this.kit, st);
     this.lastHp = this.hp;
     abilityClocks(st, dt);
+    if (!this.alive()) return;
+    const grit = P['hurt/ironSkin'];   // Grit: losing health sets the skin to iron (not renewed while it holds)
+    if (grit && hurt && st.iron <= 0) { st.iron = grit.time; events.emit('abilityPerk', { body: this, perk: 'hurt/ironSkin' }); }
+    const veil = P['low/veil'];   // Ash Veil: once a fight, this low
+    if (veil && st.veil === 0 && this.hp <= this.maxHp * veil.below) { st.veil = 1; events.emit('abilityPerk', { body: this, perk: 'low/veil' }); }
+    if (this.huntArmed && this.state !== PS.IDLE) {   // Hunter's Pace: the fight begins as this body first moves or acts
+      this.huntArmed = false; st.hunt = P['fightStart/freeDash'].time;
+      events.emit('abilityPerk', { body: this, perk: 'fightStart/freeDash' });
+    }
     if (!this.lowReported && this.alive()) for (const pw of this.kit.powers) {
       if (pw.when === 'low' && this.hp <= this.maxHp * pw.v.below) { this.lowReported = true; abilityReport(this, 'low', {}); }
     }
@@ -473,7 +489,9 @@ class Player {
     }
   }
   // Points toward the number keys (CONFIG.abilities.press.gain): a landed blow's, a deflect's, a dodge's, a Finishing Blow's.
-  gainCharge(n) { if (this.kit !== NO_KIT) abilityGain(this.kit, this.perk, n); }
+  gainCharge(n) {
+    if (this.kit !== NO_KIT && abilityGain(this.kit, this.perk, n)) events.emit('abilityPerk', { body: this, perk: 'ready/empower' });   // Glint wakes
+  }
   // Hazard floors (v7.0, a level's `hazards`: the Haligtree's scarlet rot): standing in one, on its floor, costs `dps`
   // health a second; untouchable frames (a Finishing Blow, a roll's i-frames) keep it off. `timers` (a Map per body) paces
   // the `hazard` tick event. Returns true if it killed this body (`hazardDeath` then).
@@ -578,8 +596,13 @@ class Player {
     this.hitK = clamp(strike.damage / CONFIG.fx.flinchRef, 0.5, 1.6);   // how big the flinch looks
     const dx = this.x - from.x, dz = this.z - from.z, d = Math.hypot(dx, dz) || 1;
     let damage = strike.damage, knock = strike.shove ? strike.knock : Math.min(strike.knock, C.knockCap);
+    const st = this.perk, P = this.kit.perks;
     const drinking = this.state === PS.USE_ITEM;
     const blocked = this.state === PS.BLOCK && !strike.rollOnly && isInFront(this, from.x, from.z);
+    if (st.veil === 1 && damage > 0 && !blocked) {   // Ash Veil takes this blow's edge, once (a guard's chip doesn't spend it)
+      damage *= 1 - P['low/veil'].cut; st.veil = 2; events.emit('abilityPerk', { body: this, perk: 'veil/spent' });
+    }
+    if (st.iron > 0 && P['hurt/ironSkin'] && damage > 0 && !blocked) { damage *= 1 - P['hurt/ironSkin'].cut; events.emit('abilityPerk', { body: this, perk: 'ironSkin/glance' }); }   // Grit
     if (blocked) { damage *= B.damageMul; knock *= B.knockMul; }
     else this.closeCounter();   // the counter (a dodge's or a deflect's) is lost to any blow that lands
     this.hp = Math.max(0, this.hp - damage);

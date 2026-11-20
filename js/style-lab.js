@@ -11,7 +11,8 @@
 const styleLab = (() => {
   const id = (() => { try { return new URLSearchParams(location.search).get('style'); } catch (e) { return null; } })();
   const S = STYLE_DEFS.find(s => s.id === id) || null;
-  const lab = { style: S ? S.id : null, def: S, frames: 0, hidden: 0, skipped: [] };
+  // hitFlash: what a struck body's white flash is scaled by (js/enemy.js, js/player-pose.js).
+  const lab = { style: S ? S.id : null, def: S, frames: 0, hidden: 0, skipped: [], hitFlash: S && S.hitFlash !== undefined ? S.hitFlash : 1 };
   if (!S) return lab;
   const f = v => (Number.isInteger(v) ? v.toFixed(1) : String(v));
   const v3 = a => `vec3(${a.map(f).join(', ')})`;
@@ -35,8 +36,10 @@ vec3 artShade(vec3 o, vec3 albedo) {
   return o * (b / max(L, 1e-4));
 }
 `;
+    // The glow (emissive: a hit flash, a tint) is added after the bands, as it is: divided by a dark surface's colour it
+    // read as light far above `keep`, and a struck body went flat white (Aleix, pass 114).
     THREE.ShaderChunk.opaque_fragment = `#if defined( STANDARD ) || defined( LAMBERT ) || defined( PHONG )
-outgoingLight = artShade(outgoingLight, diffuseColor.rgb);
+outgoingLight = artShade(outgoingLight - totalEmissiveRadiance, diffuseColor.rgb) + totalEmissiveRadiance;
 #endif
 ` + THREE.ShaderChunk.opaque_fragment;
   }

@@ -150,11 +150,10 @@ function resolveCombat(game) {
       const key = blowKey(target);
       const res = typeof multiplayer !== 'undefined' && multiplayer.active() ? multiplayer.parry(target) : target.getDeflected();
       p.deflected(target, key, res.opened);
-      p.gainCharge(CONFIG.abilities.press.gain.deflect);
+      p.gainCharge(CONFIG.abilities.press.gain.deflect + abilityKeysFor(p.kit, 'parry'));   // Kindling's too
       game.hitstop = Math.max(game.hitstop, P.hitstop * (res.opened ? 1.3 : 1));
       events.emit('parry', { target, player: p, opened: res.opened });
-      const mercy = p.kit.perks['parry/heal'];   // Iron Mercy (a crate's)
-      if (mercy && p.perk && p.perk.mercy <= 0) { p.perk.mercy = mercy.cooldown; abilityHeal(p, mercy.heal, 'parry/heal'); }
+      if (p.perk) abilityParried(p, target);   // Iron Mercy, Ringing Steel, Kindling
       abilityReport(p, 'parry', { enemy: target });
     }
   }
@@ -166,7 +165,8 @@ function resolveCombat(game) {
   for (const e of playerHits) {
     const base = p.hitbox.payload, strike = abilityStrike(p.kit, p.perk, e, base);   // the kit's bonus (online: the server's own)
     p.hitbox.markHit(e);
-    const res = typeof multiplayer !== 'undefined' && multiplayer.active() ? multiplayer.hit(e, base) : e.takeHit(strike, p);
+    const net = typeof multiplayer !== 'undefined' && multiplayer.active(), cracks = e.cracks;
+    const res = net ? multiplayer.hit(e, base) : e.takeHit(strike, p);
     // Enemy contacts were captured before this hit. A landed counter cancels that blow even in this same step;
     // ordinary simultaneous swings still trade. The server also cancels the string for every teammate.
     if (strike.riposte && !strike.power && !res.blocked)
@@ -174,6 +174,7 @@ function resolveCombat(game) {
     game.hitstop = Math.max(game.hitstop, res.blocked ? CONFIG.block.hitstop : strike.hitstop);
     events.emit('strike', { strike, attacker: p, target: e, at: contact(p.hitbox, e), blocked: !!res.blocked });
     if (strike.empowered) events.emit('abilityPerk', { body: p, perk: 'empower', target: e });
+    if (strike.glint) events.emit('abilityPerk', { body: p, perk: 'glint/spent', target: e });   // Glint (a common's: no camera kick)
     if (!res.blocked && p.kit !== NO_KIT) {
       p.gainCharge(pressGain(strike));
       abilityLanded(p, strike);
@@ -184,6 +185,7 @@ function resolveCombat(game) {
       if (a && (a.id === PLAYER_DEF.moveset.dash.light || a.id === PLAYER_DEF.moveset.dash.heavy)) abilityReport(p, 'dashStrike', { enemy: e, strike });   // Petal Cut
     }
     if (strike.riposte && !res.blocked) abilityReport(p, 'counter', { enemy: e });   // a counter landed (Pyre, Breaker's mark)
+    if (!net && e.cracks > cracks) abilityReport(p, 'crack', { enemy: e });   // Shatter Guard (online: the server sees the crack)
     if (res.opened) p.openCounter(CONFIG.parry.riposteTime, 'break', e);   // a stance broken, a wind-up faltered: open
     if (res.finisher) finisher.start(p, e);   // the counter on a guard cracked to the last (online: the server grants it)
   }
@@ -201,6 +203,10 @@ function resolveCombat(game) {
     if (hb.owner.attack && hb.owner.attack.learns && typeof multiplayer !== 'undefined' && multiplayer.active()) multiplayer.landed(hb.owner);
     // A wall of fire pushes away from its seam, a bolt from where it fell, not from him.
     const res = p.takeHit(hb.payload, hb.lines ? hb.near : hb.anchor && hb.anchor.bolt ? hb.anchor.cut : hb.owner);
+    // Thorn Guard: a blow on the raised guard from an enemy close enough to be pricked (not a bolt or a wall of fire).
+    if (res.blocked && !hb.lines && !(hb.anchor && hb.anchor.bolt) && hb.owner.alive && hb.owner.alive()
+      && Math.hypot(hb.owner.x - p.x, hb.owner.z - p.z) - (hb.owner.radius || 0) <= CONFIG.abilities.commons.thornReach)
+      abilityReport(p, 'block', { enemy: hb.owner });
     if (hb.owner.def && hb.owner.def.lifesteal) {
       if (typeof multiplayer !== 'undefined' && multiplayer.active()) multiplayer.lifesteal(hb.owner);
       else hb.owner.lifesteal();

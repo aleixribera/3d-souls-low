@@ -293,6 +293,8 @@ globalThis.host = (() => {
       return list[list.length - 1];
     };
     const cards = offerSize(crowned, extra);
+    // A `party` ability (Kindred Ember) only to a person in a run of two people or more (bots never revive anyone).
+    const people = new Set([...ids, ...players.filter(p => !bots.has(p.id)).map(p => p.id)]).size;
     for (const id of [...ids, ...(withBots ? bots.keys() : [])]) {
       nth++;
       if (offers.has(id)) continue;
@@ -303,7 +305,8 @@ globalThis.host = (() => {
       const keyOf = new Map(held.map(h => ABILITY_BY_ID[h]).filter(b => b && b.key).map(b => [b.key, b.id]));
       const open = ABILITIES.filter(b => abilityLevel(b, held) < b.levels.length
         && !(b.key && keyOf.has(b.key) && keyOf.get(b.key) !== b.id)
-        && (!pool || pool.has(b.id)) && (!rarities || rarities.includes(b.rarity)));
+        && (!pool || pool.has(b.id)) && (!rarities || rarities.includes(b.rarity))
+        && !(b.party && (people < 2 || bots.has(id))));
       const offer = [], legend = crowned && pick(open.filter(b => b.rarity === 'legendary'));
       if (legend) offer.push(legend.id);
       for (let i = offer.length; i < cards; i++) {
@@ -425,6 +428,12 @@ globalThis.host = (() => {
       const e = enemyNear(Game.enemies, at.x, msg.y, at.z, K.whirlRadius);
       if (!e) return false;
       abilityPowers.trigger(id, body, kit, 'jump', { enemy: e, x: at.x, y: msg.y, z: at.z });
+    } else if (msg.when === 'block') {   // Thorn Guard: a blow of that attack was out near them, their pose blocking
+      const e = struckNear(p, msg);
+      if (!e) return false;
+      if (p.state !== PS.BLOCK) return wait();
+      if (Math.hypot(e.x - p.x, e.z - p.z) - (e.radius || 0) > CONFIG.abilities.commons.thornReach + C.claimNear) return false;
+      abilityPowers.trigger(id, body, kit, 'block', { enemy: e });
     } else if (msg.when === 'flask') {
       if (p.state !== PS.USE_ITEM) return wait();
       abilityPowers.trigger(id, body, kit, 'flask', {});
@@ -537,7 +546,7 @@ globalThis.host = (() => {
       m.by = by ? by.id : null; m.hp = by ? by.hp : 0;
       if (by && m.t >= R.time - 1e-9) {
         embers.delete(owner); risen.push({ id: owner, by: by.id }); feat(by.id).revives++; feat(by.id).rescued.push(owner);
-        eventList.push({ type: 'revive', player: owner, by: by.id });
+        eventList.push({ type: 'revive', player: owner, by: by.id, ...(kitOf(by.id).perks['revive/reviveHeal'] ? { kindred: true } : null) });   // Kindred Ember's ring
       }
     }
   }
@@ -713,7 +722,7 @@ globalThis.host = (() => {
     const base = makeStrike(a, riposte, msg.charge);
     if (!Number.isFinite(base.damage) || !Number.isFinite(base.poise) || e.invulnerable() || !spendHit(id, e)) return false;
     const strike = abilityStrike(kit, perkOf(id), e, base);   // the kit's bonus, from what the server knows of them
-    const hp = e.hp, result = e.takeHit(strike, p); sleeping = false;
+    const hp = e.hp, cracks = e.cracks, result = e.takeHit(strike, p); sleeping = false;
     if (!Number.isFinite(e.hp)) e.hp = hp;   // a bar can never become NaN (alive yet unkillable)
     creditDamage(id, hp - e.hp); noteDamage(e, id, hp - e.hp);
     if (!result.blocked) gainCharge(id, pressGain(strike));
@@ -731,6 +740,7 @@ globalThis.host = (() => {
     if (!result.blocked && a.stringEnd && kit.whens.has('stringEnd')) abilityPowers.trigger(id, holderOf(id), kit, 'stringEnd', { enemy: e, strike });   // Ember Lick
     if (!result.blocked && DASH_ATTACKS.has(a.id) && kit.whens.has('dashStrike')) abilityPowers.trigger(id, holderOf(id), kit, 'dashStrike', { enemy: e, strike });   // Petal Cut
     if (riposte && !result.blocked && kit.whens.has('counter')) abilityPowers.trigger(id, holderOf(id), kit, 'counter', { enemy: e });   // Pyre
+    if (e.cracks > cracks && kit.whens.has('crack')) abilityPowers.trigger(id, holderOf(id), kit, 'crack', { enemy: e });   // Shatter Guard
     if (result.finisher) beginFinisher(id, e);
     return true;
   }
@@ -766,7 +776,7 @@ globalThis.host = (() => {
     const opened = hit === a.hits.length - 1;
     if (opened && e.netAttack === msg.serial) e.getParried();
     lastParry.set(id, time);
-    feat(id).parries++; gainCharge(id, CONFIG.abilities.press.gain.deflect);
+    feat(id).parries++; gainCharge(id, CONFIG.abilities.press.gain.deflect + abilityKeysFor(kitOf(id), 'parry'));   // Kindling's too
     eventList.push({ type: 'parry', player: id, enemy: e.netId });
     abilityPowers.trigger(id, holderOf(id), kitOf(id), 'parry', { enemy: e });   // Thousand Blades, Counterflame
     return true;
@@ -801,7 +811,7 @@ globalThis.host = (() => {
     if (!Number.isFinite(damage) || e.netExec) return;
     e.netExec = { player: id, until: time + duration + C.historySeconds, damage }; sleeping = false;
     e.hitbox = null; e.vx = e.vz = e.kx = e.kz = 0; e.setState(ES.EXECUTED); e.forgetAll();   // held: no step runs it here
-    feat(id).finishers++; gainCharge(id, CONFIG.abilities.press.gain.finisher);
+    feat(id).finishers++; gainCharge(id, CONFIG.abilities.press.gain.finisher + abilityKeysFor(kitOf(id), 'finisher'));   // Tithe's too
     eventList.push({ type: 'finisher', player: id, enemy: e.netId });
   }
   function finishFinisher(e) {
@@ -828,7 +838,8 @@ globalThis.host = (() => {
   }
   return { addBot, removeBot, clearBots, botFrames, botList, botsDown, catalog, calling, newRun, weeklyRun, weekOf, offerSeed, setRushFight, describe, start, setPlayers, registerPlayer, noteDeath, fightTally, tick,
     fall, dropEmber: id => embers.delete(id), takeRisen: () => risen.splice(0), get fightKiller() { return killer; },
-    reviveHealth: id => maxHpOf(id) * CONFIG.revive.health, frame, hit, parry, dodged, endFinisher, lifesteal, landed,
+    // A fallen player's bar as they rise, raised by their reviver's Kindred Ember (`by`), never over full.
+    reviveHealth: (id, by) => maxHpOf(id) * Math.min(1, CONFIG.revive.health + ((by && kitOf(by).perks['revive/reviveHeal']) || { heal: 0 }).heal), frame, hit, parry, dodged, endFinisher, lifesteal, landed,
     playerMaxHp: PLAYER_DEF.stats.maxHp,
     offerAbilities, setGear, hasGear, poolOf: id => gear.has(id) ? [...gear.get(id)] : null, settleAbilities, pickAbility, giveAbilities, kitOf, maxHpOf, notePose, abilityClaim,
     offerSize, abilityPickTime: CONFIG.abilities.pickTime, abilityPickHold: CONFIG.abilities.pickHold, abilityFirst: CONFIG.abilities.first,

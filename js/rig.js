@@ -2,6 +2,7 @@
 const WARN_COLOR = new THREE.Color(0xff3a1a);
 const ROLL_ONLY_COLOR = new THREE.Color(CONFIG.VISUALS.rollOnlyGlow.color);   // wind-up of any attack that cannot be parried
 const HURT_COLOR = new THREE.Color(0xff1010);
+const IRON_SKIN = new THREE.Color(0x5c5952);   // Grit's iron skin (js/player-pose.js)
 const HIT_COLOR = new THREE.Color(0xffffff);
 const CRACK_COLOR = new THREE.Color(0xffc060);
 const EXEC_CUE_COLOR = new THREE.Color(0xff3a20);   // a kneeling enemy the player can execute (js/execution.js)
@@ -243,7 +244,8 @@ class Rig {
     const r = elbow.rotation; r.set(lerp(r.x, -bend, w), r.y * (1 - w), r.z * (1 - w));
     return bend;
   }
-  setTint(color, k) { for (const m of this.bodyMats) m.emissive.copy(color).multiplyScalar(k); }
+  // skin: a hit flash, in the body's own colours where the style asks (bodykit skinTint); tells keep their colour.
+  setTint(color, k, skin = false) { for (const m of this.bodyMats) { m.emissive.copy(color).multiplyScalar(k); if (m.userData.skinK) m.userData.skinK.value = skin ? 1 : 0; } }
   // tell: the blow coming is another part's (a hit's `tell`: 'shield', or a name in the model's `tells`), so the halo
   // shows there instead of on the weapon, and the weapon stays dark.
   setWarning(k, color = WARN_COLOR, tell = null) {
