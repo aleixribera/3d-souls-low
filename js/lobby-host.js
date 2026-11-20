@@ -102,7 +102,7 @@
       p.memory = memory; p.token = token;
     }
     let leader = null, session = null, last = performance.now(), accumulator = 0, sinceSnapshot = 0;
-    let arenaWipeFor = 0, bossLoadFor = 0, bossStarted = false, loadStarted = 0;
+    let arenaWipeFor = 0, bossStarted = false, loadStarted = 0;
     let tallied = false;   // Boss Rush: this fight's win is in the run's tally
     let abilityFor = null;   // Boss Rush, between fights: s since the abilities were offered (null: not offered)
     let abilityPickedAt = -Infinity, abilityAllChosen = false;   // abilityFor at the last pick taken (the pick holds CONFIG.abilities.pickHold s after it), and whether everyone has been told all have chosen
@@ -266,8 +266,8 @@
       if (replays && fight === 0) recording = replays.begin({ mode: gauntlet.run.week ? 'weekly' : 'boss-rush', name: gauntlet.name, version: sim.catalog().version, build });
       tallied = false;
       if (opening) session.opening = true;
-      for (const p of clients.values()) { p.ready = false; p.pose = null; p.arenaDefeated = false; p.revive = null; p.claims.clear(); p.lastSeq = 0; p.encoder.reset(); p.loadingSince = performance.now(); remember(p); }
-      arenaWipeFor = 0; bossLoadFor = 0; bossStarted = false; loadStarted = loadNow(); abilityFor = null; abilityRound.clear();
+      for (const p of clients.values()) { p.ready = false; p.pose = null; p.startPose = null; p.acted = false; p.arenaDefeated = false; p.revive = null; p.claims.clear(); p.lastSeq = 0; p.encoder.reset(); p.loadingSince = performance.now(); remember(p); }
+      arenaWipeFor = 0; bossStarted = false; loadStarted = loadNow(); abilityFor = null; abilityRound.clear();
       firstPick = options.firstPick !== false && fight === 0 ? 'due' : null;   // firstPick: false, tests that check an exact kit
       accumulator = 0; sinceSnapshot = 0; lastSignature = null;
       recording?.chapter(session, replayRoster(roster()));
@@ -324,6 +324,7 @@
     }
     function firstPickDone() {
       firstPick = null; abilityFor = null; abilityRound.clear();
+      for (const p of clients.values()) { p.acted = false; p.startPose = p.pose ? { x: p.pose.x, y: p.pose.y, z: p.pose.z } : null; }
       session.abilities = sim.abilities(); session.par = rushParNow(); recording?.kit(session.abilities);
       for (const p of clients.values()) if (p.hello) send(p, { type: 'firstPick', abilities: session.abilities, par: session.par });
     }
@@ -434,6 +435,10 @@
         view: net.cameraView(s.view) };
       if (session.teamWipeOnly && p.arenaDefeated) { p.pose.hp = 0; p.pose.state = 'dead'; p.pose.attack = null; }
       if (rose) p.pose.hp = Math.min(p.pose.hp, rose);   // up with the bar the revive gave, no more
+      if (!p.startPose) p.startPose = { x: p.pose.x, y: p.pose.y, z: p.pose.z };
+      else if (!p.acted && !firstPick && (Math.hypot(p.pose.x - p.startPose.x, p.pose.z - p.startPose.z) > 0.08
+        || Math.abs(p.pose.y - p.startPose.y) > 0.08
+        || (p.pose.state !== 'idle' && p.pose.state !== 'dead'))) p.acted = true;
       p.lastPose = performance.now(); p.poseSeq++; remember(p);
     }
     function message(p, msg) {
@@ -479,6 +484,7 @@
       if (msg.type === 'pose') { acceptPose(p, msg.pose); return; }
       if (!Number.isSafeInteger(msg.seq) || msg.seq <= p.lastSeq) return;
       p.lastSeq = msg.seq; syncPlayers();
+      if (!firstPick) p.acted = true;
       if (session.teamWipeOnly && p.arenaDefeated && msg.type !== 'finisherEnd') return;
       if (msg.type === 'hit') {
         if (!net.id(msg.enemy) || !net.id(msg.swing) || !net.id(msg.attack)) return;
@@ -502,7 +508,7 @@
     }
     // A new socket: a player still joining (`address`: its own budget of joins, or null).
     function connect(ws, address = null) {
-      const p = { ws, id: uuid(), name: 'Player', hello: false, ready: false, pose: null, address,
+      const p = { ws, id: uuid(), name: 'Player', hello: false, ready: false, pose: null, startPose: null, acted: false, address,
         lastPose: 0, lastSeq: 0, claims: new Set(), encoder: new net.FrameEncoder(), poseSeq: 0, lastWritten: 0, resyncAt: -Infinity,
         lastActivity: null, foreground: true, loadingSince: performance.now() };
       pending.add(p);
@@ -548,12 +554,17 @@
             // Background or stalled loaders cannot hold the run hostage. Bots need no browser loading barrier.
             const party = [...clients.values()].filter(participating);
             const allReady = loadNow() - loadStarted >= C.loadTimeout || party.every(p => p.ready && p.pose);
-            bossLoadFor = allReady ? bossLoadFor + 1 / C.tickRate : 0;
-            bossStarted = allReady && bossLoadFor >= (session.drop ? C.rushDropGrace : session.teamWipeOnly ? C.bossLoadGrace : 0);
-            // The free pick: once open, its clock runs whether or not everyone is loaded (a late joiner), and the boss
-            // wakes once it is taken and everyone is. A fight already over (tests, tools) settles it as if time ran out.
+            // The free pick: opens as soon as everyone is loaded (no grace delay); once open, its clock runs whether or
+            // not a late joiner is loaded. A fight already over (tests, tools) settles it as if time ran out.
             if (firstPick && sim.state.complete) { if (firstPick === 'open') { sim.settleAbilities(); firstPickDone(); } else firstPick = null; }
-            if (firstPick === 'open' || (bossStarted && firstPick)) bossStarted = firstPickChosen() && bossStarted;
+            if (firstPick === 'open' || (allReady && firstPick)) firstPickChosen();
+            // Once loaded and any opening pick is done, the boss still waits until a player moves or acts (v7.160.0).
+            if (!firstPick && allReady) {
+              const timedOut = loadNow() - loadStarted >= C.loadTimeout && !party.some(p => p.ready && p.pose);
+              const anyActed = timedOut || party.length === 0 || sim.botList().length > 0 || party.some(p => p.acted)
+                || sim.inspect().Game.enemies.every(e => !e.alive());
+              bossStarted = anyActed;
+            }
           }
           const began = performance.now(); sim.tick(1 / C.tickRate, (session.teamWipeOnly || session.opening) && !bossStarted); ticks++;
           tickTimes.push(performance.now() - began); if (tickTimes.length > C.metricsSamples) tickTimes.shift();

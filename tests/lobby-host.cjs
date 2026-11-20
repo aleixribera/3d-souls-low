@@ -45,13 +45,15 @@ assert.equal(session.gauntlet.id, C.calling.id);
 assert.equal(session.gauntlet.boss, 'ostrey');
 send({ type: 'ready', epoch: session.epoch });
 
-// The free pick before fight 1: the boss waits for it.
+// The free pick before fight 1: the boss waits for it, then still waits until the player moves or acts.
 assert.ok(run(() => inbox.some(m => m.type === 'abilities')), 'the free pick is offered');
 const free = take('abilities');
 assert.equal(sim.state.fought, 0, 'the boss waits for the pick');
 send({ type: 'pickAbility', epoch: session.epoch, id: free.offer[0] });
 assert.ok(run(() => inbox.some(m => m.type === 'firstPick')), 'the pick is taken');
-assert.ok(run(() => sim.state.fought > 1), 'then the boss wakes and the fight runs');
+assert.ok(!run(() => sim.state.fought > 0, 1), 'after the pick, the boss still waits until the player moves');
+send({ type: 'pose', epoch: session.epoch, pose: { ...session.spawn, x: session.spawn.x + 0.5, hp: 120, state: 'walk', stateTime: 0.1, attackT: 0, chargeT: 0, walkPhase: 0.2, grounded: true } });
+assert.ok(run(() => sim.state.fought > 1), 'once the player moves, the boss wakes and the fight runs');
 assert.ok(inbox.some(m => m.type === 'frame'), 'frames come');
 
 // A pause holds the run: no simulated time passes, and ten paused minutes (no poses, as the paused page sends none)
@@ -74,7 +76,9 @@ assert.equal(session.gauntlet.number, 2, 'fight 2');
 assert.ok(session.drop, 'with no loading card');
 assert.deepEqual(session.abilities[p.id], [free.offer[0], offer.offer[0]], 'both picks are held');
 send({ type: 'ready', epoch: session.epoch });
-assert.ok(run(() => sim.state.fought > 0.5), 'fight 2 runs');
+assert.ok(!run(() => sim.state.fought > 0, 0.5), 'fight 2 waits until the player moves');
+send({ type: 'pose', epoch: session.epoch, pose: { ...session.spawn, x: session.spawn.x + 0.5, hp: 120, state: 'walk', stateTime: 0.1, attackT: 0, chargeT: 0, walkPhase: 0.2, grounded: true } });
+assert.ok(run(() => sim.state.fought > 0.5), 'fight 2 runs once the player moves');
 
 // Alone, a fall ends the run on its summary.
 hp = 0;
@@ -98,6 +102,8 @@ session = take('start').session;
 send({ type: 'ready', epoch: session.epoch });
 assert.ok(run(() => inbox.some(m => m.type === 'abilities')));
 send({ type: 'pickAbility', epoch: session.epoch, id: take('abilities').offer[0] });
+assert.ok(run(() => inbox.some(m => m.type === 'firstPick')));
+send({ type: 'pose', epoch: session.epoch, pose: { ...session.spawn, x: session.spawn.x + 0.5, hp: 120, state: 'walk', stateTime: 0.1, attackT: 0, chargeT: 0, walkPhase: 0.2, grounded: true } });
 assert.ok(run(() => sim.state.fought > 0.5));
 for (const e of sim.inspect().Game.enemies) { e.hp = 0; e.die(); }
 assert.ok(run(() => sim.state.complete));

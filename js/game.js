@@ -25,6 +25,7 @@ const Game = {
   cleared: new Set(),    // checkpoints: keys of the enemies killed before the last rest (they stay dead until a restart)
   found: new Set(),      // Story: the ids of the flasks found on the road (a level's `flaskFinds`; js/story.js saves them)
   loading: 0,            // s the loading screen still holds the world (CONFIG.loading)
+  worldWaiting: false,   // true after a start or respawn until the player moves or acts (v7.160.0)
   zoomTarget: CONFIG.zoom.default, mouseHold: 0,
   cam: { yaw: 0, pitch: 0, zoom: CONFIG.zoom.default, pos: new THREE.Vector3(), look: new THREE.Vector3(),
          prevPos: new THREE.Vector3(), prevLook: new THREE.Vector3() },
@@ -130,6 +131,8 @@ const Game = {
     if (it && it.max < fl) it.max = it.count = fl;
     companions.reset(this);
     this.deathTimer = 0; this.hitstop = 0; this.hazardTimers.clear();   // a new body: no death sequence or hit-pause carries over
+    this.worldWaiting = this.kind !== 'bossBattle';
+    if (this.worldWaiting) input.clear();
     this.cam.yaw = this.player.yaw;
     this.updateCamera(0, true);
     canvas.classList.remove('dying');
@@ -246,12 +249,28 @@ const Game = {
       return;
     }
     if (this.hitstop > 0) { this.hitstop -= dt; input.hold(dt); return; }   // hit-pause: both sides freeze
+    const mv = this.moveInput();
+    if (this.worldWaiting) {
+      let fresh = false;
+      const now = input.now();
+      for (const t of input.pressed.values()) if (now - t <= CONFIG.input.buffer) { fresh = true; break; }
+      if (mv.has || input.held.size > 0 || fresh
+        || Math.hypot(p.x - this.spawn.x, p.z - this.spawn.z) > 0.05) {
+        this.worldWaiting = false;
+      } else {
+        this.updateLock(dt);
+        p.update(dt, mv, this.enemies.filter(e => e.alive()), this.lock);
+        this.updateCamera(dt, false);
+        if (typeof lessons !== 'undefined') lessons.update(this, dt);
+        return;
+      }
+    }
     this.updateLock(dt);
     if (input.peek('rest') && this.restWins()) { input.consume('rest'); this.tryRest(); }   // else the press is Talk / Read (same key, js/lore.js)
     const live = this.enemies.filter(e => e.alive());
     const alerting = this.kind === 'level' && this.level.alert;
     const unaware = alerting ? new Set(live.filter(e => e.in('unaware') || e.state === ES.DORMANT)) : null;
-    p.update(dt, this.moveInput(), live, this.lock);
+    p.update(dt, mv, live, this.lock);
     companions.update(this, dt);
     if (this.companion) companions.updateEnemies(this, dt);
     else {

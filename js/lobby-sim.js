@@ -254,15 +254,15 @@ globalThis.host = (() => {
   }
   // Abilities (CONFIG.abilities). An offer: `offer` cards (`extra` more after a swift kill, CONFIG.swift, never common),
   // each of a rarity drawn by its weight after `won` fights won, then one of that rarity this player may still take:
-  // not at its last level, not a legendary a teammate holds, not already on the card before. With `withBots`, every bot
+  // not at its last level, not already on the card before. No cap on legendaries, and teammates may hold the same one
+  // (v7.160.0, Aleix: no card limits). With `withBots`, every bot
   // is offered too and takes one at once. After a Crowned fight (`crowned`, CONFIG.endless) the offer has at least
   // `crownedOffer` cards, and one of them, at a random place, is a legendary while one is left to offer. With a `seed`
   // (offerSeed: a Boss Rush run's fight) the nth player's draw is mixSeed(seed, n)'s, so a weekly run offers the same
   // cards to everyone who holds the same abilities.
   // `crates` false (the weekly run) leaves every crate ability out; else a player is offered the ones their crates gave
   // them (setGear). `rarities` (a list) keeps the offer to those: the free pick before fight 1 (CONFIG.abilities.first).
-  // A player holding CONFIG.abilities.legendaries legendaries is offered only those again, as their next level. A
-  // number key (ABILITY_KEYS) holds one ability: once one is taken, no other for that key is offered (pass 87, Aleix).
+  // A number key (ABILITY_KEYS) holds one ability: once one is taken, no other for that key is offered (pass 87, Aleix).
   const offerSize = (crowned, extra = 0) => crowned
     ? Math.max(CONFIG.abilities.offer + extra, CONFIG.endless.crownedOffer)
     : CONFIG.abilities.offer + extra;
@@ -275,12 +275,11 @@ globalThis.host = (() => {
       nth++;
       if (offers.has(id)) continue;
       random = seed === null ? Math.random : rushSeed(mixSeed(seed, nth));
-      const held = owned.get(id) || [], team = teamLegendaries(id);
+      const held = owned.get(id) || [];
       const mine = crates && gear.get(id)?.crates;
-      const legends = new Set(held.filter(h => ABILITY_BY_ID[h]?.rarity === 'legendary')), capped = legends.size >= B.legendaries;
       // A number key once filled stays: no other ability for it is offered, only the one held, as its next level.
       const keyOf = new Map(held.map(h => ABILITY_BY_ID[h]).filter(b => b && b.key).map(b => [b.key, b.id]));
-      const open = ABILITIES.filter(b => abilityLevel(b, held) < b.levels.length && !(b.rarity === 'legendary' && (team.has(b.id) || capped && !legends.has(b.id)))
+      const open = ABILITIES.filter(b => abilityLevel(b, held) < b.levels.length
         && !(b.key && keyOf.has(b.key) && keyOf.get(b.key) !== b.id)
         && (!b.crate || !!mine && mine.has(b.id)) && (!rarities || rarities.includes(b.rarity)));
       const offer = [], legend = crowned && pick(open.filter(b => b.rarity === 'legendary'));
@@ -310,17 +309,10 @@ globalThis.host = (() => {
   }
   // The seed of a Boss Rush fight's offers: the run's seed and the fight; `round` sets a late arrival's apart.
   const offerSeed = (run, fight, round = 0) => mixSeed(run.seed, fight, round);
-  // The ids a teammate of `id` holds or has on an open offer: a legendary among them is not offered to `id` nor taken.
-  function teamLegendaries(id) {
-    const team = new Set();
-    for (const map of [owned, offers]) for (const [other, list] of map) if (other !== id) for (const b of list) team.add(b);
-    return team;
-  }
-  // Takes one ability from this player's open offer; false for anything else (or a legendary a teammate took first).
+  // Takes one ability from this player's open offer; false for anything else.
   function pickAbility(id, ability) {
     const offer = offers.get(id);
     if (!offer || typeof ability !== 'string' || !offer.includes(ability)) return false;
-    if (ABILITY_BY_ID[ability].rarity === 'legendary' && [...owned].some(([other, list]) => other !== id && list.includes(ability))) return false;
     offers.delete(id); owned.set(id, [...(owned.get(id) || []), ability]); kits.delete(id);
     return true;
   }

@@ -302,29 +302,30 @@ const multiplayer = (() => {
     else if (pressed.includes('PadA') && summaryButtons().includes(document.activeElement)) document.activeElement.click();
     return true;
   }
-  // Boss Rush's abilities (CONFIG.abilities): between fights the server offers each player a few, and a click, a number
-  // key or the pad takes one. The next fight starts when everyone has chosen or the time runs out. The cards and their
-  // look: js/ability-cards.js.
+  // Boss Rush's abilities (CONFIG.abilities): between fights the server offers each player a few; clicking a card,
+  // pressing Space, a number key or PadA only highlights it, and the Confirm button takes it (v7.160.0, Aleix). The
+  // next fight starts when everyone has chosen or the time runs out. The cards and their look: js/ability-cards.js.
   const abilityScreen = document.createElement('section'); abilityScreen.id = 'abilityScreen'; abilityScreen.hidden = true;
   abilityScreen.setAttribute('aria-labelledby', 'abilityTitle');
-  abilityScreen.innerHTML = '<div class="ability-panel"><div class="ability-head"><h2 id="abilityTitle">Choose an ability</h2><span id="abilityClock"></span></div><div class="ability-time" aria-hidden="true"><i id="abilityTimeFill"></i></div><div id="abilityChoices" role="group" aria-labelledby="abilityTitle"></div><p id="abilityStatus" aria-live="polite"></p><section id="abilityHeld" aria-labelledby="abilityHeldTitle"></section></div>';
+  abilityScreen.innerHTML = '<div class="ability-panel"><div class="ability-head"><h2 id="abilityTitle">Choose an ability</h2><span id="abilityClock"></span></div><div class="ability-time" aria-hidden="true"><i id="abilityTimeFill"></i></div><div id="abilityChoices" role="group" aria-labelledby="abilityTitle"></div><div class="ability-actions"><button type="button" id="abilityConfirm" class="ui-primary" disabled>Confirm</button></div><p id="abilityStatus" aria-live="polite"></p><section id="abilityHeld" aria-labelledby="abilityHeldTitle"></section></div>';
   document.body.appendChild(abilityScreen);
-  let ability = null;   // while the pick is open: { offer, held, chosen, deadline (performance.now() ms), clock }
+  let ability = null;   // while the pick is open: { offer, held, selected, chosen, deadline (performance.now() ms), clock }
   function openAbilities(msg) {
     if (msg.offer) crateScreen.close();
     if (!msg.offer) {   // the server took this player's pick
-      if (ability) { ability.held = msg.held || []; ability.chosen = ability.chosen || ability.held[ability.held.length - 1] || null; drawHeld(); drawAbilities(); }
+      if (ability) { ability.held = msg.held || []; ability.chosen = ability.chosen || ability.held[ability.held.length - 1] || null; ability.selected = ability.chosen; drawHeld(); drawAbilities(); }
       return;
     }
-    ability = { offer: msg.offer, held: msg.held || [], chosen: null, deadline: performance.now() + Math.max(0, Number(msg.left) || 0) * 1000, clock: '' };
+    ability = { offer: msg.offer, held: msg.held || [], selected: null, chosen: null, deadline: performance.now() + Math.max(0, Number(msg.left) || 0) * 1000, clock: '' };
     const list = el('abilityChoices'); list.replaceChildren();
     msg.offer.forEach((id, i) => {
       const b = ArenaNet.own(ABILITY_BY_ID, id); if (!b) return;
       // A swift kill's extra choice (CONFIG.swift) is the last one, and says so.
       const card = abilityCard(b, ability.held, i + 1, !!msg.swift && !msg.crowned && i === msg.offer.length - 1 && i >= CONFIG.abilities.offer);
-      card.onclick = () => chooseAbility(id);
+      card.onclick = () => selectAbility(id);
       list.appendChild(card);
     });
+    el('abilityConfirm').onclick = () => confirmAbility();
     const n = list.children.length;
     abilityScreen.style.setProperty('--pick-w', `${n * 216 + (n - 1) * 12}px`);   // the row of tall cards, and the title over it
     input.clear(); if (document.pointerLockElement) document.exitPointerLock();
@@ -338,94 +339,94 @@ const multiplayer = (() => {
     const title = document.createElement('h3'); title.id = 'abilityHeldTitle'; title.textContent = 'Your abilities';
     box.append(title, list);
   }
+  function selectAbility(id) {
+    if (!ability || ability.chosen || !active()) return;
+    ability.selected = id; drawAbilities();
+  }
+  function confirmAbility() {
+    if (!ability || ability.chosen || !ability.selected || !active()) return;
+    chooseAbility(ability.selected);
+  }
   function chooseAbility(id) {
     if (!ability || ability.chosen || !active()) return;
-    ability.chosen = id; send({ type: 'pickAbility', id, epoch: session.epoch }); drawAbilities();
+    ability.selected = id; ability.chosen = id; send({ type: 'pickAbility', id, epoch: session.epoch }); drawAbilities();
     events.emit('abilityPicked', { id, rarity: ABILITY_BY_ID[id]?.rarity });   // a note and a ring round the player
   }
   function closeAbilities() { ability = null; abilityScreen.hidden = true; }
-  function moveAbilityFocus(step) {
-    const buttons = [...el('abilityChoices').children].filter(b => !b.disabled), at = buttons.indexOf(document.activeElement);
+  function abilityButtons(includeConfirm = true) {
+    const cards = [...el('abilityChoices').children].filter(b => !b.disabled);
+    const confirm = el('abilityConfirm');
+    if (includeConfirm && confirm && !confirm.disabled) cards.push(confirm);
+    return cards;
+  }
+  function moveAbilityFocus(step, includeConfirm = true) {
+    const buttons = abilityButtons(includeConfirm), at = buttons.indexOf(document.activeElement);
     buttons[at < 0 ? 0 : (at + step + buttons.length) % buttons.length]?.focus({ preventScroll: true });
   }
   function drawAbilities() {
-    const visible = !!ability && active() && Game.loading <= 0 && panel.classList.contains('hidden') && runIntro.hidden;
+    const visible = !!ability && active() && Game.loading <= 0 && panel.classList.contains('hidden');
     const opening = visible && abilityScreen.hidden;
     abilityScreen.hidden = !visible;
     if (!visible) return;
     const left = Math.max(0, (ability.deadline - performance.now()) / 1000), clock = Math.ceil(left) + '\u00a0s';
     if (clock !== ability.clock) { ability.clock = clock; el('abilityClock').textContent = clock; }
     el('abilityTimeFill').style.transform = `scaleX(${(left / CONFIG.abilities.pickTime).toFixed(3)})`;
+    const activeId = ability.chosen || ability.selected;
     for (const button of el('abilityChoices').children) {
-      button.setAttribute('aria-pressed', String(button.dataset.ability === ability.chosen));
+      button.setAttribute('aria-pressed', String(button.dataset.ability === activeId));
       button.disabled = !!ability.chosen && button.dataset.ability !== ability.chosen;
     }
+    const confirm = el('abilityConfirm');
+    confirm.disabled = !ability.selected || !!ability.chosen;
+    confirm.textContent = ability.chosen ? 'Confirmed' : 'Confirm';
     // Once chosen, the pick holds a moment (CONFIG.abilities.pickHold): the choice in gold, the others still readable.
     const status = ability.chosen && !ability.done && roster.filter(p => !p.bot).length > 1 ? 'Waiting for the others.' : '';
     if (el('abilityStatus').textContent !== status) el('abilityStatus').textContent = status;
     abilityScreen.classList.toggle('ability-pad', usingPad());
     if (opening) el('abilityChoices').querySelector('button:not(:disabled)')?.focus({ preventScroll: true });
   }
-  // While the pick is open the game hears no keys: a number takes that ability, arrows move between them, Enter or
-  // Space presses the focused one, and Escape still opens the lobby.
+  // While the pick is open the game hears no keys: a number highlights that ability, Space/Enter on a card only
+  // highlights it, arrows/Tab move between cards and the Confirm button, and Escape still opens the lobby.
   window.addEventListener('keydown', ev => {
     if (abilityScreen.hidden || ev.code === 'Escape') return;
     userActivity(ev); ev.stopImmediatePropagation();
-    if (ev.code === 'Tab') { ev.preventDefault(); moveAbilityFocus(ev.shiftKey ? -1 : 1); return; }   // focus stays in the pick
+    if (ev.code === 'Tab') { ev.preventDefault(); moveAbilityFocus(ev.shiftKey ? -1 : 1, true); return; }   // focus stays in the pick
     const n = /^(?:Digit|Numpad)([1-9])$/.exec(ev.code);
-    if (n) { ev.preventDefault(); const b = el('abilityChoices').children[Number(n[1]) - 1]; if (b) chooseAbility(b.dataset.ability); }
-    else if (ev.code.startsWith('Arrow')) { ev.preventDefault(); moveAbilityFocus(ev.code === 'ArrowLeft' || ev.code === 'ArrowUp' ? -1 : 1); }
+    if (n) { ev.preventDefault(); const b = el('abilityChoices').children[Number(n[1]) - 1]; if (b && !b.disabled) { selectAbility(b.dataset.ability); b.focus({ preventScroll: true }); } }
+    else if (ev.code === 'ArrowLeft' || ev.code === 'ArrowRight') { ev.preventDefault(); moveAbilityFocus(ev.code === 'ArrowLeft' ? -1 : 1, false); }
+    else if (ev.code === 'ArrowDown' || ev.code === 'ArrowUp') {
+      ev.preventDefault();
+      const confirm = el('abilityConfirm');
+      if (ev.code === 'ArrowDown' && document.activeElement !== confirm && !confirm.disabled) confirm.focus({ preventScroll: true });
+      else if (ev.code === 'ArrowUp' && document.activeElement === confirm) {
+        const sel = ability?.selected && [...el('abilityChoices').children].find(b => b.dataset.ability === ability.selected && !b.disabled);
+        (sel || el('abilityChoices').querySelector('button:not(:disabled)'))?.focus({ preventScroll: true });
+      } else moveAbilityFocus(ev.code === 'ArrowUp' ? -1 : 1, true);
+    }
   }, true);
-  // The pad: the d-pad moves, A takes the focused ability, Start still opens the lobby.
+  // The pad: the d-pad moves between cards and Confirm, A highlights a card or presses Confirm, Start still opens the lobby.
   function abilityPad(pressed) {
     if (abilityScreen.hidden || pressed.includes('PadStart')) return false;
     input.clear();
-    if (pressed.includes('PadLeft') || pressed.includes('PadUp')) moveAbilityFocus(-1);
-    if (pressed.includes('PadRight') || pressed.includes('PadDown')) moveAbilityFocus(1);
-    if (pressed.includes('PadA') && document.activeElement?.dataset?.ability) chooseAbility(document.activeElement.dataset.ability);
+    const confirm = el('abilityConfirm');
+    if (pressed.includes('PadLeft')) moveAbilityFocus(-1, false);
+    if (pressed.includes('PadRight')) moveAbilityFocus(1, false);
+    if (pressed.includes('PadDown')) {
+      if (document.activeElement !== confirm && !confirm.disabled) confirm.focus({ preventScroll: true });
+      else moveAbilityFocus(1, true);
+    }
+    if (pressed.includes('PadUp')) {
+      if (document.activeElement === confirm) {
+        const sel = ability?.selected && [...el('abilityChoices').children].find(b => b.dataset.ability === ability.selected && !b.disabled);
+        (sel || el('abilityChoices').querySelector('button:not(:disabled)'))?.focus({ preventScroll: true });
+      } else moveAbilityFocus(-1, true);
+    }
+    if (pressed.includes('PadA')) {
+      if (document.activeElement === confirm && !confirm.disabled) confirmAbility();
+      else if (document.activeElement?.dataset?.ability) selectAbility(document.activeElement.dataset.ability);
+    }
     return true;
   }
-  const runIntro = document.createElement('section'); runIntro.id = 'runIntroScreen'; runIntro.hidden = true;
-  runIntro.tabIndex = -1; runIntro.setAttribute('role', 'status'); runIntro.setAttribute('aria-label', 'Adventure begins');
-  runIntro.innerHTML = `<div class="intro-halo" aria-hidden="true"></div><div class="intro-embers" aria-hidden="true">${Array.from({ length: 12 }, (_, i) => `<i style="--ember:${i}"></i>`).join('')}</div>
-    <div class="intro-message"><div class="intro-crest" aria-hidden="true"><span>✦</span></div>
-    <h1 id="runIntroTitle"></h1><div class="intro-rule"></div><p id="runIntroGoal" class="intro-goal"></p></div>`;
-  document.body.appendChild(runIntro);
-  const introStyle = document.createElement('style');
-  introStyle.textContent = `#runIntroScreen[hidden]{display:none}
-    #runIntroScreen{position:fixed;inset:0;z-index:120;display:grid;place-items:center;overflow:hidden;padding:24px;box-sizing:border-box;background:radial-gradient(ellipse at 50% 44%,#35270d 0%,#100d05 48%,#030302 100%);color:#f7dfa0;text-align:center;outline:none;animation:intro-veil var(--intro-duration) linear both}
-    #runIntroScreen .intro-halo{position:absolute;width:min(88vw,650px);aspect-ratio:1;border:1px solid #c1993d1c;border-radius:50%;box-shadow:0 0 90px #e3b3490b,inset 0 0 100px #f4c34b08;animation:intro-halo 5s ease-out both}
-    #runIntroScreen .intro-halo:before,#runIntroScreen .intro-halo:after{content:'';position:absolute;inset:25px;border:1px solid #ddbc6120;border-radius:50%}#runIntroScreen .intro-halo:after{inset:65px;border-style:dashed;border-color:#ddbc6115}
-    #runIntroScreen .intro-message{position:relative;z-index:1;width:min(1040px,100%)}
-    #runIntroScreen .intro-crest{position:relative;width:68px;height:68px;margin:0 auto 34px;border:1px solid #d4ad595e;transform:rotate(45deg);box-shadow:0 0 40px #f5bf3d1c;animation:intro-crest 1.5s ease-out both}
-    #runIntroScreen .intro-crest:before{content:'';position:absolute;inset:7px;border:1px solid #dab86c44}#runIntroScreen .intro-crest span{display:block;transform:rotate(-45deg);font:46px/68px Georgia,serif;color:#ffe6a6;text-shadow:0 0 28px #f7c752a0}
-    #runIntroScreen h1{font:400 clamp(30px,5.7vw,72px)/1.25 Georgia,serif;letter-spacing:.1em;text-indent:.1em;margin:18px 0 22px;color:#ffe8ac;text-shadow:0 0 42px #ecc16340,0 2px 12px #000;animation:intro-title 1.8s .4s cubic-bezier(.16,1,.3,1) both}
-    #runIntroScreen .intro-rule{height:1px;width:min(480px,85%);margin:0 auto 24px;background:linear-gradient(90deg,transparent,#d6ae58,transparent);animation:intro-rule 1.6s .65s both}
-    #runIntroScreen .intro-goal{font:clamp(14px,1.6vw,18px)/1.9 Georgia,serif;color:#decc9f;animation:intro-rise 1.2s 1s both}
-    #runIntroScreen .intro-embers{position:absolute;inset:0;pointer-events:none}#runIntroScreen .intro-embers i{position:absolute;left:calc(6% + var(--ember)*8%);top:85%;width:2px;height:2px;border-radius:50%;background:#f7d47b;box-shadow:0 0 9px #ffd35f;animation:intro-ember 4s calc(var(--ember)*-.33s) linear infinite}
-    @keyframes intro-veil{0%{opacity:0}12%,86%{opacity:1}100%{opacity:0}}
-    @keyframes intro-title{from{opacity:0;transform:scale(1.08);filter:blur(6px)}to{opacity:1;transform:scale(1);filter:blur(0)}}
-    @keyframes intro-rise{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
-    @keyframes intro-rule{from{opacity:0;transform:scaleX(.15)}to{opacity:1;transform:scaleX(1)}}
-    @keyframes intro-crest{from{opacity:0;transform:rotate(25deg) scale(.85)}to{opacity:1;transform:rotate(45deg) scale(1)}}
-    @keyframes intro-halo{from{opacity:0;transform:scale(.85)}to{opacity:1;transform:scale(1.08)}}
-    @keyframes intro-ember{0%{opacity:0;transform:translateY(0)}20%,65%{opacity:.65}100%{opacity:0;transform:translate(20px,-65vh)}}
-    @media(max-height:600px){#runIntroScreen .intro-crest{width:44px;height:44px;margin-bottom:18px}#runIntroScreen .intro-crest span{font-size:30px;line-height:44px}#runIntroScreen h1{margin:12px 0 16px}#runIntroScreen .intro-rule{margin-bottom:14px}}
-    @media(prefers-reduced-motion:reduce){#runIntroScreen,#runIntroScreen *{animation:none!important}#runIntroScreen .intro-embers{display:none}}`;
-  document.head.appendChild(introStyle);
-  let runIntroPending = null;
-  function clearRunIntro() { runIntroPending = null; runIntro.hidden = true; panel.inert = false; el('menu').inert = false; input.clear(); }
-  function showRunIntro(id) {
-    const data = LOBBY_INTROS.find(x => x.id === id);
-    if (!data) throw new Error('Unknown lobby intro: ' + id);
-    el('runIntroTitle').textContent = data.title;
-    el('runIntroGoal').textContent = data.goal;
-    runIntro.style.setProperty('--intro-duration', C.runIntroScreenTime + 's');
-    runIntroPending = null; panel.inert = true; el('menu').inert = true; runIntro.hidden = false;
-    Game.loading = C.runIntroScreenTime; el('loading').classList.remove('show'); input.clear(); runIntro.focus();
-    if (document.pointerLockElement) document.exitPointerLock();
-  }
-  window.addEventListener('keydown', ev => { if (!runIntro.hidden) { ev.preventDefault(); ev.stopImmediatePropagation(); } }, true);
   const party = document.createElement('div'); party.id = 'onlineParty'; party.className = 'hidden'; document.body.appendChild(party);
   party.innerHTML = '<div id="onlineCurrentLevel" class="online-level" hidden></div><section id="onlineAlive" aria-label="Players alive"></section>';
   const allyMeters = new Map();
@@ -699,7 +700,7 @@ const multiplayer = (() => {
   }
   function overlayVisibility() {
     drawAbilities();
-    party.hidden = solo || !active() || Game.mode !== 'play' || Game.loading > 0 || !panel.classList.contains('hidden') || !runIntro.hidden;
+    party.hidden = solo || !active() || Game.mode !== 'play' || Game.loading > 0 || !panel.classList.contains('hidden');
     if (party.hidden) for (const remote of remotes.values()) remote.label.hidden = true;
   }
   function show() {
@@ -718,7 +719,7 @@ const multiplayer = (() => {
   function hide() { setLobbyHelp(false); closePanel(); if (active()) Game.resume(); overlayVisibility(); }
   function active() { return connected && !!session && loaded; }
   function clearRemotes() { for (const r of remotes.values()) { r.body.rig.dispose(); r.label.remove(); } remotes.clear(); }
-  function resetStream() { closeRunSummary(false); clearRunIntro(); tracks.clear(); decoder.reset(); latestFrame = null; receivedFrames = 0; playback = null; ready = false; lastPose = 0; deferredStart = null; resetSpectator(); embers = []; rescuer = null; revive.clear(); if (typeof BossHazards !== 'undefined') BossHazards.clear(); }
+  function resetStream() { closeRunSummary(false); tracks.clear(); decoder.reset(); latestFrame = null; receivedFrames = 0; playback = null; ready = false; lastPose = 0; deferredStart = null; resetSpectator(); embers = []; rescuer = null; revive.clear(); if (typeof BossHazards !== 'undefined') BossHazards.clear(); }
   function retryConnection(message) {
     if (solo) { leave(ALONE_FAILED); return; }   // nothing to reconnect to: the lobby was this page's
     if (!reconnectWanted) return;
@@ -976,7 +977,6 @@ const multiplayer = (() => {
       clearControlPending(); notice(''); crateScreen.close();   // a fight starting takes over from the Collection or a roll
       const tipsRemaining = session && !msg.opening ? hud.controlsTipsTimer : CONFIG.hud.controlsTipsTime;
       session = msg.session; loaded = false; seq = 0; resetStream(); clearRemotes(); closeAbilities();
-      if (msg.opening) runIntroPending = session.gauntlet.id;
       const current = session;
       Game.story = false; closePanel();
       const loadingCard = Game.duelCard(session.id, session.partners || []);
@@ -1111,11 +1111,7 @@ const multiplayer = (() => {
     flushActivity(now);
     if (deferredStart && !Game.pendingLoad) { const start = deferredStart; deferredStart = null; start(); }
     if (active() && !ready && Game.loading <= 0) {
-      if (runIntroPending) showRunIntro(runIntroPending);
-      else {
-        if (!runIntro.hidden) clearRunIntro();
-        ready = true; send({ type: 'ready', epoch: session.epoch });
-      }
+      ready = true; send({ type: 'ready', epoch: session.epoch });
     }
     if (active() && ready && now >= lastPose) {
       const interval = 1000 / C.playerRate;
@@ -1224,7 +1220,7 @@ const multiplayer = (() => {
       p.pose(p.stateTime, { t: performance.now() / 1000, dt: CONFIG.step, yaw: p.yaw, px: game.player.x, pz: game.player.z });
       placed.push([p, { x: p.x, y: p.y, z: p.z, yaw: p.yaw }]);
       const v = labelPosition.set(p.x, p.y + p.height, p.z).project(camera);
-      r.label.hidden = p.hp <= 0 || r === remotes.get(spectatorTarget) || Game.mode !== 'play' || Game.loading > 0 || !runIntro.hidden || v.z < -1 || v.z > 1 || Math.abs(v.x) > 1 || Math.abs(v.y) > 1;
+      r.label.hidden = p.hp <= 0 || r === remotes.get(spectatorTarget) || Game.mode !== 'play' || Game.loading > 0 || v.z < -1 || v.z > 1 || Math.abs(v.x) > 1 || Math.abs(v.y) > 1;
       r.label.style.left = `${(v.x + 1) * innerWidth / 2}px`; r.label.style.top = `${(1 - v.y) * innerHeight / 2}px`;
     }
   }
@@ -1355,7 +1351,7 @@ const multiplayer = (() => {
     get lobby() { return { ...peekState }; },
     get waitingForTeamWipe() { return waitingForTeamWipe(); },
     get spectatorMode() { return waitingForTeamWipe(); },
-    get runIntroActive() { return !runIntro.hidden; },
+    get runIntroActive() { return false; },
     get spectating() { return waitingForTeamWipe() && !!spectatorTarget; },
     get listener() { if (typeof replayView !== 'undefined' && replayView.active) return replayView.listener; return waitingForTeamWipe() ? remotes.get(spectatorTarget)?.body || Game.player : Game.player; },
     get gauntlet() { return connected ? session?.gauntlet || null : null; },

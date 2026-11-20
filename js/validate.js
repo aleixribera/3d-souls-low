@@ -128,9 +128,8 @@ function validateData({ visual = true } = {}) {
     'CONFIG.abilities: offer a whole number of 1 or more, pickTime positive, pickHold 0 or more and under pickTime.');
   need(['common', 'rare', 'legendary'].every(r => RAR[r]) && Object.values(RAR).every(R => Number.isInteger(R.levels) && R.levels >= 1 && num(R.weight) && R.weight >= 0 && num(R.grow) && R.grow >= 0),
     'CONFIG.abilities.rarity: common, rare and legendary, each with whole levels of 1 or more and a weight and grow of 0 or more.');
-  need(Array.isArray(BL.first) && BL.first.length >= 1 && BL.first.every(r => RAR[r]) && ABILITIES.filter(b => BL.first.includes(b.rarity) && !b.crate).length >= BL.offer
-    && Number.isInteger(BL.legendaries) && BL.legendaries >= 1,
-    'CONFIG.abilities: first a list of rarities with enough abilities for an offer, legendaries a whole number of 1 or more.');
+  need(Array.isArray(BL.first) && BL.first.length >= 1 && BL.first.every(r => RAR[r]) && ABILITIES.filter(b => BL.first.includes(b.rarity) && !b.crate).length >= BL.offer,
+    'CONFIG.abilities: first a list of rarities with enough abilities for an offer.');
   need(new Set(ABILITIES.map(b => b.id)).size === ABILITIES.length, 'Ability ids must be unique.');
   const SUM = BL.summons;   // where each summon stands and how fast it runs (js/abilities.js summonStep)
   need(SUM && [SUM.arrive, SUM.near, SUM.side, SUM.radius].every(x => num(x) && x >= 0) && [...SUMMONS].every(k => SUM[k] && num(SUM[k].gap) && SUM[k].gap >= 0

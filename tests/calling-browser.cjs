@@ -62,8 +62,7 @@ const out = process.env.CALLING_SHOTS || '.scratch/calling';
     await a.setViewportSize({ width: 1280, height: 720 });
 
     await a.locator('#lobbyStart').click();
-    await a.locator('#runIntroScreen').waitFor({ timeout: 90000 });
-    assert.equal(await a.locator('#runIntroTitle').textContent(), 'BOSS RUSH');
+    assert.equal(await a.locator('#runIntroScreen').count(), 0, 'no 5 s intro pause at the start of Boss Rush');
     await Promise.all([ready(a), ready(b)]);
     assert.equal(app.sim.botList().length, 0, 'no bot fills the party');
     assert.equal(app.session.gauntlet.boss, 'pillagerCaptain');
@@ -102,7 +101,12 @@ const out = process.env.CALLING_SHOTS || '.scratch/calling';
     await a.screenshot({ path: `${out}/ability-phone.png` });
     await a.setViewportSize({ width: 1280, height: 720 });
     assert.deepEqual(await a.locator('#abilityChoices button').evaluateAll(bs => bs.map(b => b.dataset.rarity)), ['common', 'legendary', 'rare', 'common']);
+    assert.equal(await a.locator('#abilityConfirm').isDisabled(), true, 'Confirm disabled before a card is highlighted');
     await a.locator('#abilityChoices button', { hasText: 'Time Rift' }).click();
+    assert.equal(await a.locator('#abilityChoices button[aria-pressed=true]').getAttribute('data-ability'), 'time-rift', 'clicking highlights Time Rift');
+    assert.equal(await a.locator('#abilityStatus').textContent(), '', 'clicking a card does not confirm it yet');
+    assert.equal(await a.locator('#abilityConfirm').isDisabled(), false, 'Confirm enables once a card is highlighted');
+    await a.locator('#abilityConfirm').click();
     app.sim.offerAbilities = draw; skip = 4;   // on to fight 5, Crowned
     assert.equal(await a.locator('#abilityStatus').textContent(), 'Waiting for the others.');
     // Chosen: the choice stays in gold, the others readable; what a holds, with what it does, under the cards.
@@ -114,6 +118,10 @@ const out = process.env.CALLING_SHOTS || '.scratch/calling';
     assert.equal(app.session.epoch, epoch, 'the next fight waits for every pick');
     const bPick = await b.locator('#abilityChoices button').first().getAttribute('data-ability');
     await b.keyboard.press('Digit1');
+    await b.keyboard.press('Space');
+    assert.equal(await b.locator('#abilityConfirm').isDisabled(), false, 'Space and number keys only highlight');
+    await b.keyboard.press('ArrowDown');
+    await b.keyboard.press('Enter');
     const lastPick = Date.now();
     await a.waitForFunction(() => !document.getElementById('abilityStatus').textContent, null, { timeout: 5000 });   // everyone chose: no more waiting
     await a.waitForFunction(epoch => multiplayer.info.session?.epoch > epoch, epoch, { timeout: 30000 });
@@ -128,6 +136,10 @@ const out = process.env.CALLING_SHOTS || '.scratch/calling';
     blows([aId, bId]);
     assert.equal(await a.evaluate(() => Game.player.alive() && Game.player.hp === Game.player.maxHp), true, 'the fallen rise for the next fight');
     assert.deepEqual(await b.evaluate(() => Game.enemies.map(e => e.baseDef.id)), ['ostrey']);
+    await a.keyboard.down('KeyW');
+    for (let t = 0; t < 100 && app.sim.state.fought <= 0; t++) await a.waitForTimeout(50);
+    await a.keyboard.up('KeyW');
+    assert.ok(app.sim.state.fought > 0, 'moving wakes fight 5');
     await a.waitForTimeout(2500);   // let the fight start before the frame
     // The streak under the boss bar: the fight, Crowned, and its clock (the server's) while under par, with no par shown
     // (pass 96); the modifiers under it.
@@ -184,7 +196,7 @@ const out = process.env.CALLING_SHOTS || '.scratch/calling';
     const epoch6 = app.session.epoch;
     const pairFrom = app.sim.inspect().CONFIG.endless.pairFrom;
     skip = pairFrom - 1;   // on to the first fight with two bosses at once
-    for (const page of [a, b]) await page.keyboard.press('Digit1');
+    for (const page of [a, b]) { await page.keyboard.press('Digit1'); await page.locator('#abilityConfirm').click(); }
     await a.waitForFunction(epoch => multiplayer.info.session?.epoch > epoch, epoch6, { timeout: 30000 });
     await Promise.all([ready(a), ready(b)]);
     assert.equal(app.session.gauntlet.number, pairFrom);

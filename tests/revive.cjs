@@ -64,6 +64,7 @@ async function peer(origin, name) {
     const off = (p, dx, dz) => ({ x: p.x + dx, z: p.z + dz });
     for (const p of [a, b, c]) p.send({ type: 'ready', epoch: session.epoch });
     place(a, off(s, 0, 0)); place(b, off(s, 4, 0)); place(c, () => off(boss, 1.6, 0)); await flush(c);
+    place(c, () => off(boss, 1.75, 0)); await flush(c);   // moving wakes the fight
     await until(() => boss.netTarget === c.id, 8000, 'the boss takes the closest player');
 
     // Ash falls: an ember where they fell. Bram stands 4 m off: nothing happens however long.

@@ -295,9 +295,9 @@ MODEL_DEFS.varn = {
       // in the throne room 1600 and 1700 before the Ember mended him; trimmed so a fight lasts about as long as it did.
       throne: { hp: 1400, cooldown: [2.1, 4], approach: 0.6, kite: 0, speed: 2.2, mend: MEND,
         attacks: ['varnSweep', 'varnCleave', 'varnDelay', 'varnLunge', 'varnShoulder', 'varnRebuke', 'varnLeap'] },
-      // After the transition (15 s, invulnerable): burning, faster, fiercer tracking in the wind-ups (commit points
-      // unchanged), four of his own, and the Ember mends him faster.
-      knell: { name: 'Aldric, the Ember-Crowned', hp: 1500, transition: 15, ignite: true, cooldown: [1.6, 3.0], approach: 0.85, kite: 0, speed: 2.7,
+      // After the transition (5 s, invulnerable; 15 s before v7.160.0, too long a wait, Aleix): burning, faster, fiercer
+      // tracking in the wind-ups (commit points unchanged), four of his own, and the Ember mends him faster.
+      knell: { name: 'Aldric, the Ember-Crowned', hp: 1500, transition: 5, ignite: true, cooldown: [1.6, 3.0], approach: 0.85, kite: 0, speed: 2.7,
         turnRate: 3.6, trackRate: 2.2, parriedTime: 1.7, mend: { ...MEND, share: 0.55, cap: 0.14, delay: 2.0, rate: 0.065 },
         attacks: ['knellSweep', 'knellCleave', 'knellDelay', 'knellLunge', 'knellRebuke', 'knellLeap', 'tollingChain', 'ashWave', 'burningAscent', 'lastToll'] },
     },

@@ -118,7 +118,7 @@ const { createServer } = require('../server/index.cjs');
       const phaseHp = m.hp; g.hitbox = new Hitbox(g, { w: 30, h: 20, d: 30, y: 2, fwd: 0 }, makeStrike(g.def.attacks[0]));
       resolveTeamCombat(Game); const phaseSafe = m.hp === phaseHp;
       g.hitbox = null;
-      const kneel = (m.def.transition || CONFIG.enemy.transition) + 1;   // his knell kneels 15 s
+      const kneel = (m.def.transition || CONFIG.enemy.transition) + 1;   // his knell kneels 5 s
       for (let i = 0; i < kneel / CONFIG.step; i++) { Game.hitstop = 0; Game.update(CONFIG.step); }
       const phaseResumed = m.alive() && m.hp > 0 && m.state !== ES.PHASE;
 

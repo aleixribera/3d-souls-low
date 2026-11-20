@@ -27,7 +27,7 @@ async function peer(origin, name) {
   return { ws, send, next, queue, id: (await next('welcome')).id };
 }
 (async () => {
-  const app = createServer(), peers = [];
+  const app = createServer({ firstPick: false }), peers = [];
   await new Promise(resolve => app.server.listen(0, '127.0.0.1', resolve));
   const origin = 'http://127.0.0.1:' + app.server.address().port;
   const G = name => app.sim.inspect().Game.update.constructor('return ' + name)();

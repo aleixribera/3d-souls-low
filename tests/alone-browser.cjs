@@ -47,10 +47,17 @@ const { chromium } = require('./browser.cjs');
     assert.equal(await page.evaluate(() => multiplayer.info.session.gauntlet.id), 'boss-rush');
     const pick = async () => {
       await page.locator('#abilityScreen').waitFor({ timeout: 30000 });
+      assert.equal(await page.locator('#abilityConfirm').isDisabled(), true, 'Confirm stays disabled until a card is highlighted');
       await page.locator('#abilityChoices button').first().click();
+      assert.equal(await page.locator('#abilityScreen').isVisible(), true, 'clicking a card only highlights it');
+      assert.equal(await page.locator('#abilityConfirm').isDisabled(), false, 'Confirm enables once a card is highlighted');
+      await page.locator('#abilityConfirm').click();
       await page.locator('#abilityScreen').waitFor({ state: 'hidden', timeout: 30000 });
     };
     await pick();
+    await page.waitForTimeout(400);
+    assert.equal(await page.evaluate(() => alone.lobby.sim.state.fought), 0, 'the boss waits until the player moves');
+    await page.keyboard.down('KeyW'); await page.waitForTimeout(250); await page.keyboard.up('KeyW');
     await page.waitForFunction(() => alone.lobby.sim.state.fought > 0.5, null, { timeout: 30000 });
     await page.screenshot({ path: path.join(shots, 'fight-1-alone.png') });
 

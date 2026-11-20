@@ -148,6 +148,10 @@ function abilityHeldList(ids) {
   .bcard:hover:not(:disabled){background:#14171a;border-color:var(--ui-line-hi)}
   .bcard:focus-visible,.bcard[aria-pressed=true]{border-color:var(--ui-accent);outline:1px solid var(--ui-accent);outline-offset:-1px;background:#17150f}
   .bcard:disabled{opacity:.62;cursor:default}
+  #abilityScreen .ability-actions{display:flex;justify-content:center;margin-top:18px}
+  #abilityConfirm{width:auto;min-width:220px;min-height:44px;padding:10px 32px;touch-action:manipulation;-webkit-tap-highlight-color:transparent}
+  #abilityConfirm:disabled{opacity:.42;cursor:default}
+  #abilityConfirm:focus-visible{outline:2px solid var(--ui-accent-hi);outline-offset:3px}
   #abilityHeld{margin-top:22px;padding-top:14px;border-top:1px solid var(--ui-line)}#abilityHeld:empty{display:none}
   #abilityHeld h3{margin:0 0 10px;font:400 var(--ui-size-row)/1.2 var(--ui-display);color:var(--ui-ink)}
   #abilityHeld .held-list{grid-template-columns:repeat(auto-fill,minmax(280px,1fr))}
@@ -166,7 +170,8 @@ function abilityHeldList(ids) {
     .bcard-words{align-items:stretch}
     .bcard-name{flex-direction:row;align-items:baseline;gap:10px;margin-top:0;font-size:19px}
     .bcard-text{margin-top:5px}
-    .bcard-foot{margin-top:0;padding-top:7px;font-size:12px}}
+    .bcard-foot{margin-top:0;padding-top:7px;font-size:12px}
+    #abilityConfirm{width:100%}}
   @media (max-height:560px) and (min-width:600px){#abilityScreen .ability-panel{width:min(100%,860px)}#abilityChoices{grid-template-columns:1fr 1fr}}
   .held-list{--rare:#8fb8dc;--leg:#e59a5c;--body:#cfc8b6;display:grid;gap:10px 24px;margin:0;padding:0;list-style:none}
   .held-list li{--rc:var(--body);display:grid;grid-template-columns:28px minmax(0,1fr);column-gap:12px;align-items:start}

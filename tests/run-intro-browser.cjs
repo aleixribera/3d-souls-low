@@ -1,10 +1,9 @@
 'use strict';
 const assert = require('node:assert/strict');
-const fs = require('node:fs');
 const { chromium } = require('./browser.cjs');
 const { createServer } = require('../server/index.cjs');
 (async () => {
-  const app = createServer({ dev: true }), errors = [];
+  const app = createServer({ dev: true, firstPick: false }), errors = [];
   await new Promise(resolve => app.server.listen(0, '127.0.0.1', resolve));
   const browser = await chromium.launch({ channel: 'msedge', headless: true });
   async function player(name) {
@@ -23,60 +22,20 @@ const { createServer } = require('../server/index.cjs');
   const ready = p => p.waitForFunction(() => multiplayer.info.ready && Game.loading <= 0 && !multiplayer.runIntroActive, null, { timeout: 90000 });
   try {
     const a = await player('Ash'), b = await player('Ember');
-    const intros = await a.evaluate(() => Object.fromEntries(LOBBY_INTROS.map(i => [i.id, i.goal])));
-    for (const [choice, title, goal] of [['calling/boss-rush', 'BOSS RUSH', intros['boss-rush']], ['calling/weekly', 'WEEKLY RUN', intros.weekly]]) {
+    for (const choice of ['calling/boss-rush', 'calling/weekly']) {
       await a.evaluate(() => multiplayer.show());
       await a.locator('#lobbyAdventure').selectOption(choice); await a.locator('#lobbyStart').click();
-      await Promise.all([a, b].map(p => p.locator('#runIntroScreen').waitFor({ timeout: 90000 })));
-      assert.equal(await a.locator('#runIntroTitle').textContent(), title);
-      assert.equal(await a.locator('#runIntroGoal').textContent(), goal);
-      assert.equal(await a.locator('#runIntroScreen p').count(), 1, 'opening shows only the selected mode and one short goal');
-      assert.equal(await a.evaluate(() => multiplayer.info.ready), false, 'intro holds ready until players have seen it');
-      assert.ok([...app.clients.values()].every(p => !p.ready), 'combat cannot start during the opening');
-      const before = await a.evaluate(() => [Game.player.x, Game.player.z]);
-      await a.keyboard.press('Escape'); await a.keyboard.press('KeyR');
-      await a.evaluate(() => {
-        const read = gamepad.read;
-        try { gamepad.read = () => ({ buttons: Array.from({ length: 16 }, (_, i) => ({ pressed: i === 9, value: i === 9 ? 1 : 0 })), axes: [1, 1, 0, 0] }); gamepad.poll(CONFIG.step); }
-        finally { gamepad.read = read; gamepad.release(); }
-      });
-      assert.equal(await a.evaluate(() => Game.mode), 'play', 'intro input cannot open pause or restart');
-      assert.deepEqual(await a.evaluate(() => [Game.player.x, Game.player.z]), before, 'player waits safely behind the ceremony');
-      await a.waitForFunction(() => document.querySelector('#runIntroTitle').getAnimations().every(a => a.playState === 'finished'));
-      fs.mkdirSync('.scratch/run-intro', { recursive: true });
-      if (choice === 'calling/boss-rush') {
-        await a.screenshot({ path: '.scratch/run-intro/boss-rush.png' });
-        await a.setViewportSize({ width: 390, height: 740 });
-        assert.ok(await a.locator('.intro-message').evaluate(el => el.scrollWidth <= el.clientWidth));
-        await a.screenshot({ path: '.scratch/run-intro/boss-rush-narrow.png' });
-        await a.setViewportSize({ width: 1280, height: 720 });
-      } else await a.screenshot({ path: `.scratch/run-intro/${choice.split('/')[1]}.png` });
       await Promise.all([ready(a), ready(b)]);
-      assert.equal(await a.locator('#menu').evaluate(el => el.inert), false);
+      assert.equal(await a.locator('#runIntroScreen').count(), 0, `${choice}: no 5 s intro pause`);
+      await a.waitForTimeout(400);
+      assert.equal(app.sim.state.fought, 0, `${choice}: boss waits until a player moves or acts`);
+      await a.keyboard.down('KeyW'); await a.waitForTimeout(250); await a.keyboard.up('KeyW');
+      await a.waitForFunction(() => true);
+      for (let t = 0; t < 50 && app.sim.state.fought <= 0; t++) await a.waitForTimeout(50);
+      assert.ok(app.sim.state.fought > 0, `${choice}: moving wakes the boss`);
       for (const e of app.sim.inspect().Game.enemies) e.update = () => {};
     }
-    const epoch = app.session.epoch;
-    const late = await player('Late arrival'); await ready(late);
-    assert.equal(await late.locator('#runIntroScreen').isVisible(), false, 'late join never replays an opening');
-    assert.equal(app.session.epoch, epoch);
-    // Boss Rush's next fight follows the ability pick: a short one here, nobody choosing.
-    app.sim.abilityPickTime = 0.5;
-    const boss = app.sim.inspect().Game.duel; boss.hp = 0; boss.die(); app.sim.tick(5);
-    await a.waitForFunction(epoch => multiplayer.info.session?.epoch > epoch, epoch, { timeout: 20000 });
-    for (const e of app.sim.inspect().Game.enemies) e.update = () => {};
-    await Promise.all([ready(a), ready(b), ready(late)]);
-    assert.equal(await a.locator('#runIntroScreen').isVisible(), false, 'automatic boss advancement does not repeat the opening');
-    let owner;
-    for (const p of [a, b, late]) if (await p.evaluate(() => multiplayer.info.self === multiplayer.info.leader)) owner = p;
-    assert.ok(owner, 'party has a current leader');
-    await owner.evaluate(() => multiplayer.show()); await owner.locator('#lobbyRestart').click();
-    await a.locator('#runIntroScreen').waitFor({ timeout: 90000 });
-    await a.evaluate(() => multiplayer.leave());
-    assert.equal(await a.locator('#runIntroScreen').isVisible(), false, 'leaving cancels the ceremony');
-    assert.equal(await a.locator('#menu').evaluate(el => el.inert), false);
-    await b.emulateMedia({ reducedMotion: 'reduce' });
-    assert.equal(await b.locator('#runIntroTitle').evaluate(el => getComputedStyle(el).animationName), 'none');
     assert.deepEqual(errors, []);
-    console.log('Gold openings: Boss Rush and the Weekly Run, safe loading, input guards, narrow layout, late join, auto advance, cancellation and reduced motion passed.');
+    console.log('Run start: Boss Rush and Weekly Run skip the 5 s intro pause and wait until a player moves.');
   } finally { await browser.close(); await app.close(); }
 })().catch(e => { console.error(e); process.exitCode = 1; });

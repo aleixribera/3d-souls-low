@@ -60,10 +60,9 @@ async function peer(origin, name) {
     session = (await a.next('start')).session;
     assert.equal(session.par, S.par, 'the first fight carries its par');
     assert.ok(!session.drop, 'the first fight opens with its card');
-    await arrive(a);
-
     // Fight 1, won over par: the kill moment plays, then three choices and no swift kill.
     kill(); app.sim.tick(S.par + 5);
+    await arrive(a);
     assert.equal(Math.round(app.sim.state.fought), S.par + 5, "the server's clock stops when the boss falls");
     const slow = await a.next('abilities');
     assert.equal(slow.offer.length, CONFIG.abilities.offer, 'no extra choice over par');

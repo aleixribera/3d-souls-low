@@ -11,7 +11,7 @@
 //   rare:      `perk: { when, then }`: when something happens to its holder, something useful follows (ABILITY_PERKS);
 //              or a small `power` (below).
 //   legendary: `power: { when, then }`: when it happens, a drawn power strikes the boss (ABILITY_POWERS). The server
-//              resolves it; a legendary is held by one player of a team at most. A summon is a power too (`twin`, `hound`, `guardian`, `lancer`).
+//              resolves it. A summon is a power too (`twin`, `hound`, `guardian`, `lancer`).
 // A level's `cooldown` (s) spaces a perk's or power's triggers; a power's `once: true` fires once a fight.
 // Pressed abilities (pass 87, PLAN.md's player rework): a `key` (ABILITY_KEYS: strike, guard, summon or ultimate; the
 // number keys 1-4) and a perk or power `when: 'press'`. Each level's `charge` is the points its key fills before it
@@ -95,7 +95,7 @@ const ABILITIES = [
 
   // ---- Legendaries: one big power each, drawn in its own colour (js/ability-fx.js). Pass 73 (PLAN.md item 11): every
   // effect, sound and camera moment as before; less damage, and longer cooldowns, so one saves a bad
-  // fight without carrying a run. A player holds two at most (CONFIG.abilities.legendaries). ----
+  // fight without carrying a run. No cap on how many a player holds (v7.160.0). ----
   { id: 'meteor-fall', name: 'Meteor Fall', rarity: 'legendary', text: 'Jump heavy: a blast hits all within {radius}.',
     power: { when: 'land', then: 'blast', action: 'heavy' },
     levels: [{ radius: 4.5, damage: 95, cooldown: 5 }, { radius: 6, damage: 130, cooldown: 5 }] },

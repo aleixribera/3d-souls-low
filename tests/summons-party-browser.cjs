@@ -78,6 +78,7 @@ async function party(browser, mine, his) {
     const boss = () => R.Game.enemies[0];
     for (const e of R.Game.enemies) { e.hp = 0; e.die(); }
     await page.locator(`#abilityChoices button[data-ability="${mine}"]`).click({ timeout: 60000 });
+    await page.locator('#abilityConfirm').click();
     for (let t = 0; app.session.gauntlet.number < 2; t++) { if (t > 600) throw new Error('fight 2 never began'); await wait(50); }
     await ready();
     assert.equal(app.session.gauntlet.boss, 'hollis');

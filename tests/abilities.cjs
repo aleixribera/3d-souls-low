@@ -339,8 +339,6 @@ const realm = sim => name => sim.inspect().Game.update.constructor('return ' + n
     if (round % 2) assert.notEqual(BY[offer.at(-1)].rarity, 'common', "a swift kill's extra card is never common");
     for (const id of offer) {
       assert.ok(held.filter(h => h === id).length < BY[id].levels.length, 'never past its last level');
-      assert.ok(!(BY[id].rarity === 'legendary' && sim.abilities().mate.includes(id)), "never a teammate's legendary");
-      if (BY[id].rarity === 'legendary' && !held.includes(id)) assert.ok(new Set(held.filter(h => BY[h].rarity === 'legendary')).size < B.legendaries, 'never a third legendary');
       rarity[BY[id].rarity] = (rarity[BY[id].rarity] || 0) + 1;
     }
     sim.pickAbility('me', offer[round % offer.length]);
@@ -348,31 +346,35 @@ const realm = sim => name => sim.inspect().Game.update.constructor('return ' + n
   assert.ok(rarity.common > rarity.rare && rarity.rare > rarity.legendary && rarity.legendary > 0, `the odds: ${JSON.stringify(rarity)}`);
   assert.equal(sim.pickAbility('me', 'keen-edge'), false, 'no offer open');
 
-  // A legendary on a teammate's open offer is not offered too, nor taken once a teammate holds it.
+  // No card limits (v7.160.0, Aleix): a legendary a teammate holds or has on their offer is still offered and taken.
   sim.start('arena', 'ostrey');
   let shared = null;
   for (let i = 0; i < 400 && !shared; i++) {
     sim.offerAbilities(['mate'], false, 1, 40); shared = sim.abilityOffer('mate').find(id => BY[id].rarity === 'legendary') || null;
-    if (!shared) sim.pickAbility('mate', sim.abilityOffer('mate')[0]);
+    sim.pickAbility('mate', shared || sim.abilityOffer('mate')[0]);
   }
-  assert.ok(shared, 'a legendary offered');
-  for (let i = 0; i < 40; i++) { sim.offerAbilities(['me'], false, 1, 40); assert.ok(!sim.abilityOffer('me').includes(shared), "never a legendary on a teammate's offer"); sim.pickAbility('me', sim.abilityOffer('me')[0]); }
+  assert.ok(shared && sim.abilities().mate.includes(shared), 'a teammate took a legendary');
+  let mateToo = false;
+  for (let i = 0; i < 400 && !mateToo; i++) {
+    sim.giveAbilities('me', []);
+    sim.offerAbilities(['me'], false, 1, 60, true);
+    if (sim.abilityOffer('me').includes(shared)) mateToo = sim.pickAbility('me', shared);
+  }
+  assert.ok(mateToo, "a teammate's legendary is offered and taken");
 
-  // The legendary cap (pass 73, CONFIG.abilities.legendaries): holding two, a legendary card only levels one of them,
-  // a Crowned win's legendary included; with both at their last level no legendary comes at all.
+  // No legendary cap: holding every legendary but one, the last still comes; with all of them at their last level, none.
   sim.start('arena', 'ostrey');
-  const legends = Object.values(BY).filter(b => b.rarity === 'legendary' && !b.crate).map(b => b.id), two = legends.slice(0, B.legendaries);
-  sim.giveAbilities('cap', two);
-  let seen = 0;
+  const legends = Object.values(BY).filter(b => b.rarity === 'legendary' && !b.crate).map(b => b.id);
+  const keyed = new Set(), many = legends.filter(id => { const k = BY[id].key; if (!k) return true; if (keyed.has(k)) return false; keyed.add(k); return true; });
+  const rest = many.slice(0, -1), last = many.at(-1);
+  let lastSeen = 0;
   for (let i = 0; i < 300; i++) {
-    sim.offerAbilities(['cap'], false, 1, 60, i % 3 === 0);
-    const o = sim.abilityOffer('cap'), l = o.filter(id => BY[id].rarity === 'legendary');
-    assert.ok(l.every(id => two.includes(id)), `past the cap a legendary card is one already held: ${l}`);
-    if (i % 3 === 0) assert.ok(l.length >= 1, 'a Crowned win still offers one');
-    seen += l.length;
-    sim.giveAbilities('cap', two);   // the offer closed, the kit as it was
+    sim.giveAbilities('cap', rest);
+    sim.offerAbilities(['cap'], false, 1, 60, true);
+    lastSeen += sim.abilityOffer('cap').includes(last);
   }
-  assert.ok(seen > 0, 'their next levels are offered');
+  sim.giveAbilities('cap', rest);
+  assert.ok(lastSeen > 0, `past two legendaries a new one still comes (${rest.length} held)`);
 
   // The number keys (pass 87): a key once filled stays. Holding Fire Burst (Strike), no other Strike ability is
   // offered, only Fire Burst again as its next level; the other keys stay open.
@@ -387,11 +389,11 @@ const realm = sim => name => sim.inspect().Game.update.constructor('return ' + n
     sim.giveAbilities('keys', ['fire-burst']);
   }
   assert.ok(again > 0 && others > 0, `its next level comes (${again}), and the other keys (${others})`);
-  const maxed = two.flatMap(id => Array(BY[id].levels.length).fill(id));
+  const maxed = legends.flatMap(id => Array(BY[id].levels.length).fill(id));
   sim.giveAbilities('cap', maxed);
   for (let i = 0; i < 100; i++) {
     sim.offerAbilities(['cap'], false, 1, 60, true);
-    assert.ok(sim.abilityOffer('cap').every(id => BY[id].rarity !== 'legendary'), 'two legendaries at their last level: none offered');
+    assert.ok(sim.abilityOffer('cap').every(id => BY[id].rarity !== 'legendary'), 'every legendary at its last level: none offered');
     sim.giveAbilities('cap', maxed);
   }
   // The free pick before fight 1 (CONFIG.abilities.first): rares only (pass 96, Aleix).
@@ -432,7 +434,7 @@ async function peer(origin, name) {
   return { ws, send, next, queue, id: (await next('welcome')).id };
 }
 (async () => {
-  const app = createServer(), peers = [], g = realm(app.sim), B = g('CONFIG').abilities, BY = g('ABILITY_BY_ID'), S = g('PLAYER_DEF').stats;
+  const app = createServer({ firstPick: false }), peers = [], g = realm(app.sim), B = g('CONFIG').abilities, BY = g('ABILITY_BY_ID'), S = g('PLAYER_DEF').stats;
   await new Promise(resolve => app.server.listen(0, '127.0.0.1', resolve));
   const origin = 'http://127.0.0.1:' + app.server.address().port;
   let session;

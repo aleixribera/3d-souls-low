@@ -25,6 +25,7 @@
       Game.moveInput = () => mv ? { x: mv.x, z: mv.z, has: true } : { x: 0, z: 0, has: false };
       Math.random = seededRandom(12345);
       input.clear(); mv = null;
+      Game.worldWaiting = false;
       Game.cam.pitch = 0; Game.zoomTarget = Game.cam.zoom = CONFIG.zoom.default; Game.mouseHold = 0;   // no camera state leaks between tests
     },
     end() {
@@ -4462,6 +4463,19 @@
       try { if (kept === null) localStorage.removeItem(H.storageKey); else localStorage.setItem(H.storageKey, kept); } catch (e) { /* none */ }
       W.reload();
     }
+  });
+
+  test('World start: enemies wait stopped until the player moves or acts', () => {
+    Game.startFight('pillagerCaptain'); sim.begin();
+    Game.worldWaiting = true;
+    const e = Game.enemies[0], x0 = e.x, z0 = e.z;
+    sim.seconds(1);
+    expect.ok(Game.worldWaiting === true, 'still waiting while idle');
+    expect.ok(e.x === x0 && e.z === z0, 'boss has not moved');
+    sim.move(0, 1); sim.step(3); sim.move(null);
+    expect.ok(Game.worldWaiting === false, 'moving wakes the world');
+    sim.seconds(1.5);
+    expect.ok(Math.hypot(e.x - x0, e.z - z0) > 0.2 || e.state !== ES.IDLE, 'boss now moves or attacks');
   });
 
   // shard [k, n]: only the k-th (0-based) of n runs of consecutive matching tests, so CI can split the suite across

@@ -71,10 +71,15 @@ const { config: C } = require('../js/net-protocol.js');
     await page.screenshot({ path: path.join(shots, 'first-pick-phone.png') });
     await page.setViewportSize({ width: 1280, height: 720 });
     await pad(0);
+    assert.equal(await page.locator('#abilityScreen').isVisible(), true, 'PadA on a card only highlights it');
+    await pad(13); await pad(0);   // PadDown to Confirm, PadA to confirm
     await page.locator('#abilityScreen').waitFor({ state: 'hidden', timeout: 30000 });
     await page.waitForFunction(id => Game.player.kit.ids.includes(id), free[0], { timeout: 10000 });
-    await page.waitForTimeout(1500);
-    assert.ok(app.sim.state.fought > 0, 'then the boss wakes');
+    await page.waitForTimeout(400);
+    assert.equal(app.sim.state.fought, 0, 'the boss still waits until the player moves');
+    await page.keyboard.down('KeyW'); await page.waitForTimeout(250); await page.keyboard.up('KeyW');
+    await page.waitForTimeout(600);
+    assert.ok(app.sim.state.fought > 0, 'then the boss wakes once the player moves');
     await page.screenshot({ path: path.join(shots, 'fight-alone.png') });
     // The first boss falls: the ability pick, walked and taken by pad.
     for (const e of app.sim.inspect().Game.enemies) { e.hp = 0; e.die(); }
@@ -86,6 +91,7 @@ const { config: C } = require('../js/net-protocol.js');
     await pad(14); await pad(14); assert.equal(await focused(), cards[cards.length - 1], 'left from the first wraps to the last');
     await pad(15); await pad(15);
     await pad(0);
+    await pad(13); await pad(0);   // Confirm via pad
     await page.locator('#abilityScreen').waitFor({ state: 'hidden', timeout: 30000 });
     await page.waitForFunction(() => multiplayer.info.ready && Game.loading <= 0 && !multiplayer.abilityPending && multiplayer.rush?.fight === 2, null, { timeout: 90000 });
     assert.deepEqual(await page.evaluate(() => Game.player.kit.ids), [free[0], cards[1]], 'A took the focused card');

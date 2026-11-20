@@ -353,7 +353,7 @@
     // Her Sister's Half (the opener): she kneels by her sister a long while, untouchable, then rises in the whole suit and
     // the stones ring out round her.
     { id: 'sistersHalf', name: 'Her Sister\'s Half', anim: 'stomp', pose: 'castellanSistersHalf', noParry: true, invulnerable: true, tracking: { rate: 1.0, commit: 0.3 }, chance: 0,
-      hits: [{ startup: 2.6, active: 0.2, follow: 0.6, box: RING(1.2, 7, 1.6), impact: { ring: 4.0, crack: 1.6, dust: 20, shake: 0.18 } }],
+      hits: [{ startup: 1.8, active: 0.2, follow: 0.6, box: RING(1.2, 7, 1.6), impact: { ring: 4.0, crack: 1.6, dust: 20, shake: 0.18 } }],
       recovery: 0.72, damage: 24, poise: 40, knock: 10, lunge: 0, range: 4, box: RING(1.2, 7, 1.6) },
     // Both Halves: the crown cleave, a stamp that rings out, the beard rising. Parry the first; jump or roll the ring; roll the third.
     { id: 'bothHalves', name: 'Both Halves', anim: 'chop', pose: 'castellanBothHalves', tracking: { rate: 2.4, commit: 0.6 }, markers: glint(0), chance: 0.35,

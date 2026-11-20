@@ -31,7 +31,7 @@ async function peer(origin, name) {
 }
 const SATURDAY = Date.UTC(2026, 10, 14, 12), MONDAY = Date.UTC(2026, 10, 9, 0, 0, 1), NEXT_MONDAY = Date.UTC(2026, 10, 16, 0, 0, 1);
 async function serve(options) {
-  const app = createServer(options);
+  const app = createServer({ firstPick: false, ...options });
   await new Promise(resolve => app.server.listen(0, '127.0.0.1', resolve));
   return { app, origin: 'http://127.0.0.1:' + app.server.address().port };
 }

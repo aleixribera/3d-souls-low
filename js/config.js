@@ -3,7 +3,7 @@
 // 1. CONFIG
 // ============================================================================
 // Shared tuning. Per-character data (player, enemies, items) and level layouts live in section 2.
-const VERSION = 'v7.159.0';   // shown in the footer of the title and the pause menu; each release is tagged with the same name
+const VERSION = 'v7.160.0';   // shown in the footer of the title and the pause menu; each release is tagged with the same name
 const CONFIG = {
   step: 1 / 60,          // fixed simulation timestep (s)
   maxSteps: 5,           // max simulation steps per rendered frame
@@ -294,13 +294,12 @@ const CONFIG = {
   // as its next level; one at its last level never comes back. The next fight waits until everyone has chosen, or
   // `pickTime` s; a player who hasn't chosen by then gets the first offered. Each card's rarity is drawn by `weight`,
   // plus `grow` for each fight won (rarer as the run goes on); a rarity with nothing left to offer gives way to the
-  // others. `levels`: how many levels an ability of that rarity has. A legendary is held by one player of a team at most.
+  // others. `levels`: how many levels an ability of that rarity has. Any number of legendaries, by anyone (v7.160.0).
   // A swift kill's extra card (CONFIG.swift) is never common. Once everyone has chosen, the pick stays up `pickHold` s
   // after the last choice (Aleix, 2026-11-14: see what you took, and read the others), never past `pickTime`.
   // Pass 73 (PLAN.md item 11): every run opens with one free pick of `first` (rarities) before fight 1: rares since pass
-  // 96 (Aleix: the start was a struggle until the abilities came). A player holds at
-  // most `legendaries` legendaries; past that a legendary card only levels one already held.
-  abilities: { offer: 3, pickTime: 30, pickHold: 2, first: ['rare'], legendaries: 2,
+  // 96 (Aleix: the start was a struggle until the abilities came).
+  abilities: { offer: 3, pickTime: 30, pickHold: 2, first: ['rare'],
     // The number keys' abilities (js/abilities.js ABILITY_KEYS): the points each landed blow gives every key (`hit`,
     // `skill` more for a finisher, a full charge or a riposte), each deflect, perfect dodge and Finishing Blow. A press
     // strikes the locked enemy, else the nearest, within `range` m of its holder's body. The server takes a press with
@@ -454,9 +453,9 @@ const CONFIG = {
     grit: { range: 4, every: 0.7, dust: 6 },  // a perched enemy's warning: within its notice + `range` m, grit and a grind every `every` s
     fogClose: 0.7,                            // s for the throne room portcullis to drop behind the player
     // The transition into the Ember-Crowned (s into it; the phase's own `transition` is its length). Nothing here can hurt.
-    timeline: [{ at: 0.3, act: 'toll' }, { at: 1.8, act: 'shatter' }, { at: 3.8, act: 'toll' }, { at: 5.0, act: 'pillar', i: 0 },
-               { at: 6.4, act: 'pillar', i: 1 }, { at: 7.8, act: 'toll' }, { at: 9.0, act: 'ignite' }, { at: 10.4, act: 'roar' }],
-    igniteAt: 9.0,                            // when his armour catches (the visual change)
+    timeline: [{ at: 0.15, act: 'toll' }, { at: 0.65, act: 'shatter' }, { at: 1.3, act: 'toll' }, { at: 1.75, act: 'pillar', i: 0 },
+               { at: 2.25, act: 'pillar', i: 1 }, { at: 2.7, act: 'toll' }, { at: 3.1, act: 'ignite' }, { at: 3.6, act: 'roar' }],
+    igniteAt: 3.1,                            // when his armour catches (the visual change)
     glow: { color: 0xff5a18, base: 0.1, pulse: 0.06, rate: 3.2 },   // the burning armour's emissive glow
     embers: 30,                               // embers rising off him per second, burning
     mend: { lit: 0.5, embers: 24, from: [1.3, 2.3], life: 0.7, chest: 1.35 },   // pass 75: a closing wound draws embers in from `from` m to his chest (× scale) over `life` s; lit `lit` s after it last shrank

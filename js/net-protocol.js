@@ -23,11 +23,9 @@
     // The weekly run (PLAN.md track B item 8): Boss Rush on one seed per week (ISO week, UTC), the same bosses,
     // modifiers and ability offers for everyone; the server keeps the week's board (`board` runs and kills).
     weekly: Object.freeze({ id: 'weekly', name: 'WEEKLY RUN', board: 3 }),
-    bossLoadGrace: 3,
     // Boss Rush between fights (v7.69.0): the kill moment plays `rushKillTime` s in the arena, then the ability pick
-    // opens there; the next boss drops straight in, with no loading card, after only `rushDropGrace` s of the party loading.
-    rushKillTime: 2.5, rushDropGrace: 1,
-    runIntroScreenTime: 5,
+    // opens there; the next boss drops straight in with no loading card, and every fight waits until a player moves or acts.
+    rushKillTime: 2.5,
     spectatorFov: [10, 150],
     // Admission: sockets that have not said hello hold no player slot. Each address (the socket's, or the
     // last X-Forwarded-For entry a loopback/private proxy adds) has its own connection and hello budget.
