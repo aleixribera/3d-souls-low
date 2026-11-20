@@ -34,10 +34,12 @@ const sample = (a, tt) => {
 };
 const maxDiff = (u, w) => Math.max(...u.map((x, i) => Math.abs(x - w[i])));
 
-// 1. The Captain's cleave names the library's raise, and it resolves.
+// 1. The Captain's cleave winds up through the library's raise, and strikes and follows through on keys of its own (pass 113).
 const cap = G.ENEMY_DEFS.find(d => d.id === 'pillagerCaptain'), cleave = cap.attacks.find(a => a.id === 'captainOverhead');
 const P = G.ATTACK_POSES[cleave.pose];
-assert.equal(P.hits[0].via.windup, 'haftOverheadRaise');
+const raise = G.POSE_LIBRARY.haftOverheadRaise.keys;
+assert.deepEqual(P.hits[0].via.windup.slice(0, raise.length), raise);
+assert.ok(P.hits[0].via.active.length && P.hits[0].via.follow.length, 'the strike and the follow-through have in-between keys');
 assert.ok(G.POSE_LIBRARY.haftOverheadRaise.keys.length >= 2);
 
 // 2. Same ends as the straight blend; different in between; no jumps at 60 Hz.
@@ -46,10 +48,13 @@ G.ATTACK_POSES.__plainCleave = { ...P, hits: P.hits.map(h => ({ ...h, via: undef
 delete G.ATTACK_POSES.__plainCleave.hits[0].via;
 const [w0, wLen] = G.phaseSpan(cleave, 'windup', 0);
 const end = G.phaseSpan(cleave, 'recovery', 0)[0] + cleave.recovery;
-for (const t of [0.0001, w0 + wLen - 0.0001, w0 + wLen + 0.05, end - 0.01])
+const [a0, aLen] = G.phaseSpan(cleave, 'active', 0), [f0, fLen] = G.phaseSpan(cleave, 'follow', 0);
+for (const t of [0.0001, w0 + wLen - 0.0001, a0 + aLen - 0.0001, f0 + fLen - 0.0001, end - 0.01])
   assert.ok(maxDiff(sample(cleave, t), sample(plain, t)) < 0.02, `via keeps the authored pose at ${t.toFixed(3)} s`);
 const mid = Math.max(...[0.25, 0.5, 0.75].map(k => maxDiff(sample(cleave, w0 + wLen * k), sample(plain, w0 + wLen * k))));
 assert.ok(mid > 0.1, `the captured raise changes the wind-up (largest change ${mid.toFixed(2)} rad)`);
+const strike = maxDiff(sample(cleave, a0 + aLen * 0.5), sample(plain, a0 + aLen * 0.5)), follow = maxDiff(sample(cleave, f0 + fLen * 0.25), sample(plain, f0 + fLen * 0.25));
+assert.ok(strike > 0.1 && follow > 0.05, `the strike's and follow-through's keys bend the blend (${strike.toFixed(2)}, ${follow.toFixed(2)} rad)`);
 // Every channel, frame by frame through the whole attack: no frame steps far past both of its neighbours (a jump), and
 // through the wind-up nothing moves faster than the strike does (the capture's snap stays a wind-up's).
 const steps = [];

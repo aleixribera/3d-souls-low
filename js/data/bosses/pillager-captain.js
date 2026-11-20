@@ -71,6 +71,7 @@
     }).flatMap(([bone, list]) => list.map(s => ({ use: 'baked', mesh: `captain:${bone}__${s}`, bone, slot: s.split('.')[0], tile: 0.42,
       ...(bone === 'weapon' ? { weapon: true } : {}) }))),
     weapon: null,          // the bill is part of the figure (the `weapon: true` pieces above)
+    edgeTell: { slot: 'blade', size: 0.55, along: 0.9 },   // (pass 113) his wind-ups glow on the bill's edge, not over his hands and body
     hidden: ['burn'],      // the lit edge and the fire in the rags: shown by the lit phase's `reveal`
     grip: { span: [-0.7, 1.0], rest: [-0.95, 0.25, 3.14] },   // at rest the bill slants up across him, the blade toward you
     weaponRest: -1.0,      // where views that don't hold the haft (the codex, the finale) stand it
@@ -128,8 +129,18 @@
   const cleft = { crouch: 0.3, lean: 0.62, legL: [-1.0, 0, 0], kneeL: [0.5, 0, 0], legR: [0.7, 0, 0], kneeR: [0.15, 0, 0], chest: [0.55, 0, 0], neck: [-0.2, 0, 0], head: [-0.3, 0, 0],
     armR: [-0.55, 0, 0], elbowR: [0, 0, 0], haft: [0.58, 0, 3.14], armL: [-0.5, 0, -0.05], elbowL: [-0.1, 0, 0] };
   const wrenched = { ...cleft, crouch: 0.34, lean: 0.4, spin: [0, -0.3, 0], chest: [0.4, -0.15, 0], elbowR: [-0.7, 0, 0], elbowL: [-0.6, 0, 0], haft: [0.5, -0.12, 2.7] };
-  ATTACK_POSES.pillagerCleave = { ease: { windup: 'inOutSine', active: 'inQuad', follow: 'outCubic', recovery: 'inOutCubic' }, lag: { weapon: 0.08 },
-    hits: [{ windup: arched, strike: cleft, follow: wrenched, via: { windup: 'haftOverheadRaise' } }] };   // (pass 111) the raise as a person does it (js/data/pose-library.js)
+  // (pass 113, the judge's round 0: "the strike has no in-betweens and little follow-through") The blow is thrown from the
+  // hips: in the wind-up's last instant he arches a little deeper (the load); in the strike the chest and hips drive down
+  // first while the arms and bill trail, elbows bent, and whip through at the end; on impact his weight keeps going, the
+  // body sinking over the haft and the head dropping, before he wrenches the blade out.
+  const load = { t: 0.9, rel: true, crouch: 0.04, lean: -0.08, chest: [-0.12, 0, 0], head: [-0.08, 0, 0] };
+  ATTACK_POSES.pillagerCleave = { ease: { windup: 'inOutSine', active: 'inQuad', follow: 'outCubic', recovery: 'inOutCubic' }, lag: { weapon: 0.08, chest: 0.03, neck: 0.04, head: 0.05 },   // the follow-through carries the strike's speed on: a long chest lag stalled it a frame (tests/pose-via.cjs)
+    hits: [{ windup: arched, strike: cleft, follow: wrenched, via: {
+      windup: [...POSE_LIBRARY.haftOverheadRaise.keys, load],   // (pass 111) the raise as a person does it (js/data/pose-library.js)
+      active: [{ t: 0.4, rel: true, crouch: 0.06, lean: 0.18, chest: [0.32, 0, 0], head: [0.12, 0, 0], armR: [-0.55, 0, 0], armL: [-0.5, 0, 0], elbowR: [-0.5, 0, 0], elbowL: [-0.45, 0, 0], haft: [-0.45, 0, 0] },
+               { t: 0.75, rel: true, lean: 0.08, chest: [0.12, 0, 0], armR: [0.08, 0, 0], armL: [0.08, 0, 0], haft: [0.1, 0, 0] }],
+      follow: [{ t: 0.22, rel: true, crouch: 0.07, lean: 0.12, chest: [0.16, 0, 0], head: [0.18, 0, 0], kneeL: [0.12, 0, 0], haft: [0.06, 0, 0] }],
+    } }] };
 
   // The Hook: the bill laid out low on his right, the hook turned toward you, his eyes on you over his left shoulder; swept
   // across at your shins and hauled in (you with it); then a short chop down.

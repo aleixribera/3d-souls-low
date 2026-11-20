@@ -664,7 +664,8 @@ const CONFIG = {
     rollOnlyGlow: { color: 0x5ab4ff, boost: 2.6, ring: 2.4, opacity: 0.45 },
     // A `heavy` attack's wind-up (pass 96, the only blows that stagger the player): the whole body warms to amber as it
     // winds up, up to `tint` (emissive) at the strike; a steady rise, no flash.
-    heavyTell: { color: 0xff8a1a, tint: 0.7 },
+    // A model with an `edgeTell` (pass 113) keeps its body clear: its edge halo grows by `edge` of its size instead.
+    heavyTell: { color: 0xff8a1a, tint: 0.7, edge: 0.8 },
     // A body in a boss's grip (a hit's `seize`, pass 72): bone splinters as the hand closes, white-hot embers off it every
     // `every` s while it burns, a spray at each struggle, and a last one when it is thrown or tears loose.
     grip: { seize: { color: 0xe8e0cc, count: 22, speed: 5 }, burn: { color: 0xffb060, count: 3, speed: 2.2 }, every: 0.09,

@@ -1630,6 +1630,11 @@ const KIT = (() => {
     if ('breathFrom' in M && !known(M.breathFrom)) bad(`breathFrom names unknown bone "${M.breathFrom}".`);
     for (const H of M.halos || []) if (!(known(H.bone) && Array.isArray(H.at) && H.at.length === 3 && Number.isInteger(H.color) && H.size > 0 && H.opacity > 0 && H.opacity <= 1))
       bad('a halo needs a bone, at [x, y, z], a color, a size above 0 and an opacity in (0, 1].');
+    if ('edgeTell' in M) {   // (pass 113) the wind-up tell on the blade's edge, off the body
+      const T = M.edgeTell;
+      if (!(T && typeof T.slot === 'string' && M.parts.some(o => o.weapon && o.slot === T.slot) && !(M.hidden || []).includes(T.slot) && typeof T.size === 'number' && T.size > 0 && T.size <= 1.5 && typeof T.along === 'number' && T.along >= 0 && T.along <= 1))
+        bad('edgeTell needs slot (a weapon: true part\'s material slot, not a hidden one), size (the halo, m, above 0, up to 1.5) and along (where on the weapon it sits, 0 the hilt to 1 the tip).');
+    }
     if ('hum' in M && !(M.hum && known(M.hum.bone) && Array.isArray(M.hum.at) && M.hum.at.length === 3 && Number.isInteger(M.hum.color) && M.hum.size > 0))
       bad('hum needs a bone, at [x, y, z], a color and a size above 0.');   // pass 68
     for (const c of M.anim?.cloth || []) if (!known(c.bone)) bad(`anim.cloth names unknown bone "${c.bone}" (a model's own \`bones\` replace the ones it extends).`);
@@ -1694,7 +1699,8 @@ const KIT = (() => {
     // The weapon's own copies of its slots' materials (see modelParts).
     const bakedWeapon = M.parts.filter(o => o.weapon).map(o => o.slot);   // a weapon built in Blender (`weapon: true` parts)
     for (const slot of new Set([...(M.weapon ? Object.values(M.weapon.slots) : []), ...bakedWeapon])) weaponMats[slot] = makeMat(M.materials[slot]);
-    const mainSlot = M.weapon ? M.weapon.slots.blade ?? Object.values(M.weapon.slots)[0] : bakedWeapon[0];
+    // (pass 113) a model's `edgeTell`: the wind-up colours only that slot (the blade's edge), not the haft in his hands
+    const mainSlot = M.edgeTell ? M.edgeTell.slot : M.weapon ? M.weapon.slots.blade ?? Object.values(M.weapon.slots)[0] : bakedWeapon[0];
     rig.weaponMat = mainSlot ? weaponMats[mainSlot] : new THREE.MeshStandardMaterial();
     if (!mainSlot) rig.mats.push(rig.weaponMat);
     rig.weaponBase = new THREE.Color(0xffffff);
@@ -1771,6 +1777,14 @@ const KIT = (() => {
     } else if (M.hidden && built.parts.some(p => p.weapon)) {   // (v7.62.0) a weapon still hidden: the fist glints
       const sprite = glowSprite(0xfff2d0, 2.0, 0.5, 0, null); sprite.position.set(0, -0.05, 0.05); sprite.visible = false;
       rig.weapon.add(sprite); rig.glint = { sprite, size: 0.5 };
+    }
+    // (pass 113, opt-in) `edgeTell`: the wind-up halo small, on the blade's edge, not over the hands and haft; and no
+    // whole-body heavy tint (Enemy.pose): nothing covers the boss's pose during a wind-up (VISION; docs/bosses/system.md).
+    rig.edgeTell = null;
+    if (M.edgeTell && box) {
+      const T = M.edgeTell, len = box.max.z - box.min.z;
+      rig.warnGlow.position.set((box.min.x + box.max.x) / 2, (box.min.y + box.max.y) / 2, box.min.z + len * T.along);
+      rig.warnGlow.scale.setScalar(T.size); rig.edgeTell = { size: T.size };
     }
     if (M.aura) {   // a faint aura marks a stronger variant
       const a = glowSprite(M.aura.color, 1.0, M.aura.size, M.aura.opacity, 0.7); a.position.set(0, 0.25, 0); rig.chest.add(a);

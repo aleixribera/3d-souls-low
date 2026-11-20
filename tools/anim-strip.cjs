@@ -7,7 +7,8 @@
 // spread over the blow, two from each counter before it), boss:<attackId> (pass 111, docs/bosses/system.md: that boss
 // attack from wind-up to recovery, filmed from the side at a fixed camera, the player standing in front out of reach,
 // `frames` spread over the attack; `every` unused). With CLIP=<file.mp4> every step is also written as a 60 fps clip
-// (ffmpeg on PATH).
+// (ffmpeg on PATH). For boss:<attackId> clips (pass 113): REPEAT=<n> plays the attack n times (the strip keeps the first),
+// VIEW=game films through the game's own camera behind the player instead of from the side.
 // One headless Edge, closed at the end; idle priority. Take the browser lock (.claude/iterate.md) before running it.
 require('../tests/low-priority.cjs');
 const fs = require('node:fs');
@@ -18,6 +19,7 @@ const { createServer } = require('../server/index.cjs');
 const [move = 'dash', out = '.scratch/strip.jpg', frames = '14', every = '2', zoom = '1', width = '640', height = '480'] = process.argv.slice(2);
 const CLIP = process.env.CLIP || '';
 const NOVIA = !!process.env.NOVIA;   // NOVIA=1: every key pose's in-between keys left out (a before/after of a `via`)
+const REPEAT = Math.max(1, +process.env.REPEAT || 1), VIEW = process.env.VIEW || 'side';
 
 (async () => {
   const app = createServer({ dev: true }); await new Promise(r => app.server.listen(0, '127.0.0.1', r));
@@ -28,7 +30,8 @@ const NOVIA = !!process.env.NOVIA;   // NOVIA=1: every key pose's in-between key
     await page.addInitScript(() => localStorage.setItem('combat-arena-3d.settings', JSON.stringify({ graphics: 'normal', volume: 0 })));
     await page.goto(`http://127.0.0.1:${app.server.address().port}/combat-arena-3d.html#dev`);
     await page.waitForFunction(() => window.__arenaReady, null, { timeout: 120000 });
-    const data = await page.evaluate(async ([move, frames, every, zoom, clip, novia]) => {
+    const data = await page.evaluate(async ([move, frames, every, zoom, clip, novia, repeat, view]) => {
+      const trace = [];
       if (novia) for (const P of Object.values(ATTACK_POSES)) for (const h of P.hits || []) delete h.via;
       const STEP = CONFIG.step; let clock = 0;
       Game.manualClock = true; input.now = () => clock; gamepad.poll = () => {}; gamepad.move = { x: 0, y: 0 };
@@ -45,7 +48,7 @@ const NOVIA = !!process.env.NOVIA;   // NOVIA=1: every key pose's in-between key
       // Every step is drawn, as the game draws each frame at 60 Hz: the pose's visual clocks (the deflect's, the
       // landing's, afterimages) run on the drawn frames' time, so drawing only the filmed steps slowed them (pass 102).
       const draw = () => {
-        if (move === 'finisher') { Game.render(1, STEP); return; }   // the game's own camera
+        if (move === 'finisher' || view === 'game') { Game.render(1, STEP); return; }   // the game's own camera
         aim(); at.subVectors(cam.pos, cam.look).divideScalar(zoom).add(cam.look);
         const c = Game.cam; c.prevPos.copy(at); c.pos.copy(at); c.prevLook.copy(cam.look); c.look.copy(cam.look);
         Game.render(1, STEP);
@@ -102,20 +105,26 @@ const NOVIA = !!process.env.NOVIA;   // NOVIA=1: every key pose's in-between key
         // camera square to its side. Its AI held while it settles; then the attack, every step drawn, `frames` of it kept.
         const e = Game.duel || Game.enemies[0], a = e.attackById(bossAttack);
         p.maxHp = p.hp = 1e6;
-        const k = Math.max(1, e.def.scale || 1), far = (a.range || 3) + (a.lunge || 0) + 4;
+        const k = Math.max(1, e.def.scale || 1), far = (a.range || 3) + (a.lunge || 0) + (view === 'game' ? 2 : 4);   // the game's camera: nearer, as a player stands
         e.x = e.px = 0; e.z = e.pz = 0; e.yaw = Math.PI / 2;
         p.x = p.px = far; p.z = p.pz = 0; p.yaw = p.pyaw = -Math.PI / 2; p.vx = p.vz = 0;
         aim = () => { cam.pos.set(e.x + 1.2 * k, 1.7 * k, 7.5 * k); cam.look.set(e.x + 1.2 * k, 1.1 * k, e.z); };
-        e.update = function () {}; step(40); delete e.update;
-        e.beginAttack(a);
         const total = Math.round((phaseSpan(a, 'recovery', a.hits.length - 1)[0] + a.recovery) / STEP) + 6;
         const pick = new Set(Array.from({ length: frames }, (_, j) => Math.round(j * (total - 1) / Math.max(1, frames - 1))));
-        for (let i = 0; i < total; i++) {
-          p.x = p.px = far; p.z = p.pz = 0; p.vx = p.vz = 0;   // the player stays put, out of reach
-          step(1);
-          const keep = pick.has(i), shot = clip || keep ? renderer.domElement.toDataURL('image/jpeg', 0.85) : null;
-          if (clip) film.push(shot);
-          if (keep) shots.push(shot);
+        for (let n = 0; n < repeat; n++) {
+          e.update = function () {}; step(view === 'game' && !n ? 120 : 40); delete e.update;   // the game's camera settles behind the player first
+          if (clip && n) for (let i = 0; i < 20; i++) { e.update = function () {}; step(1); delete e.update; film.push(renderer.domElement.toDataURL('image/jpeg', 0.85)); }
+          e.x = e.px = 0; e.z = e.pz = 0;
+          e.beginAttack(a);
+          for (let i = 0; i < total; i++) {
+            p.x = p.px = far; p.z = p.pz = 0; p.vx = p.vz = 0;   // the player stays put, out of reach
+            if (view === 'game') p.yaw = p.pyaw = Math.atan2(e.x - p.x, e.z - p.z);
+            step(1);
+            const keep = !n && pick.has(i), shot = clip || keep ? renderer.domElement.toDataURL('image/jpeg', 0.85) : null;
+            if (clip) film.push(shot);
+            if (keep) shots.push(shot);
+            trace.push(`${n} ${i} ${e.state} ${e.stateTime.toFixed(3)} ${e.holdLeft}`);
+          }
         }
       } else throw new Error('unknown move ' + move);
       // Tile: one row, each frame cropped to the middle and numbered.
@@ -130,8 +139,9 @@ const NOVIA = !!process.env.NOVIA;   // NOVIA=1: every key pose's in-between key
         g.drawImage(im, sx, 0, sw, im.height, (i % cols) * W + (W - dw) / 2, Math.floor(i / cols) * H + (H - dh) / 2, dw, dh);
         g.fillStyle = '#ff0'; g.font = '16px sans-serif'; g.fillText(String(i), (i % cols) * W + 4, Math.floor(i / cols) * H + 18);
       });
-      return { strip: cv.toDataURL('image/jpeg', 0.82), film };
-    }, [move, +frames, +every, +zoom, !!CLIP, NOVIA]);
+      return { strip: cv.toDataURL('image/jpeg', 0.82), film, trace };
+    }, [move, +frames, +every, +zoom, !!CLIP, NOVIA, REPEAT, VIEW]);
+    if (process.env.TRACE) console.log(data.trace.join('\n'));   // TRACE=1: the boss's state each step
     fs.mkdirSync(path.dirname(path.resolve(out)), { recursive: true });
     fs.writeFileSync(out, Buffer.from(data.strip.split(',')[1], 'base64'));
     if (CLIP && data.film.length) {   // the clip: every step at 60 fps

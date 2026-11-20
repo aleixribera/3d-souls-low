@@ -53,12 +53,13 @@ coming (approach 0.75, kite 0.05): the court gets smaller every exchange.
 
 Big on impact (the Cleave's crack and dust, the Furrow's line of broken floor), on Kindling and on the phase change
 (the `revealBurst`). **Found by round 0 of the judge:** during the Cleave's wind-up the whole body is tinted orange
-(the heavy tell) and a blue glow covers his hands and the haft; both hide the pose the player reads. The tell moves to
-the weapon's edge in the cel pass.
+(the heavy tell) and a blue glow covers his hands and the haft; both hide the pose the player reads. Pass 113: the tell is on
+the bill's edge (`edgeTell`); his body keeps its own colour.
 
 ## Animation
 
 Key poses per hit in the data file. The Cleave's wind-up uses the pose library's `haftOverheadRaise` (captured from a
-halberd drill: the hips and chest wind back first and the head drops as the arms rise). Next, from the judge: the
-strike itself (in-between keys and a follow-through that carries past the blow) and the same capture for the Three
-Cuts' heave.
+halberd drill: the hips and chest wind back first and the head drops as the arms rise). Pass 113: the strike has
+in-between keys (a last deeper arch before release; the chest and hips drive down first while the arms trail, then
+whip through) and the follow-through carries his weight past the blow before the wrench. Next: the same capture for
+the Three Cuts' heave.

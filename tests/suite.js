@@ -2457,6 +2457,19 @@
     const far = attacksAt('pillagerCaptain', 8), near = attacksAt('pillagerCaptain', 2.2);
     expect.ok(far.includes('captainThrust') && !near.includes('captainThrust'), `thrust only from range (8 m: ${far.join(', ')}; 2.2 m: ${near.join(', ')})`);
   });
+  // Pass 113 (docs/bosses/system.md "Effects"): a model's `edgeTell` keeps the wind-up's tell on the blade: the heavy
+  // overhead leaves his body its own colour, the halo sits out on the bill's head, small, and grows as the blow nears.
+  test('Pillager Captain: his wind-up tell is on the bill\'s edge, never over his body', () => {
+    Game.startFight('pillagerCaptain'); Game.loading = 0; sim.begin();
+    const e = Game.duel, r = e.rig, over = e.def.attacks.find(a => a.rollOnly && a.heavy), T = r.edgeTell;
+    expect.ok(T && r.weaponSlotMeshes.blade.material === r.weaponMat, 'the tell colours the blade, not the haft');
+    const scaleAt = f => { e.attack = over; e.hitIndex = 0; e.holdLeft = 0; e.setState(ES.WINDUP); e.stateTime = over.hits[0].startup * f; Game.render(0, STEP); return r.warnGlow.scale.x; };
+    const early = scaleAt(0.2), late = scaleAt(0.95);
+    expect.ok(r.bodyMats.every(m => m.emissive.r + m.emissive.g + m.emissive.b < 0.01), 'no heavy tint on the body');
+    expect.ok(r.warnGlow.visible && late > early && early < 1, `the halo is small and grows (${early.toFixed(2)} to ${late.toFixed(2)} m)`);
+    const fromHands = r.warnGlow.getWorldPosition(new THREE.Vector3()).distanceTo(r.weapon.getWorldPosition(new THREE.Vector3()));
+    expect.ok(fromHands > 1, `the halo is out on the bill's head, ${fromHands.toFixed(2)} m from his hands`);
+  });
   // Pass 100 (PLAN.md "Next, small" 2): the Finishing Blow, played through. Each deflected string leaves the Captain open;
   // the counter cracks its guard; the third counter is the Finishing Blow.
   test('Finishing Blow: each counter on the Pillager Captain cracks its guard, and the third is the Finishing Blow', () => {
