@@ -57,7 +57,9 @@ const { chromium } = require('./browser.cjs');
     await pick();
     await page.waitForTimeout(400);
     assert.equal(await page.evaluate(() => alone.lobby.sim.state.fought), 0, 'the boss waits until the player moves');
-    await page.keyboard.down('KeyW'); await page.waitForTimeout(250); await page.keyboard.up('KeyW');
+    // Held until the boss starts: a fixed 250 ms press could fall between two slow SwiftShader frames on CI (run 44819277238).
+    await page.keyboard.down('KeyW');
+    try { await page.waitForFunction(() => alone.lobby.sim.state.fought > 0, null, { timeout: 30000 }); } finally { await page.keyboard.up('KeyW'); }
     await page.waitForFunction(() => alone.lobby.sim.state.fought > 0.5, null, { timeout: 30000 });
     await page.screenshot({ path: path.join(shots, 'fight-1-alone.png') });
 
