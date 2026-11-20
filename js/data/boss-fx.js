@@ -925,4 +925,31 @@ const BOSS_FX = {
       ] },
     },
   },
+  // Veyra, the Ashwing (Boss v2 flagship): obsidian cinder-wyvern shedding glowing ash motes, igniting in Phase 2.
+  ashwing: {
+    element: 'arson', aura: 0xff6e24,
+    phases: { cinderwake: 'royalFlame' },
+    ambient: { kind: 'emberCrown', color: 0xff6e24, secondary: 0x1a0e0c, rate: 26, radius: 1.8, height: 2.8 },
+    phaseAmbient: { cinderwake: { kind: 'emberCrown', color: 0xff3e0c, secondary: 0xffe48c, rate: 52, radius: 2.1, height: 3.2 } },
+    phaseFx: { dome: { radius: 7.2, height: 4.6, time: 0.6 }, spires: { count: 14, radius: 4.2, height: 2.8, style: 'flame' },
+               pillar: { radius: 1.9, height: 14 }, glyph: 'shatter', arcs: 10, rings: 2 },
+    attacks: {
+      ashClawCombo: { windup: 'gather', hits: [
+        { slash: { kind: 'claw', scale: 1.5, tilt: 0.18, y: 1.15 }, arcs: 3 },
+        { slash: { kind: 'claw', scale: 1.55, tilt: -0.2, y: 1.15 }, arcs: 4 },
+      ] },
+      ashTailSweep: { windup: 'gather', slash: { kind: 'wheel', scale: 1.85, tilt: 0.06, y: 0.95 }, arcs: 5 },
+      ashTailBack:  { windup: 'gather', slash: { kind: 'wheel', scale: 1.75, tilt: -0.06, y: 0.95 }, arcs: 4 },
+      ashWingCleave: { windup: 'crackle', impact: 'blaze', slash: { kind: 'cross', scale: 1.85, y: 1.35 },
+        dome: { radius: 4.2, height: 2.4 }, arcs: 6 },
+      ashBiteLunge: { windup: 'gather', slash: { kind: 'thrust', scale: 1.45, y: 1.25 }, arcs: 3 },
+      ashCinderLine: { element: 'arson', impact: 'blaze', windup: 'vortex', arcs: 5 },
+      ashEmberFan: { element: 'arson', windup: 'gather', arcs: 4 },
+      ashSkyDive: { element: 'royalFlame', impact: 'blaze', windup: 'vortex',
+        dome: { radius: 5.4, height: 3.4 }, spires: { count: 12, radius: 3.6, height: 2.5, style: 'flame' },
+        glyph: 'shatter', arcs: 8 },
+      ashCinderEclipse: { element: 'royalFlame', impact: 'blaze', windup: 'vortex',
+        dome: { radius: 6.4, height: 4.2 }, glyph: 'arcane', arcs: 10 },
+    },
+  },
 };

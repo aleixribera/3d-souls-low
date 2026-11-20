@@ -99,7 +99,7 @@ const BossHazards = (() => {
       }
       if (!inActive || !targets) continue;
       for (const t of targets) {
-        if (typeof t.takeHit !== 'function' || !overlaps(h, t)) continue;
+        if (!t || typeof t.takeHit !== 'function' || !overlaps(h, t)) continue;
         if (t.invulnerable && t.invulnerable()) {
           if (!h.hit.has(t)) {
             h.hit.add(t);

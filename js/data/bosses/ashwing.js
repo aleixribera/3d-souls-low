@@ -1,9 +1,11 @@
 'use strict';
 // ============================================================================
-// Veyra, the Ashwing — Flagship Boss v2 (26-bone skinned wyvern, stances, timeline tracks, synced hazards)
+// Veyra, the Ashwing — Sculpted Boss v2 Cinder Wyvern
 // ============================================================================
-// Built in Blender (tools/blender/ashwing.py) with a 26-bone armature, smooth 4-bone skinning,
-// and 10 exported animation clips. Uses Boss v2 (js/boss-v2.js, js/boss-rig.js, js/boss-fx-v2.js).
+// 26-bone skinned Blender armature (tools/blender/ashwing.py) with 12 game-space authored clips.
+// Grounded melee-first anime duel with crisp deflectable combos (foreclaws, scythe tail, wing-blades,
+// snapping jaw) and brief aerial peaks (soaring sky-dive) + fair shader-telegraphed magma fissures
+// and Phase-2 converging cinder beams.
 
 if (typeof MODEL_DEFS !== 'undefined') {
   MODEL_DEFS.ashwing = {
@@ -11,76 +13,76 @@ if (typeof MODEL_DEFS !== 'undefined') {
     rigId: 'ashwing',
     faction: 'ember',
     budget: 'boss',
-    tile: 0.55,
-    rim: 0.55,
-    shadowRadius: 1.85,
+    tile: 0.65,
+    rim: 0.32,
+    shadowRadius: 1.75,
     primarySocket: 'clawR',
-    hidden: ['cinder'],   // blazing wing-blade & dorsal veins revealed in Phase 2 (Cinderwake)
+    hidden: ['cinder'],   // blazing wing-blade & tail-scythe veins revealed in Phase 2 (Cinderwake)
     materials: {
-      scale:    { tex: 'emberBark', tint: 0x1a171e, roughness: 0.48, metalness: 0.3, rim: 0.5 },
-      membrane: { tex: 'sentinelRags', tint: 0x3e1210, roughness: 0.72, metalness: 0.05, double: true, rim: 0.35 },
-      bone:     { tex: 'bone', tint: 0xd8ccb4, roughness: 0.45, metalness: 0.05, rim: 0.5 },
-      ember:    { glow: 0xff6218 },
-      cinder:   { glow: 0xffa828 },
+      scale:    { tex: 'beastHide', tint: 0x36303a, decay: 0.72, roughness: 0.62, metalness: 0.24, rim: 0.28 },
+      membrane: { tex: 'sentinelRags', tint: 0x561a16, decay: 0.6, roughness: 0.78, metalness: 0.05, double: true, rim: 0.20 },
+      bone:     { tex: 'bone', tint: 0xc2b49c, decay: 0.5, roughness: 0.48, metalness: 0.05, rim: 0.30 },
+      ember:    { glow: 0xff5a14 },
+      cinder:   { glow: 0xffa624 },
     },
     sockets: {
-      clawR: { bone: 'foreR2', at: [0, -0.55, 0.25], size: 0.85 },
-      clawL: { bone: 'foreL2', at: [0, -0.55, 0.25], size: 0.85 },
-      tail:  { bone: 'tail4',  at: [0, 0.05, -0.55], size: 0.95 },
-      wingL: { bone: 'wingL3', at: [0.35, 0, 0],     size: 1.05 },
-      wingR: { bone: 'wingR3', at: [-0.35, 0, 0],    size: 1.05 },
-      jaw:   { bone: 'jaw',    at: [0, -0.05, 0.35], size: 0.90 },
+      clawR: { bone: 'foreR2', at: [0, -0.55, 0.25], size: 0.80 },
+      clawL: { bone: 'foreL2', at: [0, -0.55, 0.25], size: 0.80 },
+      tail:  { bone: 'tail4',  at: [0, 0.05, -0.55], size: 0.90 },
+      wingL: { bone: 'wingL3', at: [0.35, 0, 0],     size: 0.95 },
+      wingR: { bone: 'wingR3', at: [-0.35, 0, 0],    size: 0.95 },
+      jaw:   { bone: 'jaw',    at: [0, -0.05, 0.35], size: 0.85 },
     },
   };
+  MODEL_DEFS.ashwing.tells = MODEL_DEFS.ashwing.sockets;
 }
 
 {
   const glint = (...hits) => hits.map(i => ({ event: 'glint', parry: true, ...(i ? { hit: i } : {}) }));
-  const CLAW  = { w: 3.4, h: 1.8, d: 3.4, fwd: 2.1, y: 1.1 };
-  const TAIL  = { w: 5.2, h: 1.5, d: 4.4, fwd: 0.4, y: 1.0 };
-  const WING  = { w: 4.8, h: 2.1, d: 3.6, fwd: 2.0, y: 1.4 };
-  const SLAM  = { w: 5.4, h: 2.2, d: 5.4, fwd: 0.0, y: 1.1, round: true };
+  // Tight, honest hitboxes matched 1-to-1 to her animated limbs
+  const CLAW = { w: 2.6, h: 1.6, d: 2.6, fwd: 1.85, y: 1.0 };
+  const BITE = { w: 1.5, h: 1.5, d: 2.9, fwd: 2.1,  y: 1.2 };
+  const TAIL = { w: 4.4, h: 1.3, d: 3.4, fwd: 0.2,  y: 0.9 };
+  const WING = { w: 3.8, h: 1.8, d: 2.8, fwd: 1.9,  y: 1.25 };
+  const SLAM = { w: 4.6, h: 2.0, d: 4.6, fwd: 0.0,  y: 1.0, round: true };
 
   const ASHWING = {
     id: 'ashwing',
     model: 'ashwing',
     v2: true,
     name: 'Veyra, the Ashwing',
-    description: 'A cinder-veined wyvern that prowls on taloned forelimbs, takes to the air on beating wings, and splits the arena with magma fissures.',
-    scale: 1.08,
+    description: 'An obsidian cinder-wyvern that hunts on taloned forelimbs, lashes with a scythe tail, and splits the arena with magma fissures.',
+    scale: 1.32,
     bulk: 1.0,
-    radius: 0.95,
-    color: 0x38282c,
+    radius: 0.92,
+    color: 0x262028,
     weapon: 'none',
     idle: 'still',
-    hp: 920,
+    hp: 900,
     poise: 180,
-    speed: 3.8,
+    speed: 3.9,
     turnRate: 4.6,
-    trackRate: 3.0,
-    cooldown: [0.65, 1.25],
+    trackRate: 2.8,
+    cooldown: [0.7, 1.3],
     flinchTime: 0,
     staggerTime: 1.4,
     parriedTime: 1.5,
     noRepeat: 2,
     initialStance: 'ground',
+    // Grounded melee-first stances; brief aerial peaks happen inside sky-dive / eclipse motion curves
+    // so melee players are never stuck swinging at empty air beneath a permanently hovering boss.
     stances: {
       ground: {
         altitude: 0,
         speedMul: 1.0,
+        climbRate: 5.5,
+      },
+      aerial: {
+        altitude: 2.4,
+        speedMul: 1.15,
         climbRate: 5.0,
         transitions: [
-          { to: 'airborne', minTime: 9, maxTime: 16, chance: 0.25 },
-          { to: 'airborne', minTime: 5, distMin: 9, chance: 0.35 },
-        ],
-      },
-      airborne: {
-        altitude: 2.5,
-        speedMul: 1.25,
-        orbit: 0.85,
-        climbRate: 4.0,
-        transitions: [
-          { to: 'ground', minTime: 10, maxTime: 14, chance: 0.3 },
+          { to: 'ground', minTime: 3.0, maxTime: 4.5, chance: 1.0 },
         ],
       },
     },
@@ -88,171 +90,167 @@ if (typeof MODEL_DEFS !== 'undefined') {
     phases: {
       ashwing: {
         name: 'Veyra, the Ashwing',
-        hp: 920,
-        attacks: ['ashClawRake', 'ashTailWhip', 'ashTailTurn', 'ashWingCross', 'ashEmberBreath', 'ashTakeoff', 'ashCinderBarrage', 'ashSkyDive'],
+        hp: 900,
+        attacks: ['ashClawCombo', 'ashBiteLunge', 'ashTailSweep', 'ashTailBack', 'ashWingCleave', 'ashCinderLine', 'ashEmberFan', 'ashSkyDive'],
       },
       cinderwake: {
         at: 0.55,
         name: 'Veyra, the Cinderwake',
         opener: 'ashCinderEclipse',
-        speed: 4.2,
-        cooldown: [0.5, 1.0],
-        attacks: ['ashClawRake', 'ashTailWhip', 'ashTailTurn', 'ashWingCross', 'ashEmberBreath', 'ashTakeoff', 'ashCinderBarrage', 'ashSkyDive', 'ashCinderEclipse'],
+        speed: 4.3,
+        cooldown: [0.55, 1.05],
+        attacks: ['ashClawCombo', 'ashBiteLunge', 'ashTailSweep', 'ashTailBack', 'ashWingCleave', 'ashCinderLine', 'ashEmberFan', 'ashSkyDive', 'ashCinderEclipse'],
       },
     },
     attacks: [
-      // 1. Predatory Foreclaw Rake (deflectable ground melee)
+      // 1. Twin Foreclaw Combo (2-hit deflectable: right foreclaw rake -> left foreclaw cross-slash)
       {
-        id: 'ashClawRake', name: 'Ashclaw Rake', anim: 'sweep', clip: 'clawRake',
+        id: 'ashClawCombo', name: 'Ashclaw Combo', anim: 'sweep', clip: 'clawR',
         stances: ['ground'], tell: 'clawR',
-        tracking: { rate: 3.4, commit: 0.65 }, markers: glint(0),
-        hits: [{ startup: 0.68, active: 0.16, follow: 0.22 }], recovery: 0.72,
-        damage: 24, poise: 35, knock: 6, lunge: 2.8, range: 4.2, box: CLAW,
+        tracking: { rate: 3.2, commit: 0.65 }, markers: glint(0, 1),
+        hits: [
+          { startup: 0.72, active: 0.14, follow: 0.22, clip: 'clawR', tell: 'clawR' },
+          { startup: 0.52, active: 0.14, follow: 0.24, clip: 'clawL', tell: 'clawL' },
+        ],
+        recovery: 0.85,
+        damage: 20, poise: 30, knock: 5, lunge: 2.2, range: 3.6, box: CLAW,
         timeline: {
           cues: [
-            { at: 0.52, socket: 'clawR', ribbon: { color: 0xff7828, life: 0.38, width: 0.65 }, burst: { color: 0xff8a30, count: 10 } },
-            { at: 0.68, shake: 0.08 },
+            { at: 0.58, socket: 'clawR', ribbon: { color: 0xff6a1e, life: 0.34, width: 0.52 }, burst: { color: 0xff8228, count: 10 } },
+            { at: 0.72, shake: 0.07 },
+            { at: 1.46, socket: 'clawL', ribbon: { color: 0xff6a1e, life: 0.34, width: 0.52 }, burst: { color: 0xff8228, count: 10 } },
+            { at: 1.60, shake: 0.08 },
           ],
         },
       },
-      // 2. Scythe Tail Whip (wide deflectable sweep)
+      // 2. Snapping Jaw Lunge (fast deflectable thrust forward)
       {
-        id: 'ashTailWhip', name: 'Scythe Tail Whip', anim: 'sweep', clip: 'tailWhip',
+        id: 'ashBiteLunge', name: 'Cinder Fang', anim: 'stab', clip: 'biteLunge',
+        stances: ['ground'], tell: 'jaw',
+        tracking: { rate: 3.0, commit: 0.6 }, markers: glint(0),
+        hits: [{ startup: 0.68, active: 0.14, follow: 0.22 }], recovery: 0.78,
+        damage: 24, poise: 34, knock: 6, lunge: 3.2, range: 4.0, box: BITE,
+        timeline: {
+          cues: [
+            { at: 0.48, socket: 'jaw', burst: { color: 0xff6818, count: 12 } },
+            { at: 0.68, socket: 'jaw', ribbon: { color: 0xff8c30, life: 0.28, width: 0.42 }, shake: 0.08 },
+          ],
+        },
+      },
+      // 3. Scythe Tail Sweep (deflectable wide sweep with clear coil-up tell)
+      {
+        id: 'ashTailSweep', name: 'Scythe Tail Sweep', anim: 'sweep', clip: 'tailSweep',
         stances: ['ground'], tell: 'tail',
-        tracking: { rate: 2.8, commit: 0.6 }, markers: glint(0),
-        hits: [{ startup: 0.86, active: 0.18, follow: 0.28 }], recovery: 0.85,
-        damage: 28, heavy: true, poise: 48, knock: 8, lunge: 1.0, range: 5.0, box: TAIL,
-        timeline: {
-          cues: [
-            { at: 0.68, socket: 'tail', ribbon: { color: 0xffa040, life: 0.44, width: 0.72 }, burst: { color: 0xffa838, count: 14 } },
-            { at: 0.86, shake: 0.11 },
-          ],
-        },
-      },
-      // 3. Reactive Tail Whip when player flanks behind
-      {
-        id: 'ashTailTurn', name: 'Backlash Scythe', anim: 'sweep', clip: 'tailWhip',
-        stances: ['ground'], when: 'behind', tell: 'tail',
-        tracking: { rate: 4.5, commit: 0.7 }, markers: glint(0), chance: 1.8,
-        hits: [{ startup: 0.64, active: 0.16, follow: 0.24 }], recovery: 0.78,
-        damage: 22, poise: 36, knock: 8, lunge: 0.6, range: 4.8, box: TAIL,
-        timeline: {
-          cues: [
-            { at: 0.48, socket: 'tail', ribbon: { color: 0xff8830, life: 0.38, width: 0.65 } },
-          ],
-        },
-      },
-      // 4. Twin Wing-Blade X-Cross (deflectable, concurrent dual hitboxes + dual wing ribbons!)
-      {
-        id: 'ashWingCross', name: 'Ashwing Cross', anim: 'chop', clip: 'wingCross',
-        stances: ['ground'], tell: 'wingR',
         tracking: { rate: 2.6, commit: 0.6 }, markers: glint(0),
-        hits: [{ startup: 0.92, active: 0.18, follow: 0.3 }], recovery: 0.95,
-        damage: 30, heavy: true, poise: 55, knock: 9, lunge: 2.2, range: 4.8, box: WING,
+        hits: [{ startup: 0.88, active: 0.16, follow: 0.28 }], recovery: 0.90,
+        damage: 26, heavy: true, poise: 44, knock: 8, lunge: 0.6, range: 4.3, box: TAIL,
         timeline: {
           cues: [
-            { at: 0.25, socket: 'wingL', burst: { color: 0xff5a18, count: 12 } },
-            { at: 0.25, socket: 'wingR', burst: { color: 0xff5a18, count: 12 } },
-            { at: 0.76, socket: ['wingL', 'wingR'], ribbon: { color: 0xff5214, life: 0.45, width: 0.85 } },
-            { at: 0.92, shake: 0.14 },
-          ],
-          extraHits: [
-            { from: 0.92, to: 1.12, box: { w: 2.4, h: 2.0, d: 4.4, fwd: 2.6, y: 1.2 }, damage: 18, heavy: false, rollOnly: false },
+            { at: 0.70, socket: 'tail', ribbon: { color: 0xff9a38, life: 0.40, width: 0.58 }, burst: { color: 0xffa030, count: 12 } },
+            { at: 0.88, shake: 0.10 },
           ],
         },
       },
-      // 5. Sweeping Ember Breath (fires a 5-bolt fan + carves a synced magma Fissure!)
+      // 4. Reactive Backlash Tail Sweep when player flanks behind
       {
-        id: 'ashEmberBreath', name: 'Cinder Torrent', anim: 'draw', clip: 'emberBreath',
-        stances: ['ground', 'airborne'], tell: 'jaw',
-        tracking: { rate: 2.2, commit: 0.55 }, minRange: 3.5, chance: 0.95,
-        hits: [{ startup: 0.95, active: 0.2, follow: 0.35 }], recovery: 1.0,
-        damage: 24, poise: 30, knock: 5, lunge: 0, range: 15, box: { w: 1.6, h: 1.4, d: 2.0, fwd: 1.6, y: 1.4 },
+        id: 'ashTailBack', name: 'Backlash Scythe', anim: 'sweep', clip: 'tailSweep',
+        stances: ['ground'], when: 'behind', tell: 'tail',
+        tracking: { rate: 4.2, commit: 0.65 }, markers: glint(0), chance: 1.6,
+        hits: [{ startup: 0.70, active: 0.15, follow: 0.24 }], recovery: 0.82,
+        damage: 20, poise: 34, knock: 7, lunge: 0.4, range: 4.2, box: TAIL,
         timeline: {
           cues: [
-            { at: 0.35, socket: 'jaw', burst: { color: 0xff7020, count: 18 } },
-            { at: 0.95, socket: 'jaw', burst: { color: 0xffe088, count: 24 }, shake: 0.10 },
+            { at: 0.54, socket: 'tail', ribbon: { color: 0xff8828, life: 0.36, width: 0.52 } },
+          ],
+        },
+      },
+      // 5. Wing-Blade X-Cleave (deflectable heavy frontal slam — single honest hitbox, dual wing smears!)
+      {
+        id: 'ashWingCleave', name: 'Ashwing Cleave', anim: 'chop', clip: 'wingCleave',
+        stances: ['ground'], tell: 'wingR',
+        tracking: { rate: 2.4, commit: 0.55 }, markers: glint(0),
+        hits: [{ startup: 0.96, active: 0.16, follow: 0.30 }], recovery: 0.98,
+        damage: 30, heavy: true, poise: 52, knock: 9, lunge: 1.8, range: 4.2, box: WING,
+        timeline: {
+          cues: [
+            { at: 0.28, socket: ['wingL', 'wingR'], burst: { color: 0xff5a14, count: 10 } },
+            { at: 0.80, socket: ['wingL', 'wingR'], ribbon: { color: 0xff5010, life: 0.42, width: 0.68 } },
+            { at: 0.96, shake: 0.12 },
+          ],
+        },
+      },
+      // 6. Cinder Fissure (breathes a single fair forward magma crack with 1.0s ground tell)
+      {
+        id: 'ashCinderLine', name: 'Cinder Fissure', anim: 'draw', clip: 'emberBreath',
+        stances: ['ground'], tell: 'jaw',
+        tracking: { rate: 2.2, commit: 0.55 }, minRange: 3.5, chance: 0.85,
+        hits: [{ startup: 0.95, active: 0.14, follow: 0.35 }], recovery: 0.95,
+        damage: 22, poise: 28, knock: 5, lunge: 0, range: 13, box: { w: 1.4, h: 1.3, d: 1.8, fwd: 1.5, y: 1.2 },
+        timeline: {
+          cues: [
+            { at: 0.32, socket: 'jaw', burst: { color: 0xff6e18, count: 16 } },
+            { at: 0.95, socket: 'jaw', burst: { color: 0xffe490, count: 22 }, shake: 0.09 },
           ],
           spawns: [
-            { at: 0.95, kind: 'volley', count: 5, spread: 0.72, damage: 18, projectile: { speed: 17, gravity: 0, size: 0.24 } },
-            { at: 0.96, kind: 'hazard', count: 1, hazard: { kind: 'fissure', style: 'ember', fwd: 1.8, radius: 1.15, length: 9.5, telegraph: 0.95, active: 0.38, damage: 26 } },
+            { at: 0.95, kind: 'hazard', count: 1, hazard: { kind: 'fissure', style: 'ember', fwd: 1.6, radius: 0.95, length: 9.0, telegraph: 1.0, active: 0.35, damage: 24 } },
           ],
         },
       },
-      // 6. Wing-Clap Takeoff (launches into airborne stance, leaves a fair ground shockwave)
+      // 7. Distant Ember Fan (clean 3-bolt spread at long range — no overlapping floor spam!)
       {
-        id: 'ashTakeoff', name: 'Gale Ascent', anim: 'chop', clip: 'wingCross',
-        stances: ['ground'], endStance: 'airborne', tell: 'wingL',
-        tracking: { rate: 1.8, commit: 0.45 }, chance: 0.45,
-        hits: [{ startup: 1.05, active: 0.16, follow: 0.3 }], recovery: 0.85,
-        damage: 22, heavy: true, poise: 40, knock: 10, lunge: 0, range: 7.5, box: { w: 2.4, h: 1.6, d: 2.4, fwd: 0, y: 1.0 },
-        timeline: {
-          motion: [
-            { from: 0.85, to: 1.45, altFrom: 0, altTo: 2.5 },
-          ],
-          cues: [
-            { at: 0.70, socket: ['wingL', 'wingR'], ribbon: { color: 0xff8838, life: 0.5, width: 0.9 } },
-            { at: 1.05, shake: 0.13 },
-          ],
-          spawns: [
-            { at: 0.45, kind: 'hazard', count: 1, hazard: { kind: 'novaZone', style: 'ember', radius: 3.8, telegraph: 0.85, active: 0.28, damage: 24 } },
-          ],
-        },
-      },
-      // 7. Airborne Cinder Barrage (hovering volley + 2 synced nova zones on target)
-      {
-        id: 'ashCinderBarrage', name: 'Ashfall Barrage', anim: 'draw', clip: 'emberBreath',
-        stances: ['airborne'], tell: 'jaw',
-        tracking: { rate: 3.0, commit: 0.65 }, chance: 1.15,
-        hits: [{ startup: 0.88, active: 0.18, follow: 0.32 }], recovery: 0.85,
-        damage: 22, poise: 28, knock: 5, lunge: 0, range: 18, box: { w: 1.5, h: 1.4, d: 1.8, fwd: 1.4, y: 1.2 },
+        id: 'ashEmberFan', name: 'Ashfall Fan', anim: 'draw', clip: 'emberBreath',
+        stances: ['ground', 'aerial'], tell: 'jaw',
+        tracking: { rate: 2.6, commit: 0.6 }, minRange: 6.5, chance: 0.95,
+        hits: [{ startup: 0.90, active: 0.14, follow: 0.30 }], recovery: 0.88,
+        damage: 18, poise: 22, knock: 4, lunge: 0, range: 18, box: { w: 1.2, h: 1.2, d: 1.5, fwd: 1.3, y: 1.2 },
         timeline: {
           cues: [
-            { at: 0.40, socket: 'jaw', burst: { color: 0xff6818, count: 16 } },
-            { at: 0.88, socket: 'jaw', burst: { color: 0xffe498, count: 22 } },
+            { at: 0.38, socket: 'jaw', burst: { color: 0xff6214, count: 14 } },
+            { at: 0.90, socket: 'jaw', burst: { color: 0xffe498, count: 18 } },
           ],
           spawns: [
-            { at: 0.88, kind: 'volley', count: 4, spread: 0.58, damage: 16, projectile: { speed: 19, gravity: 1.5, size: 0.22 } },
-            { at: 0.55, kind: 'hazard', count: 2, ringRadius: 2.4, hazard: { kind: 'novaZone', style: 'cinder', radius: 2.3, telegraph: 1.0, active: 0.32, damage: 26 } },
+            { at: 0.90, kind: 'volley', count: 3, spread: 0.48, damage: 16, projectile: { speed: 18, gravity: 0, size: 0.22 } },
           ],
         },
       },
-      // 8. Sky Dive Slam (plunges from 2.5m to 0m with blazing wing trails + 3 radiating magma fissures!)
+      // 8. Soaring Sky-Dive (brief aerial leap up to 2.8m -> clear 0.95s hang tell -> plunging slam back to ground!)
       {
         id: 'ashSkyDive', name: 'Cinder Sky-Dive', anim: 'overhead', clip: 'skyDive',
-        stances: ['airborne'], endStance: 'ground', tell: 'clawR',
-        tracking: { rate: 2.6, commit: 0.45 }, rollOnly: true, chance: 0.95,
-        hits: [{ startup: 1.15, active: 0.2, follow: 0.42, leap: { from: 0.5, max: 14, short: 0.8 } }], recovery: 1.15,
-        damage: 38, heavy: true, poise: 70, knock: 11, lunge: 0, range: 16, box: SLAM,
-        impact: { ring: 4.2, crack: 1.6, dust: 16, shake: 0.18 },
+        stances: ['ground', 'aerial'], endStance: 'ground', tell: 'clawR',
+        tracking: { rate: 2.4, commit: 0.45 }, rollOnly: true, minRange: 4.5, chance: 0.55,
+        hits: [{ startup: 1.30, active: 0.16, follow: 0.44, leap: { from: 0.52, max: 13, short: 0.9 } }], recovery: 1.15,
+        damage: 34, heavy: true, poise: 65, knock: 10, lunge: 0, range: 15, box: SLAM,
+        impact: { ring: 3.8, crack: 1.5, dust: 16, shake: 0.16 },
         timeline: {
           motion: [
-            { from: 0.55, to: 1.15, altFrom: 2.5, altTo: 0 },
+            { from: 0.05, to: 0.55, altFrom: 0, altTo: 2.8 },
+            { from: 0.82, to: 1.30, altFrom: 2.8, altTo: 0 },
           ],
           cues: [
-            { at: 0.55, socket: ['wingL', 'wingR', 'clawR'], ribbon: { color: 0xff4810, life: 0.65, width: 0.95 } },
-            { at: 1.15, socket: 'clawR', burst: { color: 0xff5a18, count: 32 }, shake: 0.20 },
-          ],
-          spawns: [
-            { at: 1.15, kind: 'hazard', count: 3, spread: 1.25, hazard: { kind: 'fissure', style: 'cinder', fwd: 1.6, radius: 1.05, length: 9.0, telegraph: 0.9, active: 0.36, damage: 28 } },
+            { at: 0.55, socket: ['wingL', 'wingR'], ribbon: { color: 0xff4c10, life: 0.65, width: 0.78 } },
+            { at: 1.30, socket: 'clawR', burst: { color: 0xff5a18, count: 28 }, shake: 0.18 },
           ],
         },
       },
-      // 9. Phase 2 Signature Ultimate: Cinder Eclipse (3 converging beamAnchor spires around the player!)
+      // 9. Phase 2 Signature Ultimate: Cinder Eclipse (2 spaced beamAnchor pylons with clear 1.35s lock-and-fire tell!)
       {
-        id: 'ashCinderEclipse', name: 'Cinder Eclipse', anim: 'chop', clip: 'wingCross',
-        stances: ['ground', 'airborne'], tell: 'jaw',
-        tracking: { rate: 2.0, commit: 0.4 }, chance: 0.55,
-        hits: [{ startup: 1.25, active: 0.2, follow: 0.45 }], recovery: 1.2,
-        damage: 34, heavy: true, poise: 65, knock: 9, lunge: 0, range: 18, box: { w: 2.6, h: 1.8, d: 2.6, fwd: 0, y: 1.0 },
+        id: 'ashCinderEclipse', name: 'Cinder Eclipse', anim: 'chop', clip: 'wingCleave',
+        stances: ['ground', 'aerial'], endStance: 'ground', tell: 'jaw',
+        tracking: { rate: 2.0, commit: 0.4 }, chance: 0.42,
+        hits: [{ startup: 1.25, active: 0.16, follow: 0.42 }], recovery: 1.15,
+        damage: 28, heavy: true, poise: 55, knock: 8, lunge: 0, range: 16, box: { w: 2.2, h: 1.6, d: 2.2, fwd: 0, y: 1.0 },
         timeline: {
+          motion: [
+            { from: 0.10, to: 0.60, altFrom: 0, altTo: 2.2 },
+            { from: 0.95, to: 1.30, altFrom: 2.2, altTo: 0 },
+          ],
           cues: [
-            { at: 0.25, socket: ['wingL', 'wingR', 'jaw'], burst: { color: 0xffaa28, count: 26 }, shake: 0.12 },
-            { at: 0.85, socket: ['wingL', 'wingR'], ribbon: { color: 0xffaa28, life: 0.55, width: 1.0 } },
-            { at: 1.25, shake: 0.18 },
+            { at: 0.25, socket: ['wingL', 'wingR', 'jaw'], burst: { color: 0xffa624, count: 22 }, shake: 0.10 },
+            { at: 0.90, socket: ['wingL', 'wingR'], ribbon: { color: 0xff9a20, life: 0.48, width: 0.80 } },
+            { at: 1.25, shake: 0.15 },
           ],
           spawns: [
-            { at: 0.40, kind: 'hazard', count: 3, ringRadius: 6.5, hazard: { kind: 'beamAnchor', style: 'cinder', radius: 0.85, telegraph: 1.25, active: 0.42, lockAt: 0.72, damage: 32 } },
+            { at: 0.45, kind: 'hazard', count: 2, ringRadius: 6.8, hazard: { kind: 'beamAnchor', style: 'cinder', radius: 0.55, telegraph: 1.35, active: 0.36, lockAt: 0.62, damage: 28 } },
           ],
         },
       },
@@ -268,7 +266,7 @@ BOSS_V2_FX.ashwing = {
   onCue(d, helpers) {
     if (d.attack && d.attack.id === 'ashCinderEclipse' && d.cueIndex === 0 && d.enemy.rig?.isSkinnedV2) {
       d.enemy.rig.socketWorldPos('jaw', helpers.v0);
-      helpers.burstAt(helpers.v0, 0xffe89c, 28);
+      helpers.burstAt(helpers.v0, 0xffe89c, 24);
     }
   },
 };

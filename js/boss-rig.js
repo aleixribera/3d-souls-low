@@ -109,11 +109,11 @@ class SkinnedBossRig {
           transparent: true,
           side: spec.double ? THREE.DoubleSide : THREE.FrontSide,
         };
-        if (spec.tex && typeof textures !== 'undefined' && textures.get) {
-          const tex = textures.get(spec.tex, { tint: spec.tint ?? 0xffffff, decay: spec.decay ?? 0.45, size: spec.size });
+        if (spec.tex && typeof TEXLIB !== 'undefined' && TEXLIB.get) {
+          const tex = TEXLIB.get(spec.tex, { tint: spec.tint ?? 0xffffff, decay: spec.decay ?? 0.55, size: spec.size });
           if (tex && tex.map) { opts.map = tex.map; opts.color = 0xffffff; }
-          if (tex && tex.roughnessMap) opts.roughnessMap = tex.roughnessMap;
-          if (tex && tex.bumpMap) { opts.bumpMap = tex.bumpMap; opts.bumpScale = 0.03; }
+          if (tex && tex.rough) { opts.roughnessMap = tex.rough; opts.roughness = 1; }
+          if (tex && tex.bump) { opts.bumpMap = tex.bump; opts.bumpScale = (tex.def?.bump || 1) * 0.025; }
         }
         mat = new THREE.MeshStandardMaterial(opts);
         addDissolve(mat, spec.rim ?? M.rim ?? 0.45, this.dissolve);
@@ -132,9 +132,9 @@ class SkinnedBossRig {
       sm.castShadow = true;
       sm.receiveShadow = false;
       sm.frustumCulled = false;
-      sm.bind(this.skeleton);
-      if (this.hiddenSlots.has(part.slot)) sm.visible = false;
       this.tip.add(sm);
+      sm.bind(this.skeleton, new THREE.Matrix4());
+      if (this.hiddenSlots.has(part.slot)) sm.visible = false;
       this.skinnedMeshes.push(sm);
       (this.slotMeshes[part.slot] || (this.slotMeshes[part.slot] = [])).push(sm);
     }
@@ -303,12 +303,13 @@ class SkinnedBossRig {
       mappedTime = Math.min(e.stateTime * 1.1, clips[wantClip]?.duration || 0.8);
     } else if (e.state === ES.WINDUP || e.state === ES.ACTIVE || e.state === ES.RECOVER) {
       const atk = e.attack;
-      if (atk && atk.clip && clips[atk.clip]) {
-        wantClip = atk.clip;
+      const hit = atk && atk.hits && atk.hits[e.hitIndex || 0];
+      const clipKey = (hit && hit.clip) || (atk && atk.clip);
+      if (clipKey && clips[clipKey]) {
+        wantClip = clipKey;
         loop = false;
         const dur = clips[wantClip].duration || 1;
-        const marks = atk.clipMarks || { windup: 0.45, active: 0.68, recover: 1.0 };
-        const hit = atk.hits && atk.hits[e.hitIndex || 0];
+        const marks = (hit && hit.clipMarks) || atk.clipMarks || { windup: 0.45, active: 0.68, recover: 1.0 };
         if (e.state === ES.WINDUP && hit) {
           const p = clamp(e.stateTime / Math.max(0.05, hit.startup), 0, 1);
           mappedTime = lerp(0, dur * marks.windup, p);

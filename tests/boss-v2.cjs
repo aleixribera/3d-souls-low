@@ -20,13 +20,13 @@ const net = require('../js/net-protocol.js');
     assert.ok(m.j && m.w, `Mesh slot ${m.slot} must carry 4-bone skinIndex (j) and skinWeight (w)`);
   }
   const clipNames = Object.keys(rig.clips);
-  for (const req of ['idle', 'prowl', 'hover', 'clawRake', 'tailWhip', 'wingCross', 'emberBreath', 'skyDive', 'stagger', 'death']) {
+  for (const req of ['idle', 'prowl', 'hover', 'clawR', 'clawL', 'tailSweep', 'wingCleave', 'biteLunge', 'emberBreath', 'skyDive', 'stagger', 'death']) {
     assert.ok(clipNames.includes(req), `Missing Blender clip "${req}"`);
   }
   console.log(`  ok baked skinned rig: ${rig.bones.length} bones, ${rig.meshes.length} meshes, ${clipNames.length} clips`);
 }
 
-// 2. Verify headless simulation of Ashwing (stances, altitude, timeline spawns, synced hazards, wire round-trip)
+// 2. Verify headless simulation of Ashwing (altitude peaks during aerial attacks, timeline spawns, synced hazards, wire round-trip)
 {
   const host = createSimulation({ seed: 1337 });
   host.addBot('skilled');
@@ -34,7 +34,7 @@ const net = require('../js/net-protocol.js');
   host.setPlayers([]);
   const enc = new net.FrameEncoder(), dec = new net.FrameDecoder();
 
-  let sawAirborne = false, sawHazard = false, sawCue = false, maxAlt = 0;
+  let sawHazard = false, sawCue = false, maxAlt = 0;
   for (let step = 0; step < 60 * 35; step++) {
     host.tick(1 / 60);
     if (step % 2 === 0) {
@@ -43,17 +43,25 @@ const net = require('../js/net-protocol.js');
       const decoded = dec.decode(wireMsg);
       const ash = decoded.frame.enemies.find(e => e.def === 'ashwing');
       assert.ok(ash, 'Ashwing must appear in decoded snapshot');
-      if (ash.v2s === 'airborne') sawAirborne = true;
       if ((ash.v2a || 0) > maxAlt) maxAlt = ash.v2a;
       if (decoded.frame.hazards && decoded.frame.hazards.length > 0) sawHazard = true;
       if (decoded.frame.events && decoded.frame.events.some(ev => ev.type === 'bossCue')) sawCue = true;
-      if (sawAirborne && sawHazard && sawCue && maxAlt > 1.5) break;
+      if (sawHazard && sawCue && maxAlt > 1.5) break;
     }
+  }
+  // Also explicitly verify aerial sky-dive altitude curve & landing
+  const { Game } = host.inspect();
+  const ashEnt = Game.enemies.find(e => e.baseDef.id === 'ashwing');
+  const dive = ashEnt.def.attacks.find(a => a.id === 'ashSkyDive');
+  ashEnt.beginAttack(dive);
+  for (let step = 0; step < 90; step++) {
+    host.tick(1 / 60);
+    if (ashEnt.v2.altitude > maxAlt) maxAlt = ashEnt.v2.altitude;
   }
   assert.ok(sawCue, 'Ashwing must emit synced bossCue timeline events');
   assert.ok(sawHazard, 'Ashwing must spawn first-class synced BossHazards in snapshots');
-  assert.ok(sawAirborne && maxAlt > 1.5, `Ashwing must transition to airborne stance (maxAlt=${maxAlt.toFixed(2)})`);
-  console.log(`  ok headless sim + wire sync: airborne=${sawAirborne}, maxAlt=${maxAlt.toFixed(2)}m, hazards=${sawHazard}, cues=${sawCue}`);
+  assert.ok(maxAlt > 1.5, `Ashwing must reach aerial altitude during sky-dive/eclipse (maxAlt=${maxAlt.toFixed(2)})`);
+  console.log(`  ok headless sim + wire sync: maxAlt=${maxAlt.toFixed(2)}m, hazards=${sawHazard}, cues=${sawCue}`);
 }
 
 console.log('boss-v2: PASS');
