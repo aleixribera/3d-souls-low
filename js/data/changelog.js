@@ -6,6 +6,7 @@
 //   title    a few words
 //   text     one to three sentences, shown under the list when the entry is selected
 const CHANGELOG = [
+  { version: 'v7.168.0', title: 'The Captain\'s cleave lands', text: 'The Pillager Captain\'s Overhead Cleave now bursts from the floor the moment his bill hits it, not while it is still raised, and his swing leaves a thin arc of light along its path.' },
   { version: 'v7.167.0', title: 'Eleven guard commons', text: 'Eleven new common abilities for the guard and the run: Ringing Steel, Thorn Guard, Ash Veil, Bitter Draught, Grit, Kindling, Tithe, Glint, Hunter\'s Pace, Kindred Ember and Shatter Guard. A struck boss in the cel style now flashes in his own colours instead of going white.' },
   { version: 'v7.166.0', title: 'The Captain\'s cleave, alive', text: 'When the Pillager Captain delays his overhead cleave, he no longer freezes: he keeps coiling slowly back, then brings it down. His wind-up now sinks into his knees and twists his hips and shoulders, so the blow comes from his whole body.' },
   { version: 'v7.165.0', title: 'A clearer Pillager Captain', text: 'The Pillager Captain\'s warning glow now sits on the edge of his bill, so you can see his whole body as he winds up. His overhead cleave swings from the hips and carries his weight through the blow.' },
