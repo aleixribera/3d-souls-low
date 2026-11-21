@@ -6,6 +6,7 @@
 //   title    a few words
 //   text     one to three sentences, shown under the list when the entry is selected
 const CHANGELOG = [
+  { version: 'v7.191.0', title: 'The Ringer can be parried', text: 'The Ringer of Thrale\'s clapper and fettered foot can now be parried, and only her knells along the floor must be jumped. Her wind-ups glow on the ball or the stamping foot, each move shows its own pose sooner, and her whole body follows through.' },
   { version: 'v7.190.0', title: 'Hale and Harrow show their blows', text: 'Hale and Harrow\'s wind-ups now glow on the axe head, gauntlet or greave that strikes instead of washing them orange, and their moves flow through in-between poses. Crown Cleave\'s axe stands high over her helm, and the Heel from Heaven\'s kick reaches her helm.' },
   { version: 'v7.189.0', title: 'Guard II, on the boss', text: 'Six new rare Guard abilities: Mirror Ward bounces the next blow back at the boss, Ash Husk leaves a copy that draws his attack and bursts, Moon Dome stops shots and blasts, Waiting Blade answers a blow with a big cut, Hourglass takes you back a few seconds with the health you had, and Binding Seal makes the boss\'s next attack strike nothing.' },
   { version: 'v7.188.0', title: 'Hale and Harrow fight harder', text: 'The castellans have new moves: Hale\'s Hewing, Harrow\'s Elbow and Knee and the Heel from Heaven. More of their blows can be parried. Left alone, the surviving sister fights differently: she follows her own stamps with the cleave, vaults round her planted axe, and can grab you.' },
