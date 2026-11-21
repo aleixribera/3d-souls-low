@@ -3,10 +3,12 @@
 The iterate loop's working note (`.claude/iterate.md`). Cap: 8,000 characters.
 
 ## Now
-- Track 2, pass 140 (retro): Ash Husk's ring now shows online and in Boss Rush alone (`drawnTo`, the snapshot's
-  `lure`; in-page `guard boss`); `weekly` and `network-load` hardened for a busy PC. Batch 9 (pass 137, v7.189.0):
-  `tests/guard-boss.cjs`, clip `docs/scorecard/now/guard-boss.mp4`. Next on track 2: batch 10, Summons I. Browser
-  lock: `node tools/browser-lock.cjs run <pass> -- <cmd>` (docs/two-tracks.md).
+- Track 2, pass 141 (PLAN item 8, batch 10, Summons I, pass 1 of 1), done in v7.192.0: Cinder Fox and Lantern
+  Spirit new; Grave Hound, Lancer of Ash and Stone Guardian rebuilt as cel ink models (four Blender models; the
+  guardian's shield is its weapon; the lancer charges from 12 m). Online: heal, flight and mark forwarded; a ward
+  against a sealed attack refused. Acceptance: `tests/summons-one.cjs`, in-page `summons` 2/2; clip
+  `docs/scorecard/now/summons-one.mp4`. Next on track 2: batch 11, Summons II. Browser lock:
+  `node tools/browser-lock.cjs run <pass> -- <cmd>` (docs/two-tracks.md).
 - Track 1, pass 142 (PLAN item 6, the Ringer, pass 1 of 2), done in v7.191.0: step-0 audit a restyle (her own 11
   moves, 5 strings, a real phase two; `noParry` 8 of 15 and body check 16/26 flagged): clapper and fetter blows parried,
   knells jumped (roll-only 2/8, 3/12), tells on the ball (`edgeTell`) or the stamping foot, in-between keys, outCubic
@@ -53,6 +55,7 @@ The iterate loop's working note (`.claude/iterate.md`). Cap: 8,000 characters.
 - Abilities and crates (pass 107, v7.162.0): `js/data/crates.js`, `js/progress.js` (save `v` 2), `js/crate-screen.js`;
   `tests/crates.cjs`. Plain commons' touches (pass 109): `js/ability-touch.js`; in-page `plain commons`. Blade commons (pass 112): `js/common-fx.js`; `tests/blade-commons.cjs`, in-page `blade commons`. Guard commons (114, 117): `tests/guard-commons.cjs`, `mirror-shard.cjs`.
 - The Finishing Blow (pass 100-103, `js/finisher.js`, `js/finisher-fx.js`): the 3rd counter; its look is "Later".
+- Summons (pass 141): `js/summon-beasts.js` (hound, fox), `js/summon-lantern.js`, `js/summon-figures.js`; `tests/summons-one.cjs`, in-page `summons`; clip `node tools/ability-clips.cjs summons`.
 - Art styles (pass 108): `?style=cel|dark|paint`, `js/data/styles.js`, `js/style-lab.js`; `tests/style-browser.cjs`;
   retake `node tools/style-frames.cjs [styles] [still,fight,clip,time]`.
 - Body check (retro 130): `tools/body-check.cjs [bossId]`; `tests/body-check.cjs` holds every boss with a page; `followOn` (pass 132).
