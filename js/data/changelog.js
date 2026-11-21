@@ -6,6 +6,7 @@
 //   title    a few words
 //   text     one to three sentences, shown under the list when the entry is selected
 const CHANGELOG = [
+  { version: 'v7.184.0', title: 'The Hunger can be parried', text: 'You can parry the Antlered Hunger\'s Antler Charge, Hind Kick and its two-fisted slam, now called the Rearing Pound. Only the Roar and the Fall must still be rolled. Its body no longer glows orange as a heavy blow winds up: the glow sits on the claw, antlers or hoof that strikes.' },
   { version: 'v7.183.0', title: 'Strike II: the flashy ones', text: 'Six new rare strikes for key 1: Sparrow Flurry, Whirl Drill, Shadow Stitch, Spinning Blade, Three Shadows and Quick Draw.' },
   { version: 'v7.182.0', title: 'Bosses follow through', text: 'The Pillager Captain, the Bell Warden, the Giant Skeleton and the Antlered Hunger now carry their weight on past every blow instead of stopping dead on it.' },
   { version: 'v7.181.0', title: 'Aldric follows through', text: 'Aldric\'s blows carry his whole body on past the strike: he turns on round, bends further over and sinks his weight, instead of stopping dead.' },
