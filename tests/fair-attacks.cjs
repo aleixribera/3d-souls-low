@@ -114,14 +114,14 @@ function duel(boss, won = null, far = 15) {
 }
 {
   // The pace: walking, turning and tracking follow it, the same curve as its timings.
-  const slow = duel('pillagerCaptain', 0), base = duel('pillagerCaptain', 4, 22), fast = duel('pillagerCaptain', 14, 22), M = base.CONFIG.bossMove;   // 22 m: both still running in
+  const slow = duel('pillagerCaptain', 0), base = duel('pillagerCaptain', 4, 22), fast = duel('pillagerCaptain', 19, 22), M = base.CONFIG.bossMove;   // 22 m: both still running in
   assert.equal(base.e.moveRate(), 1, 'at a boss\'s own pace it moves as written');
   assert.ok(slow.e.moveRate() < 1 && fast.e.moveRate() > 1.3 && fast.e.moveRate() <= M.max, `slower in the warm-up, faster deep in a run (${slow.e.moveRate().toFixed(2)}, ${fast.e.moveRate().toFixed(2)})`);
   const closing = D => { D.run(0.4, () => { D.e.cooldown = 99; }); const z0 = D.me.z - D.e.z; D.run(0.5, () => { D.e.cooldown = 99; }); return (z0 - (D.me.z - D.e.z)) / 0.5; };   // under way
   const v0 = closing(base), v1 = closing(fast), sp = base.e.def.speed;
   assert.ok(v0 > sp * 1.2, `from afar it runs in (${v0.toFixed(2)} m/s, its walk ${sp})`);
   assert.ok(Math.abs(v1 / v0 - fast.e.moveRate()) < 0.08, `faster at a faster pace, by its move rate (${(v1 / v0).toFixed(2)} vs ${fast.e.moveRate().toFixed(2)})`);
-  console.log(`move rate: x${slow.e.moveRate().toFixed(2)} in the warm-up, x1 at its own pace, x${fast.e.moveRate().toFixed(2)} at fight 15; runs in at ${v0.toFixed(1)} m/s`);
+  console.log(`move rate: x${slow.e.moveRate().toFixed(2)} in the warm-up, x1 at its own pace, x${fast.e.moveRate().toFixed(2)} at fight 20; runs in at ${v0.toFixed(1)} m/s`);
 }
 {
   // Holding alone, it circles its player, still facing them.

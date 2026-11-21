@@ -169,6 +169,7 @@ function resolveCombat(game) {
   const enemyHits = p.alive() ? live.filter(e => e.hitbox && !(e.frozen > 0) && e.hitbox.overlaps(p) && !gateBetween(e, p)).map(e => e.hitbox) : [];   // stopped in time: harmless
   // 3. Apply damage, knockback and stagger (an enemy's poise; the player's flinch or a heavy's stagger).
   for (const e of playerHits) {
+    if (!p.hitbox) break;   // the blow ended on an earlier foe (a Finishing Blow began on one of a pair, pass 168)
     const net = typeof multiplayer !== 'undefined' && multiplayer.active(), base = p.hitbox.payload;
     const strike = abilityStrike(p.kit, p.perk, e, net ? base : abilityOwlStrike(e, base));   // the kit's bonus and an owl's mark (online: the server's own)
     p.hitbox.markHit(e);

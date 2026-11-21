@@ -8,6 +8,8 @@
 //     number times as long, and its chance rolls (not shots; close attacks strike at once anyway) are multiplied by
 //     `busyMul` for each;
 //   - no enemy starts an attack within `gap` s of another one starting;
+//   - enemies that take `turns` (Boss Rush's pairs, CONFIG.endless.pairTurns) start nothing while another of them winds up
+//     or strikes: one blow is told at a time, and the other's turn comes in its recovery;
 //   - the enemies fighting the player (those that can reach them) get places spread evenly all round the player,
 //     in the order they already stand so that nobody has to cross; Enemy.holdVelocity circles toward them.
 // Runs once per step, before the enemies update.
@@ -21,7 +23,11 @@ const crowd = {
     this.enemies = game.enemies; this.sinceStart += dt;
     this.spread(game.player);
   },
-  mayStart() { return this.sinceStart >= CONFIG.ai.gap - 1e-9; },
+  mayStart(self = null) {
+    if (this.sinceStart < CONFIG.ai.gap - 1e-9) return false;
+    if (self && self.turns) for (const e of this.enemies) if (e !== self && e.turns && e.alive() && (e.state === ES.WINDUP || e.state === ES.ACTIVE)) return false;
+    return true;
+  },
   started(e = null) { this.sinceStart = 0; this.lastStarter = e; },
   // How many enemies other than `self` are mid-attack.
   busy(self) {

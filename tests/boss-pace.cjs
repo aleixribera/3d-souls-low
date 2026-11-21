@@ -50,14 +50,20 @@ const at = n => P.pace[P.fight.indexOf(n)] / PC.boss;
 assert.ok(P.pace.every((p, i) => i === 0 || p > P.pace[i - 1]), `the pace rises fight by fight: ${P.pace.map(p => p.toFixed(2)).join(', ')}`);
 assert.ok(at(1) >= 0.8 && at(1) < 1, `the warm-up: fight 1 a little under 1x (x${at(1).toFixed(2)})`);
 assert.equal(at(PC.warm + 1), 1, `fight ${PC.warm + 1} runs at 1x, the boss data as written, as every boss does outside Boss Rush`);
-// Item 11's stages for a skilled player alone: 5-10 real, 10-15 hard, 15-20 brutal, past 20 harder still. Pass 90 (the
-// moveset, PLAN.md rework item 4): steeper to fight 15, then no wall and no ease: from CONFIG.pace.steady fights won the
-// same step every fight, and no run reaches the cap.
-assert.ok(at(10) >= 1.3 && at(10) < 1.7, `real by fight 10: 30 to 70% faster (x${at(10).toFixed(2)})`);
-assert.ok(at(15) >= 2.1 && at(15) < 3, `hard by fight 15 (x${at(15).toFixed(2)})`);
-assert.ok(at(20) >= 3 && at(20) < 4.5, `brutal by fight 20, where only a great kit holds (x${at(20).toFixed(2)})`);
-const step = at(21) - at(20);
-assert.ok(PC.steady < 20 && step > 0 && Math.abs((at(25) - at(21)) / 4 - step) < 1e-9, `past fight 20 the same step every fight, no wall (${step.toFixed(3)} a fight)`);
+// The shape (PLAN.md Later, "the Boss Rush curve settled": no wall, ever, slowly harder every fight; pass 168): from the
+// warm-up on, every fight a little faster than the one before and never more than 15% faster, gentle through the middle
+// (a skilled player with no good kit falls around fights 12-15), and from CONFIG.pace.steady fights won the same step every
+// fight. The steps are read from the curve itself, fight by fight to 40.
+const paceOf = createSimulation().inspect().Game.update.constructor('return rushPace')(), curve = Array.from({ length: 40 }, (_, won) => paceOf(won) / PC.boss);
+for (let won = PC.warm + 1; won < 40; won++) {
+  assert.ok(curve[won] > curve[won - 1], `fight ${won + 1} is faster than fight ${won} (x${curve[won - 1].toFixed(2)}, then x${curve[won].toFixed(2)})`);
+  assert.ok(curve[won] / curve[won - 1] <= 1.15, `no wall: fight ${won + 1} at most 15% faster than fight ${won} (x${curve[won - 1].toFixed(2)}, then x${curve[won].toFixed(2)})`);
+}
+assert.ok(at(10) > 1 && at(10) < 1.3, `gentle by fight 10 (x${at(10).toFixed(2)})`);
+assert.ok(at(15) >= 1.4 && at(15) < 2, `harder by fight 15 (x${at(15).toFixed(2)})`);
+const step = curve[PC.steady + 1] - curve[PC.steady];
+assert.ok(PC.steady < 39 && step > 0 && curve.slice(PC.steady).every((p, i) => !i || Math.abs(p - curve[PC.steady + i - 1] - step) < 1e-9),
+  `past fight ${PC.steady + 1} the same step every fight (${step.toFixed(3)} a fight)`);
 assert.ok(rushPace(39) < PC.max, `no run reaches the cap: fight 40 at x${rushPace(39).toFixed(2)}, under x${PC.max}`);
 console.log('pace at fights ' + P.fight.map((n, i) => `${n}: x${P.pace[i].toFixed(2)}`).join(', ') + ` (${bosses.length} bosses: health and damage unchanged)`);
 

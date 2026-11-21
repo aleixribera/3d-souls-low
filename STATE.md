@@ -7,10 +7,10 @@ The iterate loop's working note (`.claude/iterate.md`). Cap: 8,000 characters.
 - Track 1, pass 167 (PLAN Later item 3, Story levels redone in cel, pass 1 of ~3): Aurel, Torn Abbey, Ember Root
   relit (`atmosphere.areas`), Blender fountain, thrall recolour. Next: `docs/story/audit.md` "Left", in order.
   Acceptance: in-page `Aurel:`; `tools/story-frames.cjs` sheets; clip `story-redo.mp4`; audit 0 findings.
-- Track 2, pass 165 (PLAN Later item 2, cel to enemies and levels, pass 2 of 2), v7.216.0: Bowman in teal and slate,
-  Gargoyle rebuilt in carved stone with an ember throat, the lobby's party standing in the arena against the sunset
-  (`js/lobby-scene.js`, 1100 px up); effect clears on `visuals.hooks.clear`. Left: Story-only recolours (item 3).
-  Acceptance: in-page `Render audit|clears on`, `multiplayer-browser`; clip `docs/scorecard/now/cel-lobby-enemies.mp4`.
+- Track 2, pass 168 (PLAN Later 5, Rush curve settled, 1 of 1): pairs take turns (`pairTurns`; Aleix fell in 29% of
+  pairs, 2% of others), gentler pace, `settle` health for fights 5-7, mods 8/16/26, a pair Finishing Blow crash fixed.
+  Bot medians 5/9/17 to 6/11/23 (targets 4-6, 12-15, 25-30; the gap is fight length: the Last pass). Later 4 checked.
+  Acceptance: `calling`, `boss-pace`, `fair-attacks`; `docs/scorecard/now/rush-curve.md`.
 - Track 1, pass 166 (Aleix: the showcase in the player's view, pass 1 of 1; replaces pass 164's anime opening and its
   pass 2), v7.215.0: the game's own camera and HUD, three bosses on their own grounds, a fade the only cut; the
   finale is the Finishing Blow (Later item 4 covered).

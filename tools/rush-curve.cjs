@@ -10,6 +10,7 @@
 // No abilities unless KIT (below): the no-ability target. ONLY=a,b limits the bosses (bosses mode). JOBS=n splits the work over n child processes, each at
 // idle priority. CURVE='{"rise":0.3}' merges into CONFIG.pace, to try a curve without editing js/config.js.
 // ABILITIES='{"pickTime":20}' merges into CONFIG.abilities. PRESS='{"rest":1.3}' merges into CONFIG.enemy.press (pass 96).
+// SHARES='{"vesper":0.7}' merges into RUSH.health, a boss's Boss Rush share of its health (pass 168).
 // DUMP=file (runs mode) writes each run's fights (number, time, win, breaks, par, might) as JSON.
 // BY=1 adds the damage taken by what dealt it, and the last blow of each fall (BY=2: by blow of a string).
 // SLOW='{"oswin":[1.2,1.1,0.8,0.2]}' scales a boss's idle gaps (every `cooldown`), recoveries and follow-up chances, and adds
@@ -65,6 +66,7 @@ function setup(sim) {
   if (process.env.ENDLESS) Object.assign(global(sim, 'CONFIG').endless, JSON.parse(process.env.ENDLESS));
   if (process.env.ABILITIES) Object.assign(global(sim, 'CONFIG').abilities, JSON.parse(process.env.ABILITIES));
   if (process.env.PRESS) Object.assign(global(sim, 'CONFIG').enemy.press, JSON.parse(process.env.PRESS));
+  if (process.env.SHARES) Object.assign(global(sim, 'RUSH').health, JSON.parse(process.env.SHARES));
   if (skill !== 1) for (const m of Object.values(global(sim, 'BOT_MOODS'))) m.slip *= skill;
   const byId = global(sim, 'ENEMY_BY_ID');
   for (const [id, [cd, rec, fu, beat = 0]] of Object.entries(slow)) {
@@ -162,7 +164,7 @@ if (process.env.RUSH_CHILD) {
   const job = p => mode === 'bosses' ? { mode, bosses: p, count, won: fightArg } : mode === 'pairs' ? { mode, trials: p, won: fightArg } : { mode, runs: p };
   Promise.all(parts.map(p => new Promise((res, rej) => {
     const child = fork(__filename, process.argv.slice(2), { env: { ...process.env, RUSH_CHILD: '1' } });
-    child.on('message', res); child.on('error', rej); child.send(job(p));
+    child.on('message', res); child.on('error', rej); child.on('exit', code => code !== 0 && rej(new Error('a worker failed (exit ' + code + ')'))); child.send(job(p));
   }))).then(out => {
     let rows = out.flat();
     if (mode === 'pairs') {

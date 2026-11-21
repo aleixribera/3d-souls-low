@@ -214,7 +214,7 @@ globalThis.host = (() => {
   const mixSeed = (...ints) => fnv(ints.flatMap(n => [n, n >>> 8, n >>> 16, n >>> 24]));
   const weeklyRun = (ms = Date.now()) => { const week = weekOf(ms); return { seed: weekSeed(week), opening: [], week }; };
   // Boss Rush's curve (CONFIG.pace): this fight's bosses at the pace for `won` fights won, and its modifiers' changes
-  // (RUSH.modifiers); two or more bosses at once rest longer (CONFIG.endless.pairRest) and each has a share of its
+  // (RUSH.modifiers); two or more bosses at once rest longer (CONFIG.endless.pairRest), take turns (pairTurns, js/crowd.js) and each has a share of its
   // health (rushHealth: CONFIG.endless.pairHealth, a warm-up boss's RUSH.warmHealth). Nothing raises health or blows.
   // Returns the pace.
   function setRushFight(won, modifiers = []) {
@@ -222,7 +222,7 @@ globalThis.host = (() => {
     const count = Game.enemies.filter(e => e.isBoss()).length, together = count > 1;
     const B = CONFIG.enemy.press;   // every boss's own press (item 4), under the modifiers
     const pace = rushPace(won) * times('pace'), rest = B.rest * times('rest') * (together ? CONFIG.endless.pairRest : 1), chain = B.chain * times('chain');
-    for (const e of Game.enemies) if (e.isBoss()) { e.pace = pace; e.rest = rest; e.chain = chain; e.setHealth(rushHealth(count, won, e.baseDef.id)); }
+    for (const e of Game.enemies) if (e.isBoss()) { e.pace = pace; e.rest = rest; e.chain = chain; e.turns = together && !!CONFIG.endless.pairTurns; e.setHealth(rushHealth(count, won, e.baseDef.id)); }
     return pace;
   }
   // The party's might (kitMight, CONFIG.swift.might): the mean over `ids` of what each holds. Boss Rush's par divides by it.

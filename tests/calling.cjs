@@ -77,7 +77,7 @@ async function peer(origin, name) {
     assert.ok(boss.rest > press.rest && boss.chain > press.chain, 'Fewer pauses and Longer combos set the rests and the strings');
     assert.equal(boss.maxHp ?? boss.def.hp, hp, 'no modifier adds health');
     app.sim.setRushFight(E.opening); assert.ok(boss.rest === press.rest && boss.chain === press.chain, 'a fight without modifiers is plain: the boss presses as it does everywhere');
-    assert.equal(boss.def.hp, hp, 'a boss alone keeps its whole health');
+    assert.equal(boss.def.hp, Math.round(hp * E.settle[E.opening - G('CONFIG').pace.warm]), 'a boss alone has its own share there (CONFIG.endless.settle), not a pair share');
     // The warm-up (pass 73): its bosses come at their RUSH.warmHealth share; every fight after it, whole.
     const warm = G('CONFIG').pace.warm;
     assert.ok(E.opening >= warm && RUSH.opening.length > warm, 'the warm-up draws from its own bosses, more of them than its fights');
@@ -87,9 +87,15 @@ async function peer(origin, name) {
       app.sim.setRushFight(0);
       assert.equal(e.def.hp, Math.round(whole * (RUSH.warmHealth[id] || 1)), `${id}: its warm-up share`);
       assert.ok(e.pace < 1, `${id}: a little under 1x in the warm-up`);
-      app.sim.start('arena', id, []); app.sim.setRushFight(warm);
-      assert.equal(app.sim.inspect().Game.enemies.find(x => x.isBoss()).def.hp, whole, `${id}: whole from fight ${warm + 1}`);
+      // Then health climbs to whole over CONFIG.endless.settle's fights (pass 168), whole from the fight after them.
+      E.settle.forEach((k, i) => {
+        app.sim.start('arena', id, []); app.sim.setRushFight(warm + i);
+        assert.equal(app.sim.inspect().Game.enemies.find(x => x.isBoss()).def.hp, Math.round(whole * k), `${id}: ${k} of its health at fight ${warm + i + 1}`);
+      });
+      app.sim.start('arena', id, []); app.sim.setRushFight(warm + E.settle.length);
+      assert.equal(app.sim.inspect().Game.enemies.find(x => x.isBoss()).def.hp, whole, `${id}: whole from fight ${warm + E.settle.length + 1}`);
     }
+    assert.ok(E.settle.every((k, i) => k < 1 && (!i || k > E.settle[i - 1])), 'health climbs fight by fight after the warm-up');
     // A boss of RUSH.health (pass 73) has its share in every fight; Story and Practice keep it whole.
     for (const [id, k] of Object.entries(RUSH.health)) {
       app.sim.start('arena', id, []); const e = app.sim.inspect().Game.enemies.find(x => x.isBoss()), whole = e.def.hp;
@@ -108,6 +114,26 @@ async function peer(origin, name) {
     }
     assert.equal(app.sim.rushHealth(2), E.pairHealth); assert.equal(app.sim.rushHealth(1), 1);
     assert.equal(JSON.stringify(pair.map(e => e.baseDef.hp)), sharedHp, 'the shared definitions keep their health');
+    // A pair takes turns (pass 168, CONFIG.endless.pairTurns): neither starts an attack while the other winds up or
+    // strikes; once the other recovers, it may.
+    {
+      const crowd = G('crowd'), ES = G('ES'), [one, two] = pair;
+      assert.ok(E.pairTurns && one.turns && two.turns, 'a pair takes turns');
+      crowd.enemies = pair; crowd.sinceStart = Infinity;
+      for (const s of [ES.WINDUP, ES.ACTIVE]) { one.state = s; assert.equal(crowd.mayStart(two), false, `nothing starts while the other is in ${s}`); }
+      one.state = ES.RECOVER; assert.equal(crowd.mayStart(two), true, 'its turn comes in the other\'s recovery');
+      // One blow across both, whose first contact begins a Finishing Blow (which ends the blow): the second is skipped,
+      // not a crash on the cleared hitbox (pass 168: `p.hitbox.payload` threw in tools/rush-curve.cjs runs).
+      const Player = G('Player'), PLAYER_DEF = G('PLAYER_DEF'), light = PLAYER_DEF.moveset.attacks.light;
+      for (const e of pair) { e.state = ES.CHASE; e.hitbox = null; e.x = 0; e.z = 1; e.y = 0; }
+      const p = new Player(PLAYER_DEF, 0, 0, 0, 0), took = [];
+      p.hitbox = new (G('Hitbox'))(p, light.box, G('makeStrike')(light, false, 0)); p.hitbox.overlaps = () => true;
+      for (const e of pair) { const own = e.takeHit.bind(e); e.takeHit = (...args) => { took.push(e); return { ...own(...args), finisher: took.length === 1 }; }; }
+      assert.doesNotThrow(() => G('resolveCombat')({ player: p, enemies: pair, hitstop: 0 }), 'a Finishing Blow begun on one of a pair ends the blow');
+      assert.equal(took.length, 1, 'the blow reaches no second foe once it has ended');
+      app.sim.start('arena', bosses[0], []); app.sim.setRushFight(6);
+      assert.equal(app.sim.inspect().Game.enemies.find(e => e.isBoss()).turns, false, 'a boss alone takes no turns');
+    }
     // A Crowned win's offer: four cards, one of them a legendary, for every player.
     for (let i = 0; i < 30; i++) {
       app.sim.offerAbilities(['crowned-' + i], false, 0, 5, true);

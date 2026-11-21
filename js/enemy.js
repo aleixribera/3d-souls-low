@@ -127,11 +127,13 @@ function rushPar(won, bosses = 1, might = 0) {
   return Math.min(S.max, Math.round(base * Math.max(1, rushPace(won) / CONFIG.pace.boss) * (1 + S.pair * (Math.max(1, bosses) - 1)) / (1 + Math.max(0, might))));
 }
 // Boss Rush's health share for boss `id`: its RUSH.health share in every fight, times CONFIG.endless.pairHealth when
-// `bosses` are fought at once, or its RUSH.warmHealth share alone in the warm-up (the first CONFIG.pace.warm fights).
+// `bosses` are fought at once, or its RUSH.warmHealth share alone in the warm-up (the first CONFIG.pace.warm fights),
+// then CONFIG.endless.settle's shares in the fights right after it (pass 168: whole health at fight 5 was a wall).
 function rushHealth(bosses, won = Infinity, id = null) {
-  const own = id && Object.hasOwn(RUSH.health, id) ? RUSH.health[id] : 1;
+  const own = id && Object.hasOwn(RUSH.health, id) ? RUSH.health[id] : 1, W = CONFIG.pace.warm, settle = CONFIG.endless.settle;
   if (bosses > 1) return CONFIG.endless.pairHealth * own;
-  return own * (won < CONFIG.pace.warm && id && Object.hasOwn(RUSH.warmHealth, id) ? RUSH.warmHealth[id] : 1);
+  if (won < W) return own * (id && Object.hasOwn(RUSH.warmHealth, id) ? RUSH.warmHealth[id] : 1);
+  return own * (won - W < settle.length ? settle[won - W] : 1);
 }
 // A follow-up's chance at a pace (CONFIG.pace): a faster boss strings more of its moves together.
 const pacedChance = (chance, pace) => chance >= 1 || pace === 1 ? chance : 1 - Math.pow(1 - chance, pace);
@@ -205,6 +207,7 @@ class Enemy {
     // away instead of dying (the opening of Level 5).
     this.baseDef = def; this.boss = opts.boss || null;
     this.pace = this.isBoss() ? CONFIG.pace.boss : 1;   // CONFIG.pace: Boss Rush's curve raises it fight by fight
+    this.turns = false;   // takes turns with the other bosses of a Boss Rush pair (js/crowd.js, CONFIG.endless.pairTurns)
     // Rests this many times faster, strings as if this much faster: a boss's CONFIG.enemy.press, times an Endless modifier's (RUSH.modifiers).
     const press = this.isBoss() ? CONFIG.enemy.press : null;
     this.rest = press ? press.rest : 1; this.chain = press ? press.chain : 1;
@@ -777,7 +780,7 @@ class Enemy {
   //     shots, and a roll-only attack or shove that reaches on its own. The first success starts.
   // Returns the attack to start now, or null. `shotsOnly`: projectiles only.
   chooseAttack(dist, toPlayer, dt, shotsOnly = false) {
-    if (this.cooldown > 0 || Math.abs(angDiff(toPlayer, this.yaw)) >= CONFIG.enemy.attackFacing || !crowd.mayStart()) return null;
+    if (this.cooldown > 0 || Math.abs(angDiff(toPlayer, this.yaw)) >= CONFIG.enemy.attackFacing || !crowd.mayStart(this)) return null;
     const inReach = this.def.attacks.filter(a => !a.when && !a.learned && !this.spent(a) && (!shotsOnly || a.projectile) && dist >= (a.minRange || 0) && dist <= a.range
       && (!a.hpBelow || this.hp <= this.def.hp * a.hpBelow));   // `hpBelow` (v5.9): only once its health is that low
     const close = inReach.filter(isClose);
@@ -790,7 +793,7 @@ class Enemy {
   // Reactions (`when`, v5.3): an attack whose situation holds and whose range window holds the player rolls its chance
   // per second, cooldown and facing aside (a tail swipe at someone behind, a dagger at someone drinking). Null if none.
   react(player, dist, toPlayer, dt) {
-    if (!crowd.mayStart()) return null;
+    if (!crowd.mayStart(this)) return null;
     const rel = angDiff(toPlayer, this.yaw);
     for (const a of this.def.attacks) if (a.when && !a.learned && !this.spent(a) && dist >= (a.minRange || 0) && dist <= a.range && REACTIONS[a.when](this, player, rel)
       && Math.random() < attackChance(a) * dt) return a;

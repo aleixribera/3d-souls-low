@@ -33,7 +33,7 @@ console.log(`${fresh.length} new note${fresh.length === 1 ? '' : 's'}${dry ? ' (
 console.log(`\n${summaries.length} run${summaries.length === 1 ? '' : 's'} in the last ${days} days.`);
 const attacks = {}, killers = {};
 for (const s of summaries) {
-  console.log(`\n${day(s.startedAt)} ${s.version || ''} ${s.outcome} at fight ${s.reached}, ${clock(s.duration || 0)}: ${s.players.join(', ')}`);
+  console.log(`\n${day(s.startedAt)} ${s.version || ''} ${s.outcome} at fight ${s.reached}, ${clock(s.duration || 0)}: ${(s.players || []).map(p => p.name || p).join(', ')}`);
   for (const f of s.fights || []) console.log(`  fight ${f.fight} ${f.bosses.join(' + ')}${f.crowned ? ' (crowned)' : ''}: ${f.time === null ? '?' : clock(f.time)}${f.won ? '' : ', lost'}`);
   for (const p of s.players || []) {
     if (p.bot) continue;

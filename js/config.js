@@ -263,16 +263,16 @@ const CONFIG = {
   // the floor only from about fight 40).
   // `boss` is 1: since pass 54 every boss's own data is its 1x (PLAN.md track B item 10), tuned so the test bot alone
   // finds each about as hard as the rest (tools/rush-curve.cjs bosses), and Story and Practice fight it there too, with CONFIG.enemy.press.
-  // Boss Rush's curve (pass 90, PLAN.md rework item 4, on the new moveset; no wall, no ease): the warm-up's first `warm`
-  // fights run from `warmFrom` up toward `boss`, reached at fight `warm` + 1; after `won` fights from there,
+  // Boss Rush's curve (pass 90; settled in pass 168, PLAN.md Later: no wall, ever, slowly harder every fight): the warm-up's
+  // first `warm` fights run from `warmFrom` up toward `boss`, reached at fight `warm` + 1; after `won` fights from there,
   // pace = boss x (1 + rise x (e^((min(won, steady) - warm) / scale) - 1)), and past `steady` fights won the same step
-  // every fight (the curve's slope there), at most `max`, which no run reaches: x1.6 by fight 10, x2.8 by 15, x4 by 20,
-  // +0.25 a fight after. Measured alone with three dashes (tools/rush-curve.cjs runs, SKILLED, 60 runs each,
-  // docs/scorecard/rush-curve-pass96.txt; pass 96 brought it back to pass 90's targets after the hidden meters went):
-  // with no abilities a skilled player falls around fight 10 (median 11, 3% past 15); with a great kit around 20
-  // (KIT=strong: median 18, 70% past 15, 33% past 20; KIT=best: median 20). Fights 1-4 take about a minute. It depends
-  // on the fights won alone: never on health, damage or the team's size.
-  pace: { boss: 1, rise: 0.55, scale: 6.5, steady: 11, max: 12, tell: 0.25, tellFloor: 0.6, warm: 4, warmFrom: 0.85 },
+  // every fight (the curve's slope there), at most `max`, which no run reaches: x1.2 by fight 10, x1.6 by 15, x2.5 by 20,
+  // +0.3 a fight after, x8.4 at fight 40; never more than 11% faster than the fight before. Measured alone (tools/rush-curve.cjs
+  // runs, 24 runs each, docs/scorecard/now/rush-curve.md): a new player (the default bot) falls around fight 5, a skilled
+  // one with no abilities around 11 (was 9), with a strong kit around 22 (was 17), none past 34. Pass 90's curve (x2.8 by
+  // fight 15) was a wall for a strong kit at fights 13-15. It depends on the fights won alone: never on health, damage or
+  // the team's size.
+  pace: { boss: 1, rise: 0.165, scale: 6.5, steady: 20, max: 12, tell: 0.25, tellFloor: 0.6, warm: 4, warmFrom: 0.85 },
   // Swift kill (v7.69.0): each Boss Rush fight has a par, the fight-length target: `par` s at the base pace, growing with
   // the curve's pace and by `pair` for each boss past the first, at most `max` s. The HUD shows it beside the fight's
   // clock. A fight won under par adds `extra` choices to that fight's ability offer.
@@ -289,10 +289,16 @@ const CONFIG = {
   // `mods[0]` a fight carries one modifier (RUSH.modifiers), one more from each later entry; a Crowned fight one more still.
   // `pairRest`: two bosses at once rest this much as fast between attacks as one alone (below 1: longer rests), so a pair
   // is a step up, not a wall (tools/rush-curve.cjs pairs). `pairHealth` (pass 67): each boss of a pair has this share of
-  // its own health, every bar of it: at 0.5 a pair holds about one boss's health between two sets of blows. Measured
-  // alone (SKILLED, docs/scorecard/endless-pass67.txt): a skilled bot's median run went from fight 7 to 12. `longest`: a
-  // bound on a run's fights for the draw; the curve makes it unreachable.
-  endless: { opening: 4, crowned: 5, crownedOffer: 4, pairFrom: 9, pairEvery: 5, pairRest: 0.35, pairHealth: 0.5, mods: [8, 14, 20], longest: 999 },
+  // its own health, every bar of it: at 0.5 a pair holds about one boss's health between two sets of blows.
+  // Measured alone (SKILLED, docs/scorecard/endless-pass67.txt): a skilled bot's median run went from fight 7 to 12.
+  // `pairTurns` (pass 168): a pair's bosses take turns, neither starting an attack while the other winds up or strikes
+  // (js/crowd.js): Aleix fell in a pair in 7 of his 10 recorded runs, 29% of pair fights against 2% of the rest. Taking
+  // turns, a pair rests at `pairRest` 0.5 (was 0.35): the skilled bot falls in about one pair in eight, as in the fights
+  // beside it. `mods` 8, 16, 26 (were 8, 14, 20): the third modifier no longer lands with fight 20's pace (pass 168,
+  // docs/scorecard/now/rush-curve.md). `settle` (pass 168): each boss's share of its health in the fights right after the
+  // warm-up, one entry a fight (fights 5, 6, 7), so health climbs to whole: the default bot fell at fight 5 in half its
+  // runs, against one in ten at fight 4. `longest`: a bound on a run's fights for the draw; the curve makes it unreachable.
+  endless: { opening: 4, crowned: 5, crownedOffer: 4, pairFrom: 9, pairEvery: 5, pairRest: 0.5, pairTurns: true, pairHealth: 0.5, settle: [0.7, 0.8, 0.9], mods: [8, 16, 26], longest: 999 },
   // The kill moment (v7.69.0), drawn only: when a Boss Rush fight's last boss falls, its death and the effects play at
   // `slow` of their speed for `time` s (the simulation and the other players run on), `embers` embers burst from it
   // (a third as many under reduced motion, which also skips the slow), and "Boss n down" stands until the pick.
