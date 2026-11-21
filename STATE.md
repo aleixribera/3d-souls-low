@@ -3,8 +3,7 @@
 The iterate loop's working note (`.claude/iterate.md`). Cap: 8,000 characters.
 
 ## Now
-Paused by Aleix, 2026-11-21.
-- The agreed stop point after PLAN items 5-8 (pass 159, v7.208.0).
+- Resumed by Aleix, 2026-11-21: next the PLAN "Later" items in order, then the balance pass (loop file stop point).
 - Track 2, pass 159 (PLAN item 8, batch 18, Story's four, pass 1 of 1), v7.208.0: Scarlet Draw, Oath Guard, The
   Seven, Bell of Waking, rarity `story` (`given`), each given by its chapter's level (`giveAbility`), saved as `gifts`
   (`js/story-fx.js`, Blender `seven_founder.py`, `ghost_bell.py`). Acceptance: `tests/story-four.cjs`, in-page
