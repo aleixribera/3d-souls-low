@@ -1599,7 +1599,7 @@ const KIT = (() => {
     limbSides = M.limbSides ?? MS.limbSides;
     const spec = boneSpec(M), index = {}, bind = {};
     spec.forEach((b, i) => { index[b.name] = i; const t = new THREE.Matrix4().makeTranslation(...b.at); bind[b.name] = b.parent ? bind[b.parent].clone().multiply(t) : t; });
-    const weaponBox = new THREE.Box3();
+    const weaponBox = new THREE.Box3(), wholeBox = new THREE.Box3();   // (pass 139) wholeBox: hidden pieces too, for an edgeTell on a weapon revealed later
     // (pass 118, opt-in) `softJoints: { <bone>: r }`: round that bone's joint (its pivot at rest), a vertex within r m of
     // it is shared with the bone across the joint, half and half at the pivot and nothing at r, on both sides: the body
     // bends there as one piece instead of hinging like a doll's parts (the judge's "moves as rigid parts").
@@ -1626,7 +1626,7 @@ const KIT = (() => {
     // own material: its wind-up glow and hit flash light the weapon only, never the armour.
     const push = (bone, slot, geo, weapon = false) => {
       // (the glint sits on the weapon that shows: a hidden one, v7.62.0, waits for a phase's `reveal`)
-      if (bone === 'weapon' && !(M.hidden && M.hidden.includes(slot))) { geo.computeBoundingBox(); weaponBox.union(geo.boundingBox); }
+      if (bone === 'weapon') { geo.computeBoundingBox(); wholeBox.union(geo.boundingBox); if (!(M.hidden && M.hidden.includes(slot))) weaponBox.union(geo.boundingBox); }
       geo.applyMatrix4(bind[bone]);
       const n = geo.attributes.position.count, si = new Uint16Array(n * 4), sw = new Float32Array(n * 4);
       for (let i = 0; i < n; i++) { si[i * 4] = index[bone]; sw[i * 4] = 1; }
@@ -1650,7 +1650,7 @@ const KIT = (() => {
     }
     const budget = MS.triBudget[M.budget] * (variant ? 1.25 : 1) * geoK * geoK;   // a stronger variant may carry a quarter more; Ultra's detail its square
     if (tris > budget && geoK === 1) console.warn(`Model "${id}" has ${Math.round(tris)} triangles; the ${M.budget} budget is ${budget}.`);
-    m = { parts, tris: Math.round(tris), meshes: parts.length, spec, weaponBox: weaponBox.isEmpty() ? null : weaponBox, id, variant, ckey, users: 0, eyeGeo: null, soft: !!soft };
+    m = { parts, tris: Math.round(tris), meshes: parts.length, spec, weaponBox: weaponBox.isEmpty() ? null : weaponBox, wholeBox: wholeBox.isEmpty() ? null : wholeBox, id, variant, ckey, users: 0, eyeGeo: null, soft: !!soft };
     modelCache.set(ckey, m);
     return m;
   }
@@ -1670,11 +1670,11 @@ const KIT = (() => {
       bad('a halo needs a bone, at [x, y, z], a color, a size above 0 and an opacity in (0, 1].');
     if ('edgeTell' in M) {   // (pass 113) the wind-up tell on the blade's edge, off the body
       const T = M.edgeTell;
-      if (!(T && typeof T.slot === 'string' && M.parts.some(o => o.weapon && o.slot === T.slot) && !(M.hidden || []).includes(T.slot) && typeof T.size === 'number' && T.size > 0 && T.size <= 1.5 && typeof T.along === 'number' && T.along >= 0 && T.along <= 1))
-        bad('edgeTell needs slot (a weapon: true part\'s material slot, not a hidden one), size (the halo, m, above 0, up to 1.5) and along (where on the weapon it sits, 0 the hilt to 1 the tip).');
+      if (!(T && typeof T.slot === 'string' && M.parts.some(o => o.weapon && o.slot === T.slot) && typeof T.size === 'number' && T.size > 0 && T.size <= 1.5 && typeof T.along === 'number' && T.along >= 0 && T.along <= 1))
+        bad('edgeTell needs slot (a weapon: true part\'s material slot; a hidden one shows once a phase reveals it), size (the halo, m, above 0, up to 1.5) and along (where on the weapon it sits, 0 the hilt to 1 the tip).');
     }
-    if ('tellsGrow' in M && !(M.tellsGrow === true && M.tells && Object.keys(M.tells).length && !M.edgeTell))
-      bad('tellsGrow must be true, on a model with tells and no edgeTell.');   // pass 133
+    if ('tellsGrow' in M && !(M.tellsGrow === true && M.tells && Object.keys(M.tells).length))
+      bad('tellsGrow must be true, on a model with tells.');   // pass 133; (pass 139) beside an edgeTell too: the weapon's blows grow on its edge, the others on their part
     if ('softJoints' in M && !(M.softJoints && Object.entries(M.softJoints).every(([b, r]) => known(b) && b !== 'weapon' && b !== 'spin' && typeof r === 'number' && r > 0 && r <= 0.5)))
       bad('softJoints maps bones (not the weapon, not spin: the root has no joint above it) to a radius above 0, up to 0.5 m.');   // pass 118
     if ('hum' in M && !(M.hum && known(M.hum.bone) && Array.isArray(M.hum.at) && M.hum.at.length === 3 && Number.isInteger(M.hum.color) && M.hum.size > 0))
@@ -1830,9 +1830,10 @@ const KIT = (() => {
     // (pass 113, opt-in) `edgeTell`: the wind-up halo small, on the blade's edge, not over the hands and haft; and no
     // whole-body heavy tint (Enemy.pose): nothing covers the boss's pose during a wind-up (VISION; docs/bosses/system.md).
     rig.edgeTell = null;
-    if (M.edgeTell && box) {
-      const T = M.edgeTell, len = box.max.z - box.min.z;
-      rig.warnGlow.position.set((box.min.x + box.max.x) / 2, (box.min.y + box.max.y) / 2, box.min.z + len * T.along);
+    const eBox = M.edgeTell && (box || built.wholeBox);   // (pass 139) a weapon hidden until a phase's reveal: its tell waits on its edge
+    if (eBox) {
+      const T = M.edgeTell, len = eBox.max.z - eBox.min.z;
+      rig.warnGlow.position.set((eBox.min.x + eBox.max.x) / 2, (eBox.min.y + eBox.max.y) / 2, eBox.min.z + len * T.along);
       rig.warnGlow.scale.setScalar(T.size); rig.edgeTell = { size: T.size };
     }
     if (M.aura) {   // a faint aura marks a stronger variant

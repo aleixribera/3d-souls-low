@@ -694,6 +694,16 @@ function validateData({ visual = true } = {}) {
         if (ph && 'name' in ph) need(typeof ph.name === 'string' && ph.name.length > 0, `${tag}: name must be text.`);
       }
       if ('defaultPhases' in d) need(Array.isArray(d.defaultPhases) && d.defaultPhases.length > 0 && d.defaultPhases.every(id => P && id in P), `Enemy "${d.id}": defaultPhases must list its phase ids.`);
+      // (pass 139) an edgeTell on a slot the model hides: a phase reveals it, and until then every blow names its own tell,
+      // so the halo never shows on a weapon not yet in its hands (the revealing phase's opener too: the reveal lands after it)
+      const EM = visual && d.model && KIT.resolve(d.model), ES = EM && EM.edgeTell && (EM.hidden || []).includes(EM.edgeTell.slot) && EM.edgeTell.slot;
+      if (ES && P) {
+        const order = Array.isArray(d.defaultPhases) ? d.defaultPhases : Object.keys(P), at = order.findIndex(id => P[id] && (P[id].reveal || []).includes(ES));
+        const by = id => d.attacks.find(x => x && x.id === id), untold = [];
+        for (const id of at < 0 ? order : order.slice(0, at)) for (const x of (P[id] && P[id].attacks ? P[id].attacks.map(by) : d.attacks)) if (x && x.hits.some(h => !h.tell)) untold.push(x.id);
+        if (at >= 0 && P[order[at]].opener && by(P[order[at]].opener).hits.some(h => !h.tell)) untold.push(P[order[at]].opener);
+        need(at >= 0 && !untold.length, `Enemy "${d.id}": its edgeTell slot "${ES}" is hidden, so a phase must reveal it, and every blow before then needs a tell (untold: ${[...new Set(untold)].join(', ')}).`);
+      }
     }
     if ('arena' in d) {   // a duel fought on a room level: both starts must stand on its floors
       const L = ALL_LEVELS.find(l => l.id === d.arena), ok = p => p && num(p.x) && num(p.z) && num(p.yaw)

@@ -121,7 +121,10 @@ const warden = G.ENEMY_DEFS.find(d => d.id === 'bellWarden');
 const viaAttacks = warden.attacks.filter(a => (G.ATTACK_POSES[a.pose].hits || []).some(h => h.via));
 assert.ok(['wardenSweep', 'wardenHammerfall', 'wardenBackhand', 'wardenUpswing', 'wardenFall', 'wardenThreeTolls', 'wardenSweepReturn'].every(id => viaAttacks.some(a => a.id === id)),
   `the Warden's heavy swings have in-between keys (${viaAttacks.map(a => a.id).join(', ')})`);
-for (const a of viaAttacks) {
+// (pass 139) and the castellans': every one of their attacks, both sisters' moves and the whole suit's
+const castellans = G.ENEMY_DEFS.find(d => d.id === 'hale').attacks;
+assert.ok(castellans.every(a => G.ATTACK_POSES[a.pose].hits.every(h => h.via && h.via.active && h.via.follow)), 'every castellan hit has in-between keys');
+const checkVia = (list, snap = false) => { for (const a of list) {
   const PA = G.ATTACK_POSES[a.pose], id = '__plain_' + a.id;
   G.ATTACK_POSES[id] = { ...PA, hits: PA.hits.map(h => { const c = { ...h }; delete c.via; return c; }) };
   const flat = { ...a, pose: id };
@@ -140,9 +143,14 @@ for (const a of viaAttacks) {
   const endA = G.phaseSpan(a, 'recovery', a.hits.length - 1)[0] + a.recovery, st = [], at = [];
   let pv = sample(a, 0);
   for (let t = 1 / 60; t < endA; t += 1 / 60) { const s = sample(a, t); st.push({ t, d: s.map((v, i) => Math.abs(v - pv[i])) }); pv = s; }
-  st.forEach((s, k) => s.d.forEach((d, i) => { const p = st[k - 1], n = st[k + 1]; if (p && n && d > 0.03 && d > 2.5 * Math.max(p.d[i], n.d[i])) at.push(`${CH[i]} at ${s.t.toFixed(3)} s`); }));
+  // snap: a strike that opens on an outExpo blow (the castellans') snaps out of its wind-up by design, in its first frames;
+  // and a turn's whole circles (tip.y) unwind in one frame as the recovery starts: the same pose
+  const struck = t => snap && a.hits.some((h, i) => { const s0 = G.phaseSpan(a, 'active', i)[0]; return t > s0 - 0.02 && t < s0 + 0.06; });
+  st.forEach((s, k) => s.d.forEach((d, i) => { const p = st[k - 1], n = st[k + 1]; if (p && n && d > 0.03 && d > 2.5 * Math.max(p.d[i], n.d[i]) && !struck(s.t) && !(snap && CH[i] === 'tip.y' && /WallTurns|VaultHaft/.test(a.pose))) at.push(`${CH[i]} at ${s.t.toFixed(3)} s`); }));
   assert.equal(at.length, 0, `${a.id}: no single-frame jump in any channel (${at.join(', ')})`);
-}
+} };
+checkVia(viaAttacks); checkVia(castellans, true);
 
+console.log(`pose via: the castellans' ${castellans.length} attacks keep their ends and never jump`);
 console.log(`pose via: the Bell Warden's ${viaAttacks.length} attacks with in-between keys keep their ends and never jump`);
 console.log(`pose via: the Captain's cleave raise ${mid.toFixed(2)} rad off the straight blend at most, fastest wind-up frame ${worstWind.toFixed(3)} rad, all checks pass`);

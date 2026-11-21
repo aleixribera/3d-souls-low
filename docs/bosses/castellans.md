@@ -2,8 +2,8 @@
 
 The seventh boss through the system (`system.md`; PLAN item 6, the roster in the order players meet them): two bosses
 fought as a pair. Data: `js/data/bosses/castellans.js` (boss ids `hale`, `harrow`; models `castellanHale`,
-`castellanHarrow`); model: `tools/blender/castellans.py`. Status: pass 138, the moveset audit (below) and the rework of
-what missed the bars. Next: the cel look, in-between keys, the `bars-1` round, then Aleix.
+`castellanHarrow`); model: `tools/blender/castellans.py`. Status: pass 139, the tells, in-between keys and the `bars-1` round done (below); awaiting
+Aleix's fight.
 
 ## Moveset audit (pass 138): rework
 
@@ -110,11 +110,25 @@ sooner and closer.
 ## Effects
 
 Salt and iron (`BOSS_FX`, element steel): stone rings from the stamps and the landings, a gilt burst as the hidden half
-appears (`revealBurst`), the salt wind's slash. Next pass: the tell on the axe's edge and on the gauntlets (`edgeTell`,
-`tells`) in cel.
+appears (`revealBurst`), the salt wind's slash. The wind-up's halo (pass 139) sits on what strikes, never over the body:
+the axe's head (`edgeTell`; Harrow's axe waits hidden until the whole phase, which `js/validate.js` holds), or a named
+part per hit (`tell`: a gauntlet, the right elbow or knee, a greave's toe, the haft's butt). A heavy grows that halo
+instead of washing her orange (`tellsGrow`).
 
 ## Animation
 
 Key poses per hit (`hale*`, `harrow*`, `castellan*` in the data file); the Heel from Heaven turns away before the leg
-rises (an in-between key). Every follow-through carries on past the strike (`tools/body-check.cjs`, pass 138). Clip:
-`docs/scorecard/now/castellans-rework.mp4`.
+rises (an in-between key). Every follow-through carries on past the strike (`tools/body-check.cjs`, pass 138). Pass
+139: every hit gets in-between keys (`via`, generated from its own poses at the end of the key-poses block: the wind-up
+settles, the hips lead the strike, the follow-through carries; hand-written ones on the Wall Turns, the Falling Weight and
+the Heel win), checked by `tests/pose-via.cjs`; the Heel from Heaven's toe now reaches her helm, in front of her. Clip
+(cel): `docs/scorecard/now/castellans-cel.mp4`.
+
+## `bars-1` round (pass 139)
+
+Four castellan strips (the Heel, Crown Cleave, the Hewing, Knuckle and Heel) shuffled blind among Aldric's, Ostrey's,
+the Captain's, the Warden's, the Giant's and the Hunger's. Shared wind-up: none (only the first frame, the same idle).
+Body readable: yes, past the phase's entry burst (filming). Parry or roll: missed twice. Crown Cleave's halo was
+hidden behind her (the axe hung down her back), and the gauntlets' halos were specks. Fixed: the axe now stands up
+over her helm, its halo in view through the whole wind-up from the player's camera, and the part halos are half as
+large again (0.45 to 0.65-0.7). Rechecked in cel strips (`castellans-crown.jpg`, `castellans-knuckle.jpg`).

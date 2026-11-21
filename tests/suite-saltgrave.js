@@ -117,6 +117,25 @@
       expect.ok(e.attack && e.attack.id === 'crownCleave', `her stamps bring her own cleave down (${e.attack && e.attack.id})`);
     } finally { Math.random = rnd; }
   });
+  // Pass 139 (system.md 4: nothing washes the body in a wind-up): every wind-up glows on what strikes. The axe's on its
+  // head, the fists' and greaves' on the gauntlet, elbow, knee or toe, and a heavy's halo grows there; the body keeps its colour.
+  test('Saltgrave: the castellans\' wind-ups glow on the axe head, gauntlet or greave, never over the body', () => {
+    for (const id of ['hale', 'harrow']) for (const ph of A.ENEMY_BY_ID[id].defaultPhases) {
+      Game.startFight(id); Game.loading = 0; sim.begin();
+      const e = Game.duel, r = e.rig;
+      e.phaseIds = A.ENEMY_BY_ID[id].defaultPhases; e.enterPhase(e.phaseIds.indexOf(ph));   // (fought alone she starts whole)
+      const own = e.def.attacks;
+      expect.ok(own.every(a => a.hits.every(h => !h.tell || r.tellGlows[h.tell])), `${id} ${ph}: every named tell is on her`);
+      for (const a of own.filter(a => a.heavy)) {
+        const h = a.hits[0], g = h.tell ? r.tellGlows[h.tell] : r.warnGlow;
+        const at = f => { e.attack = a; e.hitIndex = 0; e.holdLeft = 0; e.setState(ES.WINDUP); e.stateTime = h.startup * f; Game.render(0, CONFIG.step); return g.scale.x; };
+        const early = at(0.2), late = at(0.95);
+        expect.ok(r.bodyMats.every(m => m.emissive.r + m.emissive.g + m.emissive.b < 0.01), `${id} ${a.id}: no heavy tint on the body`);
+        expect.ok(g.visible && late > early * 1.2, `${id} ${a.id}: the halo on ${h.tell || 'the axe head'} grows (${early.toFixed(2)} to ${late.toFixed(2)})`);
+        if (h.tell) expect.ok(!r.warnGlow.visible, `${id} ${a.id}: the axe stays dark while the ${h.tell} strikes`);
+      }
+    }
+  });
   test('Saltgrave: the old road is gone from the fortress', () => {
     const ids = new Set([...A.LEVEL_8.gated.flatMap(z => z.enemies.map(m => m.enemy)), ...A.LEVEL_8.dispersed.map(s => s.enemy)]);
     for (const old of ['graftedScion', 'omenkin', 'godrick']) expect.ok(!ids.has(old), `no ${old}`);
