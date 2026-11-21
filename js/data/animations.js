@@ -141,15 +141,43 @@ const ANIM_SETTINGS = {
   //   opening, at `heights` (shares of the body's height) and `tilts` (rad), drawn `delay` s after the step.
   // burst: the star of light as the cuts open (`size` m, `time` s), `sparks`, a screen `flash`.
   // camera: a swing of `swing` rad round the foe through the steps, back over `back` s; a `punch` in as the cuts open.
+  // Pass 171 adds, per section: freeze `tint` (the stopped world's [r, g, b], 1 = as it was) and `flashColor`; cut `ink`
+  //   (0: the glow is light; 1: an ink stroke drawn over the world, `glow` its colour); burst `white` (how white the
+  //   star starts, 0 to 1), `light` (the lit flash's strength, 0 none), `kind` (the sparks: parry or ember), `flashColor`,
+  //   `tint` (how far the struck foe's body takes the burst's colour, js/enemy.js).
+  // look: the look players get; `looks` are whole alternatives, each only what it changes from the values above, picked
+  //   for one page with `?finisher=<id>` (kept for Aleix to compare, pass 171, until 2026-11-28).
   finisherFx: {
     crack: { size: 1.3, depth: 0.8, boost: 2.0, color: 0xff7a2a, hot: 0xfff2d8, pop: 0.18, breath: 0.12, pulse: 1.1,
              out: 0.45, burstTime: 0.3 },
-    freeze: { sat: 0.1, vignette: 0.4, dark: 0.4, hold: 0.06, in: 0.07, out: 0.4, kick: 0.35, flash: 0.08 },
+    freeze: { sat: 0.1, vignette: 0.4, dark: 0.4, hold: 0.06, in: 0.07, out: 0.4, kick: 0.35, flash: 0.08, tint: [1, 1, 1], flashColor: 0xdfe8ff },
     streak: { width: 0.14, color: 0xfff1ea, life: 0.2, held: 0.25 },
     cut: { length: 2.6, thin: 0.025, wide: 0.08, held: 0.3, show: 0.75, color: 0xffffff, glow: 0xff2a1c, delay: 0.03,
-           heights: [0.62, 0.5, 0.74], tilts: [0.6, -0.55, 0.12] },
-    burst: { size: 2.4, time: 0.42, color: 0xff3a24, sparks: 70, flash: 0.07 },
+           heights: [0.62, 0.5, 0.74], tilts: [0.6, -0.55, 0.12], ink: 0 },
+    burst: { size: 2.4, time: 0.42, color: 0xff3a24, sparks: 70, flash: 0.07, white: 0.7, light: 12, kind: 'parry', flashColor: 0xffe6dc, tint: 0.35 },
     camera: { swing: 0.5, back: 0.7, punch: 0.2, punchRate: 6 },
+    look: 'ink',
+    looks: {
+      // pass 103's: the world drained grey and darkened, white cuts, a white star and flash as they open
+      classic: {},
+      // the world keeps its colour, a shade dimmer; each step leaves a black ink slash with a red core, as the cel
+      // style draws its outlines; they open red, with no white and no screen flash
+      ink: { freeze: { sat: 0.8, vignette: 0.18, dark: 0.15, kick: 0.12, flash: 0 },
+             streak: { color: 0xff5a3c, width: 0.1 },
+             cut: { color: 0xff4a2a, glow: 0x0c0507, ink: 1, thin: 0.03, wide: 0.07, held: 0.9, show: 0.9 },
+             burst: { size: 1.2, color: 0xd8261a, sparks: 40, flash: 0, white: 0, light: 4, kind: 'ember', tint: 0.1 },
+             camera: { swing: 0.3, punch: 0.12 } },
+      // the stopped world turns to dusk amber rather than grey; the cuts burn gold and orange
+      ember: { freeze: { sat: 0.45, dark: 0.22, vignette: 0.3, tint: [1.12, 0.86, 0.62], flash: 0.04, flashColor: 0xffb070 },
+               streak: { color: 0xffb070 },
+               cut: { color: 0xffd8a0, glow: 0xff6a10 },
+               burst: { size: 1.8, color: 0xff6a1a, white: 0.15, light: 6, kind: 'ember', flash: 0.03, flashColor: 0xffa060 } },
+      // nothing on the screen changes: no grade, no vignette, no swing; only the held pose, the red cuts and sparks
+      still: { freeze: { sat: 1, vignette: 0, dark: 0, kick: 0, flash: 0 },
+               cut: { color: 0xff6040, glow: 0xff2a1c, held: 0.6 },
+               burst: { size: 1.3, sparks: 40, flash: 0, white: 0, light: 3 },
+               camera: { swing: 0, punch: 0.1 } },
+    },
   },
   // A landing with weight (pass 92): the knees take it, `drop` m at most for a fall at `ref` m/s or faster.
   land: { rise: 0.04, hold: 0.05, fall: 0.22, drop: 0.2, min: 0.35, ref: 9, lean: 0.18 },

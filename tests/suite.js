@@ -3351,6 +3351,35 @@
     expect.ok(e.alive() && hpAt - e.hp > 100 && e.cracks === 0, `it lands big (${(hpAt - e.hp).toFixed(0)} off its bar) and the guard is whole again`);
   });
 
+  // Pass 171: the looks (ANIM_SETTINGS.finisherFx.looks, `?finisher=<id>`): players get `look`; ink keeps the world's
+  // colour, draws its cuts as dark strokes and leaves no white flash; classic drains the world grey.
+  test('Finishing Blow: its look: ink keeps the colour and draws dark cuts, classic drains it; both put the grade back', () => {
+    const F = ANIM_SETTINGS.finisherFx, G = visuals.passes && visuals.passes.grade && visuals.passes.grade.uniforms;
+    expect.ok(finisherFx.look === F.look && F.look === 'ink', `players get the ink look (${finisherFx.look})`);
+    const was = finisherFx.look, seen = {};
+    try {
+      for (const id of ['ink', 'classic']) {
+        finisherFx.setLook(id);
+        Game.startFight('pillagerCaptain'); sim.begin(); sturdy(Game.player);
+        const p = Game.player, e = Game.duel;
+        faceOff(e, p, 2); sim.seconds(1, 1);   // the stage's own grade settles first
+        const sat0 = G ? G.uSat.value : 1;
+        finisher.start(p, e); sim.seconds(0.25, 1);
+        seen[id] = { ratio: G ? G.uSat.value / sat0 : 1 };
+        sim.until(() => p.state !== PS.EXECUTE, 4, 1); sim.seconds(1, 1);
+        expect.ok(!G || Math.abs(G.uSat.value - sat0) < 1e-6, `${id}: the grade is put back (${G && G.uSat.value}, ${sat0})`);
+      }
+      if (G) expect.ok(seen.ink.ratio > 0.75 && seen.classic.ratio < 0.4, `ink keeps the colour (${seen.ink.ratio.toFixed(2)}), classic drains it (${seen.classic.ratio.toFixed(2)})`);
+      for (const [id, L] of Object.entries(F.looks)) {
+        finisherFx.setLook(id);
+        const K = finisherFx.settings();
+        expect.ok(finisherFx.look === id && K.freeze.sat === (L.freeze && L.freeze.sat !== undefined ? L.freeze.sat : F.freeze.sat), `${id}: laid over the base values`);
+      }
+      finisherFx.setLook('ink');
+      expect.ok(finisherFx.settings().burst.flash === 0 && finisherFx.settings().freeze.flash === 0 && finisherFx.settings().burst.white === 0, 'ink: no screen flash and no white star');
+    } finally { finisherFx.setLook(was); }
+  });
+
   // ---- Story boss moves borrowed from the move sources (js/data/bosses/) -------------------------------------------
   const MOVE_SOURCES = [GODRICK, CRUCIBLE_KNIGHT, GODFREY, MALIKETH, RADAGON];   // unregistered since v7.54.0
   const STORY_BOSS_MOVES = [];   // pass 68 and 72: the Bell Warden's and the Giant Skeleton's borrowed moves gave way to their own

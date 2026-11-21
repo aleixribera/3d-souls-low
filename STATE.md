@@ -8,9 +8,9 @@ The iterate loop's working note (`.claude/iterate.md`). Cap: 8,000 characters.
   bridges, fog gates as drifting fog (`js/fog-gate.js`), Aurel in Ash relit, Burning Town house variety (`townLook`,
   Blender bays and dormers), Keyless, Cinderfolk recoloured. Next: `docs/story/audit.md` "Left" (Sunken Keep).
   Acceptance: `tools/story-frames.cjs` sheets; clip `story-redo-2.mp4` (`tools/story-clip.cjs`); audit 0 findings.
-- Track 2, pass 170 (retro, 1 of 1): `tools/release.cjs` commits and tags the bump itself, tags nothing when the
-  commit is refused, refuses a BOM; `browser-lock.cjs log` times every hold. Next on track 2: PLAN Later item 6, the
-  Finishing Blow's look. Acceptance: `tests/release.cjs`; `browser-lock.cjs log` lists holds.
+- Track 2, pass 171 (PLAN Later item 6, the Finishing Blow's look, 1 of 1): shipped the `ink` look (colour kept, ink
+  slashes, no flash); `?finisher=classic|ember|still` for Aleix until 2026-11-28. Acceptance: in-page `Finishing`;
+  `docs/scorecard/now/finisher-directions.jpg`, `finisher.mp4`. Next on track 2: the "Last" balance pass.
 
 ## Works
 
@@ -50,7 +50,8 @@ The iterate loop's working note (`.claude/iterate.md`). Cap: 8,000 characters.
   `docs/design-audit/2026-11-15.md`.
 - Abilities and crates (pass 107, v7.162.0): `js/data/crates.js`, `js/progress.js` (save `v` 2), `js/crate-screen.js`;
   `tests/crates.cjs`. Plain commons' touches (pass 109): `js/ability-touch.js`; in-page `plain commons`. Blade commons (pass 112): `js/common-fx.js`; `tests/blade-commons.cjs`, in-page `blade commons`. Guard commons (114, 117): `tests/guard-commons.cjs`, `mirror-shard.cjs`.
-- The Finishing Blow (pass 100-103, `js/finisher.js`, `js/finisher-fx.js`): the 3rd counter; its look is "Later".
+- The Finishing Blow (pass 100-103, `js/finisher.js`, `js/finisher-fx.js`): the 3rd counter; its look `ink` (pass 171,
+  `ANIM_SETTINGS.finisherFx.looks`, `?finisher=`; `FINISHER=` in `tools/anim-strip.cjs`); in-page `its look`.
 - Summons (pass 141-147): `js/summon-beasts.js` (hound, fox), `summon-lantern.js`, `summon-figures.js` (archer, ronin, puppet), `summon-birds.js`, `summon-crows.js`, `summon-brutes.js` (bear, mantis), `summon-coil.js`; `tests/summons-{one,two,three}.cjs`, in-page `summons`; clips `tools/ability-clips.cjs summons|summons2|summons3`, side views `tools/summon-closeups.cjs`.
 - Legendaries I, II (151, 154): `tests/legendaries-{one,two}.cjs`, in-page `legendaries one|two`, clips `legends1|2`.
 - Ultimates I-III (156-158): `tests/ultimates-{one,two,three}.cjs`, in-page `ultimates`, clips `ults1|2|3`.

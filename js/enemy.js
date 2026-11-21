@@ -1354,7 +1354,7 @@ class Enemy {
     const told = r.tellsGrow && warn > 0 && r.tellGlows[a.hits[this.hitIndex].tell];   // (pass 133) ...or on the claw, hoof or antlers that strike
     if (told) told.scale.setScalar(told.userData.size * (1 + heavy * CONFIG.VISUALS.heavyTell.edge));
     // Held in a Finishing Blow (pass 103): dark in the stopped time, a red flash as the cuts open (js/finisher-fx.js).
-    if (this.state === ES.EXECUTED && this.exec) r.setTint(finishColor || (finishColor = new THREE.Color(ANIM_SETTINGS.finisherFx.cut.glow)), this.exec.impact ? this.crack * this.crack * 0.35 : 0);
+    if (this.state === ES.EXECUTED && this.exec) r.setTint((finishColor || (finishColor = new THREE.Color())).setHex(typeof finisherFx !== 'undefined' ? finisherFx.settings().burst.color : ANIM_SETTINGS.finisherFx.burst.color), this.exec.impact ? this.crack * this.crack * (typeof finisherFx !== 'undefined' ? finisherFx.settings().burst.tint : 0.35) : 0);
     else if (this.crack > 0) r.setTint(CRACK_COLOR, this.crack * (this.cracks > 0 ? 0.6 : 1.6));   // a guard crack's own light is its cracks (js/finisher-fx.js)
     else if (heavy > this.tint && !r.edgeTell && !told) r.setTint(heavyColor || (heavyColor = new THREE.Color(CONFIG.VISUALS.heavyTell.color)), heavy * heavy * CONFIG.VISUALS.heavyTell.tint);   // a heavy coming: it will stagger
     else r.setTint(HIT_COLOR, this.tint * 0.8 * styleLab.hitFlash, true);   // the style's share of it (js/data/styles.js)

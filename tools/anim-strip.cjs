@@ -21,7 +21,8 @@ const { createServer } = require('../server/index.cjs');
 const [move = 'dash', out = '.scratch/strip.jpg', frames = '14', every = '2', zoom = '1', width = '640', height = '480'] = process.argv.slice(2);
 const CLIP = process.env.CLIP || '';
 const NOVIA = !!process.env.NOVIA;   // NOVIA=1: every key pose's in-between keys left out (a before/after of a `via`)
-const STYLE = process.env.STYLE ? `?style=${encodeURIComponent(process.env.STYLE)}` : '';
+// FINISHER=<look> (pass 171): the Finishing Blow drawn in that look (ANIM_SETTINGS.finisherFx.looks).
+const STYLE = (q => (q.toString() ? '?' + q : ''))(new URLSearchParams(Object.entries({ style: process.env.STYLE, finisher: process.env.FINISHER }).filter(([, v]) => v)));
 const REPEAT = Math.max(1, +process.env.REPEAT || 1), VIEW = process.env.VIEW || 'side', HOLD = process.env.HOLD ?? null;
 
 (async () => {
