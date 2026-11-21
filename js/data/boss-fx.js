@@ -45,8 +45,9 @@ const BOSS_FX = {
   antlered: { element: 'earth', aura: 0xff7a28, trail: { edge: 0.22, life: 0.14 }, phases: { gorge: 'fire' }, attacks: {
     slam: { impact: 'quake' }, slamLearned: { impact: 'quake' }, leap: { impact: 'quake' }, leapLearned: { impact: 'quake' },
     roar: { impact: 'roar' }, frenzy: { impact: 'quake' } } },
-  // Old Ostrey (Level 7): iron on iron, and coals from his lantern; once he opens it (the second phase), fire.
-  ostrey: { element: 'steel', aura: 0xffb050, phases: { kindled: 'fire' }, attacks: {
+  // Old Ostrey (Level 7): iron on iron, and coals from his lantern; once he opens it (the second phase), fire. (pass 136) The
+  // ribbon is a thin arc at the bar's far end: the default band washed his whole body orange through the Lantern Swing.
+  ostrey: { element: 'steel', aura: 0xffb050, trail: { edge: 0.25, life: 0.16, smear: 0.35 }, phases: { kindled: 'fire' }, attacks: {
     gateDrop: { impact: 'shatter', windup: 'gather' }, threeKnocks: { impact: 'shatter' }, shoulderGate: { impact: 'shatter' },
     lanternCoals: { element: 'fire' }, coalPunish: { element: 'fire' }, lanternSwing: { element: 'fire' }, emberRain: { element: 'fire' },
     lanternBursts: { element: 'fire', impact: 'blaze', windup: 'gather' }, lanternBreath: { element: 'fire', windup: 'gather' },

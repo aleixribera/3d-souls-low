@@ -281,17 +281,20 @@ BZ0, BZ1 = -.3, 1.45                # from its butt behind the fist to its far e
 def gate_bar(bm):
     beam(bm, [(BX, BY, BZ0), (BX, BY, BZ0 + .1), (BX, BY, .9), (BX, BY, BZ1)], .036, .042)
 hard('weapon__bar', gate_bar)
-def bar_iron(bm):   # bands and studs along it, a butt cap, the hooked staple at its end
-    for z in (.35, .62, .9, 1.18, 1.44):
+def bar_iron(bm):   # bands and studs along it, a butt cap
+    for z in (.35, .62, .9, 1.18):
         beam(bm, [(BX, BY, z - .025), (BX, BY, z + .025)], .044, .05)
     for z in (.5, .76, 1.04, 1.31):
         for dy in (1, -1):
             box(bm, (BX, BY + dy * .045, z), (.012, .006, .012))
     beam(bm, [(BX, BY, BZ0 - .02), (BX, BY, BZ0 + .04)], .046, .052)
+hard('weapon__iron', bar_iron)
+def bar_head(bm):   # (pass 136) the last band and the staple, their own piece: the wind-up's tell sits there (edgeTell, barHead)
+    beam(bm, [(BX, BY, 1.44 - .025), (BX, BY, 1.44 + .025)], .044, .05)
     # the staple: a bent iron hook off the far end, the catch that once dropped into the gate's cradle
     tube(bm, [(BX, BY + .03, BZ1 - .1), (BX, BY + .12, BZ1 - .06), (BX, BY + .15, BZ1 + .02), (BX, BY + .1, BZ1 + .08), (BX, BY + .04, BZ1 + .06)],
          [.022, .022, .02, .018, .014], 6)
-hard('weapon__iron', bar_iron)
+hard('weapon__iron.1', bar_head)
 def bar_grip(bm):   # a leather wrap either side of the fist
     for z0, z1 in ((-.27, -.09), (.09, .2)):
         beam(bm, [(BX, BY, z0), (BX, BY, z1)], .042, .048)

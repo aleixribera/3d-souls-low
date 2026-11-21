@@ -112,6 +112,9 @@ const REPEAT = Math.max(1, +process.env.REPEAT || 1), VIEW = process.env.VIEW ||
         e.x = e.px = 0; e.z = e.pz = 0; e.yaw = Math.PI / 2;
         p.x = p.px = far; p.z = p.pz = 0; p.yaw = p.pyaw = -Math.PI / 2; p.vx = p.vz = 0;
         aim = () => { cam.pos.set(e.x + 1.2 * k, 1.7 * k, 7.5 * k); cam.look.set(e.x + 1.2 * k, 1.1 * k, e.z); };
+        // (pass 136) the attack itself, not what it breaks off into: the player stands beyond reach, past a hit's `abort`
+        // distance, so the Gate Drop turned into Shoulder the Gate mid-wind-up (its red halo going blue, judge bars-1)
+        for (const h of a.hits) if (h.abort) h.abort = { ...h.abort, beyond: Infinity };
         let held = 0;
         if (hold !== null) for (const h of a.hits) if (h.hold) { h.hold = { ...h.hold, chance: +hold > 0 ? 1 : 0, time: [+hold, +hold] }; held += +hold; }
         const total = Math.round((phaseSpan(a, 'recovery', a.hits.length - 1)[0] + a.recovery + held) / STEP) + 6;

@@ -31,6 +31,7 @@ MODEL_DEFS.oldOstrey = {
     tabard: { tex: 'oathLinen', tint: 0x46566e, decay: 0.6, double: true, rim: 0.15 },
     stripe: { tex: 'wornGilt', tint: 0xa88a50, decay: 0.6 },
     bar: { tex: 'rustedIron', tint: 0x5a524c, decay: 0.75 },
+    barHead: { tex: 'rustedIron', tint: 0x6a5a4e, decay: 0.8 },   // (pass 136) the bar's last band and staple: the wind-up's tell (edgeTell)
     glass: { glow: 0xffb050 },              // the horn panes, lit from inside
     burn: { glow: 0xff7a28, burn: true },   // the lantern opened: drawn only while he burns
     eye: { glow: 0xffb050 },
@@ -46,13 +47,18 @@ MODEL_DEFS.oldOstrey = {
     chest: ['plate', 'iron', 'mantle', 'iron.1', 'iron.2'], spin: ['leather', 'iron', 'mail', 'plate', 'iron.1'],
     loinF: ['tabard', 'stripe'], loinB: ['tabard'], capeA: ['mantle'], capeB: ['mantle'], capeC: ['mantleHem'],
     armL: ['mail', 'plate', 'iron'], armR: ['mail', 'plate', 'iron'], elbowL: ['plate', 'iron', 'leather'], elbowR: ['plate', 'iron', 'leather'],
-    lantern: ['iron', 'glass', 'burn'], weapon: ['bar', 'iron', 'leather'],
+    lantern: ['iron', 'glass', 'burn'], weapon: ['bar', 'iron', 'iron.1', 'leather'],
     legL: ['mail', 'plate'], legR: ['mail', 'plate'], kneeL: ['plate', 'iron', 'iron.1'], kneeR: ['plate', 'iron', 'iron.1'],
-  }).flatMap(([bone, list]) => list.map(s => ({ use: 'baked', mesh: `ostrey:${bone}__${s}`, bone, slot: s.split('.')[0], tile: 0.42,
+  }).flatMap(([bone, list]) => list.map(s => ({ use: 'baked', mesh: `ostrey:${bone}__${s}`, bone, slot: s === 'iron.1' && bone === 'weapon' ? 'barHead' : s.split('.')[0], tile: 0.42,
     ...(bone === 'weapon' ? { weapon: true } : {}) }))),
   weapon: null,             // the bar is part of the figure (the `weapon: true` pieces above)
+  // (pass 136, docs/bosses/system.md 4) the wind-up's tell on the staple at the bar's end, small and growing through a heavy's
+  // wind-up; the bar in his fist and his body keep their colour (the whole bar and his body washed red or blue before).
+  edgeTell: { slot: 'barHead', size: 0.5, along: 0.95 },
+  // ...and on the lantern for the lantern's blows (a hit's `tell: 'lantern'`)
+  tells: { lantern: { bone: 'lantern', at: [0, -0.3, 0], size: 0.55 } },
   breathFrom: 'lantern',    // his fire comes out of the lantern
-  halos: [{ bone: 'lantern', at: [0, -0.3, 0], color: 0xffb050, size: 0.9, opacity: 0.55 }],
+  halos: [{ bone: 'lantern', at: [0, -0.3, 0], color: 0xffb050, size: 0.55, opacity: 0.45 }],   // (pass 136) smaller: swung before him, a wider halo washed his body orange
   eyes: { color: 0xffb050, size: 0.012, spread: 0.05, at: [0, 0.12, 0.13] },   // behind the grille
   anim: {
     idle: { breathRate: 0.8, breath: 0.016, headDrift: 0.03, sway: 0.012, twitch: 0 }, walk: { twist: 0.07, roll: 0.04, headNod: 0.03, elbow: 0.2, drag: 0.1 },
@@ -67,6 +73,12 @@ MODEL_DEFS.oldOstrey = {
 // ---- key poses (js/data/attack-poses.js format) -------------------------------------------------------------------------
 {
   const heavy = { windup: 'inOutSine', active: 'outExpo', follow: 'outCubic', recovery: 'inOutCubic' };
+  // In-between keys (pass 136, docs/bosses/system.md "Animation"; `via`, js/attack-anim.js), every one `rel` (an offset from
+  // the straight blend between his poses). A giant's weight leads the bar: his hips and chest turn or drop first, the bar
+  // trails his fist a beat behind and then comes through; after a blow into the floor his weight keeps sinking a moment.
+  const barDown = [{ t: 0.3, rel: true, crouch: 0.05, lean: 0.15, chest: [0.15, 0, 0], armR: [-0.4, 0, 0], elbowR: [-0.35, 0, 0], weapon: [-0.35, 0, 0] },
+    { t: 0.65, rel: true, weapon: [0.1, 0, 0] }];   // the chest falls first, the bar trailing up behind it, then whips down
+  const sinkOn = [{ t: 0.3, rel: true, crouch: 0.05, lean: 0.04, chest: [0.05, 0, 0] }];
   // The low sweep: crouched, the bar trailing at his right, the lantern lifted high to light the way it will go.
   const lowSweep = {
     windup: { crouch: 0.3, lean: 0.12, legL: [-0.3, 0, 0], legR: [0.35, 0, 0], spin: [0, -1.25, 0], chest: [0.1, -0.4, 0], neck: [0, 0.35, 0], head: [0.1, 0.5, 0],
@@ -75,6 +87,12 @@ MODEL_DEFS.oldOstrey = {
               armR: [-0.35, 0, 0.5], elbowR: [0, 0, 0], weapon: [0.8, 0, 0], armL: [-2.2, 0, 0.3], elbowL: [-0.3, 0, 0] },
     follow: { crouch: 0.32, lean: 0.3, legL: [-0.62, 0, 0], legR: [0.46, 0, 0], spin: [0, 1.45, 0], chest: [0.28, 0.42, 0], neck: [0, -0.25, 0], head: [0.05, -0.4, 0],
               armR: [-0.3, 0, 0.75], elbowR: [0, 0, 0], weapon: [0.85, 0, 0], armL: [-1.6, 0, 0.3], elbowL: [-0.35, 0, 0] },
+    // (pass 136) he sinks on into the crouch and winds a last turn; his hips swing round first, the bar dragged behind them
+    // low at his heel, then flung across; his weight carries him round after it
+    via: { windup: [{ t: 0.55, rel: true, crouch: 0.03, spin: [0, -0.1, 0] }, { t: 0.85, rel: true, crouch: 0.04, spin: [0, -0.15, 0], chest: [0, -0.08, 0] }],
+           active: [{ t: 0.4, rel: true, crouch: 0.04, spin: [0, 0.35, 0], chest: [0, 0.18, 0], head: [0, -0.15, 0], armR: [0.15, 0, -0.35] },
+                    { t: 0.75, rel: true, spin: [0, 0.08, 0], armR: [0, 0, -0.08] }],
+           follow: [{ t: 0.3, rel: true, crouch: 0.03, spin: [0, 0.1, 0] }] },
   };
   ATTACK_POSES.ostreyBarTheWay = { ease: { windup: 'inOutCubic', active: 'linear', follow: 'outCubic', recovery: 'inOutSine' },
     lag: { weapon: 0.08, armR: 0.05, elbowR: 0.06 }, hits: [lowSweep] };
@@ -88,6 +106,10 @@ MODEL_DEFS.oldOstrey = {
               armR: [-1.0, 0, 0], elbowR: [0.1, 0, 0], weapon: [1.7, 0, 0], armL: [-0.5, 0, -0.2], elbowL: [-1.0, 0, 0] },
     follow: { crouch: 0.32, lean: 0.5, legL: [-0.68, 0, 0], legR: [0.47, 0, 0], chest: [0.5, 0, 0], neck: [0.2, 0, 0], head: [0.1, 0, 0],
               armR: [-0.9, 0, 0], elbowR: [0.1, 0, 0], weapon: [1.75, 0, 0], armL: [-0.4, 0, -0.15], elbowL: [-0.9, 0, 0] },
+    // (pass 136) a dip on his knees before the bar goes up (the load), the bar trailing his fist as it rises; it falls with
+    // his chest ahead of it, and his weight goes on down into the ground
+    via: { windup: [{ t: 0.25, rel: true, crouch: 0.07, lean: 0.06, chest: [0.12, 0, 0], weapon: [0.25, 0, 0] }],
+           active: barDown, follow: sinkOn },
   };
   ATTACK_POSES.ostreyGateDrop = { ease: { windup: 'outCubic', active: 'inQuad', follow: 'outCubic', recovery: 'inOutCubic' }, hits: [gate] };
 
@@ -97,12 +119,18 @@ MODEL_DEFS.oldOstrey = {
   ATTACK_POSES.ostreyBarDrive = { ease: heavy, lag: { weapon: 0.1, armR: 0.06, elbowR: 0.08 }, hits: [
     { windup: { ...sight, crouch: 0.2, legL: [-0.35, 0, 0], legR: [0.35, 0, 0], armR: [0.5, 0, -0.1], elbowR: [-1.35, 0, 0], weapon: [1.1, 0, 0] },
       strike: { ...sight, spin: [0, -0.2, 0], crouch: 0.22, lean: 0.12, legL: [-0.45, 0, 0], legR: [0.38, 0, 0], armR: [-0.6, 0, 0.05], elbowR: [-0.5, 0, 0], weapon: [1.35, 0, 0] },
-      follow: { ...sight, spin: [0, -0.3, 0], crouch: 0.22, lean: 0.08, legL: [-0.42, 0, 0], legR: [0.37, 0, 0], armR: [-0.2, 0, 0], elbowR: [-1.0, 0, 0], weapon: [1.45, 0, 0] } },
+      follow: { ...sight, spin: [0, -0.3, 0], crouch: 0.22, lean: 0.08, legL: [-0.42, 0, 0], legR: [0.37, 0, 0], armR: [-0.2, 0, 0], elbowR: [-1.0, 0, 0], weapon: [1.45, 0, 0] },
+      // (pass 136) the jab: his hips push first, the fist after
+      via: { active: [{ t: 0.4, rel: true, crouch: 0.02, lean: 0.06, spin: [0, 0.1, 0], elbowR: [-0.3, 0, 0] }] } },
     { windup: { ...sight, spin: [0, -0.65, 0], crouch: 0.28, legL: [-0.4, 0, 0], legR: [0.4, 0, 0], armR: [0.6, 0, -0.1], elbowR: [-1.45, 0, 0], weapon: [1.1, 0, 0] },
       strike: { crouch: 0.3, lean: 0.4, legL: [-0.85, 0, 0], legR: [0.55, 0, 0], spin: [0, 0.45, 0], chest: [0.35, 0.3, 0], neck: [0.1, -0.2, 0], head: [0.05, -0.25, 0],
                 armR: [-1.25, 0, 0.1], elbowR: [0.05, 0, 0], weapon: [1.45, 0, 0], armL: [0.6, 0, 0.3], elbowL: [-0.3, 0, 0] },
       follow: { crouch: 0.32, lean: 0.45, legL: [-0.88, 0, 0], legR: [0.56, 0, 0], spin: [0, 0.55, 0], chest: [0.4, 0.35, 0], neck: [0.12, -0.25, 0], head: [0.05, -0.3, 0],
-                armR: [-1.2, 0, 0.12], elbowR: [0.05, 0, 0], weapon: [1.42, 0, 0], armL: [0.55, 0, 0.3], elbowL: [-0.35, 0, 0] } },
+                armR: [-1.2, 0, 0.12], elbowR: [0.05, 0, 0], weapon: [1.42, 0, 0], armL: [0.55, 0, 0.3], elbowL: [-0.35, 0, 0] },
+      // (pass 136) the drive: he draws back a last hand's breadth, then his hips and back leg drive and the bar comes after
+      via: { windup: [{ t: 0.8, rel: true, crouch: 0.03, spin: [0, -0.1, 0], armR: [0.12, 0, 0] }],
+             active: [{ t: 0.4, rel: true, crouch: 0.04, lean: 0.12, spin: [0, 0.25, 0], chest: [0.1, 0.12, 0], armR: [0.35, 0, 0], elbowR: [-0.45, 0, 0] }],
+             follow: [{ t: 0.3, rel: true, crouch: 0.02, lean: 0.04 }] } },
   ] };
 
   // Behind him: a look over the right shoulder, the bar raised before him, then the butt driven back past his hip.
@@ -113,6 +141,8 @@ MODEL_DEFS.oldOstrey = {
               armR: [0.75, 0, -0.15], elbowR: [-0.2, 0, 0], weapon: [0.6, 0, 0], armL: [-1.0, 0, 0.2], elbowL: [-0.4, 0, 0] },
     follow: { crouch: 0.24, lean: -0.14, legL: [-0.22, 0, 0], legR: [0.58, 0, 0], spin: [0, -0.7, 0], chest: [0.12, -0.45, 0], neck: [0, -0.4, 0], head: [0.05, -0.8, 0],
               armR: [0.8, 0, -0.15], elbowR: [-0.15, 0, 0], weapon: [0.55, 0, 0], armL: [-1.05, 0, 0.2], elbowL: [-0.4, 0, 0] },
+    // (pass 136) his hips turn back first, the bar after them
+    via: { active: [{ t: 0.4, rel: true, crouch: 0.03, spin: [0, -0.25, 0], chest: [0, -0.12, 0], armR: [-0.3, 0, 0] }] },
   }] };
 
   // At his left: the lantern wound back past his left hip, then swung up and across in a rising arc.
@@ -124,6 +154,9 @@ MODEL_DEFS.oldOstrey = {
               armL: [-2.1, 0, -0.55], elbowL: [-0.1, 0, 0], armR: [-0.3, 0, -0.1], elbowR: [-0.6, 0, 0], weapon: [1.0, 0, 0] },
     follow: { crouch: 0.2, lean: 0.12, legL: [-0.47, 0, 0], legR: [0.32, 0, 0], spin: [0, -0.95, 0], chest: [0.08, -0.35, 0], neck: [0, 0.25, 0], head: [0, 0.45, 0],
               armL: [-2.4, 0, -0.7], elbowL: [-0.15, 0, 0], armR: [-0.25, 0, -0.1], elbowR: [-0.6, 0, 0], weapon: [1.0, 0, 0] },
+    // (pass 136) his shoulders swing round first, the lantern dragged low behind them on its chain, then flung up
+    via: { active: [{ t: 0.4, rel: true, crouch: 0.03, spin: [0, -0.3, 0], chest: [0, -0.12, 0], armL: [0.6, 0, 0.2], elbowL: [-0.3, 0, 0] }],
+           follow: [{ t: 0.3, rel: true, spin: [0, -0.08, 0] }] },
   }] };
 
   // The gate on his shoulder: head down, both arms forward and the bar across his chest, he runs you down.
@@ -140,6 +173,8 @@ MODEL_DEFS.oldOstrey = {
               armL: [-2.0, 0, -0.15], elbowL: [-0.1, 0, 0], armR: [-0.3, 0, -0.1], elbowR: [-0.3, 0, 0], weapon: [1.0, 0, 0] },
     follow: { crouch: 0.15, lean: -0.04, legL: [-0.46, 0, 0], legR: [0.36, 0, 0], spin: [0, -0.4, 0], chest: [-0.12, -0.25, 0], neck: [0, 0.12, 0], head: [-0.05, 0.25, 0],
               armL: [-2.2, 0, -0.2], elbowL: [-0.15, 0, 0], armR: [-0.3, 0, -0.1], elbowR: [-0.3, 0, 0], weapon: [1.0, 0, 0] },
+    // (pass 136) he rises off his back leg first and the lantern comes after, low, then is flung up
+    via: { active: [{ t: 0.4, rel: true, spin: [0, -0.15, 0], armL: [0.55, 0, 0], elbowL: [-0.25, 0, 0] }] },
   };
   ATTACK_POSES.ostreyCoals = { ease: { windup: 'inOutSine', active: 'outCubic', follow: 'outQuad', recovery: 'inOutSine' }, lag: { armL: 0.05, elbowL: 0.1 }, hits: [fling] };
 
@@ -152,6 +187,8 @@ MODEL_DEFS.oldOstrey = {
               armR: [-1.0, 0, 0], elbowR: [0, 0, 0], weapon: [1.85, 0, 0], armL: [-0.3, 0, 0.75], elbowL: [-0.3, 0, 0] },
     follow: { crouch: 0.22 + high * 0.12, lean: 0.32 + high * 0.15, legL: [-0.52, 0, 0], legR: [0.4, 0, 0], spin: [0, 0.12, 0], chest: [0.32 + high * 0.15, 0.05, 0], neck: [0.1, 0, 0],
               armR: [-0.95, 0, 0], elbowR: [0.05, 0, 0], weapon: [1.85, 0, 0], armL: [-0.3, 0, 0.7], elbowL: [-0.3, 0, 0] },
+    // (pass 136) each knock: his chest falls first and the bar trails over his shoulder, then comes down; the third sinks on
+    via: { active: barDown, ...(high ? { windup: [{ t: 0.3, rel: true, crouch: 0.05, chest: [0.1, 0, 0] }], follow: sinkOn } : {}) },
   });
   ATTACK_POSES.ostreyThreeKnocks = { ease: { windup: 'inOutSine', active: 'inQuad', follow: 'outCubic', recovery: 'inOutCubic' }, hits: [knock(0), knock(0), knock(1)] };
 
@@ -162,7 +199,10 @@ MODEL_DEFS.oldOstrey = {
   ATTACK_POSES.ostreyLanternBursts = { ease: { windup: 'inOutSine', active: 'inQuad', follow: 'outCubic', recovery: 'inOutCubic' }, hits: [
     { windup: { crouch: 0.05, lean: -0.2, legL: [-0.25, 0, 0], legR: [0.25, 0, 0], chest: [-0.3, 0, 0], neck: [-0.2, 0, 0], head: [-0.35, 0, 0],
                 armL: [-3.0, 0, 0.2], elbowL: [-0.1, 0, 0], armR: [0.1, 0, -0.5], elbowR: [-0.2, 0, 0], weapon: [0.8, 0, 0] },
-      strike: dashed, follow: followOn({ lean: -0.2, chest: [-0.3, 0, 0] }, dashed, { crouch: 0.46 }) },   // (pass 135, body check) on down after the lantern
+      strike: dashed, follow: followOn({ lean: -0.2, chest: [-0.3, 0, 0] }, dashed, { crouch: 0.46 }),
+      // (pass 136) he rises on his toes with it, then his whole body falls before the lantern does
+      via: { windup: [{ t: 0.7, rel: true, crouch: -0.03, lean: -0.05, chest: [-0.1, 0, 0], head: [-0.1, 0, 0] }],
+             active: [{ t: 0.35, rel: true, crouch: 0.05, lean: 0.15, chest: [0.15, 0, 0], armL: [-0.5, 0, 0], elbowL: [-0.3, 0, 0] }], follow: sinkOn } },   // (pass 135, body check) on down after the lantern
     { windup: { ...dashed, crouch: 0.4, lean: 0.4 }, strike: { ...dashed, crouch: 0.3, lean: 0.25, chest: [0.3, 0, 0], armL: [-1.3, 0, 0.3] },
       follow: { ...dashed, crouch: 0.26, lean: 0.2, chest: [0.25, 0, 0], armL: [-1.2, 0, 0.3] } },
   ] };
@@ -178,7 +218,10 @@ MODEL_DEFS.oldOstrey = {
       strike: { crouch: 0.12, lean: 0.1, legL: [-0.5, 0, 0], legR: [0.4, 0, 0], spin: [0, -0.9, 0], chest: [0, -0.35, 0], neck: [0, 0.25, 0], head: [0, 0.45, 0],
                 armR: [-1.6, 0, -0.6], elbowR: [0, 0, 0], weapon: [0.95, 0, 0], armL: [-0.6, 0, 0.4], elbowL: [-0.5, 0, 0] },
       follow: { crouch: 0.12, lean: 0.1, legL: [-0.5, 0, 0], legR: [0.4, 0, 0], spin: [0, -1.15, 0], chest: [0, -0.4, 0], neck: [0, 0.3, 0], head: [0, 0.55, 0],
-                armR: [-1.4, 0, -0.8], elbowR: [0, 0, 0], weapon: [1.0, 0, 0], armL: [-0.55, 0, 0.45], elbowL: [-0.5, 0, 0] } },
+                armR: [-1.4, 0, -0.8], elbowR: [0, 0, 0], weapon: [1.0, 0, 0], armL: [-0.55, 0, 0.45], elbowL: [-0.5, 0, 0] },
+      // (pass 136) back the other way: his hips first, the bar dragged after them at head height
+      via: { active: [{ t: 0.4, rel: true, crouch: 0.03, spin: [0, -0.35, 0], chest: [0, -0.15, 0], armR: [0, 0, 0.35] }],
+             follow: [{ t: 0.3, rel: true, spin: [0, -0.08, 0] }] } },
   ] };
 
   // The breath: the lantern drawn in to his chest, his head bowed over it; then held out, its fire breathed across his front.
@@ -197,7 +240,9 @@ MODEL_DEFS.oldOstrey = {
   // and the fire runs out from where it lands.
   ATTACK_POSES.ostreyBurningDrop = { ease: { windup: 'inOutCubic', active: 'inQuad', follow: 'outCubic', recovery: 'inOutCubic' }, hits: [
     { windup: { ...gate.windup, crouch: 0.4, lean: 0.1, legL: [-0.55, 0, 0], legR: [0.45, 0, 0], armL: [0.8, 0, 0.3], elbowL: [-0.2, 0, 0] },
-      strike: gate.strike, follow: gate.follow },
+      strike: gate.strike, follow: gate.follow,
+      // (pass 136) a coil deeper before the leap; in the air the bar trails him, and on landing his weight sinks on
+      via: { windup: [{ t: 0.3, rel: true, crouch: 0.06, lean: 0.05 }], active: barDown, follow: [{ t: 0.3, rel: true, crouch: 0.08, lean: 0.05, chest: [0.06, 0, 0] }] } },
     { windup: { ...gate.follow, crouch: 0.36 }, strike: { ...gate.follow, crouch: 0.22, lean: 0.3, chest: [0.3, 0, 0] }, follow: { ...gate.follow, crouch: 0.2, lean: 0.25, chest: [0.25, 0, 0] } },
   ] };
 
@@ -207,7 +252,10 @@ MODEL_DEFS.oldOstrey = {
   const scatter = { crouch: 0.2, lean: 0.15, legL: [-0.5, 0, 0], legR: [0.35, 0, 0], spin: [0, -0.7, 0], chest: [0.1, -0.35, 0], neck: [0, 0.2, 0], head: [0, 0.35, 0],
     armL: [-2.2, 0, -0.5], elbowL: [-0.1, 0, 0], armR: [-0.2, 0, -0.3], elbowR: [-0.3, 0, 0], weapon: [1.0, 0, 0] };
   ATTACK_POSES.ostreyEmberRain = { ease: { windup: 'inOutSine', active: 'outCubic', follow: 'outQuad', recovery: 'inOutSine' }, lag: { armL: 0.04, elbowL: 0.08 },
-    hits: [{ windup: whirl, strike: scatter, follow: { ...scatter, spin: [0, -0.85, 0] } }, { windup: whirl, strike: scatter, follow: { ...scatter, spin: [0, -0.85, 0] } }] };
+    hits: [0, 1].map(() => ({ windup: whirl, strike: scatter, follow: { ...scatter, spin: [0, -0.85, 0] },
+      // (pass 136) the lantern goes round over his head once in the wind-up; his hips swing first and it is dragged after
+      via: { windup: [{ t: 0.5, rel: true, armL: [0, 0, -0.5], chest: [0, -0.1, 0] }],
+             active: [{ t: 0.4, rel: true, crouch: 0.03, spin: [0, -0.3, 0], chest: [0, -0.12, 0], armL: [-0.3, 0, 0.35] }] } })) };
 }
 
 // ---- the boss -----------------------------------------------------------------------------------------------------------
@@ -264,13 +312,13 @@ MODEL_DEFS.oldOstrey = {
       // Lantern Coals: swung low and back, then flung underarm: three coals lobbed in a fan. Blockable, not parryable.
       { id: 'lanternCoals', name: 'Lantern Coals', anim: 'overhead', pose: 'ostreyCoals', tracking: { rate: 2.8, commit: 0.85 }, minRange: 4, chance: 0.3,
         projectile: { ...COAL, spread: [-0.14, 0, 0.14] },
-        hits: [{ startup: 0.9, active: 0.06, follow: 0.2 }], recovery: 0.94,
+        hits: [{ startup: 0.9, active: 0.06, follow: 0.2, tell: 'lantern' }], recovery: 0.94,
         followUps: [{ attack: 'shoulderGate', if: 'any', chance: 0.18 }],
         damage: 16, poise: 20, knock: 3, lunge: 0, range: 18, box: { w: 0.4, h: 0.4, d: 0.4, fwd: 0.5, y: 1.4 } },
       // Drinking at range: one coal, sooner.
       { id: 'coalPunish', name: 'Lantern Coal', anim: 'overhead', pose: 'ostreyCoals', when: 'healing', tracking: { rate: 3.4, commit: 0.85 }, minRange: 4, chance: 3,
         projectile: COAL,
-        hits: [{ startup: 0.6, active: 0.06, follow: 0.15 }], recovery: 0.68,
+        hits: [{ startup: 0.6, active: 0.06, follow: 0.15, tell: 'lantern' }], recovery: 0.68,
         damage: 18, poise: 20, knock: 3, lunge: 0, range: 18, box: { w: 0.4, h: 0.4, d: 0.4, fwd: 0.5, y: 1.4 } },
       // Behind him: he looks over his shoulder and drives the butt of the bar back.
       { id: 'buttBack', name: 'Butt of the Bar', anim: 'thrust', pose: 'ostreyButtBack', when: 'behind', tracking: { rate: 1, commit: 0.3 }, chance: 4,
@@ -278,13 +326,13 @@ MODEL_DEFS.oldOstrey = {
         damage: 22, poise: 40, knock: 8, lunge: 0, range: 3.2, box: { w: 3.0, h: 1.8, d: 2.8, fwd: -1.6, y: 1.0 } },
       // At his left (the lantern side): a rising swing of the lantern.
       { id: 'lanternSwing', name: 'Lantern Swing', anim: 'sweep', pose: 'ostreyLanternSwing', when: 'flank', tracking: { rate: 3.6, commit: 0.7 }, chance: 1.6,
-        hits: [{ startup: 0.55, active: 0.12, follow: 0.18 }], recovery: 1.19,
+        hits: [{ startup: 0.55, active: 0.12, follow: 0.18, tell: 'lantern' }], recovery: 1.19,
         damage: 22, poise: 35, knock: 5, lunge: 1.6, range: 3.0, box: { w: 3.4, h: 2.0, d: 2.6, fwd: 1.3, y: 1.4 } },
       // ---- the lantern opened ------------------------------------------------------------------------------------------
       // The Lantern Opened (the phase opener): held up, dashed into the ground; the fire runs out in a ring.
       { id: 'lanternBursts', name: 'The Lantern Opened', anim: 'chop', pose: 'ostreyLanternBursts', noParry: true, tracking: { rate: 2.0, commit: 0.6 }, chance: 0.12,
-        hits: [{ startup: 1.4, active: 0.16, follow: 0.75, box: { w: 3.6, h: 2.2, d: 3.6, fwd: 1.2, y: 1.0 }, impact: { ring: 3.4, crack: 1.6, dust: 18, shake: 0.16 } },
-               { startup: 0.45, active: 0.18, follow: 0.4, box: { w: 1, h: 0.6, d: 1, fwd: 0, y: 0.3, ground: true, ring: { from: 1.5, to: 8, width: 1.6, time: 0.18 } },
+        hits: [{ startup: 1.4, active: 0.16, follow: 0.75, tell: 'lantern', box: { w: 3.6, h: 2.2, d: 3.6, fwd: 1.2, y: 1.0 }, impact: { ring: 3.4, crack: 1.6, dust: 18, shake: 0.16 } },
+               { startup: 0.45, active: 0.18, follow: 0.4, tell: 'lantern', box: { w: 1, h: 0.6, d: 1, fwd: 0, y: 0.3, ground: true, ring: { from: 1.5, to: 8, width: 1.6, time: 0.18 } },
                  impact: { ring: 4.5, crack: 0, dust: 12, shake: 0.12 } }],
         recovery: 2.72, damage: 40, heavy: true, poise: 70, knock: 9, lunge: 0.8, range: 3.6, box: { w: 3.6, h: 2.2, d: 3.6, fwd: 1.2, y: 1.0 } },
       // Low, Then High: the knees, then the head. Roll the first, roll the second.
@@ -297,18 +345,20 @@ MODEL_DEFS.oldOstrey = {
       // and back are safe all the while.
       { id: 'lanternBreath', name: 'The Ember\'s Breath', anim: 'bash', pose: 'ostreyLanternBreath', noParry: true, tracking: { rate: 0.4, commit: 1 }, chance: 0.18,
         breath: { len: 7, width: 2.2 },
-        hits: [{ startup: 1.2, active: 0.14, follow: 0.41 }, ...Array.from({ length: 6 }, () => ({ startup: 0.2, active: 0.14, follow: 0.06 }))], recovery: 2.72,
+        hits: [{ startup: 1.2, active: 0.14, follow: 0.41, tell: 'lantern' }, ...Array.from({ length: 6 }, () => ({ startup: 0.2, active: 0.14, follow: 0.06, tell: 'lantern' }))], recovery: 2.72,
         damage: 12, poise: 15, knock: 3, lunge: 0, range: 7, box: { w: 2.6, h: 2.0, d: 6.5, fwd: 4.0, y: 1.0 } },
       // The Burning Drop: a crouch, a leap, the gate dropped from the air, and the fire running out from where it lands.
-      { id: 'burningDrop', name: 'The Burning Drop', anim: 'chop', pose: 'ostreyBurningDrop', noParry: true, tracking: { rate: 2.4, commit: 0.5 }, minRange: 4, chance: 0.35,
+      // (pass 136, docs/bosses/ostrey.md) the bar's blow on landing is the bar's, and parried like the Gate Drop; only the
+      // fire ring that runs out after it is rolled (a hit's noParry, as the Hunger's learned pound).
+      { id: 'burningDrop', name: 'The Burning Drop', anim: 'chop', pose: 'ostreyBurningDrop', tracking: { rate: 2.4, commit: 0.5 }, minRange: 4, chance: 0.35, markers: glint(0),
         hits: [{ startup: 1.5, active: 0.16, follow: 0.65, leap: { from: 0.4, max: 12, short: 1.4 }, impact: { ring: 5.0, crack: 2.4, dust: 22, shake: 0.18 } },
-               { startup: 0.3, active: 0.18, follow: 0.5, box: { w: 1, h: 0.6, d: 1, fwd: 0, y: 0.3, ground: true, ring: { from: 1.5, to: 7.5, width: 1.6, time: 0.18 } },
+               { startup: 0.3, active: 0.18, follow: 0.5, noParry: true, box: { w: 1, h: 0.6, d: 1, fwd: 0, y: 0.3, ground: true, ring: { from: 1.5, to: 7.5, width: 1.6, time: 0.18 } },
                  impact: { ring: 4.0, crack: 0, dust: 12, shake: 0.1 } }],
         recovery: 3.06, damage: 54, heavy: true, poise: 90, knock: 11, lunge: 0, range: 12, box: { w: 2.4, h: 2.6, d: 4.4, fwd: 2.4, y: 1.0 } },
       // Ember Rain: the lantern whirled overhead and swung down, coals scattered in a wide fan; twice.
       { id: 'emberRain', name: 'Ember Rain', anim: 'overhead', pose: 'ostreyEmberRain', tracking: { rate: 2.4, commit: 0.8 }, minRange: 3, chance: 0.3,
         projectile: { ...COAL, speed: 13, spread: [-0.5, -0.25, 0, 0.25, 0.5] },
-        hits: [{ startup: 1.1, active: 0.06, follow: 0.5 }, { startup: 0.7, active: 0.06, follow: 0.2 }], recovery: 1.53,
+        hits: [{ startup: 1.1, active: 0.06, follow: 0.5, tell: 'lantern' }, { startup: 0.7, active: 0.06, follow: 0.2, tell: 'lantern' }], recovery: 1.53,
         damage: 16, poise: 20, knock: 3, lunge: 0, range: 18, box: { w: 0.4, h: 0.4, d: 0.4, fwd: 0.5, y: 1.4 } },
     ],
   };

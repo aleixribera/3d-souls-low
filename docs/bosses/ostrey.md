@@ -1,10 +1,9 @@
 # Old Ostrey, the Porter
 
 The sixth boss through the system (`system.md`; PLAN item 6, the roster in the order players meet them). Data:
-`js/data/bosses/ostrey.js` (boss id `ostrey`, model `oldOstrey`); model: `tools/blender/ostrey.py`. Status: pass 135,
-the moveset audit (below) and the body check (8 hits fixed). Next: a parry on the Burning Drop's landing, then the cel
-look (his wind-up today washes his body and the whole bar blue or red: the tell goes to the bar's edge), in-between keys
-and the `bars-1` judge.
+`js/data/bosses/ostrey.js` (boss id `ostrey`, model `oldOstrey`); model: `tools/blender/ostrey.py`. Status: pass 136,
+awaiting Aleix. The audit and body check (pass 135), the Burning Drop's landing parried (`noParry` 3 of 14), the cel look
+(the tell on the bar's head and on the lantern), in-between keys, one `bars-1` round (below).
 
 ## Moveset audit (pass 135): restyle, plus a parry and the body check
 
@@ -79,8 +78,19 @@ At 55 % he opens the lantern: he burns, comes sooner and closer, and the fire mo
 ## Effects
 
 Iron on iron and coals from his lantern (`BOSS_FX.ostrey`, element steel); fire once the lantern is open (`burn` glow
-slots drawn only while he burns). The wind-up's tell moves to the bar's edge (`edgeTell`) with the cel pass.
+slots drawn only while he burns). The wind-up's tell moves to the bar's edge (`edgeTell`, pass 136): the bar's last band and staple are their own slot, `barHead`, and only it glows; a lantern blow
+(`tell: 'lantern'`) glows at the lantern instead. His lantern's light warms his body as the lantern swings: that is the
+lantern, not a tell, and stays. The Lantern Opened (a heavy, roll only) now shows only the blue halo at the lantern: an
+`edgeTell` boss gets no whole-body heavy tint (`js/enemy.js`).
 
 ## Animation
 
-Key poses per hit (`ostrey*` in the data file); in-between keys and strips come with the cel pass, after the body check.
+Key poses per hit (`ostrey*` in the data file), and in-between keys (pass 136, all `rel`): his hips or chest lead, the
+bar or lantern trails a beat behind, and after a blow into the floor his weight sinks on (`barDown`, `sinkOn`). Strips
+(`STYLE=cel`): `docs/scorecard/now/ostrey-gate.jpg`, `ostrey-drop.jpg`, `ostrey-lantern.jpg`, `ostrey-sweep.jpg`; clip
+`ostrey-cel.mp4`.
+
+`bars-1` round (pass 136, 8 strips blind): its biggest problem, the Gate Drop's halo turning red to blue mid-wind-up,
+was the strip, not the move: the player stood past the hit's `abort` distance, so he broke off into Shoulder the Gate
+(roll only, blue). `tools/anim-strip.cjs` now films the attack itself. The Burning Drop opens like the Gate Drop on
+purpose (the same blow, from the air); they part by the second fifth, at the leap's crouch.
