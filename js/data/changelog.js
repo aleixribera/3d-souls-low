@@ -6,6 +6,7 @@
 //   title    a few words
 //   text     one to three sentences, shown under the list when the entry is selected
 const CHANGELOG = [
+  { version: 'v7.201.0', title: 'Legendaries I', text: 'Storm King crowns the boss with six bolts and a seventh that falls through it. Gale Crescent closes a cage of spinning blades round it. The Ember Twin is now its own figure of ash and embers, and every legendary lands with a one-frame flash (a soft darken with reduced motion).' },
   { version: 'v7.200.0', title: 'The King\'s Blade, made fair', text: 'The King\'s Blade\'s sword now shows its wind-up on the blade. The Ember Leaps has its own crouch before the jump and can be parried as it lands. The Shield Burns swings the burning shield at you first (parry), then slams it down (roll). The Shield Wall\'s cut over the shield can be parried. The Kindling Tree no longer glows red all over before its fire blows, and the Reaching Bough has its own wind-up.' },
   { version: 'v7.199.0', title: 'The Kindling Tree, reworked', text: 'The Kindling Tree fights anew: parry its boughs, jump its low sweep, and when it burns, get out from under it as it falls.' },
   { version: 'v7.198.0', title: 'Summons III', text: 'Five new summons for key 3: the Ronin Shade duels the boss and turns its first blow aside, the Mire Serpent coils round the boss and squeezes, the Puppet Knight drops in on strings, the Ash Bear rears and slams down, and the Glass Mantis scissors with its scythes.' },
