@@ -1531,6 +1531,9 @@ const visuals = (() => {
         const size = quality.warmupSize;
         if (quality.post && size) { prepareWarmPipeline(); warming = true; }
         if (size) { renderer.setViewport(0, 0, size, size); renderer.setScissor(0, 0, size, size); renderer.setScissorTest(true); }
+        // Every program of the new stage is requested before the first draw waits on any, so the driver compiles them
+        // side by side (KHR_parallel_shader_compile, js/scene.js) instead of one draw's wait at a time.
+        if (warmedStage !== stage || warmedQuality !== quality) renderer.compile(scene, camera);
         this.draw();
         // The same stage's hidden static materials are already compiled. New actors / phases were all drawn above;
         // walking the full scene through compile again on every retry adds work without preparing anything new.
