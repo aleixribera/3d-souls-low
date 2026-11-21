@@ -6,6 +6,7 @@
 //   title    a few words
 //   text     one to three sentences, shown under the list when the entry is selected
 const CHANGELOG = [
+  { version: 'v7.171.0', title: 'The rares in blue', text: 'Counterstep now flash-steps you behind the boss on a perfect dodge, and Opportunist hits harder on a cracked guard. All eleven of the older rares have their own blue look and sound.' },
   { version: 'v7.170.0', title: 'The Captain in black', text: 'The Pillager Captain\'s armour is black now, with sharper pauldrons, and his knees, elbows and cloak bend as one body.' },
   { version: 'v7.169.0', title: 'Mirror Shard', text: 'A new common: deflect a shot and it flies back into whoever shot it.' },
   { version: 'v7.168.0', title: 'The Captain\'s cleave lands', text: 'The Pillager Captain\'s Overhead Cleave now bursts from the floor the moment his bill hits it, not while it is still raised, and his swing leaves a thin arc of light along its path.' },
