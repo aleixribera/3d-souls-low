@@ -99,7 +99,9 @@ const { chromium } = require('./browser.cjs');
     await page.locator('#runSummaryLobby').click();
     await page.waitForFunction(() => Game.screen === 'main' && Game.mode === 'menu' && !multiplayer.connected);
 
-    // After a reload: the same level and crates.
+    // After a reload: the same level and crates. First the store itself holds them (pass 174: CI once reloaded to a
+    // blank progress, never seen locally).
+    await page.waitForFunction(x => { try { return JSON.parse(localStorage.getItem('arena.progress')).xp === x; } catch { return false; } }, earned.xp, { timeout: 10000 });
     await page.reload();
     await page.waitForFunction(() => window.__arenaReady, null, { timeout: 120000 });
     assert.deepEqual(await page.evaluate(() => ({ xp: progress.xp, level: progress.level.level, crates: progress.crates })), earned, 'kept after a reload');

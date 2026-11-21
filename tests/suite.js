@@ -2057,12 +2057,13 @@
     taken(e, p);
     expect.ok(p.state === PS.HELD, `the hand closes on you (${p.state})`);
     sim.until(() => !(Game.hitstop > 0), 1);   // the catch's hit-pause freezes both sides: not the grip's time
-    const t0 = clock - p.stateTime, hp0 = p.hp + S.dps * p.stateTime;
+    const dps = S.dps * e.damageMul;   // its blows' share (CONFIG.enemy.bossDamage, pass 173)
+    const t0 = clock - p.stateTime, hp0 = p.hp + dps * p.stateTime;
     sim.seconds(S.lift + 0.1);
     expect.above(p.y - e.y, S.at[1] - 0.2, 'lifted up before its skull');
     expect.near(Math.hypot(p.x - e.x, p.z - e.z), Math.hypot(S.at[0], S.at[2]), 0.3, 'held in its hand, not left where you stood');
     sim.seconds(1);
-    expect.near(hp0 - p.hp, S.dps * (clock - t0), 3, 'its heat burns you while it holds you');
+    expect.near(hp0 - p.hp, dps * (clock - t0), 3, 'its heat burns you while it holds you');
     sim.until(() => p.state !== PS.HELD, 4);
     expect.near(clock - t0, S.time, 0.1, `held its full ${S.time} s when you do not struggle`);
     expect.ok(freed.length === 1 && freed[0].thrown && freed[0].body === p, 'and thrown when it lets go');
@@ -5253,7 +5254,7 @@
     Game.startLevel('test-crowd'); Game.loading = 0; sim.begin(); sim.clearEnemies();
     const p = Game.player;
     for (const state of [ES.DORMANT, ES.RISE]) {
-      const e = sim.spawn('hollow', 25, 0); e.setState(state);
+      const e = sim.spawn('hollow', 25, 0); e.setState(state); e.hp = 1000;   // poise, not health: both blows together outdo a Hollow's 110 (pass 173's 1.9x)
       e.takeHit(strikeOf('jumpLight'), p);
       expect.ok(e.state === ES.HURT, `${state}: jump light flinches the Hollow`);
       expect.near(e.poise, e.def.poise - strikeOf('jumpLight').poise, 1e-6, `${state}: poise damage applied`);

@@ -910,6 +910,9 @@ function validateData({ visual = true } = {}) {
   need(RUSH && Array.isArray(RUSH.opening) && RUSH.opening.length >= 3 && RUSH.opening.every(id => isBossDef(ENEMY_BY_ID[id])) && new Set(RUSH.opening).size === RUSH.opening.length,
     'RUSH.opening: three or more different boss ids (a fight draws none from the fight before).');
   need(EN.opening >= PC.warm, 'CONFIG.endless: the opening covers the warm-up (CONFIG.pace.warm).');
+  need(num(EN.mightBlows) && EN.mightBlows >= 0 && EN.mightBlows <= 2, "CONFIG.endless.mightBlows: 0 to 2, what each point of the party's might adds to a boss's blows (pass 174).");
+  need(num(CONFIG.bot.counterReach) && CONFIG.bot.counterReach > 0 && CONFIG.bot.counterReach <= 1, "CONFIG.bot.counterReach: a share in (0, 1] of the counter's flash-step range (pass 174).");
+  if (CONFIG.fx && CONFIG.fx.strikeShake) need(num(CONFIG.fx.strikeShake.player) && CONFIG.fx.strikeShake.player > 0, "CONFIG.fx.strikeShake.player: above 0, what a player's blow is divided by before it shakes the camera (pass 174).");
   need(RUSH.warmHealth && Object.entries(RUSH.warmHealth).every(([id, k]) => RUSH.opening.includes(id) && num(k) && k > 0 && k <= 1),
     'RUSH.warmHealth: a share in (0, 1] for bosses of RUSH.opening.');
   need(RUSH.health && Object.entries(RUSH.health).every(([id, k]) => Object.hasOwn(ENEMY_BY_ID, id) && isBossDef(ENEMY_BY_ID[id]) && num(k) && k > 0 && k <= 1),

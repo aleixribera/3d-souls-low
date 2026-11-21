@@ -29,6 +29,12 @@ them (`git show 88f1abd:BACKLOG.md`).
 
 ## Boss Rush and Story
 
+- Cut (pass 174): the strong kit's Rush median is 24 with 7% of runs past fight 40 (target 25-30, under 5%);
+  `CONFIG.endless.mightBlows` trades one for the other. Wants blows or pace that grow later in a run for a strong kit
+  (`docs/balance/README.md`).
+- Cut (pass 174): the Bell Warden's opening sweeps beat the skilled bot in half its fights at fight 6; Agathe runs
+  98 s there (target 45-90).
+- Cut (pass 174): Story's ordinary foes ("they kill only the careless") are not measured by `tools/story-curve.cjs`.
 - The Boss Rush curve (PLAN "Later"): fights run 68-160 s at 1x; one swift-kill par for every boss
   (`CONFIG.swift.late`) favours quick bosses: a par from each boss's own health would even it. Bots never hold a heavy
   to full charge, so charge abilities are unmeasured by `tools/rush-curve.cjs`.

@@ -263,7 +263,9 @@
       for (const p of clients.values()) if (p.hello) sim.registerPlayer(p.id, p.name);
       session.gauntlet = gauntlet;
       session.abilities = sim.abilities();   // player id -> ability ids held, for every body's kit
-      session.pace = sim.setRushFight(fight, gauntlet.modifiers);   // the curve and the fight's modifiers
+      const might = partyMightNow();
+      session.pace = sim.setRushFight(fight, gauntlet.modifiers, might);   // the curve, the fight's modifiers, the party's kit
+      session.blows = sim.rushBlows(might);   // the bosses' blows (CONFIG.endless.mightBlows): each browser's bosses strike as hard
       session.par = rushParNow();   // the HUD's par time
       // Each boss's share of its bars (rushHealth): a pair's, a warm-up boss's, its own; only those under 1.
       const shares = [gauntlet.boss, ...gauntlet.partners].map(id => [id, sim.rushHealth(1 + gauntlet.partners.length, fight, id)]).filter(([, k]) => k < 1);
@@ -321,8 +323,8 @@
       else sim.offerAbilities(ids, withBots, swiftKill() ? sim.swiftExtra : 0, g.fight + 1, !!g.crowned, sim.offerSeed(g.run, g.fight, round), pools);
     }
     // Boss Rush's par for this fight (rushPar): its pace, its bosses and what the party holds (CONFIG.swift.might).
-    const rushParNow = () => sim.rushPar(session.gauntlet.fight, 1 + session.gauntlet.partners.length,
-      sim.partyMight([...clients.values()].filter(p => p.hello).map(p => p.id).concat(sim.botList().map(b => b.id))));
+    const partyMightNow = () => sim.partyMight([...clients.values()].filter(p => p.hello).map(p => p.id).concat(sim.botList().map(b => b.id)));
+    const rushParNow = () => sim.rushPar(session.gauntlet.fight, 1 + session.gauntlet.partners.length, partyMightNow());
     // Before fight 1 (firstPick): offered once the party has loaded; true once everyone has chosen (or the time ran
     // out). Then every body takes its kit (`firstPick`: the whole map, so a player still loading builds with it, and the
     // par that kit sets) and the boss wakes.

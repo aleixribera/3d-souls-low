@@ -23,12 +23,13 @@ const STORY = {
     { level: 'the-church', title: 'THE CHURCH IN THE PASS', line: 'The king is ash, and still the ash falls. Something left him as he died, and went up into the mountains.' },
     { level: 'windward-moor', title: 'THE WINDWARD MOOR', line: 'Over the pass lies the country the Seven never named to their children. Its gate is still kept.' },
     { level: 'saltgrave', title: 'SALTGRAVE', line: 'Two castellans hold Saltgrave for a crown that does not answer. They have held it a very long time.',
-      might: { pace: 0.75, health: 0.65, damage: 0.8 } },   // two at once: the climb alone left a newcomer 1 win in 4 (tools/story-curve.cjs)
+      might: { pace: 0.75, health: 0.75, damage: 0.9 } },   // two at once: the climb alone left a newcomer 1 win in 4 (tools/story-curve.cjs); pass 174 for blows x1.9
     { level: 'night-gaol', title: 'THE NIGHT GAOL', line: 'Thrale too had a bell. The one who rang it was never let out.' },
     { level: 'aurel', title: 'AUREL, THE GILDED CITY', line: 'Aurel is gold, and fed, and smiling. Its regent will be glad to see you.' },
     { level: 'aurel-in-ash', title: 'AUREL IN ASH', line: 'A city that will not be kept is burned. You have seen this done before, though you do not remember it.' },
     { level: 'torn-abbey', title: 'THE TORN ABBEY', line: 'The monks of Thrale tried once to cut the hunger out of the earth. The earth came with it.' },
-    { level: 'ember-root', title: 'THE ROOT OF THE EMBER', line: 'Under everything, the Ember is a root, and the root is still growing.' },
+    { level: 'ember-root', title: 'THE ROOT OF THE EMBER', line: 'Under everything, the Ember is a root, and the root is still growing.',
+      might: { damage: 1.25 } },   // pass 174: at the road's 1.55 the Kindling Tree beat a newcomer 8 times in 8 (tools/story-curve.cjs)
     { level: 'still-mere', title: 'THE STILL MERE', line: 'There is one water in Thrale that never burned. Carry it down. Something wearing your face is waiting.' },
   ],
   done: 'The ash has stopped falling. The road is walked.',

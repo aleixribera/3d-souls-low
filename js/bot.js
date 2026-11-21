@@ -244,7 +244,7 @@ const bot = (() => {
     let target = null, side = profile.side, sideTimer = span(C.strafeSwitch, rng), heavyHold = 0, jumpPlan = 0;
     let wasAlive = new WeakSet(), cheer = 0;
     let tacticId = null, tacticTimer = 0, tacticDuration = 1, quietTime = 0, healWait = 0, lastHp = 0, lastTargetHp = 0;
-    let resetLeft = 0, resetPending = false, decisionLeft = 0, jumpRest = 0, punishLeft = 0, comboChoice = null;
+    let resetLeft = 0, resetPending = false, decisionLeft = 0, jumpRest = 0, punishLeft = 0, comboChoice = null, counterTake = null;
     let finishChoice = null, dashPlan = null, dashRest = 0;   // pass 88: a string's finisher, a dash attack under way
     let lastAttacking = false, lastMove = null, lastMoveTime = 0;
     const newBurst = () => Math.floor(span([profile.burst[0], profile.burst[1] + 1], rng));
@@ -514,6 +514,7 @@ const bot = (() => {
     function decide(dt, me, enemies, allies, bolts, leader) {
       const C = B(), P = CONFIG.player, R = C.risk;
       hands.tick(dt);
+      if (!(me.riposte > 0)) counterTake = null;   // a counter's take-or-leave is rolled once an opening
       const idle = { x: 0, z: 0, has: false };
       if (!me.alive()) { hands.clear(); return { mv: idle, lock: null }; }
       if ((sideTimer -= dt) <= 0) { sideTimer = span(C.strafeSwitch, rng); if (rng() < 0.6) side = -side; }
@@ -716,6 +717,17 @@ const bot = (() => {
 
       // ---- 4. Offence ----
       const T = C.tempo;
+      // Pass 174 (PLAN "Last", attacking pays): an open counter is taken wherever its flash step reaches the foe, and as a
+      // landed counter ends the foe's string, only its blow has to come before the next one (it took 1.8 of the 4.8
+      // counters a minute it opened: tools/rush-curve.cjs SPLIT). Its mood's slip is the share of openings it takes only
+      // from within reach (below), as before.
+      if (me.riposte > 0 && me.isFree()) {
+        if (counterTake === null) counterTake = !mood || rng() >= mood.slip;
+        const K = A()[me.def.moveset.counter.light], F = K.flashStep;
+        if (counterTake && gap <= (F ? F.range * C.counterReach : C.reach) && window > K.hits[0].startup + C.safety && attackable(e)) {
+          hands.press('light'); return { mv: idle, lock: e };
+        }
+      }
       // A riposte is the player's too, until late in the opening.
       const theirs = e.state === ES.PARRIED && me.riposte <= 0 && person && edge(person, e) <= C.reach + S.near &&
         e.def.parriedTime - e.stateTime > X.late;

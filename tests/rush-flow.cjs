@@ -43,6 +43,12 @@ async function peer(origin, name) {
   assert.equal(app.sim.rushPar(6, 1, might), Math.min(S.max, Math.round(S.late * pace6 / (1 + might))), 'after the warm-up, the late par divided by 1 + the might');
   assert.ok(app.sim.rushPar(6, 1, might) < app.sim.rushPar(6), 'a kit shortens the par');
   assert.equal(app.sim.rushPar(0, 1, 0), app.sim.rushPar(3, 1, 0), "the warm-up's par is the base pace's");
+  // Pass 174: a boss's blows grow with the party's might (CONFIG.endless.mightBlows), not without a kit.
+  const probe = createServer().sim; probe.start('arena', 'ostrey');
+  const boss = () => probe.inspect().Game.enemies.find(e => e.isBoss());
+  probe.setRushFight(6, [], 0); assert.equal(boss().damageMul, CONFIG.enemy.bossDamage, 'no kit: the bosses hit as ever');
+  probe.setRushFight(6, [], might);
+  assert.ok(Math.abs(boss().damageMul - CONFIG.enemy.bossDamage * (1 + CONFIG.endless.mightBlows * might)) < 1e-9, 'a kit: harder blows');
 
   await new Promise(resolve => app.server.listen(0, '127.0.0.1', resolve));
   const origin = 'http://127.0.0.1:' + app.server.address().port;

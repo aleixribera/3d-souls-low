@@ -171,12 +171,14 @@ const CONFIG = {
   // in the chapter's place on the road; a chapter's `might` sets its bosses' own. Its own, never Boss Rush's: CONFIG.pace,
   // CONFIG.swift and RUSH stay Boss Rush's. Foes keep their health near their own (no sponges) and hit harder; bosses
   // start slow and light (a newcomer's first boss) and end a little past 1x. Measured with tools/story-curve.cjs
-  // (docs/scorecard/story-climb-pass79.txt, before pass 90's CONFIG.enemy.press): the default bot alone wins the first
-  // bosses every time, the last about 3 in 4.
+  // (docs/scorecard/story-climb-pass79.txt, before pass 90's CONFIG.enemy.press). Pass 174 (PLAN "Last": a new player
+  // beats a chapter boss in 2-4 tries, a skilled one in 1-2): bosses' health 0.9-1.1 and blows 1.25-1.6 (were 0.75-1,
+  // 0.85-1.1, before pass 173's blows x1.9): the default bot wins about half its tries, the skilled one 5 in 6
+  // (docs/balance/README.md).
   // `find`: a flask found on the road (a level's `flaskFinds`) is taken within `range` m, on its floor (`floorGap`); drawn
   // as a warm `color` light (js/lore.js) that fades over `fade` s once taken.
   story: { saveKey: 'combatArena.story', saveKeys: { ashmere: 'combatArena.story' }, saveVersion: 1, titleTime: 3.2,
-           road: { foes: { pace: [1, 1.1], health: [1, 1.15], damage: [1, 1.35] }, bosses: { pace: [0.8, 1.1], health: [0.75, 1], damage: [0.85, 1.1] } },
+           road: { foes: { pace: [1, 1.1], health: [1, 1.15], damage: [1, 1.35] }, bosses: { pace: [0.8, 1.1], health: [0.9, 1.1], damage: [1.25, 1.6] } },
            find: { range: 1.3, floorGap: 1.5, color: 0xffa850, fade: 0.6 } },
   // Bolts (js/projectiles.js): a pool of `max`, each `length` m, leaving the bow at `muzzle` of the archer's
   // height and aimed at `aimAt` of the target's; gone after `life` s. Speed, arc and size are per attack.
@@ -287,8 +289,9 @@ const CONFIG = {
   // after it, `late` s, for every boss at its whole health. And par follows the kit: it is divided by 1 + the party's
   // might, each ability held adding `might[rarity]` for each of its levels (the mean over the party), so every kit has
   // to fight for a swift kill (the test bot alone: about one fight in three, tools/rush-curve.cjs runs). Pass 76: a
-  // legendary weighs 0.18 (was 0.12): the kits that kill fastest hold two.
-  swift: { par: 45, late: 100, pair: 0.5, max: 120, extra: 1, might: { common: 0.03, rare: 0.06, legendary: 0.18 } },
+  // legendary weighs 0.18 (was 0.12): the kits that kill fastest hold two. Pass 174: `late` 80 (was 100), as blows
+  // and counters that pay (passes 173-174) made the skilled bot swift in 9 fights of 10 after the warm-up.
+  swift: { par: 45, late: 80, pair: 0.5, max: 120, extra: 1, might: { common: 0.03, rare: 0.06, legendary: 0.18 } },
   // Endless (pass 65, PLAN.md track B item 5): a Boss Rush run goes on until everyone falls. The first `opening` fights
   // draw from RUSH.opening (js/data/rush.js), then every boss. No boss comes back until every boss of its pool has come,
   // and never twice in a row. Every `crowned`th fight is Crowned (its win offers `crownedOffer` abilities, one of them a
@@ -306,7 +309,11 @@ const CONFIG = {
   // warm-up, one entry a fight (fights 5, 6, 7), so health climbs to whole: the default bot fell at fight 5 in half its
   // runs, against one in ten at fight 4. `longest`: a bound on a run's fights for the draw; the curve makes it unreachable.
   // Pass 173: `settle` emptied (whole health from fight 5): with fights half as long, the new player no longer fell there.
-  endless: { opening: 4, crowned: 5, crownedOffer: 4, pairFrom: 9, pairEvery: 5, pairRest: 0.5, pairTurns: true, pairHealth: 0.5, settle: [], mods: [8, 16, 26], longest: 999 },
+  // `mightBlows` (pass 174, PLAN "Last": the curve rises to meet a strong kit): a boss's blows grow by this much for each
+  // point of the party's might (kitMight, CONFIG.swift.might): a skilled bot with two legendaries reached the 40-fight
+  // cap in 38 runs of 60 without it. No kit, no change.
+  endless: { opening: 4, crowned: 5, crownedOffer: 4, pairFrom: 9, pairEvery: 5, pairRest: 0.5, pairTurns: true, pairHealth: 0.5, settle: [], mods: [8, 16, 26], longest: 999,
+             mightBlows: 0.25 },
   // The kill moment (v7.69.0), drawn only: when a Boss Rush fight's last boss falls, its death and the effects play at
   // `slow` of their speed for `time` s (the simulation and the other players run on), `embers` embers burst from it
   // (a third as many under reduced motion, which also skips the slow), and "Boss n down" stands until the pick.
@@ -635,8 +642,9 @@ const CONFIG = {
         guardCrackShake: { time: 0.22, amp: 0.04 },
         // Impact feel (js/impact.js), visual only. A landed hit shakes the camera by its damage: none below `from`, the
         // full `amp` at `full` (so light cuts stay steady and heavy blows and slams jolt). The struck body shudders
-        // `jitter` m during the hit-pause. Enemies' active swings leave a trail too (at most `trails` at once).
-        strikeShake: { from: 25, full: 70, time: 0.2, amp: 0.1 },
+        // `jitter` m during the hit-pause. Enemies' active swings leave a trail too (at most `trails` at once). A player's
+        // blow counts its damage over `player` (pass 174: the 1.9x of pass 173, so a light cut stays steady).
+        strikeShake: { from: 25, full: 70, time: 0.2, amp: 0.1, player: 1.9 },
         hitJitter: { amp: 0.045, rate: 95 },
         flinchRef: 30,   // damage that gives a full-size flinch (smaller hits flinch less, bigger ones more)
         enemyTrail: { trails: 6, color: 0xffd0b0, opacity: 0.22 },
@@ -1331,6 +1339,7 @@ const CONFIG = {
     dashShare: 0.55,            // s of an enemy dash added to its reach
     windowTrust: 0.7,           // share of an enemy's remaining cooldown counted as safe
     safety: 0.12,               // s spare left after its own swing before an enemy strike may open
+    counterReach: 0.8,          // share of the counter's flash-step range (edge to edge) it takes an open counter from (pass 174)
     closeGap: 0.5,              // edge gap it closes to before striking
     reach: 1.55,                // edge gap a light attack still connects from
     spacing: 2.2,               // edge gap it keeps while waiting out an enemy

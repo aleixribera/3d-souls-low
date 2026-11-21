@@ -215,14 +215,16 @@ globalThis.host = (() => {
   const weeklyRun = (ms = Date.now()) => { const week = weekOf(ms); return { seed: weekSeed(week), opening: [], week }; };
   // Boss Rush's curve (CONFIG.pace): this fight's bosses at the pace for `won` fights won, and its modifiers' changes
   // (RUSH.modifiers); two or more bosses at once rest longer (CONFIG.endless.pairRest), take turns (pairTurns, js/crowd.js) and each has a share of its
-  // health (rushHealth: CONFIG.endless.pairHealth, a warm-up boss's RUSH.warmHealth). Nothing raises health or blows.
-  // Returns the pace.
-  function setRushFight(won, modifiers = []) {
+  // health (rushHealth: CONFIG.endless.pairHealth, a warm-up boss's RUSH.warmHealth). Nothing raises health; blows
+  // grow only with the party's `might` (partyMight: CONFIG.endless.mightBlows, pass 174). Returns the pace.
+  const rushBlows = might => CONFIG.enemy.bossDamage * (1 + CONFIG.endless.mightBlows * Math.max(0, Number(might) || 0));
+  function setRushFight(won, modifiers = [], might = 0) {
     const mods = modifiers.map(id => RUSH_MODIFIER_BY_ID[id]).filter(Boolean), times = key => mods.reduce((n, m) => n * (m[key] || 1), 1);
     const count = Game.enemies.filter(e => e.isBoss()).length, together = count > 1;
     const B = CONFIG.enemy.press;   // every boss's own press (item 4), under the modifiers
     const pace = rushPace(won) * times('pace'), rest = B.rest * times('rest') * (together ? CONFIG.endless.pairRest : 1), chain = B.chain * times('chain');
-    for (const e of Game.enemies) if (e.isBoss()) { e.pace = pace; e.rest = rest; e.chain = chain; e.turns = together && !!CONFIG.endless.pairTurns; e.setHealth(rushHealth(count, won, e.baseDef.id)); }
+    for (const e of Game.enemies) if (e.isBoss()) { e.pace = pace; e.rest = rest; e.chain = chain; e.turns = together && !!CONFIG.endless.pairTurns; e.setHealth(rushHealth(count, won, e.baseDef.id));
+      e.damageMul = rushBlows(might); }
     return pace;
   }
   // The party's might (kitMight, CONFIG.swift.might): the mean over `ids` of what each holds. Boss Rush's par divides by it.
@@ -946,7 +948,7 @@ globalThis.host = (() => {
     playerMaxHp: PLAYER_DEF.stats.maxHp,
     offerAbilities, setGear, hasGear, poolOf: id => gear.has(id) ? [...gear.get(id)] : null, settleAbilities, pickAbility, giveAbilities, kitOf, maxHpOf, notePose, abilityClaim, vanishOf: id => perkOf(id).vanish,
     offerSize, abilityPickTime: CONFIG.abilities.pickTime, abilityPickHold: CONFIG.abilities.pickHold, abilityFirst: CONFIG.abilities.first,
-    rushPar, rushHealth, partyMight, swiftExtra: CONFIG.swift.extra,
+    rushPar, rushHealth, rushBlows, partyMight, swiftExtra: CONFIG.swift.extra,
     abilities: () => Object.fromEntries(owned), abilityOffer: id => offers.get(id) || null,
     playerMaxFlasks: PLAYER_DEF.inventory.find(it => it.item === 'flask').max,
     arenaWipeDelay: CONFIG.death.respawnDelay,

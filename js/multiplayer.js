@@ -1058,6 +1058,7 @@ const multiplayer = (() => {
           for (const e of Game.enemies) {   // Boss Rush: the server's bars, each boss's share of its own (rushHealth)
             const k = e.isBoss() && session.health && Object.hasOwn(session.health, e.baseDef.id) ? Number(session.health[e.baseDef.id]) : 1;
             if (k > 0 && k < 1) e.setHealth(k);
+            if (e.isBoss() && Number.isFinite(session.blows) && session.blows > 0) e.damageMul = session.blows;   // the party's kit grows its blows (pass 174)
           }
           loaded = true; updateRoster();
         };

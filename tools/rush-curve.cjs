@@ -13,7 +13,8 @@
 // BOT='{"aggression":0.1}' merges into every BOT_PROFILES entry (pass 173: a bot that presses every opening against one
 // that waits to deflect). BOTCFG='{"parryChanceScale":1,"tempo":{"comboBase":0.5}}' merges into CONFIG.bot (one level deep).
 // HITS=1.5 scales every player attack's damage; FINISHER='{"bossMul":12}' merges into CONFIG.finisher.damage (pass 173).
-// ENEMY='{"bossDamage":1.2}' merges into CONFIG.enemy (pass 173).
+// ENEMY='{"bossDamage":1.2}' merges into CONFIG.enemy (pass 173). COUNTER=3 sets the counter's worth in lights;
+// PARRY='{"counterReel":0.6}' merges into CONFIG.parry (pass 174).
 // SHARES='{"vesper":0.7}' merges into RUSH.health, a boss's Boss Rush share of its health (pass 168); WARM the same into
 // RUSH.warmHealth, the warm-up's shares (pass 173).
 // DUMP=file (runs mode) writes each run's fights (number, time, win, breaks, par, might) as JSON.
@@ -79,6 +80,8 @@ function setup(sim) {
   // SKILLED also deflects at its profile's own rate (CONFIG.bot.parryChanceScale 1, the companions' 0.1): pass 173, as
   // Aleix's recorded solo fights ran 2-2.5x quicker than the skilled bot's (node tools/replays.cjs).
   if (skill !== 1) { for (const m of Object.values(global(sim, 'BOT_MOODS'))) m.slip *= skill; global(sim, 'CONFIG').bot.parryChanceScale = 1; }
+  if (process.env.COUNTER) global(sim, 'PLAYER_DEF').moveset.attacks.counter.riposte.damage = Number(process.env.COUNTER);
+  if (process.env.PARRY) Object.assign(global(sim, 'CONFIG').parry, JSON.parse(process.env.PARRY));
   if (process.env.HITS) for (const a of Object.values(global(sim, 'PLAYER_DEF').moveset.attacks)) a.damage *= Number(process.env.HITS);
   if (process.env.FINISHER) Object.assign(global(sim, 'CONFIG').finisher.damage, JSON.parse(process.env.FINISHER));
   if (process.env.BOTCFG) for (const [k, v] of Object.entries(JSON.parse(process.env.BOTCFG))) { const B = global(sim, 'CONFIG').bot; B[k] = v && typeof v === 'object' && !Array.isArray(v) ? { ...B[k], ...v } : v; }
@@ -111,11 +114,11 @@ function setup(sim) {
 function fight(boss, won, seed, partners = [], mods = []) {
   const sim = createSimulation({ seed, maxBots: 1 }); setup(sim); sim.addBot();
   sim.start('arena', boss, partners); sim.setPlayers([]);
-  sim.setRushFight(won, mods);
   const { Game, players } = sim.inspect(), body = players[0];
   delete body.botId;   // the person stand-in
   const kit = kitList.slice(0, won + 1);   // the free pick and one a fight won
   if (kit.length) sim.giveAbilities(body.id, kit);
+  sim.setRushFight(won, mods, global(sim, 'kitMight')(kit));   // the kit's might grows the bosses' blows (pass 174)
   const ES = global(sim, 'ES'), bosses = Game.enemies.filter(e => e.isBoss()), was = bosses.map(e => e.state);
   let time = 0, taken = 0, prev = body.hp, result = 'loss', blow = null, last = null, breaks = 0;   // last: what dealt the last damage (BY)
   const by = {};   // BY=1: the damage taken by what dealt it (an attack's id, or 'other' for fire, seams and the like)
@@ -129,6 +132,14 @@ function fight(boss, won, seed, partners = [], mods = []) {
     return res;
   };
   global(sim, 'events').on('finisher', d => { if (d.enemy.isBoss()) { split.finisher += d.damage; struck += d.damage; } });
+  // How often the stand-in deflects, opens a counter and lands one (pass 174): counters' share is their count times their worth.
+  const count = { deflects: 0, opens: 0, counters: 0, dodges: 0, dashes: 0, drinks: 0 };
+  global(sim, 'events').on('parry', d => { if (d.player === body) count.deflects++; });
+  global(sim, 'events').on('dodge', d => { if (d.player === body) count.dodges++; });
+  global(sim, 'events').on('dash', d => { if (d.player === body) count.dashes++; });
+  global(sim, 'events').on('itemUsed', d => { if (d.player === body && d.item === 'flask') count.drinks++; });
+  global(sim, 'events').on('counterOpen', d => { if (d.player === body) count.opens++; });
+  global(sim, 'events').on('strike', d => { if (d.attacker === body && !d.blocked && d.strike && d.strike.riposte && d.target && d.target.isBoss && d.target.isBoss()) count.counters++; });
   const hpOf = () => bosses.reduce((n, e) => n + Math.max(0, e.hp), 0);
   if (process.env.BY) global(sim, 'events').on('strike', d => { if (d.target === body) blow = (d.attacker && d.attacker.attack && d.attacker.attack.id + (process.env.BY === '2' ? '#' + d.attacker.hitIndex + (d.attacker.state === 'recover' || d.attacker.state === 'chase' ? d.attacker.state : '') : '')) || 'blow'; });
   for (; time < LIMIT; time += 1 / 60) {
@@ -142,17 +153,18 @@ function fight(boss, won, seed, partners = [], mods = []) {
   }
   const might = global(sim, 'kitMight')(kit), par = global(sim, 'rushPar')(won, 1 + partners.length, might);
   Enemy.prototype.takeHit = take;
-  return { result, time, taken, by, last: result === 'win' ? null : last, breaks, par, might, split };
+  return { result, time, taken, by, last: result === 'win' ? null : last, breaks, par, might, split, count };
 }
 function work(job) {
   if (job.mode === 'bosses') {
     return job.bosses.map(([boss, from, to]) => {
-      const r = { boss, wins: 0, time: 0, winTime: 0, taken: 0, fights: 0, by: {}, fell: {}, breaks: 0, swift: 0, split: {} };
+      const r = { boss, wins: 0, time: 0, winTime: 0, taken: 0, fights: 0, by: {}, fell: {}, breaks: 0, swift: 0, split: {}, count: {} };
       for (let t = from; t < to; t++) {
         const f = fight(boss, job.won, Number(process.env.SEED || 1000) + t);
         r.fights++; r.time += f.time; r.taken += f.taken; r.breaks += f.breaks; if (f.result === 'win' && f.time <= f.par) r.swift++;
         for (const [k, v] of Object.entries(f.by)) r.by[k] = (r.by[k] || 0) + v;
         for (const [k, v] of Object.entries(f.split)) r.split[k] = (r.split[k] || 0) + v;
+        for (const [k, v] of Object.entries(f.count)) r.count[k] = (r.count[k] || 0) + v;
         if (f.result === 'win') { r.wins++; r.winTime += f.time; } else if (f.last) r.fell[f.last] = (r.fell[f.last] || 0) + 1;
       }
       return r;
@@ -208,23 +220,26 @@ if (process.env.RUSH_CHILD) {
         for (const k of ['wins', 'time', 'winTime', 'taken', 'fights', 'breaks', 'swift']) m[k] += r[k];
         for (const [k, v] of Object.entries(r.by)) m.by[k] = (m.by[k] || 0) + v;
         for (const [k, v] of Object.entries(r.split)) m.split[k] = (m.split[k] || 0) + v;
+        for (const [k, v] of Object.entries(r.count)) m.count[k] = (m.count[k] || 0) + v;
         for (const [k, v] of Object.entries(r.fell)) m.fell[k] = (m.fell[k] || 0) + v;
       }
       rows = [...merged.values()];
       rows.sort((a, b) => ALL.indexOf(a.boss) - ALL.indexOf(b.boss));
       console.log(`# alone, ${count} fights each at the pace for ${fightArg} won (x${probe.inspect().Game.update.constructor('return rushPace')()(fightArg).toFixed(2)}), ${kitList.length ? `KIT ${process.env.KIT} (the first ${fightArg})` : 'no abilities'}, ${skill === 1 ? 'the default bot' : 'SKILLED'}`);
       let w = 0, n = 0, wt = 0, ws = 0;
-      const all = {};
+      const all = {}, counts = {};
+      const perMin = (c, t) => Object.entries(c).map(([k, v]) => `${k} ${(v / (t / 60)).toFixed(1)}`).join(' ') + ' a minute';
       const shares = sp => { const t = Object.values(sp).reduce((a, b) => a + b, 0) || 1; return Object.entries(sp).map(([k, v]) => `${k} ${Math.round(v / t * 100)}%`).join(' '); };
       for (const r of rows) {
         w += r.wins; n += r.fights; wt += r.winTime; ws += r.wins;
         for (const [k, v] of Object.entries(r.split)) all[k] = (all[k] || 0) + v;
-        if (process.env.SPLIT) console.log(`${''.padEnd(14)} damage: ${shares(r.split)}`);
+        for (const [k, v] of Object.entries(r.count)) counts[k] = (counts[k] || 0) + v;
+        if (process.env.SPLIT) console.log(`${''.padEnd(14)} damage: ${shares(r.split)}  ${perMin(r.count, r.time)}`);
         console.log(`${r.boss.padEnd(14)} wins ${r.wins}/${r.fights}  falls ${((r.fights - r.wins) / r.fights).toFixed(2)}  time ${(r.time / r.fights).toFixed(0)}s  win time ${r.wins ? (r.winTime / r.wins).toFixed(0) + 's' : '-'}  taken ${(r.taken / r.fights).toFixed(0)}  swift ${r.swift}  s/break ${r.breaks ? (r.time / r.breaks).toFixed(0) : '-'}` +
           (process.env.BY ? '  by ' + Object.entries(r.by).sort((a, b) => b[1] - a[1]).map(([k, v]) => `${k} ${(v / r.fights).toFixed(0)}`).join(', ') +
             '  last blow ' + Object.entries(r.fell).sort((a, b) => b[1] - a[1]).map(([k, v]) => `${k} ${v}`).join(', ') : ''));
       }
-      console.log(`TOTAL          wins ${w}/${n}  falls ${((n - w) / n).toFixed(2)}  win time ${ws ? (wt / ws).toFixed(0) + 's' : '-'}  damage: ${shares(all)}`);
+      console.log(`TOTAL          wins ${w}/${n}  falls ${((n - w) / n).toFixed(2)}  win time ${ws ? (wt / ws).toFixed(0) + 's' : '-'}  damage: ${shares(all)}  ${perMin(counts, rows.reduce((t, r) => t + r.time, 0))}`);
     } else {
       rows.sort((a, b) => a.run - b.run);
       if (process.env.DUMP) require('fs').writeFileSync(process.env.DUMP, JSON.stringify(rows));   // each run's fights, to study offline

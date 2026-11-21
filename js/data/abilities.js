@@ -281,7 +281,7 @@ const ABILITIES = [
   // The first summon: a twin of its holder, made of embers, that fights at the boss's far side and strikes with them.
   { id: 'ember-twin', name: 'Ember Twin', rarity: 'legendary', text: 'Flask: a twin fights with you for {time}.',
     power: { when: 'flask', then: 'twin' },
-    levels: [{ time: 12, share: 0.55, draw: 3, cooldown: 20 }] },
+    levels: [{ time: 20, share: 0.75, draw: 3, cooldown: 20 }] },   // pass 174: ~17% of a mid-run bar a drink (was ~8%)
   // Legendaries II (pass 154, design/abilities batch 14): new triggers. Fourfold `needs` a key-4 ability: offered only to
   // a player who holds one.
   { id: 'hundred-suns', name: 'Hundred Suns', rarity: 'legendary', text: 'Finishing Blow: every cut erupts in sunfire.',
@@ -289,13 +289,13 @@ const ABILITIES = [
     levels: [{ strikes: 6, damage: 45 }] },
   { id: 'thunder-god-step', name: 'Thunder God Step', rarity: 'legendary', text: 'Dashes become lightning that cuts all you pass.',
     power: { when: 'dash', then: 'lightningDash' },
-    levels: [{ damage: 30, cooldown: 0.6 }] },
+    levels: [{ damage: 120, cooldown: 0.6 }] },   // pass 174: 4 lights a cut (was 1: 4% of a fight's damage)
   { id: 'fourfold', name: 'Fourfold', rarity: 'legendary', text: 'Your Ultimate refills your other keys.', needs: 'ultimate',
     power: { when: 'castUltimate', then: 'refillKeys' },
     levels: [{ share: 1 }] },
   { id: 'shade-host', name: 'Shade Host', rarity: 'legendary', text: 'Perfect dodge: a shadow clone joins for {time}.',
     power: { when: 'dodge', then: 'shadeClone' },
-    levels: [{ time: 6, share: 0.35, most: 3, cooldown: 2 }] },
+    levels: [{ time: 8, share: 0.6, most: 3, cooldown: 2 }] },   // pass 174 (was 6 s, 0.35: 6% of a fight's damage)
   // Key 4, Ultimate: the longest charge and the biggest moment. Ultimates I (pass 156, design/abilities batch 15), each to
   // Thunder Call's bar of about 8.4 damage a charge point (a hold or an area pays the difference); drawn by js/legend-fx-3.js.
   { id: 'thunder-call', name: 'Thunder Call', rarity: 'legendary', key: 'ultimate', text: 'A lightning dragon strikes the boss {strikes} times.',

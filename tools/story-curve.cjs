@@ -16,7 +16,9 @@ try { os.setPriority(0, os.constants.priority.PRIORITY_LOW); } catch (e) { /* no
 const trials = Number(process.argv[2] || 8), LIMIT = Number(process.env.LIMIT || 400), base = !!process.env.BASE;
 const road = process.env.ROAD ? JSON.parse(process.env.ROAD) : null;
 const global = (sim, name) => sim.inspect().Game.update.constructor('return ' + name)();
+// SKILLED=1 (pass 174): the skilled player, as tools/rush-curve.cjs's (a quarter of the slips, deflects at its profile's rate).
 function setup(sim) {
+  if (process.env.SKILLED) { for (const m of Object.values(global(sim, 'BOT_MOODS'))) m.slip *= 0.25; global(sim, 'CONFIG').bot.parryChanceScale = 1; }
   if (road) for (const [who, set] of Object.entries(road)) Object.assign(global(sim, 'CONFIG').story.road[who], set);
 }
 const probe = createSimulation(); setup(probe);
@@ -74,7 +76,7 @@ if (process.env.STORY_CHILD) {
       for (const k of ['wins', 'fights', 'time', 'winTime', 'drunk']) m[k] += r[k];
     }
     const rows = [...merged.values()].sort((a, b) => a.n - b.n);
-    console.log(`# Story's bosses alone, ${trials} fights each, the default bot (a friend new to the genre), ${base ? 'as written (BASE: 1x, 4 flasks)' : 'as strong as their chapter'}${road ? ' ROAD ' + process.env.ROAD : ''}`);
+    console.log(`# Story's bosses alone, ${trials} fights each, ${process.env.SKILLED ? 'SKILLED' : 'the default bot (a friend new to the genre)'}, ${base ? 'as written (BASE: 1x, 4 flasks)' : 'as strong as their chapter'}${road ? ' ROAD ' + process.env.ROAD : ''}`);
     let w = 0, n = 0;
     for (const r of rows) {
       w += r.wins; n += r.fights;
