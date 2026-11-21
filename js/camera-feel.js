@@ -71,6 +71,15 @@ const cameraFeel = (() => {
     // (`maul`); a ronin kicks as `draw` on its deflect (`parry`), not as it starts drawing.
     if (d.strike && (d.then === 'ronin' || d.then === 'serpent' || d.then === 'puppet' || d.then === 'mantis' || (d.then === 'bear' && !d.land))) return;
     if (d.draw && d.then === 'ronin') return;
+    // Batch 13: the crown's ring bolts kick as `spark`, its last as the crown closing (`boltCrown`); the cage kicks as it
+    // closes (its call), never a cut; Storm King's call is the heavy's own kick.
+    if (d.then === 'bladeCage' && d.strike) return;
+    if (d.then === 'boltCrown') {
+      if (!d.strike) return;
+      const C = F.powers[d.v && d.strike >= d.v.strikes ? 'boltCrown' : 'spark'], p = Game.player, k = !p ? 0 : isPlayer(d.body) ? 1 : clamp(1 - Math.hypot(p.x - d.x, p.z - d.z) / F.powerNear, 0, 1);
+      if (k > 0) { kick('fov', C[0] * k); kick('y', -C[1] * k); }
+      return;
+    }
     const P = F.powers[late !== undefined ? d.then : d.draw || d.parry ? 'draw' : d.then === 'hawk' && d.land ? 'stoop' : d.then === 'bear' && d.land ? 'maul' : d.strike ? (d.then === 'twin' || d.then === 'ghostBlade' ? 'echo' : SUMMON_STRIKERS.has(d.then) ? 'bite' : 'strike') : d.then], p = Game.player;
     if (!P || !p) return;
     const k = isPlayer(d.body) ? 1 : clamp(1 - Math.hypot(p.x - d.x, p.z - d.z) / F.powerNear, 0, 1);

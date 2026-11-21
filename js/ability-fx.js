@@ -6,15 +6,18 @@
 // look, on every preset; High and Ultra add sparks, embers and lights from js/ultra-fx.js on top:
 //   Meteor Fall    a column of fire falls with the jump, a white-hot burst, a shock ring as wide as the blast hits and a
 //                  molten crater that cools.
-//   Storm King     a dragon of lightning tears out of the holder's blade, climbs and coils down onto the boss as the
-//                  first bolt lands; then a jagged bolt from the sky for each strike, a scorch ring and a blue flash.
+//   Storm King     a crown (batch 13): six ember points on the floor round the boss, then a white-violet bolt in black
+//                  ink on each, standing, until all six bend in and meet in one bolt into the boss (the impact frame),
+//                  24 ember shards and a crown-shaped scorch. Thunder Call's dragon and bolts share its drawing.
 //   Time Rift      a violet wave out to the rift's reach, then each stopped enemy (its `frozen`) sits in a slow bubble
 //                  with a clock turning backwards under it, tinted, until it shatters.
 //   Thousand Blades  ghost copies of the holder's own sword fall on the boss, one each `every` s, for `time` s.
 //   Blood Moon     a red moon over the holder for its time, a crimson aura, and a red slash on each of their blows.
-//   Ember Twin     the first summon: a twin of the holder in embers (js/rig.js's figure, posed as they are) rises at
-//                  the boss's far side; each blow it echoes cuts an ember slash. Burns away when its time is up.
-//   Gale Crescent  a crescent of wind as tall as a house flies from the holder through the boss.
+//   Ember Twin     the first summon: a twin of the holder in ash plates and ember cracks (its own Blender model, cel
+//                  ink, posed as they are) rises at the boss's far side (the impact frame as it stands); each blow it
+//                  echoes cuts an ember slash. Burns away when its time is up.
+//   Gale Crescent  a cage (batch 13): a pale ring at the boss's feet, then twelve crescents with ember edges and ink
+//                  inner lines spin up round it (the impact frame), climbing as they turn, and fly outward at its end.
 //   Pyre           a pillar of fire stands under the broken boss for its time.
 // Fire Burst's burst of fire, smaller. The kept rares' cues and powers (Counterflame, Static Edge) are js/rare-fx.js's;
 // the guard key legendaries' small cues (event `abilityPerk`, the local player's): motes and a ring. Every mesh is pooled and
@@ -68,6 +71,29 @@ const abilityFx = (() => {
   const SLASH = canvasTex(256, (g, h) => {   // a crescent cut, thick in the middle
     g.beginPath(); g.arc(h, h * 1.5, h * 1.05, Math.PI * 1.22, Math.PI * 1.78); g.arc(h, h * 1.62, h * 0.98, Math.PI * 1.74, Math.PI * 1.26, true); g.closePath(); g.fill();
   });
+  // The same on a clear ground, for normal blending: the cage's crescents in their three tones.
+  function alphaTex(size, draw) {
+    const c = document.createElement('canvas'); c.width = c.height = size;
+    const g = c.getContext('2d'); g.lineCap = 'round'; draw(g, size / 2);
+    const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; return t;
+  }
+  const hex = n => '#' + n.toString(16).padStart(6, '0');
+  const CROWN_POINTS = canvasTex(256, (g, h) => {   // six points on a faint ring, the first at +x (world +x, round to +z)
+    g.lineWidth = 2; g.globalAlpha = 0.35; g.beginPath(); g.arc(h, h, h * 0.8, 0, Math.PI * 2); g.stroke(); g.globalAlpha = 1;
+    for (let i = 0; i < 6; i++) {
+      const a = i / 6 * Math.PI * 2, x = h + Math.cos(a) * h * 0.8, y = h + Math.sin(a) * h * 0.8;
+      g.beginPath(); g.arc(x, y, h * 0.07, 0, Math.PI * 2); g.fill();
+      g.lineWidth = 3; g.beginPath(); g.moveTo(x - h * 0.14, y); g.lineTo(x + h * 0.14, y); g.moveTo(x, y - h * 0.14); g.lineTo(x, y + h * 0.14); g.stroke();
+    }
+  });
+  const CROWN_SCORCH = canvasTex(256, (g, h) => {   // a crown's outline burnt into the floor: six points round a ring
+    g.lineWidth = 7; g.beginPath();
+    for (let i = 0; i <= 12; i++) {
+      const a = i / 12 * Math.PI * 2, r = h * (i % 2 ? 0.62 : 0.94);
+      g.lineTo(h + Math.cos(a) * r, h + Math.sin(a) * r);
+    }
+    g.stroke(); g.lineWidth = 4; g.beginPath(); g.arc(h, h, h * 0.5, 0, Math.PI * 2); g.stroke();
+  });
   const made = [];   // every pooled object, for warmUp and clear()
   const put = (o, visible = false) => { o.visible = visible; o.userData.warmUp = true; scene.add(o); made.push(o); return o; };
   const mesh = (geo, color, map) => new THREE.Mesh(geo, add(color, map));
@@ -90,7 +116,7 @@ const abilityFx = (() => {
     spawnBurst(at, M.burst);
     ultraFx.sparkBurst(at, 46, 'ember', null, 0, 1.3); ultraFx.chunkBurst(d.x, d.y, d.z, 14, 1.5); ultraFx.dustRing(d.x, d.y, d.z, 18, s.r);
     ultraFx.moteBurst(at, 70, M.color, { r: 1.2, speed: 3.5, lift: 2.6, life: [0.8, 2.2], size: 1.3 });
-    ultraFx.flashAt(at, M.color, 34, 18); light(at, M.color, 16, 16); shake(M.shake, d.x, d.z);
+    ultraFx.flashAt(at, M.color, 34, 18); light(at, M.color, 16, 16); shake(M.shake, d.x, d.z); impactFrame.hit(d.x, d.z);
   }
   function drawMeteors(dt) {
     for (const s of meteors) {
@@ -148,17 +174,26 @@ const abilityFx = (() => {
     }
     m.geometry.attributes.position.needsUpdate = true; m.geometry.computeBoundingSphere();
   }
-  const bolts = Array.from({ length: 3 }, () => {
+  // A crown's bolts also carry a black ink stroke (normal blending, drawn under the light) and keep their own points
+  // (`base`) to bend in from.
+  const CR = F.crown;
+  const bolts = Array.from({ length: 10 }, () => {
     const core = ribbon(SEGS, S.core), glow = ribbon(SEGS, S.color), branch = ribbon(BRANCH, S.color), scorch = mesh(RING, S.color);
-    for (const m of [core, glow, branch, scorch]) put(m);
-    return { core, glow, branch, scorch, t: Infinity };
+    const ink = ribbon(SEGS, CR.ink);
+    ink.material.blending = THREE.NormalBlending; ink.renderOrder = 1; core.renderOrder = glow.renderOrder = branch.renderOrder = 2;
+    const parts = [core, glow, branch, scorch, ink];
+    for (const m of parts) put(m);
+    return { core, glow, branch, scorch, ink, parts, t: Infinity, life: S.life, crown: null, base: Array.from({ length: SEGS }, () => new THREE.Vector3()) };
   });
+  // The bolt free longest (a crown's standing ones only when every other is in use).
+  const freeBolt = () => bolts.reduce((a, q) => ((a.crown && !q.crown) || (!!a.crown === !!q.crown && q.t > a.t) ? q : a));
+  const tint = (b, core, glow, branch) => { b.core.material.color.setHex(core); b.glow.material.color.setHex(glow); b.branch.material.color.setHex(branch); b.scorch.material.color.setHex(branch); };
   // `small`: Static Edge's spark, a short jump from just over the boss, not a bolt from the sky.
   function bolt(d, e, small = false) {
     // From the sky down through the boss's front (the side the player sees) into the floor, jagged, wider apart higher up.
-    const b = bolts.reduce((a, c) => (a.t > c.t ? a : c)), p = Game.player || e, far = Math.hypot(p.x - e.x, p.z - e.z) || 1;
+    const b = freeBolt(), p = Game.player || e, far = Math.hypot(p.x - e.x, p.z - e.z) || 1;
     const fx = e.x + (p.x - e.x) / far * (e.radius || 1) * 0.7, fz = e.z + (p.z - e.z) / far * (e.radius || 1) * 0.7, foot = e.y + 0.05, top = foot + (e.height || 2) + (small ? F.spark.height : S.height);
-    b.t = 0;
+    release(b); b.t = 0; b.life = S.life; b.ink.visible = false; tint(b, S.core, S.color, S.color);
     for (let i = 0; i < SEGS; i++) {
       const k = i / (SEGS - 1), j = (1 - k * 0.8) * S.jitter * (i && i < SEGS - 1 ? 1 : 0.3);
       pts[i].set(fx + (rnd() - 0.5) * j, lerp(top, foot, k), fz + (rnd() - 0.5) * j);
@@ -171,6 +206,7 @@ const abilityFx = (() => {
     const scorch = small ? S.scorch * 0.6 : S.scorch;
     b.scorch.position.set(fx, foot, fz); b.scorch.scale.set(scorch, 1, scorch);
     for (const m of [b.core, b.glow, b.branch, b.scorch]) m.visible = true;
+    b.ink.visible = false;
     const c = chestOf(e);
     if (small) { spawnBurst(c, F.spark.burst); ultraFx.sparkBurst(c, 16, 'storm', null, 0, 0.9); light(c, S.color, 7, 10); return; }
     spawnBurst(c, S.burst); ultraFx.sparkBurst(c, 34, 'storm', null, 0, 1.2); ultraFx.flashAt(c, S.color, 40, 22);
@@ -259,11 +295,113 @@ const abilityFx = (() => {
   function drawBolts(dt) {
     for (const b of bolts) {
       if (b.t === Infinity) continue;
-      b.t += dt; const k = b.t / S.life;
-      if (k >= 1) { b.t = Infinity; for (const m of [b.core, b.glow, b.branch, b.scorch]) m.visible = false; continue; }
+      b.t += dt;
+      if (b.crown) {   // a crown's: bright as it lands, then standing dimmer (an afterimage) until the crown closes
+        const k = clamp01(b.t / CR.after), held = 0.35 + 0.65 * (1 - k) * (1 - k);
+        b.core.material.opacity = held; b.glow.material.opacity = 0.22 * held; b.ink.material.opacity = 0.9 * Math.min(1, held * 1.6);
+        b.branch.material.opacity = 0.8 * (1 - k); b.scorch.material.opacity = 0.6 * (1 - k * 0.5);
+        continue;
+      }
+      const k = b.t / b.life;
+      if (k >= 1) { release(b); continue; }
       const fade = 1 - k * k;   // one bright stroke that dies away: no flicker
       b.core.material.opacity = fade; b.glow.material.opacity = 0.45 * fade; b.branch.material.opacity = 0.6 * fade * (k < 0.5 ? 1 : 0);
-      b.scorch.material.opacity = 0.7 * (1 - k);
+      b.scorch.material.opacity = 0.7 * (1 - k); b.ink.material.opacity = 0.9 * fade;
+    }
+  }
+  function release(b) {
+    if (b.crown) { const i = b.crown.bolts.indexOf(b); if (i >= 0) b.crown.bolts.splice(i, 1); }
+    b.crown = null; b.t = Infinity; for (const m of b.parts) m.visible = false;
+  }
+
+  // ---- Storm King's crown ---------------------------------------------------------------------------------------
+  // Called: six ember points flicker on the floor where the bolts will fall (the first facing the holder, as the
+  // engine rings them). Each strike (the server's, with its ring point) slams a bolt down on its point, which stands;
+  // the last one bends them all in at the top over `converge` s and they meet in one thick bolt into the boss: the
+  // impact frame, shards, a crown scorch that cools.
+  const crowns = Array.from({ length: 2 }, () => {
+    const marks = mesh(DISC, CR.edge, CROWN_POINTS), scorch = mesh(DISC, CR.edge, CROWN_SCORCH);
+    marks.position.y = 0.05; scorch.position.y = 0.04; put(marks); put(scorch);
+    return { marks, scorch, bolts: [], e: null, a0: 0, t: Infinity, fall: Infinity, cool: Infinity, ring: 1, at: { x: 0, y: 0, z: 0 }, base: Array.from({ length: SEGS }, () => new THREE.Vector3()) };
+  });
+  const crownOf = e => crowns.find(c => c.e === e && c.t !== Infinity) || null;
+  function crownCall(d, e) {
+    let c = crownOf(e);
+    if (!c) { c = crowns.reduce((a, q) => (a.t > q.t ? a : q)); for (const b of [...c.bolts]) release(b); }
+    const from = d.body || e;
+    c.e = e; c.t = 0; c.fall = Infinity; c.ring = (e.radius || 1) + CONFIG.abilities.crown.gap;
+    c.a0 = Math.atan2((from.z ?? e.z) - e.z, (from.x ?? e.x) - e.x) || 0;
+    c.marks.visible = true; c.marks.rotation.y = -c.a0; c.marks.scale.set(c.ring / 0.8, 1, c.ring / 0.8);
+    light(chestOf(e), CR.color, 6, 14);
+    return c;
+  }
+  // A bolt down from the sky onto (x, z), jagged, in black ink; `fall`: the crown's last, thick, white-hot, into the boss.
+  function crownBolt(c, x, z, e, fall) {
+    const b = freeBolt(), foot = e.y + (fall ? (e.height || 2) * 0.55 : 0.05), top = e.y + CR.height;
+    release(b); b.t = 0;
+    const w = fall ? CR.fall : CR.width;
+    for (let i = 0; i < SEGS; i++) {
+      const k = i / (SEGS - 1), j = (1 - k * 0.7) * CR.jitter * (i && i < SEGS - 1 ? 1 : 0.2);
+      b.base[i].set(x + (rnd() - 0.5) * j, lerp(top, foot, k), z + (rnd() - 0.5) * j);
+    }
+    shape(b.core, b.base, SEGS, w); shape(b.glow, b.base, SEGS, w * 2.2); shape(b.ink, b.base, SEGS, w * 2.6);
+    const from = b.base[4], dir = rnd() < 0.5 ? -1 : 1;
+    for (let i = 0; i < BRANCH; i++) pts[i].set(from.x + dir * i * 0.5 + (rnd() - 0.5) * 0.4, from.y - i * 0.9, from.z + (rnd() - 0.5) * 0.8);
+    shape(b.branch, pts, BRANCH, w * 1.4);
+    tint(b, CR.core, CR.color, CR.edge);
+    b.scorch.position.set(x, e.y + 0.05, z); b.scorch.scale.set(fall ? 0.01 : 0.7, 1, fall ? 0.01 : 0.7);
+    for (const m of b.parts) m.visible = true;
+    if (fall) { b.life = 0.35; b.branch.visible = false; }
+    else { b.crown = c; c.bolts.push(b); }
+    return b;
+  }
+  function crownStrike(d, e) {
+    const c = crownOf(e) || crownCall(d, e);
+    crownBolt(c, d.x, d.z, e, false);
+    const at = { x: d.x, y: e.y + 0.4, z: d.z };
+    spawnBurst(at, CR.burst); ultraFx.sparkBurst(at, 10, 'storm', [0, 1, 0], 0.5, 0.8);
+    if (d.v && d.strike >= d.v.strikes) c.fall = 0;   // the last: the crown closes
+  }
+  function drawCrowns(game, dt) {
+    const now = effectSlots.time(), calm = reducedMotion();
+    for (const c of crowns) {
+      if (c.t === Infinity) continue;
+      c.t += dt;
+      const e = c.e, gone = !game.enemies.includes(e);
+      if (c.fall === Infinity && (gone || !e.alive() || c.t > 3)) c.fall = CR.converge;   // its last strike never came: close it now
+      if (c.fall !== Infinity) {
+        c.fall += dt;
+        const k = clamp01(c.fall / CR.converge), bend = k * k;
+        for (const b of c.bolts) {   // each bolt's top swings in over the boss, its foot stays
+          for (let i = 0; i < SEGS; i++) {
+            const q = 1 - i / (SEGS - 1), w = bend * q * q * 0.9;
+            pts[i].set(lerp(b.base[i].x, e.x, w), b.base[i].y, lerp(b.base[i].z, e.z, w));
+          }
+          shape(b.core, pts, SEGS, CR.width); shape(b.glow, pts, SEGS, CR.width * 2.2); shape(b.ink, pts, SEGS, CR.width * 2.6);
+        }
+        if (k >= 1) {
+          for (const b of [...c.bolts]) release(b);
+          if (!gone && e.alive()) {
+            crownBolt(c, e.x, e.z, e, true);
+            const at = chestOf(e);
+            spawnBurst(at, CR.shards); ultraFx.sparkBurst(at, CR.arcs, 'storm', null, 0, 1.3); ultraFx.flashAt(at, CR.core, 40, 20);
+            light(at, CR.core, 18, 20); shake(CR.shake, e.x, e.z); impactFrame.hit(e.x, e.z);
+            c.scorch.visible = true; c.scorch.position.set(e.x, e.y + 0.04, e.z); c.scorch.rotation.y = -c.a0;
+            const r = c.ring * CR.scorch; c.scorch.scale.set(r, 1, r); c.cool = 0;
+          }
+          c.t = Infinity; c.e = null; c.marks.visible = false;
+        }
+      }
+      if (c.t !== Infinity) {   // the floor's points while the crown gathers, flickering
+        c.marks.position.x = e.x; c.marks.position.z = e.z; c.marks.position.y = e.y + 0.05;
+        c.marks.material.opacity = Math.min(1, c.t / 0.12) * (calm ? 0.9 : 0.75 + 0.25 * Math.sin(now * 30));
+      }
+    }
+    for (const c of crowns) {   // the scorch cools from ember to nothing
+      if (c.cool === Infinity) continue;
+      c.cool += dt; const k = c.cool / CR.cool;
+      if (k >= 1) { c.cool = Infinity; c.scorch.visible = false; continue; }
+      c.scorch.material.color.setHex(CR.edge).lerp(cooled, k); c.scorch.material.opacity = 0.9 * (1 - k * k);
     }
   }
 
@@ -298,7 +436,7 @@ const abilityFx = (() => {
       b.k = clamp01(b.k + (on ? dt / 0.25 : -dt / 0.3));
       if (!on && !b.broke) {   // time runs again: the bubble shatters
         b.broke = true; const c = chestOf(e);
-        ultraFx.moteBurst(c, 50, R.core, { r: (e.radius || 1) + 0.6, speed: 4, lift: 0.5, life: [0.4, 1], size: 1.1 }); spawnBurst(c, R.burst);
+        ultraFx.moteBurst(c, 50, R.core, { r: (e.radius || 1) + 0.6, speed: 4, lift: 0.5, life: [0.4, 1], size: 1.1 }); spawnBurst(c, R.burst); impactFrame.hit(e.x, e.z);
       }
       if (b.k <= 0 && !on) { b.e = null; b.g.visible = false; continue; }
       const rad = (e.radius || 1) + 0.9, tall = Math.max(rad, (e.height || 2) * 0.62), now = effectSlots.time();
@@ -335,7 +473,7 @@ const abilityFx = (() => {
     const r = rains.find(q => !q.e) || rains[0];
     r.e = e; r.left = Math.round(d.v.time / d.v.every); r.every = d.v.every;
     r.next = Math.max(0, r.every - BL.fall);   // each blade lands as its blow does (the server's, every `every` s)
-    light(chestOf(e), BL.color, 10, 14);
+    light(chestOf(e), BL.color, 10, 14); impactFrame.hit(e.x, e.z);
   }
   // One ghost sword falls round the boss, just outside its body (so it never hides them), driven into the floor; `t`
   // below 0 waits that long first.
@@ -392,7 +530,7 @@ const abilityFx = (() => {
     } else m.disc.scale.setScalar(MO.size);
     const c = chestOf(body);
     ultraFx.moteBurst(c, 60, MO.color, { r: 0.8, speed: 2.5, lift: 2, life: [0.8, 1.8], swirl: 1.5 }); spawnBurst(c, MO.burst);
-    light(c, MO.color, 14, 16);
+    light(c, MO.color, 14, 16); impactFrame.hit(body.x, body.z);
   }
   function slash(d) {
     if (!moons.some(m => m.body && m.body === d.attacker && m.left > 0) || d.blocked) return;
@@ -444,32 +582,47 @@ const abilityFx = (() => {
       vN = normalize(normalMatrix * objectNormal); vV = -mv.xyz; vY = world.y;
       gl_Position = projectionMatrix * mv;
     }`;
+  // Cel ink (batch 13): each slot flat in its own colour (`uStone`), lit in two bands; a hard ember rim inside a black
+  // ink edge; its cracks and eyes (`uGlow`) and the line it rises or burns at white-hot. Opaque, so it reads as a body.
   const emberFragment = `
-    uniform vec3 uColor; uniform vec3 uCore; uniform float uOpacity; uniform float uCut; uniform float uFrom; uniform float uTime; uniform float uBoost;
-    uniform float uRim; uniform float uBody; uniform float uFlicker;
+    uniform vec3 uColor; uniform vec3 uCore; uniform vec3 uInk; uniform vec3 uStone; uniform float uGlow; uniform float uCut; uniform float uFrom;
+    uniform float uTime; uniform float uBoost; uniform float uFlicker;
     varying vec3 vN; varying vec3 vV; varying float vY;
     void main() {
       float edge = (vY - uCut) * uFrom;   // rising: the part below the cut is there; burning away: the part above it
       if (edge > 0.0) discard;
-      float rim = pow(1.0 - abs(dot(normalize(vN), normalize(vV))), 2.0);
+      vec3 n = normalize(vN);
+      float facing = abs(dot(n, normalize(vV)));
+      float lit = step(0.2, dot(n, normalize(vec3(-0.35, 0.8, 0.5))));
       float flick = 1.0 + uFlicker * sin(uTime * 13.0 + vY * 9.0) * sin(uTime * 7.3 - vY * 4.1);
-      float seam = smoothstep(-0.25, 0.0, edge);   // the line it is rising or burning at glows white-hot
-      vec3 c = mix(uColor, uCore, rim * 0.6 + seam) * (uBody + rim * uRim) * flick * uBoost;
-      gl_FragColor = vec4(c, uOpacity * (0.35 + 0.65 * rim + seam));
+      vec3 c = uStone * mix(0.65, 1.3, lit);
+      c = mix(c, uColor * uBoost, step(facing, 0.42));
+      c = mix(c, uInk, step(facing, 0.12));
+      c = mix(c, uCore * flick * uBoost, max(uGlow, step(-0.05, edge)));
+      gl_FragColor = vec4(c, 1.0);
     }`;
-  function emberMaterial() {
-    return new THREE.ShaderMaterial({
-      uniforms: { uColor: { value: new THREE.Color(T.color) }, uCore: { value: new THREE.Color(T.core) }, uOpacity: { value: 0 }, uCut: { value: 0 },
-        uFrom: { value: 1 }, uTime: { value: 0 }, uBoost: { value: 1 }, uRim: { value: T.rim }, uBody: { value: T.body }, uFlicker: { value: T.flicker } },
-      vertexShader: emberVertex, fragmentShader: emberFragment, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending });
+  function emberMaterial(shared, stone, glow) {
+    return new THREE.ShaderMaterial({ uniforms: { ...shared, uStone: { value: new THREE.Color(stone) }, uGlow: { value: glow ? 1 : 0 } },
+      vertexShader: emberVertex, fragmentShader: emberFragment });
   }
   function makeTwins() {
     if (twins.length) return;
     for (let i = 0; i < 2; i++) {
-      const rig = new Rig(PLAYER_DEF.look), mat = emberMaterial();
-      rig.root.traverse(o => { o.userData.warmUp = true; if (o.isMesh) { o.material = mat; o.castShadow = o.receiveShadow = false; } });
+      const rig = new Rig({ ...PLAYER_DEF.look, model: T.model });
+      const u = { uColor: { value: new THREE.Color(T.color) }, uCore: { value: new THREE.Color(T.core) }, uInk: { value: new THREE.Color(T.ink) },
+        uCut: { value: 0 }, uFrom: { value: 1 }, uTime: { value: 0 }, uBoost: { value: 1 }, uFlicker: { value: T.flicker } };
+      const plain = emberMaterial(u, T.slots.ash, false), bySlot = new Map();   // each slot's mesh: its own colour, or white-hot
+      for (const meshes of [rig.slotMeshes, rig.weaponSlotMeshes]) for (const slot in meshes || {}) {
+        const glow = T.glows.includes(slot);
+        bySlot.set(meshes[slot], emberMaterial(u, glow ? 0 : T.slots[slot] ?? T.slots.ash, glow));
+      }
+      rig.root.traverse(o => {
+        o.userData.warmUp = true;
+        if (o.isMesh) { o.material = bySlot.get(o) || plain; o.castShadow = o.receiveShadow = false; }
+        else if (o.isSprite || o.isPoints) o.visible = false;   // a glint, an aura: not on the twin
+      });
       rig.root.visible = rig.shadow.visible = false; made.push(rig.root);
-      twins.push({ rig, mat, body: null, left: 0, time: 1, x: 0, y: 0, z: 0, yaw: 0, placed: false, mote: 0, boost: 0, gone: false, enemy: null });
+      twins.push({ rig, u, body: null, left: 0, time: 1, x: 0, y: 0, z: 0, yaw: 0, placed: false, mote: 0, boost: 0, gone: false, stood: false, enemy: null });
     }
   }
   const twinAt = { x: 0, y: 0, z: 0 }, twinPose = { t: 0, dt: 0, yaw: 0, px: 0, pz: 0 }, TWIN_MOTES = { r: 0.35, speed: 0.4, lift: 1.4, life: [0.4, 0.9], up: 1, size: 0.8 };
@@ -478,7 +631,7 @@ const abilityFx = (() => {
     if (!body || !twins.length) return;
     const t = twins.find(q => q.body === body) || twins.find(q => !q.body) || twins.reduce((a, b) => (a.left < b.left ? a : b));
     const renew = t.body === body && t.left > 0 && !t.gone;
-    t.body = body; t.left = t.time = d.v.time; t.placed = renew && t.placed; t.boost = 0; t.gone = false; t.enemies = Game.enemies; t.enemy = d.enemy || null;
+    t.body = body; t.left = t.time = d.v.time; t.placed = renew && t.placed; t.boost = 0; t.gone = false; t.stood = renew && t.stood; t.enemies = Game.enemies; t.enemy = d.enemy || null;
     place(t, 0);
     const c = { x: t.x, y: t.y + 1, z: t.z };
     groundFx.ring(t.x, t.z, 1.8, T.color, 0.8, t.y); spawnBurst(c, T.burst);
@@ -508,12 +661,16 @@ const abilityFx = (() => {
         t.rig.root.visible = false; continue; }
       place(t, dt);
       const height = (b.height || 1.8) * 1.15, rising = clamp01((t.time - t.left) / T.rise), fading = clamp01(t.left / T.fade);
-      const u = t.mat.uniforms;
+      const u = t.u;
       if (fading < 1) { u.uFrom.value = -1; u.uCut.value = t.y + height * (1 - fading); }   // burning away, from the head down
       else { u.uFrom.value = 1; u.uCut.value = t.y - 0.1 + (height + 0.2) * rising; }     // rising, from the feet up
       if (fading < 1 && !t.gone) { t.gone = true; twinAt.x = t.x; twinAt.y = t.y + 1; twinAt.z = t.z; ultraFx.moteBurst(twinAt, 40, T.color, { r: 0.5, speed: 1, lift: 2.4, life: [0.6, 1.3], up: 1 }); }
       t.boost = Math.max(0, t.boost - dt / T.strikeGlow);
-      u.uOpacity.value = 0.9 * Math.min(1, rising * 3); u.uTime.value = now; u.uBoost.value = 1 + t.boost * T.strikeBoost;
+      if (rising >= 1 && !t.stood) {   // it stands: the impact frame, a ring of sparks at its feet
+        t.stood = true; twinAt.x = t.x; twinAt.y = t.y + 0.2; twinAt.z = t.z;
+        impactFrame.hit(t.x, t.z); ultraFx.sparkBurst(twinAt, 24, 'ember', [0, 1, 0], 0.9, 0.9); light(twinAt, T.core, 8, 10);
+      }
+      u.uTime.value = now; u.uBoost.value = 1 + t.boost * T.strikeBoost;
       t.rig.root.visible = true;
       t.rig.place(t.x, t.y, t.z, t.yaw, -Infinity);
       const real = b.rig;   // the holder's own pose, on the twin's figure
@@ -554,40 +711,70 @@ const abilityFx = (() => {
     }
   }
 
-  // ---- Gale Crescent ----------------------------------------------------------------------------------------------
-  // A crescent of wind as tall as a house leaves the holder's blade, flies through the boss and on, `reach` m in all,
-  // shedding pale motes; where it cuts the boss, a white burst. Seen from behind it is the crescent's whole curve.
-  const G = F.gale;
-  const gales = Array.from({ length: 2 }, () => {
-    const g = new THREE.Group(), glow = mesh(PLANE, G.color, SLASH), core = mesh(PLANE, G.core, SLASH);
-    core.scale.setScalar(0.62); core.position.z = 0.02; g.add(glow, core);
-    return { g: put(g), glow, core, t: Infinity, life: 1, x: 0, y: 0, z: 0, ux: 0, uz: 0, reach: 1, e: null, cut: false, mote: 0 };
+  // ---- Gale Crescent's cage ---------------------------------------------------------------------------------------
+  // Called on the 8th blow: a pale ring forms at the boss's feet; at the first cut (`cage.lead` s on) twelve crescents
+  // spin up round it in `close` s into a cylinder as tall as it, in three tiers, each climbing as it turns: the impact
+  // frame. Each cut (the server's) throws slivers outward; when its time is up the crescents fly `out` m and fade.
+  // A crescent on the camera's side thins to `see`, so the boss's wind-ups read through the cage.
+  const CG = F.cage;
+  const CAGE_BLADE = alphaTex(256, (g, h) => {   // the crescent: an ember outer edge, a pale body, an ink inner line
+    const moon = (cy, r1, cy2, r2) => { g.beginPath(); g.arc(h, h * cy, h * r1, Math.PI * 1.22, Math.PI * 1.78); g.arc(h, h * cy2, h * r2, Math.PI * 1.74, Math.PI * 1.26, true); g.closePath(); g.fill(); };
+    g.fillStyle = hex(CG.edge); moon(1.5, 1.05, 1.62, 0.98);
+    g.fillStyle = hex(CG.color); moon(1.54, 1.03, 1.62, 0.98);
+    g.strokeStyle = hex(CG.ink); g.lineWidth = h * 0.045; g.beginPath(); g.arc(h, h * 1.62, h * 0.99, Math.PI * 1.28, Math.PI * 1.72); g.stroke();
   });
-  const galeAt = { x: 0, y: 0, z: 0 }, GALE_MOTES = { r: 0.6, speed: 0.8, lift: 0.3, life: [0.3, 0.7], size: 0.9 };
-  function gale(d, e) {
-    const from = d.body || e, dx = e.x - from.x, dz = e.z - from.z, l = Math.hypot(dx, dz) || 1;
-    const s = gales.reduce((a, b) => (a.t > b.t ? a : b));
-    s.t = 0; s.ux = dx / l; s.uz = dz / l; s.reach = d.v.reach; s.life = s.reach / G.speed; s.e = e; s.cut = false;
-    s.x = from.x + s.ux * 0.8; s.z = from.z + s.uz * 0.8; s.y = (from.y || e.y) + G.lift;
-    s.g.rotation.set(0, Math.atan2(s.ux, s.uz), (rnd() - 0.5) * G.roll); s.g.scale.setScalar(G.size * (d.v.width / 1.6)); s.g.visible = true;
-    galeAt.x = s.x; galeAt.y = s.y; galeAt.z = s.z;
-    ultraFx.moteBurst(galeAt, 24, G.color, { r: 0.6, speed: 3, lift: 0.4, life: [0.3, 0.7] }); light(galeAt, G.color, 8, 10); shake(G.shake, s.x, s.z);
+  const cages = Array.from({ length: 2 }, () => {
+    const g = new THREE.Group(), ring = mesh(RING, CG.color), blades = [];
+    ring.position.y = 0.05; g.add(ring);
+    for (let i = 0; i < CG.n; i++) {
+      const m = new THREE.Mesh(PLANE, new THREE.MeshBasicMaterial({ map: CAGE_BLADE, transparent: true, opacity: 0, depthWrite: false, side: THREE.DoubleSide }));
+      m.renderOrder = 2; g.add(m); blades.push(m);
+    }
+    return { g: put(g), ring, blades, e: null, t: Infinity, lead: 0.2, time: 2, spin: 0, closed: false, burst: false };
+  });
+  const cageAt = { x: 0, y: 0, z: 0 }, outward = [0, 0.2, 0];
+  function cage(d, e) {
+    const c = cages.find(q => q.e === e) || cages.find(q => !q.e) || cages.reduce((a, q) => (a.t > q.t ? a : q));
+    c.e = e; c.t = 0; c.lead = CONFIG.abilities.cage.lead; c.time = d.v ? d.v.time : 2; c.closed = false; c.burst = false; c.g.visible = true;
+    cageAt.x = e.x; cageAt.y = e.y + 0.3; cageAt.z = e.z;
+    ultraFx.dustRing(e.x, e.y, e.z, 12, (e.radius || 1) + CG.pad);
   }
-  function drawGales(dt) {
-    for (const s of gales) {
-      if (s.t === Infinity) continue;
-      s.t += dt;
-      const k = s.t / s.life, out = clamp01((s.t - s.life) / G.fade);
-      if (out >= 1) { s.t = Infinity; s.g.visible = false; continue; }
-      const go = Math.min(1, k) * s.reach, x = s.x + s.ux * go, z = s.z + s.uz * go;
-      s.g.position.set(x, s.y, z);
-      s.glow.material.opacity = 0.55 * (1 - out) * Math.min(1, s.t / 0.05); s.core.material.opacity = 0.95 * (1 - out) * Math.min(1, s.t / 0.05);
-      if ((s.mote -= dt) <= 0 && out <= 0) { s.mote = 0.025; galeAt.x = x; galeAt.y = s.y; galeAt.z = z; ultraFx.moteBurst(galeAt, 4, G.color, GALE_MOTES); }
-      const e = s.e;
-      if (!s.cut && e && (x - e.x) * s.ux + (z - e.z) * s.uz >= 0) {   // it reaches the boss
-        s.cut = true; const c = chestOf(e);
-        ultraFx.sparkBurst(c, 40, 'parry', [s.ux, 0.1, s.uz], 0.6, 1.2); spawnBurst(c, G.burst); ultraFx.flashAt(c, G.color, 26, 14);
-        light(c, G.color, 12, 14); groundFx.ring(e.x, e.z, (e.radius || 1) + 1.2, G.color, 0.6, e.y);
+  function cageCut(d, e) {
+    let c = cages.find(q => q.e === e);
+    if (!c) { cage(d, e); c = cages.find(q => q.e === e); c.t = c.lead; }   // its call missed (joined mid-cage): stand it closed
+    const a = rnd() * Math.PI * 2, r = (e.radius || 1) + CG.pad;
+    cageAt.x = e.x + Math.cos(a) * r; cageAt.y = e.y + (e.height || 2) * (0.3 + 0.5 * rnd()); cageAt.z = e.z + Math.sin(a) * r;
+    outward[0] = Math.cos(a); outward[2] = Math.sin(a);
+    ultraFx.sparkBurst(cageAt, CG.slivers, 'parry', outward, 0.4, 0.9);
+  }
+  function drawCages(game, dt) {
+    const calm = reducedMotion() ? 0.5 : 1;
+    for (const c of cages) {
+      if (!c.e) continue;
+      c.t += dt;
+      const e = c.e, end = c.lead + c.time;
+      if (!game.enemies.includes(e) || c.t >= end + CG.burst) { c.e = null; c.g.visible = false; continue; }
+      if (!e.alive() && c.t < end) c.t = end;   // it fell: the cage bursts now
+      const up = clamp01((c.t - c.lead + CG.close) / CG.close), out = clamp01((c.t - end) / CG.burst);
+      const R = (e.radius || 1) + CG.pad, H = Math.max(1.6, (e.height || 2) * 1.05), rad = R * (0.35 + 0.65 * up) + out * CG.out;
+      if (!c.closed && up >= 1) {   // it closes: the impact frame
+        c.closed = true; const at = chestOf(e);
+        impactFrame.hit(e.x, e.z); shake(CG.shake, e.x, e.z); light(at, CG.color, CG.light, 10);
+        ultraFx.moteBurst(at, 24, CG.color, { r: R, speed: 2, lift: 0.6, life: [0.3, 0.7], swirl: 3 });
+      }
+      if (!c.burst && out > 0) { c.burst = true; const at = chestOf(e); ultraFx.moteBurst(at, 30, CG.edge, { r: R, speed: 5, lift: 0.4, life: [0.3, 0.6] }); }
+      c.spin += dt * CG.spin * calm * (1 - out * 0.7);
+      c.g.position.set(e.x, e.y, e.z);
+      c.ring.scale.set(R * 1.1, 1, R * 1.1); c.ring.material.opacity = 0.7 * Math.min(1, c.t / c.lead) * (1 - out);
+      const camX = camera.position.x - e.x, camZ = camera.position.z - e.z, camL = Math.hypot(camX, camZ) || 1;
+      for (let i = 0; i < c.blades.length; i++) {
+        const m = c.blades[i], tier = i % 3, a = c.spin + i / c.blades.length * Math.PI * 2 + tier * 0.5;
+        const climb = (tier / 3 + c.spin * CG.climb / (Math.PI * 2)) % 1, y = 0.25 + climb * (H - 0.25) * (0.4 + 0.6 * up);
+        const ca = Math.cos(a), sa = Math.sin(a), facing = (ca * camX + sa * camZ) / camL > 0.3 ? CG.see : 1;
+        m.position.set(ca * rad, y, sa * rad);
+        m.rotation.set(0, Math.atan2(ca, sa), 0.5);
+        m.scale.set(CG.size * (1 + out * 0.6), CG.size * (1 - out * 0.7), 1);
+        m.material.opacity = up * (1 - out) * Math.sin(Math.PI * climb) * facing;   // fading in at the foot and out at the top of its climb
       }
     }
   }
@@ -608,7 +795,7 @@ const abilityFx = (() => {
     const c = chestOf(e);
     groundFx.spawn(e.x, e.z, { ring: s.r * 1.4, crack: s.r * 0.5, dust: 10 }, e.y);
     spawnBurst(c, PY.burst); ultraFx.sparkBurst(c, 40, 'ember', [0, 1, 0], 0.7, 1.3); ultraFx.flashAt(c, PY.color, 30, 16);
-    light(c, PY.color, 14, 16); shake(PY.shake, e.x, e.z);
+    light(c, PY.color, 14, 16); shake(PY.shake, e.x, e.z); impactFrame.hit(e.x, e.z);
   }
   function drawPyres(game, dt) {
     const now = effectSlots.time();
@@ -652,7 +839,10 @@ const abilityFx = (() => {
     else if (d.then === 'twin' && d.strike && e) twinStrike(d, e);
     else if (d.then === 'twin' && d.draw) twinDraws(d);
     else if (d.then === 'twin') twin(d);
-    else if (d.then === 'gale' && e && !strikeFx.mine(d)) gale(d, e);   // Wind Blade's press is js/strike-fx.js's
+    else if (d.then === 'boltCrown' && e && d.strike) crownStrike(d, e);
+    else if (d.then === 'boltCrown' && e) crownCall(d, e);
+    else if (d.then === 'bladeCage' && e && d.strike) cageCut(d, e);
+    else if (d.then === 'bladeCage' && e) cage(d, e);
     else if (d.then === 'pyre' && e) pyre(d, e);
     else if (d.then === 'flare' && e && d.power !== 'counterflame' && !strikeFx.mine(d)) flareOn(e);   // Fire Burst's press is js/strike-fx.js's; Counterflame's js/rare-fx.js's
   });
@@ -666,12 +856,16 @@ const abilityFx = (() => {
   events.on('strike', slash);
   function render(game) {
     const dt = effectSlots.dt();
-    drawMeteors(dt); drawDragons(dt); drawBolts(dt); drawRift(game, dt); drawBlades(game, dt); drawMoons(game, dt);
-    drawTwins(dt); drawEmberSlashes(dt); drawGales(dt); drawPyres(game, dt);
+    drawMeteors(dt); drawDragons(dt); drawCrowns(game, dt); drawBolts(dt); drawRift(game, dt); drawBlades(game, dt); drawMoons(game, dt);
+    drawTwins(dt); drawEmberSlashes(dt); drawCages(game, dt); drawPyres(game, dt);
   }
   function clear() {
     for (const o of made) o.visible = false;
-    for (const s of [...meteors, ...bolts, ...dragons, ...waves, ...slashes, ...swords, ...emberSlashes, ...gales]) s.t = Infinity;
+    for (const s of [...meteors, ...bolts, ...dragons, ...waves, ...slashes, ...swords, ...emberSlashes]) s.t = Infinity;
+    for (const b of bolts) b.crown = null;
+    for (const c of crowns) { c.t = c.cool = c.fall = Infinity; c.e = null; c.bolts.length = 0; }
+    for (const c of cages) c.e = null;
+    impactFrame.clear();
     for (const t of twins) t.body = null;
     for (const s of pyres) s.e = null;
     for (const g of dragons) g.e = null;
@@ -682,8 +876,8 @@ const abilityFx = (() => {
   const moonTrail = [MO.color, CONFIG.VISUALS.ultra.trails.playerBoost * MO.trail];   // the holder's blade trail runs red
   function trail(b) { for (const m of moons) if (m.body === b && m.left > 0) return moonTrail; return null; }
   return { attach() { makeTwins(); Game.renderHooks.push(render); ultraFx.hooks.playerTrail = trail; visuals.hooks.stage.push(clear); }, clear, info: () => ({
-    twins: twins.filter(t => t.body).length, gales: gales.filter(s => s.t !== Infinity).length, pyres: pyres.filter(s => s.e).length,
-    meteors: meteors.filter(s => s.t !== Infinity).length, bolts: bolts.filter(b => b.t !== Infinity).length, dragons: dragons.filter(g => g.t !== Infinity).length,
+    twins: twins.filter(t => t.body).length, cages: cages.filter(c => c.e).length, crowns: crowns.filter(c => c.t !== Infinity).length, pyres: pyres.filter(s => s.e).length,
+    meteors: meteors.filter(s => s.t !== Infinity).length, bolts: bolts.filter(b => b.t !== Infinity).length, standing: bolts.filter(b => b.crown).length, inked: bolts.filter(b => b.ink.visible).length, dragons: dragons.filter(g => g.t !== Infinity).length,
     bubbles: bubbles.filter(b => b.e).length, rains: rains.filter(r => r.e).length, swords: swords.filter(s => s.t !== Infinity).length,
     moons: moons.filter(m => m.body).length, slashes: slashes.filter(s => s.t !== Infinity).length }) };
 })();

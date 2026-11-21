@@ -36,6 +36,9 @@ them (`git show 88f1abd:BACKLOG.md`).
   (Wind Blade, Mending, Grave Hound, Thunder Call at four places on the road).
 - Blessings aren't shown anywhere during a fight.
 - Two players' summons of one kind stand in the same spot.
+- Legendaries I (pass 151) left out of their design pages: Gale Crescent's tally on the blade; Time Rift's white-violet
+  recolour and grey world; Thousand Blades' sky ring and planted last ten; Pyre's flame tongues; Meteor's held beat
+  at the jump's top; the Ember Twin's floor-crack rise and `abilityTwinFade`; the crown's sky darkening.
 
 ## UI
 

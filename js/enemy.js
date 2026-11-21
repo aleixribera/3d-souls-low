@@ -160,6 +160,7 @@ class Enemy {
     this.chainTime = Infinity;                       // time since the last landed hit (a boss's anti-mash)
     this.cracks = 0; this.crackTime = 0;             // its guard's cracks (js/finisher.js) and time since the last counter on it
     this.frozen = 0;   // s left stopped in time (Time Rift, js/abilities.js): no step, no blow, hit as it stands
+    this.holdRest = 0;   // s left before a hold may stop it again (CONFIG.abilities.holdRest)
     this.blockTime = Infinity;                       // time since its shield last took a blow (the `shielded` reaction)
     this.struckTime = Infinity;                      // time since a blow last landed on it (the `struck` reaction, v5.9)
     this.resonance = 0;                              // a def's `resonance` (pass 68): how full of the blows it took it is
@@ -373,7 +374,11 @@ class Enemy {
     }
   }
   update(dt, player) {
-    if (this.frozen > 0) { this.frozen = Math.max(0, this.frozen - dt); this.updateFeedback(dt); return; }
+    if (this.frozen > 0) {   // let go, it rests CONFIG.abilities.holdRest s before a hold can stop it again
+      this.frozen = Math.max(0, this.frozen - dt); if (this.frozen === 0) this.holdRest = CONFIG.abilities.holdRest;
+      this.updateFeedback(dt); return;
+    }
+    if (this.holdRest > 0) this.holdRest = Math.max(0, this.holdRest - dt);
     if (this.sealed > 0) this.sealed = Math.max(0, this.sealed - dt);
     this.step(dt, player);
     this.emitMarkers();

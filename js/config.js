@@ -44,7 +44,7 @@ const CONFIG = {
             parryFov: -3, parryPush: 0.06, breakFov: -1.8, executeFov: -2.2, phaseFov: 2.5, landDip: 0.1,
             strafeRoll: 0.012, moveFov: 1.2, moveRef: 5, maxRoll: 0.05, maxFov: 6, powerNear: 26, perkFov: -0.9,
             powers: { blast: [4, 0.24], lightning: [1.6, 0], strike: [-1.8, 0.06], freeze: [-3.2, 0.05], blades: [-1.4, 0.04], bloodMoon: [3, 0.12],
-              twin: [2.6, 0.1], echo: [-0.6, 0.02], gale: [-2.4, 0.05], pyre: [3.2, 0.16], flare: [-1.1, 0.03], spark: [-0.8, 0.02],
+              twin: [2.6, 0.1], echo: [-0.6, 0.02], gale: [-2.4, 0.05], boltCrown: [-2.4, 0.08], bladeCage: [-1.6, 0.03], pyre: [3.2, 0.16], flare: [-1.1, 0.03], spark: [-0.8, 0.02],
               hound: [1.4, 0.05], bite: [-0.5, 0.02], draw: [1.2, 0.03], guardian: [2.2, 0.1], lancer: [1.2, 0.04], fox: [1, 0.03], lantern: [0.6, 0],
               crows: [0.8, 0.02], archer: [0.8, 0.02], hawk: [1.2, 0.04], stoop: [-0.6, 0.02], owl: [0.6, 0], owlBurst: [-0.4, 0.02],
               ronin: [1.4, 0.04], serpent: [1.6, 0.06], puppet: [1.4, 0.05], bear: [2, 0.08], maul: [-0.8, 0.03], mantis: [1, 0.03],
@@ -328,6 +328,10 @@ const CONFIG = {
     // Counterstep (Player.flashBehind): a perfect dodge of an attacker within `range` m of its body steps its holder to
     // `gap` m behind that body, round it in `time` s, untouchable.
     flashBehind: { range: 6, gap: 1.2, time: 0.12 },
+    // Legendaries I (pass 151): Storm King's bolts fall on a ring `gap` m off the crowned enemy's body, each hitting all
+    // within `reach` m of its point; Gale Crescent's cage cuts first `lead` s after its blow, everything within `reach` m
+    // of the caged body's edge. An enemy a hold has just let go (Time Rift) rests `holdRest` s before another can stop it.
+    crown: { gap: 1.5, reach: 2 }, cage: { lead: 0.2, reach: 1.2 }, holdRest: 3,
     // Batch 5's rares: Moonfall Cut's crescent cuts `reach` m ahead of its holder, `width` m either side of their facing;
     // the server takes Iron Cyclone's string heavy no sooner than `gap` s after the last (the shortest string); Hunting
     // Call's mark waits `keep` s for its holder's blow.
@@ -770,6 +774,10 @@ const CONFIG = {
     // a light every `lightEvery` s. Flare (Counterflame): its flare `size`. Spark (Static Edge): a bolt from `height`
     // m over the boss, `width` times the storm's. `shake`: [time, amplitude]; `burst`: the Low
     // preset's particles (js/fx.js).
+    // A legendary's impact frame (design/abilities/STYLE.md rule 8, js/impact-frame.js): the screen inverted to two tones
+    // for `time` s at its peak, `gap` s at least between two (under 3 Hz), only within `near` m of the player; reduced
+    // motion: darkened to `darken` for `calm` s instead.
+    impactFrame: { time: 0.06, calm: 0.15, darken: 0.7, gap: 1, near: 30, filter: 'grayscale(1) invert(1) contrast(6)' },
     abilityFx: {
       near: 14, cool: 0x2a0c06,
       // The plain commons' touches (js/ability-touch.js), seconds of real time and metres. Keen Edge (`edge`): the glint
@@ -845,6 +853,17 @@ const CONFIG = {
       rareStrike: { tide: 3, crest: 1.6, moon: 3.2, moonLift: 1.6, cutWidth: 0.5, waist: 1, dustLife: 0.45, burst: 1.4, petal: 0.32, whirl: 3.5, shell: 1.9, mark: 0.75 },
       meteor: { color: 0xff7a2a, core: 0xffe6b8, column: 22, width: 1.8, glow: 1.8, fall: 0.5, ring: 0.55, crater: 3.2, shake: [0.45, 0.35],
         burst: { count: 40, speed: 9, color: 0xff8a3a } },
+      // Storm King's crown (batch 13): ember `points` on the floor where the bolts will fall, each bolt white-violet in a
+      // black ink stroke standing `after` s, all bending in over `converge` s into one bolt of `fall` width into the boss;
+      // `shards` ember shards, a crown scorch `scorch` m out cooling over `cool` s.
+      crown: { color: 0x8f7cf0, core: 0xece6ff, edge: 0xe59a5c, ink: 0x0b0b0f, fall: 0.4, height: 14, jitter: 1.8, width: 0.12,
+        after: 0.3, converge: 0.15, cool: 0.8, scorch: 1.15, shake: [0.3, 0.2], arcs: 20,
+        shards: { count: 24, speed: 9, color: 0xe59a5c }, burst: { count: 10, speed: 5, color: 0xece6ff } },
+      // Gale Crescent's cage (batch 13): `n` crescents `size` m in three tiers round the boss, turning `spin` rad/s (half
+      // under reduced motion), a floor ring; open in `close` s, flung `out` m in `burst` s at its end. `see`: a crescent
+      // on the camera's side, this opaque.
+      cage: { color: 0xe8eef4, edge: 0xe59a5c, ink: 0x0b0b0f, n: 12, size: 2.3, pad: 0.7, spin: 7, climb: 0.6, close: 0.1, burst: 0.4, out: 3, see: 0.4,
+        slivers: 4, light: 4, shake: [0.14, 0.06] },
       storm: { color: 0xa9c9ff, core: 0xffffff, height: 16, jitter: 2.4, width: 0.14, life: 0.32, scorch: 1.6, shake: [0.18, 0.12],
         dragon: { color: 0x3d6dff, length: 0.5, width: 0.2, rise: 3, coil: 2.8, turns: 1.5, wave: 0.45, head: 0.5, linger: 0.22, jitter: 0.28 },
         burst: { count: 24, speed: 7, color: 0xbcd6ff } },
@@ -854,7 +873,10 @@ const CONFIG = {
         burst: { count: 8, speed: 4, color: 0xffe2a0 } },
       moon: { color: 0xff2a3a, height: 9, size: 4.5, distance: 90, up: 0.62, right: 0.28, skySize: 22, fade: 0.6, tint: 0.12, motes: 0.12, slash: 0.36, slashSize: 3.2, trail: 1.3,
         burst: { count: 30, speed: 5, color: 0xff3a48 } },
-      twin: { color: 0xff6a1e, core: 0xffd8a0, rim: 2.4, body: 0.3, flicker: 0.22, turn: 10,
+      // The Ember Twin (batch 13, its own model `emberTwin`): cel ink, each slot flat (`slots`, lit in two bands), a hard
+      // `color` rim inside a black ink edge, its cracks and eyes (`glows`) white-hot `core`.
+      twin: { color: 0xe59a5c, core: 0xfff3dc, ink: 0x0b0b0f, model: 'emberTwin', glows: ['crack', 'eye'],
+        slots: { ash: 0x3a302a, scarf: 0x7a2416, blade: 0x4a3e36, strap: 0x3a302a, iron: 0x3a302a }, rim: 2.4, body: 0.3, flicker: 0.22, turn: 10,
         rise: 0.5, fade: 0.8, motes: 0.06, strikeBoost: 0.8, strikeGlow: 0.25, slash: 0.3, slashSize: 2.6, shake: [0.16, 0.08],
         burst: { count: 30, speed: 5, color: 0xff8a3a }, hitBurst: { count: 10, speed: 4, color: 0xffa050 } },
       // The beasts (js/summon-beasts.js, pass 141): cel ink with a hard `color` rim, lit in two bands (`ink` in shade, `lit`

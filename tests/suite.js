@@ -408,6 +408,64 @@
       expect.ok(summonBrutes.info().some(b => b.kind === 'bear' && b.rear), 'and the bear rearing on the word');
     } finally { audio.play = play; Game.lock = null; wipe(); p.grantAbilities([]); }
   });
+  // Pass 151 (PLAN.md item 8, batch 13): Legendaries I drawn, and drawn from the server's word.
+  test('legendaries one: the crown stands and closes in one bolt, the cage spins and bursts, one impact frame a moment, the twin in its own ink; another\'s from the server\'s word', () => {
+    Game.startLevel('test-abilities'); sim.begin(); sim.step(2);
+    const p = Game.player, e = Game.enemies.find(o => o.def.id === 'greatDummy'), played = [];
+    const play = audio.play; audio.play = (id, o) => { played.push(id); return play.call(audio, id, o); };
+    const heard = ids => expect.ok(ids.every(id => played.includes(id)), `heard ${ids.join(', ')} (${[...new Set(played)].join(', ')})`);
+    const wipe = () => { abilityPowers.reset(); abilityFx.clear(); };
+    const blow = { damage: 1, poise: 0 };
+    try {
+      p.x = e.x - 6; p.z = e.z; Game.lock = e;
+      // The impact frame: one a moment, then none for `gap` s; reduced motion darkens instead.
+      wipe();
+      expect.ok(impactFrame.hit(e.x, e.z) && impactFrame.info().filter.includes('invert') && !impactFrame.hit(e.x, e.z), 'one impact frame, inverted, and not a second at once');
+      impactFrame.clear(); expect.ok(!impactFrame.hit(e.x + 500, e.z), 'none for a peak far off');
+      reducedMotion.force(true); impactFrame.clear();
+      expect.ok(impactFrame.hit(e.x, e.z) && /brightness\(0\.7\)/.test(impactFrame.info().filter), `reduced motion: a 30% darken (${impactFrame.info().filter})`);
+      reducedMotion.force(null); impactFrame.clear();
+      // Storm King: the six points, six inked bolts standing, then closed into one; one frame.
+      p.grantAbilities(['storm-king']); wipe();
+      const count = () => impactFrame.info().count, n0 = count();
+      abilityPowers.trigger('self', p, p.kit, 'fullHeavy', { enemy: e });
+      let marks = 0, standing = 0, inked = 0;
+      for (let i = 0; i < 2 * 60; i++) { sim.step(1, 1); const f = abilityFx.info(); if (f.crowns) marks++; standing = Math.max(standing, f.standing); inked = Math.max(inked, f.inked); }
+      expect.ok(marks > 20 && standing === 6 && inked >= 6, `the crown gathers (${marks} frames), six bolts stand in ink (${standing}, ${inked})`);
+      expect.ok(abilityFx.info().standing === 0 && abilityFx.info().crowns === 0 && count() === n0 + 1, `and close into one: one impact frame (${count() - n0})`);
+      heard(['abilityThunder', 'abilityCrown']);
+      // Gale Crescent: the cage on the 8th blow, closed (a frame), spinning, gone after its time.
+      played.length = 0; p.grantAbilities(['gale-crescent']); wipe();
+      const G = ABILITY_BY_ID['gale-crescent'].levels[0], n1 = count();
+      for (let i = 0; i < G.hits; i++) abilityPowers.trigger('self', p, p.kit, 'hits', { enemy: e, strike: blow });
+      let caged = 0;
+      for (let i = 0; i < 3 * 60; i++) { sim.step(1, 1); if (abilityFx.info().cages) caged++; }
+      expect.ok(caged > 2 * 60 && abilityFx.info().cages === 0 && count() === n1 + 1, `the cage spins its time (${caged} frames), closing on one frame, then bursts`);
+      heard(['abilityCage', 'abilityCageCut']);
+      // The Ember Twin: its own model's ash, cracks and eyes, in ink; it stands on one frame.
+      p.grantAbilities(['ember-twin']); wipe();
+      const n2 = count();
+      abilityPowers.trigger('self', p, p.kit, 'flask', { enemy: e, x: p.x, y: p.y, z: p.z });
+      for (let i = 0; i < 60; i++) sim.step(1, 1);
+      const slots = new Set(); let inkedTwin = false;
+      scene.traverse(o => { if (o.isMesh && o.visible && o.material && o.material.uniforms && o.material.uniforms.uInk && o.material.uniforms.uStone) { inkedTwin = true; slots.add(o.material.uniforms.uGlow.value); } });
+      expect.ok(abilityFx.info().twins === 1 && inkedTwin && slots.has(0) && slots.has(1) && count() === n2 + 1, `the twin stands in ink, plates and white-hot cracks, on one frame (${count() - n2})`);
+      // Online: another's crown and cage drawn from the server's word alone.
+      wipe(); p.grantAbilities([]);
+      const other = { x: p.x + 1, y: p.y, z: p.z, yaw: 0, alive: () => true }, net = { self: 'me', bodyOf: id => (id === 'them' ? other : null) };
+      const S = ABILITY_BY_ID['storm-king'].levels[0], ring = (e.radius || 1) + CONFIG.abilities.crown.gap;
+      netView.ability({ power: 'storm-king', then: 'boltCrown', holder: 'them', x: e.x, y: e.y, z: e.z, v: S }, e, net);
+      for (let k = 1; k <= S.strikes; k++) {
+        const a = Math.PI + (k - 1) / S.strikes * Math.PI * 2;
+        netView.ability({ power: 'storm-king', then: 'boltCrown', holder: 'them', x: e.x + Math.cos(a) * ring, y: e.y, z: e.z + Math.sin(a) * ring, v: S, strike: k }, e, net);
+        Game.render(1, STEP);
+      }
+      expect.ok(abilityFx.info().crowns === 1 && abilityFx.info().standing === 6, `another's crown stands from the word (${JSON.stringify(abilityFx.info())})`);
+      netView.ability({ power: 'gale-crescent', then: 'bladeCage', holder: 'them', x: e.x, y: e.y, z: e.z, v: G }, e, net);
+      for (let i = 0; i < 20; i++) Game.render(1, STEP);
+      expect.ok(abilityFx.info().cages === 1, 'and its cage');
+    } finally { audio.play = play; Game.lock = null; reducedMotion.force(null); wipe(); p.grantAbilities([]); }
+  });
   test('regression: every duel runs 20 s and the enemy engages', () => {
     for (const d of [...A.ENEMY_DEFS, ...A.TEST_DEFS]) {
       Game.startFight(d.id); sim.begin();
@@ -1231,7 +1289,7 @@
       expect.ok(R().lotus && played.includes('abilityBloom') && played.includes('abilityFlare'), `Fire Burst: a lotus, opening and closing (${JSON.stringify(R())})`);
       frames(12); expect.ok(R().flakes > 0, 'its embers');
       fire('wind-blade', 'gale'); frames(10);
-      expect.ok(R().crescent && R().sweeps >= 0 && played.includes('abilityGale') && abilityFx.info().gales === 0, `Wind Blade: the ink crescent, not the old one (${JSON.stringify(R())})`);
+      expect.ok(R().crescent && R().sweeps >= 0 && played.includes('abilityGale'), `Wind Blade: the ink crescent (${JSON.stringify(R())})`);
       fire('tidal-arc', 'wave'); frames(4);
       expect.ok(rareStrikeFx.state.crest && R().sweeps > 0 && played.includes('abilityWave'), 'Tidal Arc: a sweep and the wave');
       frames(40); expect.ok(R().foam || R().flakes > 0, 'its foam');

@@ -855,6 +855,27 @@ MODEL_DEFS.roninShade = {
     { bone: 'capeA', gain: 0.12, k: 34, damp: 3.8, flutter: 0.06 }, { bone: 'capeB', gain: 0.16, k: 26, damp: 3, flutter: 0.12, sideways: 1.3 },
   ] },
 };
+// The Ember Twin (pass 151, design/abilities/ember-twin.md): the wanderer's silhouette in plates of ash split by ember
+// cracks (tools/blender/ember_twin.py), on the wanderer's bones and cloth, so the player's own key poses drive it.
+// Drawn in cel ink by js/ability-fx.js (`ash` dark under an ember rim; `crack` and `eye` white-hot).
+MODEL_DEFS.emberTwin = {
+  extends: 'wanderer', budget: 'player',
+  materials: {
+    ash: { tex: 'ashSoot', tint: 0x2a2420, decay: 0.8 },
+    scarf: { tex: 'ashSoot', tint: 0x5a1a12, decay: 0.7 },
+    crack: { glow: 0xfff3dc },
+    eye: { glow: 0xe59a5c },
+    blade: { tex: 'ashSoot', tint: 0x3a302a, decay: 0.6 }, strap: { tex: 'ashSoot', tint: 0x2a2420, decay: 0.8 },   // its sword (the wanderer's)
+    iron: { tex: 'ashSoot', tint: 0x2a2420, decay: 0.8 },
+  },
+  parts: bakedParts('twin', {
+    head: ['ash', 'crack', 'eye', 'scarf'], neck: ['scarf'], chest: ['ash', 'crack'], spin: ['ash', 'crack'],
+    armL: ['ash', 'crack'], armR: ['ash', 'crack'], elbowL: ['ash', 'crack'], elbowR: ['ash', 'crack'],
+    legL: ['ash', 'crack'], legR: ['ash', 'crack'], kneeL: ['ash', 'crack'], kneeR: ['ash', 'crack'],
+    capeA: ['ash', 'crack'], capeB: ['ash', 'crack'], capeC: ['ash', 'crack'], scarfTail: ['scarf'],
+  }),
+  eyes: null,
+};
 // The Puppet Knight: a life-size marionette of a knight in dark wood, ball joints, a cracked great helm, a wooden sword
 // and buckler. Slack at rest: the limbs hang a little loose from their strings.
 MODEL_DEFS.puppetKnight = {

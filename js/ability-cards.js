@@ -75,11 +75,11 @@ const ABILITY_ICONS = {
   'echoing-blade': '<path d="M8 40 C18 30 28 18 40 6"/><path d="M14 44 C24 34 34 22 44 12" stroke-dasharray="3 3"/><path d="M6 36 L12 42"/>',
   'overcharge': '<rect x="14" y="14" width="20" height="20"/><path d="M10 12 L14 8 L16 12 L20 8 M28 8 L32 12 L34 8 L38 12 M38 18 L42 22 L38 26 L42 30 M10 20 L6 24 L10 28 L6 32 M16 40 L20 44 L22 40 L26 44 L28 40 L32 44"/>',
   // Legendaries
-  'gale-crescent': '<path d="M12 5 C30 9 36 31 16 43 C27 30 25 15 12 5 Z"/><path d="M30 14 H42 M33 24 H46 M30 34 H41"/>',
+  'gale-crescent': '<path d="M12 8 C20 5 30 5 36 9 C29 8 20 8 12 11 Z"/><path d="M12 18 C20 15 30 15 36 19 C29 18 20 18 12 21 Z"/><path d="M12 28 C20 25 30 25 36 29 C29 28 20 28 12 31 Z"/><path d="M12 38 C20 35 30 35 36 39 C29 38 20 38 12 41 Z"/><circle cx="24" cy="24" r="2.5"/>',
   'pyre': '<path d="M24 4 C16 14 13 22 15 30 C16 36 32 36 33 30 C35 22 32 14 24 4 Z"/><path d="M24 18 C21 23 21 27 24 30 C27 27 27 23 24 18 Z"/><path d="M5 42 H43 M10 38 H38"/>',
   'ember-twin': '<circle cx="15" cy="9" r="4"/><path d="M15 13 V27 M8 19 H22 M15 27 L10 40 M15 27 L20 40"/><circle cx="33" cy="9" r="4" stroke-dasharray="2 2"/><path d="M33 13 V27 M26 19 H40 M33 27 L28 40 M33 27 L38 40" stroke-dasharray="3 2"/>',
   'meteor-fall': '<circle cx="30" cy="22" r="7"/><path d="M6 4 L24 18 M15 3 L26 14 M4 13 L23 21"/><path d="M6 42 H42 M17 42 L21 35 M31 42 L28 35 M24 42 V36"/>',
-  'storm-king': '<path d="M9 22 L9 10 L16 16 L24 7 L32 16 L39 10 L39 22 Z"/><path d="M27 26 L19 36 H27 L21 45"/>',
+  'storm-king': '<path d="M8 30 L11 22 L8 18 L13 8"/><path d="M16 32 L18 24 L15 19 L19 7"/><path d="M24 33 L25 25 L22 20 L24 6"/><path d="M32 32 L33 24 L30 19 L29 7"/><path d="M40 30 L40 22 L37 18 L35 8"/><path d="M8 38 C16 43 32 43 40 38"/>',
   'time-rift': '<circle cx="24" cy="24" r="16"/><path d="M24 14 V24 L30 28"/><path d="M40 8 L34 14 L38 17 L31 24 L35 27 L28 34" stroke-dasharray="3 2"/>',
   'thousand-blades': '<path d="M12 4 V24 L12 29 M8 9 H16"/><path d="M24 10 V32 L24 37 M20 15 H28"/><path d="M36 4 V24 L36 29 M32 9 H40"/><path d="M6 44 H42" stroke-dasharray="2 4"/>',
   'blood-moon': '<path d="M30 6 A17 17 0 1 0 42 32 A13 13 0 1 1 30 6 Z"/><path d="M20 34 C17 38 17 40 20 42 C23 40 23 38 20 34 Z"/><path d="M30 40 V44"/>',

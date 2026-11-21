@@ -398,18 +398,18 @@ const AUDIO_CUES = ['hitFlesh', 'hitHurt', 'hitBlock', 'riposteBoom', 'parry', '
   'abilityFox', 'abilityFoxSlash', 'abilityYip', 'abilityLantern', 'abilityLanternShot', 'abilityLanternHeal',
   'abilityCrows', 'abilityPeck', 'abilityArcher', 'abilityArrow', 'abilityArrowHit', 'abilityHawk', 'abilityStoop', 'abilityStoopHit',
   'abilityOwl', 'abilityMark', 'abilityMarkBurst', 'abilityRonin', 'abilityRoninCut', 'abilitySerpent', 'abilityCoil', 'abilityHiss',
-  'abilityPuppet', 'abilityPuppetBlow', 'abilityBear', 'abilityRear', 'abilityMaul', 'abilityRoar', 'abilityMantis', 'abilityScissor'];
+  'abilityPuppet', 'abilityPuppetBlow', 'abilityBear', 'abilityRear', 'abilityMaul', 'abilityRoar', 'abilityMantis', 'abilityScissor', 'abilityCrown', 'abilityCage', 'abilityCageCut'];
 // A power's sound by its `then`, its later blows' (`strike`: a lightning bolt, a twin's echo, a hound's bite) by
 // STRIKE_SOUNDS, a summon drawing the boss's eye (`draw`) by DRAW_SOUNDS; a rare's perk its own (ABILITY_PERK_SOUNDS,
 // at a pitch), a pick's pitch by its rarity.
 const ABILITY_SOUNDS = { blast: 'abilityBlast', lightning: 'abilityDragon', freeze: 'abilityFreeze', blades: 'abilityBlades', bloodMoon: 'abilityMoon',
-  twin: 'abilityTwin', gale: 'abilityGale', pyre: 'abilityPyre', flare: 'abilityFlare', spark: 'abilitySpark', hound: 'abilityHound',
+  twin: 'abilityTwin', gale: 'abilityGale', bladeCage: 'abilityCage', pyre: 'abilityPyre', flare: 'abilityFlare', spark: 'abilitySpark', hound: 'abilityHound',
   guardian: 'abilityGuardian', lancer: 'abilityLancer', fox: 'abilityFox', lantern: 'abilityLantern', crows: 'abilityCrows', archer: 'abilityArcher', hawk: 'abilityHawk', owl: 'abilityOwl', owlBurst: 'abilityMarkBurst',
   ronin: 'abilityRonin', serpent: 'abilitySerpent', puppet: 'abilityPuppet', bear: 'abilityBear', mantis: 'abilityMantis', wave: 'abilityWave', crescent: 'abilityMoonfall', cyclone: 'abilityCyclone', petals: 'abilityPetals',
   ghostBlade: 'abilityChime', spikes: 'abilitySpikes', fist: 'abilityFist', risingFire: 'abilityFang', clap: 'abilityClap',
   flurry: 'abilityFlurry', drill: 'abilityDrill', stitch: 'abilityStitch', boomerang: 'abilityBoomerang', clones: 'abilityClones', iai: 'abilitySheathe',
   ward: 'abilityWardBounce', answer: 'abilityAnswer', husk: 'abilityHusk', seal: 'abilitySeal' };   // Echoing Blade armed: a soft chime (each echo: ABILITY_STRIKE_SOUNDS)
-const ABILITY_STRIKE_SOUNDS = { lightning: 'abilityThunder', twin: 'abilityEcho', hound: 'abilityBite', guardian: 'abilityBash', lancer: 'abilityThrust', fox: 'abilityFoxSlash', lantern: 'abilityLanternShot',
+const ABILITY_STRIKE_SOUNDS = { lightning: 'abilityThunder', bladeCage: 'abilityCageCut', twin: 'abilityEcho', hound: 'abilityBite', guardian: 'abilityBash', lancer: 'abilityThrust', fox: 'abilityFoxSlash', lantern: 'abilityLanternShot',
   crows: 'abilityPeck', archer: 'abilityArrow', hawk: 'abilityStoop', owl: 'abilityMark',
   ronin: 'abilityRoninCut', serpent: 'abilityCoil', puppet: 'abilityPuppetBlow', bear: 'abilityRear', mantis: 'abilityScissor',
   ghostBlade: 'abilityGhostBlade', flurry: 'abilityFlurryHit', stitch: 'abilityPierce' };
@@ -543,6 +543,13 @@ function registerAudioListeners() {
     if (d.burst || d.sputter) { audio.play(d.burst ? 'abilityHuskBurst' : 'abilitySealSputter', { pos: d.sputter && d.enemy ? chest(d.enemy) : spot(d), vel: 1 }); return; }
     if (d.parry) { audio.play('parry', { pos: spot(d), pitch: 0.84, vel: 0.9 }); return; }   // a ronin's deflect: the deflect's clang, 3 semitones down
     if (d.then === 'serpent' && d.strike % 2 && !d.draw) return;   // its creak every other squeeze: a slow pulse
+    if (d.then === 'boltCrown') {   // Storm King: heard from its bolts (the heavy that called it is heard already), each a semitone up, the close its own
+      if (!d.strike) return;
+      const pos = d.enemy ? chest(d.enemy) : spot(d);
+      audio.play('abilityThunder', { pos, vel: 0.55, pitch: Math.pow(2, (d.strike - 1) / 12) });
+      if (d.v && d.strike >= d.v.strikes) audio.play('abilityCrown', { pos, vel: 1, delay: VIS.abilityFx.crown.converge });
+      return;
+    }
     const id = d.draw ? ABILITY_DRAW_SOUNDS[d.then] : d.then === 'iai' && d.strike ? (d.strike === 1 ? 'abilityIaiDraw' : 'abilityIai')
       : d.heal ? (d.body === Game.player ? 'abilityLanternHeal' : null)   // a lantern's shot healed you: a soft chime, only to you
       : d.land ? ABILITY_LAND_SOUNDS[d.then]

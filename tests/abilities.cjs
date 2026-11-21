@@ -192,13 +192,10 @@ const realm = sim => name => sim.inspect().Game.update.constructor('return ' + n
   const blow = { damage: 20 };
   for (let i = 1; i <= gv.hits * ev.hits; i++) powers.trigger('h', edge, edge.kit, 'hits', { enemy: e, strike: blow });
   assert.equal(fired.filter(f => f.power === 'static-edge').length, gv.hits, 'a spark every Nth blow');
-  assert.equal(fired.filter(f => f.power === 'gale-crescent').length, ev.hits, 'a crescent every Nth blow');
-  near(e.def.hp - e.hp, gv.hits * ev.damage + ev.hits * gv.damage, 'Static Edge and Gale Crescent damage');
-  // The crescent cuts what stands on its path past the boss, not beside the holder.
-  const far = holder(['gale-crescent']);
-  fresh(); far.x = e.x; far.z = e.z + e.radius + 4;
-  for (let i = 0; i < gv.hits; i++) powers.trigger('g', far, far.kit, 'hits', { enemy: e, strike: blow });
-  near(e.def.hp - e.hp, gv.damage, 'the crescent through the boss');
+  assert.equal(fired.filter(f => f.power === 'gale-crescent' && !f.strike).length, ev.hits, 'a cage every Nth blow');
+  near(e.def.hp - e.hp, gv.hits * ev.damage, 'Static Edge at once; the cage cuts over its time');
+  step(g('CONFIG').abilities.cage.lead + gv.time + 0.05);
+  near(e.def.hp - e.hp, gv.hits * ev.damage + Math.round(gv.time / gv.every) * gv.damage, 'Gale Crescent: a new cage starts afresh, one cage of cuts');
 
   // Pyre: only a counter lights it (pass 100); it burns `time` s.
   fresh(); const pyre = holder(['pyre']), yv = BY['pyre'].levels[0];

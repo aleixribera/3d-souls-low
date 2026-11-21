@@ -219,6 +219,17 @@ function validateData({ visual = true } = {}) {
       && pos(Tc.frost, ['length', 'grow', 'flakeAt', 'fadeAt', 'life', 'flakes']) && hx(Tc.frost.color) && pos(Tc.ink, ['length', 'width', 'sweep', 'fadeAt', 'life']) && num(Tc.ink.tilt)
       && [Tc.feather, Tc.frost, Tc.ink].every(o => o.fadeAt < o.life),
       'CONFIG.VISUALS.abilityFx.touch: edge, iron, feather, flask, ring, frost and ink, their times and sizes above 0, colours as hex, edge.bright 0 to 1, fadeAt before life, ring.gap at least 1/3 s.');
+    // Batch 13: the impact frame (one a second at most: under 3 Hz), the crown, the cage, the twin's own model.
+    const IF = CONFIG.VISUALS.impactFrame, FX = CONFIG.VISUALS.abilityFx, CRn = FX.crown, CGn = FX.cage, TW = FX.twin;
+    need(pos(IF, ['time', 'calm', 'gap', 'near']) && IF.gap >= 1 && IF.time < IF.gap && num(IF.darken) && IF.darken > 0 && IF.darken < 1 && typeof IF.filter === 'string',
+      'CONFIG.VISUALS.impactFrame: time, calm, gap (at least 1 s) and near above 0, darken between 0 and 1, filter a CSS filter.');
+    need(pos(CRn, ['fall', 'height', 'jitter', 'width', 'after', 'converge', 'cool', 'scorch', 'arcs']) && ['color', 'core', 'edge', 'ink'].every(c => hx(CRn[c])) && CRn.shards && CRn.burst
+      && pos(CGn, ['n', 'size', 'pad', 'spin', 'climb', 'close', 'burst', 'out', 'see', 'slivers', 'light']) && Number.isInteger(CGn.n) && CGn.see <= 1 && CGn.close < CONFIG.abilities.cage.lead + 1e-9
+      && ['color', 'edge', 'ink'].every(c => hx(CGn[c])),
+      'CONFIG.VISUALS.abilityFx: crown { fall, height, jitter, width, after, converge, cool, scorch, arcs above 0, hex colours, shards, burst } and cage { n whole, sizes and times above 0, see up to 1, close within the cage\'s lead }.');
+    const twinMats = []; for (let M = MODEL_DEFS[TW.model]; M; M = MODEL_DEFS[M.extends]) twinMats.push(...Object.keys(M.materials || {}));
+    need(TW.model in MODEL_DEFS && hx(TW.ink) && TW.slots && Object.entries(TW.slots).every(([s, c]) => twinMats.includes(s) && hx(c)) && Array.isArray(TW.glows) && TW.glows.every(s => twinMats.includes(s)),
+      'CONFIG.VISUALS.abilityFx.twin: model a model definition, ink a colour, slots { <its material slot>: colour } and glows its material slots.');
     // The beasts (js/summon-beasts.js: a kind with a `bright` slot) and the lantern (js/summon-lantern.js), pass 141.
     for (const [k, F] of Object.entries(CONFIG.VISUALS.abilityFx)) if (F && F.bright !== undefined) {
       need(['color', 'core', 'eye', 'ink', 'lit'].every(n => hx(F[n])) && typeof F.bright === 'string'
@@ -322,6 +333,9 @@ function validateData({ visual = true } = {}) {
     'CONFIG.abilities.commons: pastGap, lateCut, imageDelay, imageReach, whirlRadius, thornReach and shardDelay, each above 0.');
   const FB = BL.flashBehind;
   need(FB && ['range', 'gap', 'time'].every(k => num(FB[k]) && FB[k] > 0), 'CONFIG.abilities.flashBehind: range, gap and time, each above 0.');
+  // Legendaries I (pass 151): Storm King's crown, Gale Crescent's cage, the rest after a hold.
+  need(BL.crown && ['gap', 'reach'].every(k => num(BL.crown[k]) && BL.crown[k] > 0) && BL.cage && ['lead', 'reach'].every(k => num(BL.cage[k]) && BL.cage[k] > 0)
+    && num(BL.holdRest) && BL.holdRest >= 0, 'CONFIG.abilities: crown { gap, reach } and cage { lead, reach } above 0, holdRest 0 or more.');
   const CS = BL.crescent, CY = BL.cyclone, MK = BL.mark;
   need(CS && num(CS.reach) && CS.reach > 0 && num(CS.width) && CS.width > 0, 'CONFIG.abilities.crescent: reach and width, each above 0.');
   need(CY && num(CY.gap) && CY.gap > 0, 'CONFIG.abilities.cyclone: gap above 0.');

@@ -89,15 +89,20 @@ function abilityHeal(p, share, perk, target = null) {
 // The legendaries' powers, as `when/then`, and the numbers each level needs (abilityPowers runs them):
 //   land/blast:          a jump attack (of the air attack `action` names) lands as a blast: `damage` to every
 //                        enemy within `radius` m.
-//   fullHeavy/lightning: a fully charged heavy that lands calls `strikes` bolts on that enemy, one every `every` s.
+//   fullHeavy/boltCrown: a fully charged heavy that lands crowns that enemy: `strikes` bolts, the first `lead` s on, then
+//                        one every `every` s, each on its own point of a ring CONFIG.abilities.crown.gap m round the
+//                        enemy's body (evenly spaced, the first on the holder's side), `damage` to every enemy within
+//                        CONFIG.abilities.crown.reach m of that point (the crowned one always). Its closing is drawing only.
 //   dodge/freeze:        a perfect dodge stops time for every enemy within `radius` m for `time` s: no step, no blow.
+//                        An enemy just freed rests CONFIG.abilities.holdRest s before it can be stopped again.
 //   parry/blades:        a parry rains blades on the parried enemy for `time` s, one every `every` s.
 //   low/bloodMoon:       at or under `below` of the bar, for `time` s the holder's blows do `damage` more and heal
 //                        `drain` of what they deal.
 //   parry/flare:         a parry bursts into fire on the parried enemy: `damage` (a rare's).
 //   hits/spark:          every `hits`th blow the holder lands, a spark strikes that enemy (a rare's).
-//   hits/gale:           every `hits`th blow the holder lands, a crescent of wind flies from them through that enemy
-//                        and on, `reach` m in all: `damage` to every enemy within `width` m of its path.
+//   hits/bladeCage:      every `hits`th blow the holder lands, a cage of wind blades closes round that enemy and follows
+//                        it: a cut every `every` s for `time` s, `damage` to every enemy within CONFIG.abilities.cage.reach
+//                        m of its body's edge. A new cage on the same enemy starts afresh.
 //   counter/pyre:        a counter of the holder's that lands (a riposte's blow) lights a pillar of fire under the enemy
 //                        for `time` s, burning it every `every` s.
 //   flask/twin:          a summon. Drinking a flask calls an ember twin of the holder for `time` s; every blow the
@@ -196,10 +201,10 @@ function abilityHeal(p, share, perk, target = null) {
 // A level's `cooldown` s spaces its triggers; `once: true` fires once a fight. Blows counted (`hits`) are the
 // holder's own landed and unblocked; a power's own strikes never count, nor set off another power.
 const ABILITY_POWERS = {
-  'land/blast': ['radius', 'damage', 'cooldown'], 'fullHeavy/lightning': ['strikes', 'lead', 'every', 'damage', 'cooldown'],
+  'land/blast': ['radius', 'damage', 'cooldown'], 'fullHeavy/boltCrown': ['strikes', 'lead', 'every', 'damage', 'cooldown'],
   'dodge/freeze': ['time', 'radius', 'cooldown'], 'parry/blades': ['time', 'every', 'damage', 'cooldown'],
   'low/bloodMoon': ['below', 'time', 'damage', 'drain'], 'parry/flare': ['damage', 'cooldown'],
-  'hits/spark': ['hits', 'damage'], 'hits/gale': ['hits', 'damage', 'reach', 'width'],
+  'hits/spark': ['hits', 'damage'], 'hits/bladeCage': ['hits', 'time', 'every', 'damage'],
   'counter/pyre': ['time', 'every', 'damage', 'cooldown'], 'flask/twin': ['time', 'share', 'draw', 'cooldown'],
   'press/hound': ['charge', 'time', 'every', 'damage', 'draw'], 'low/guardian': ['below', 'time', 'every', 'damage', 'draw'],
   'press/lancer': ['charge', 'time', 'every', 'damage', 'draw'], 'press/fox': ['charge', 'time', 'every', 'damage', 'draw'],
@@ -609,11 +614,11 @@ function abilityReport(body, when, ctx) {
 // its number), the first `lead` s after it fires (the time its dragon takes to reach the boss), then every `every` s; damage goes through Enemy.takeHit like any blow and `credit` (the server's) counts it to the holder.
 const ECHO_DELAY = 0.06;   // s from its holder's blow to the twin's: the two land as one
 // The powers that need a live enemy to strike (the one parried, struck, broken or dodged).
-const ON_ENEMY = new Set(['lightning', 'blades', 'flare', 'spark', 'gale', 'pyre', 'hound', 'lancer', 'fox', 'lantern', 'crows', 'archer', 'hawk', 'owl', 'ronin', 'serpent', 'puppet', 'bear', 'mantis', 'lick', 'molten', 'lateCut', 'afterimage',
+const ON_ENEMY = new Set(['lightning', 'boltCrown', 'bladeCage', 'blades', 'flare', 'spark', 'gale', 'pyre', 'hound', 'lancer', 'fox', 'lantern', 'crows', 'archer', 'hawk', 'owl', 'ronin', 'serpent', 'puppet', 'bear', 'mantis', 'lick', 'molten', 'lateCut', 'afterimage',
   'thorns', 'shards', 'reflect', 'wave', 'spikes', 'fist', 'risingFire', 'clap',
   'flurry', 'drill', 'stitch', 'boomerang', 'clones', 'iai', 'seal']);
 // The powers whose blow lands a beat after they fire: each tells every browser again as it lands (`strike`).
-const DELAYED = new Set(['lightning', 'lateCut', 'afterimage', 'shards', 'reflect', 'ghostBlade', 'flurry', 'stitch']);
+const DELAYED = new Set(['lightning', 'boltCrown', 'bladeCage', 'lateCut', 'afterimage', 'shards', 'reflect', 'ghostBlade', 'flurry', 'stitch']);
 const abilityPowers = (() => {
   // The powers still striking (lightning, blades, a pyre, a twin's echo): { pw, holder, enemy, left, next, n }, an echo
   // with its own `damage` and `twin`.
@@ -796,10 +801,19 @@ const abilityPowers = (() => {
         s.decoy = { decoy: true, holder, x: s.x, y: s.y, z: s.z, radius: K.radius, height: K[pw.then].height, state: null, alive: () => true, isAttacking: () => false };
         summons.set(holder, s); break;
       }
-      case 'freeze':
-        for (const o of enemies) if (near(o, x, y, z, v.radius)) { o.frozen = Math.max(o.frozen || 0, v.time); o.hitbox = null; }
+      case 'freeze':   // an enemy still resting from a hold (`holdRest`) sees the rift but isn't stopped again
+        for (const o of enemies) if (near(o, x, y, z, v.radius) && !(o.holdRest > 0)) { o.frozen = Math.max(o.frozen || 0, v.time); o.hitbox = null; }
         break;
       case 'lightning': running.push({ pw, holder, enemy: e, left: v.strikes, next: v.lead, n: 0 }); break;
+      case 'boltCrown': {   // the ring's first point faces the holder (`a0`, round the enemy from +x)
+        const from = body || ctx, a0 = Math.atan2((from.z ?? e.z) - e.z, (from.x ?? e.x) - e.x);
+        running.push({ pw, holder, body, enemy: e, left: v.strikes, next: v.lead, every: v.every, n: 0, crown: a0 || 0 });
+        break;
+      }
+      case 'bladeCage':   // one cage an enemy: a new one starts it afresh
+        for (let i = running.length - 1; i >= 0; i--) if (running[i].pw === pw && running[i].holder === holder && running[i].enemy === e) running.splice(i, 1);
+        running.push({ pw, holder, body, enemy: e, left: Math.round(v.time / v.every), next: CONFIG.abilities.cage.lead, every: v.every, n: 0, cage: true });
+        break;
       case 'blades': running.push({ pw, holder, enemy: e, left: Math.round(v.time / v.every), next: v.every, n: 0 }); break;
       case 'bloodMoon': if (body && body.perk) { body.perk.moon = v.time; body.perk.moonV = v; } break;
       case 'husk': {   // where its holder stood as it stepped back; it draws the enemy pressed at (else the nearest) once
@@ -1025,6 +1039,15 @@ const abilityPowers = (() => {
       if (r.reach !== undefined) {   // a thrust lands only while its enemy is in reach (the server's pose of the holder lags)
         const b = (api.bodyOf && api.bodyOf(r.holder)) || r.body;
         if (b && Math.hypot(e.x - b.x, e.z - b.z) - (e.radius || 0) > r.reach + CONFIG.abilities.press.reachSlack) { if (r.left <= 0) running.splice(i, 1); continue; }
+      }
+      if (r.crown !== undefined || r.cage) {   // Storm King's bolt on its point of the ring; Gale Crescent's cage cutting all inside it
+        const C = CONFIG.abilities, a = r.crown + (r.n - 1) / r.pw.v.strikes * Math.PI * 2, ring = (e.radius || 1) + C.crown.gap;
+        const px = r.cage ? e.x : e.x + Math.cos(a) * ring, pz = r.cage ? e.z : e.z + Math.sin(a) * ring, reach = r.cage ? (e.radius || 1) + C.cage.reach : C.crown.reach;
+        events.emit('abilityPower', { power: r.pw.id, then: r.pw.then, holder: r.holder, body: r.body, enemy: e, x: px, y: e.y, z: pz, v: r.pw.v, strike: r.n });
+        wound(e, r.pw.v.damage, r.holder, r.pw.id);
+        for (const o of Game.enemies) if (o !== e && near(o, px, e.y, pz, reach)) wound(o, r.pw.v.damage, r.holder, r.pw.id);
+        if (r.left <= 0) running.splice(i, 1);
+        continue;
       }
       // A bolt, and a twin's blow, each tell every browser (`strike`: its number): drawn and heard as it lands.
       if (DELAYED.has(r.pw.then) || r.twin) events.emit('abilityPower', { power: r.pw.id, then: r.pw.then, holder: r.holder, body: r.body, enemy: e,
