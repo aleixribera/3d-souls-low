@@ -107,7 +107,21 @@ const PROP_LOOKS = {
     barrel(g, 1.25, 0, 0.2); barrel(g, 1.45, 0, -0.35, true);
     for (const s of [-0.5, 0.3]) townBox(g, 0.1, 1.4, 0.1, M.char, s, 0.7, 0.55, 0, 0.5, 0.2);
   },
+  // (pass 172) The castles' set pieces, Blender models (tools/blender/castle_bits.py, js/baked/castle-bits.js): the
+  // Gaoler King's gibbets on the field before his gate, the garrison's weapon racks in Saltgrave's yards. Without the
+  // baked file (a test page) a plain post stands in.
+  gibbet(g) {
+    if (!bakedCastleBits()) { townBox(g, 0.3, 4.2, 0.3, TOWN_MAT.timber, 0, 2.1, 0); return; }
+    for (const [slot, mat] of [['stone', TOWN_MAT.stone], ['wood', TOWN_MAT.timber], ['iron', MAT.iron]])
+      g.add(new THREE.Mesh(bakedGeometry(`castle-bits:gibbet__${slot}`), mat));
+  },
+  rack(g) {
+    if (!bakedCastleBits()) { townBox(g, 2.9, 0.14, 0.14, TOWN_MAT.wood, 0, 1.55, 0); return; }
+    for (const [slot, mat] of [['wood', TOWN_MAT.wood], ['iron', MAT.iron]])
+      g.add(new THREE.Mesh(bakedGeometry(`castle-bits:rack__${slot}`), mat));
+  },
 };
+const bakedCastleBits = () => typeof BAKED !== 'undefined' && !!BAKED['castle-bits:gibbet__wood'];
 
 // A barricade gate: a heap of an overturned cart, stacked beams, barrels and stakes pointing both ways, `width` m across
 // (the gate's own z), `height` tall and `depth` deep (its x), standing on its base line so it can tip over (placeGate).

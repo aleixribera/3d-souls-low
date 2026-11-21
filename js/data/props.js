@@ -14,6 +14,10 @@ const PROP_KINDS = {
   brokenStall: { boxes: [{ w: 3.0, d: 1.6, h: 0.75 }] },   // a stall smashed flat: a low heap
   crates: { boxes: [{ w: 1.7, d: 1.7, h: 1.9 }] },
   heap: { boxes: [{ w: 3.6, d: 1.4, h: 1.3 }] },   // the townsfolk's failed barricade: an overturned cart, beams and barrels
+  // (pass 172) The castles' set pieces: a gibbet (its footing and post, and the cage hanging off its arm at x +1.35) and
+  // a weapon rack with its spears.
+  gibbet: { boxes: [{ w: 1.1, d: 1.1, h: 0.42 }, { w: 0.3, d: 0.3, h: 4.35 }, { x: 1.35, y: 1.4, w: 0.8, d: 0.8, h: 1.8 }] },
+  rack: { boxes: [{ w: 2.9, d: 1.3, h: 2.2 }] },
 };
 // A prop's collision boxes in the level: { x0, x1, z0, z1, y0, y1 }, standing on floor height y.
 function propBoxes(P, y) {

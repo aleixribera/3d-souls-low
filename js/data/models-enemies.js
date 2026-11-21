@@ -630,28 +630,32 @@ MODEL_DEFS.tollWisp = {
 
 // ---- Thrale (Level 7 on; v7.38.0): rough stand-ins until each gets its own Blender figure (PLAN.md stage 3, track A) ---
 // The Lantern Thrall: the Hollow Soldier's figure, bleached: dun, rain-greyed clothes, grey skin, milky blind eyes.
+// (pass 172, the cel redo) Three flat values, as the Hollow Soldier since pass 162: a pale fleece-dun smock (the light
+// mass on the moor's grass), moss-green trousers, dark peat leather; low decay. Dun on dun it was lost in the heather.
 MODEL_DEFS.lanternThrall = {
   extends: 'hollowSoldier',
   materials: {
     ...MODEL_DEFS.hollowSoldier.materials,
-    skin: { tex: 'rotSkin', tint: 0xb8b0a0, decay: 0.7 },
-    quilt: { tex: 'quiltedGambeson', tint: 0x847e6c, decay: 0.8 },
-    trousers: { tex: 'rottenCloth', tint: 0x5e5a50, decay: 0.8 },
-    strap: { tex: 'crackedLeather', tint: 0x5a5044, decay: 0.85 },
+    skin: { tex: 'rotSkin', tint: 0xb8b0a0, decay: 0.45 },
+    quilt: { tex: 'quiltedGambeson', tint: 0xc4b89a, decay: 0.3 },
+    trousers: { tex: 'rottenCloth', tint: 0x3e4a30, decay: 0.35 },
+    strap: { tex: 'crackedLeather', tint: 0x2e2218, decay: 0.4 },
+    iron: { tex: 'rustedIron', tint: 0x7a6a58, decay: 0.4, double: true },
     eye: { glow: 0xd8dccc },
   },
   eyes: { color: 0xd8dccc, size: 0.012 },
 };
 // The Lantern-Bearer: the Toll Wisp's figure in the moor's colours: a storm-grey coat, faded russet mantle, an amber
-// light under the brim; the handbell stands in for its lantern.
+// light under the brim; the handbell stands in for its lantern. (pass 172, the cel redo) The russet mantle brighter, the
+// storm-grey coat darker, so the flock's leader reads apart from it at a glance.
 MODEL_DEFS.lanternBearer = {
   extends: 'tollWisp',
   materials: {
     ...MODEL_DEFS.tollWisp.materials,
-    hat: { tex: 'wispHat', tint: 0x5c5850, decay: 0.6, double: true },
-    mantle: { tex: 'wispMantle', tint: 0x8a5a3c, decay: 0.55, double: true },
-    coat: { tex: 'wispCoat', tint: 0x5a6058, decay: 0.65, double: true },
-    brocade: { tex: 'wispBrocade', tint: 0xa89870, decay: 0.5, double: true },
+    hat: { tex: 'wispHat', tint: 0x3a3a3c, decay: 0.4, double: true },
+    mantle: { tex: 'wispMantle', tint: 0xb4542a, decay: 0.35, double: true },
+    coat: { tex: 'wispCoat', tint: 0x3c443e, decay: 0.4, double: true },
+    brocade: { tex: 'wispBrocade', tint: 0xc8ac70, decay: 0.35, double: true },
     eye: { glow: 0xffb050 },
   },
   eyes: { color: 0xffb050 },
@@ -717,31 +721,34 @@ MODEL_DEFS.cinderfolk = {
 };
 // The Drowned (Level 14, v7.51.0; STORY.md 10j): the Hollow Soldier's figure as a thrall come up out of the mere: skin
 // blue-grey and swollen with cold, the clothes gone dark with water and weed, rust on every buckle, pale eyes. A stand-in
-// until its own Blender figure.
+// until its own Blender figure. (pass 172, the cel redo) Three flat values: the skin a pale drowned blue-white (the
+// light mass, so it reads on the dark water), the gambeson weed-green, the trousers near-black; rust on the iron.
 MODEL_DEFS.drowned = {
   extends: 'hollowSoldier',
   materials: {
     ...MODEL_DEFS.hollowSoldier.materials,
-    skin: { tex: 'rotSkin', tint: 0x9aaab4, decay: 0.75 },
-    quilt: { tex: 'rottenCloth', tint: 0x5a6a6a, decay: 0.85 },   // the gambeson dark with water
-    trousers: { tex: 'rottenCloth', tint: 0x3a4648, decay: 0.85 },
-    strap: { tex: 'rustedIron', tint: 0x5a5a52, decay: 0.85 },
-    iron: { tex: 'rustedIron', tint: 0x6a6a62, decay: 0.8, double: true },
-    blade: { tex: 'rustedIron', tint: 0x7a7a72, decay: 0.75 },
+    skin: { tex: 'rotSkin', tint: 0xb4c4cc, decay: 0.4 },
+    quilt: { tex: 'rottenCloth', tint: 0x3e5a48, decay: 0.35 },   // the gambeson dark with water and weed
+    trousers: { tex: 'rottenCloth', tint: 0x1e2628, decay: 0.4 },
+    strap: { tex: 'rustedIron', tint: 0x6a4a34, decay: 0.4 },
+    iron: { tex: 'rustedIron', tint: 0x7a5a44, decay: 0.4, double: true },
+    blade: { tex: 'rustedIron', tint: 0x8a7a6a, decay: 0.35 },
     eye: { glow: 0xc8e8ff },
   },
   eyes: { color: 0xc8e8ff, size: 0.011 },
 };
 // The Salt Knight (Level 8, v7.40.0; STORY.md 10d): the Undead Knight's figure, its plate crusted white by the sea wind
-// over grey-green cloth. A stand-in until its own Blender figure.
+// over grey-green cloth. A stand-in until its own Blender figure. (pass 172, the cel redo) Three values, as the Undead
+// Knight since pass 162: salt-white plate, dark verdigris at the joints, sea-green cloth; at decay 0.9 it read one grey
+// against Saltgrave's wet stone.
 MODEL_DEFS.saltKnight = {
   extends: 'undeadKnight',
   materials: {
     ...MODEL_DEFS.undeadKnight.materials,
-    plate: { tex: 'knightPlate', tint: 0xd8d6cc, decay: 0.9 },
-    gauntlet: { tex: 'knightPlate', tint: 0xa8a69c, decay: 0.85 },
-    mail: { tex: 'knightMail', tint: 0x8c8c86, decay: 0.8 },
-    trousers: { tex: 'rottenCloth', tint: 0x48544e, decay: 0.8 },
+    plate: { tex: 'knightPlate', tint: 0xe4e2d8, decay: 0.35 },
+    gauntlet: { tex: 'knightPlate', tint: 0x3e5650, decay: 0.45 },
+    mail: { tex: 'knightMail', tint: 0x4a5a56, decay: 0.5 },
+    trousers: { tex: 'rottenCloth', tint: 0x1e3a3a, decay: 0.45 },
   },
 };
 

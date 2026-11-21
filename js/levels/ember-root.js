@@ -46,7 +46,11 @@ const LEVEL_13 = {
             { pts: [[60, -40, -60], [80, 20, -30], [70, 90, -10]], r: 7, color: 0x6a2a14 }],
     pillars: [{ x: 260, z: 200, y0: -60, y1: 180, r: 20, color: 0x5a2a16 }, { x: -80, z: 140, y0: -60, y1: 160, r: 16, color: 0x5a2a16 }],
     beams: 0xffa060,
-    grounds: [{ kind: 'emberbark', rooms: ['first-hollow', 'first-root', 'ember-hollow', 'sap-hollow', 'second-root', 'amber-hollow', 'last-root', 'last-hollow'] }],
+    // (pass 172) The ember-speckled bark only on the roots, the path over the burning deep; the hollows a plain, paler
+    // bark, so their floors read as places to stand and fight a clear step apart from the glowing way between them (the
+    // speckles over every floor hid the floors' colour, docs/story/audit.md).
+    grounds: [{ kind: 'emberbark', rooms: ['first-root', 'second-root', 'last-root'] },
+              { kind: 'bark', rooms: ['first-hollow', 'ember-hollow', 'sap-hollow', 'amber-hollow', 'the-grafting', 'last-hollow'] }],
   },
   start: { x: 4, z: 0, yaw: Math.PI / 2 },
   rooms: [

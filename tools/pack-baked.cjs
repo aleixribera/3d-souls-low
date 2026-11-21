@@ -64,6 +64,7 @@ const FILES = {
   'arena-ruins': { sources: ['arena_ruins'] },
   'fountain': { sources: ['fountain'] },
   'town-bits': { sources: ['town_bits'] },
+  'castle-bits': { sources: ['castle_bits'] },
 };
 
 function readGlb(file) {

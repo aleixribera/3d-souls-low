@@ -177,9 +177,34 @@ from a clean checkout of the previous release). Walk-through: `docs/scorecard/no
 Walk-through: `docs/scorecard/now/story-redo-2.mp4`, made by `node tools/story-clip.cjs <out.mp4> <tag> <levelId ...>`
 from the `tools/story-frames.cjs` frames.
 
-### Left, in order
+### Pass 172: the Sunken Keep, the Tower, Saltgrave, the Final Castle, and the rest
 
-1. **The Sunken Keep**: long corridors of one stone. Areas per wing and floors a step down.
-2. **The Tower, Saltgrave and the Final Castle**: areas, and set pieces for the bare yard and field.
-3. **The Long Hall, the Church, the Windward Moor and the Still Mere**: they read well. Last, light touches only.
-4. Optional: `townLook` for Aurel and Aurel in Ash, whose houses share the Burning Town's builder.
+- **The Sunken Keep**: each wing its own light under a neutral base (exposure 0.9, saturation about 0.6 per wing):
+  the vestibule warm, the cistern teal-grey, the chapel violet-grey, the shrine gold, the moss hall green-grey, the
+  throne a dark red-brown. Walls paler and floors a clear step down; room lights eased toward neutral, so a wing is
+  tinted, not flooded.
+- **The Tower**: six areas (the gatehouse warm, the undercroft teal, the courtyard and ramparts in the last sun, the
+  hall in firelight, the walkways a wind-blue, the bell gold). The ramparts' sandstone toned down from near white.
+- **Saltgrave**: the storm a darker slate; the gatehouse and stair rooms warm, the ward grey-green, the hall of
+  statues pale violet, the roof the open storm. Weapon racks, crates and a cart in the yards.
+- **The Final Castle**: eight areas, from the outer ward's moonlit grey to the throne room's dark red-brown round the
+  gold throne. The field has the Gaoler King's gibbets either side of the road, and racks stand in the courts.
+- **Set pieces** (`gibbet`, `rack` in `js/data/props.js`, drawn in `js/town.js`): Blender,
+  `tools/blender/castle_bits.py` (660 triangles, 5 pieces). `tests/story-placements.cjs` keeps every prop clear of
+  spawns, bonfires, flasks, lamps and gate doorways, and checks the mesh. Close-ups:
+  `docs/story/audit/final-castle-props.jpg`, `docs/story/audit/saltgrave-props.jpg`
+  (`node tools/story-frames.cjs <tag> <level> --at x,z,yaw`).
+- **The Root of the Ember**, a second look: the root walks are `emberbark` and the hollows `bark`, so the hollows'
+  floors read as floors; `emberbark` itself is a step lighter.
+- **Light touches**: the Still Mere's white gate and long stair had floors as pale as their walls; a step darker,
+  exposure 0.92. The Long Hall, the Church and the Windward Moor read well and are unchanged (`tools/story-frames.cjs`
+  now shoots a hall level too).
+- **Story recolours**: the Moor's lantern thralls in bone and moss, their bearers in rust and brocade; the Still
+  Mere's Drowned in moss-green and leather; Saltgrave's Salt Knights in pale plate and verdigris.
+
+Walk-through: `docs/scorecard/now/story-redo-3.mp4`.
+
+### Left
+
+The redo is done for all 14 chapters (`node tools/story-audit.cjs`: 0 findings). Optional: `townLook` for Aurel and
+Aurel in Ash, whose houses share the Burning Town's builder.

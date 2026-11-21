@@ -17,12 +17,14 @@ const LEVEL_14 = {
   description: 'There is one water in Thrale that never burned: a frozen lake under a white tree. Down the white boughs, through the drowned court, to the shore. Something waits on the ice, wearing your face.',
   help: 'Level 14: the boughs have no rail: a fall is death. The Drowned lie under the shallows until you pass. On the ice, the one who waits fights as you fight. When it stands behind its shield, a blow into its front is turned and answered: break the stance with a heavy, circle it, or wait for the thrust. When it raises the torch, strike it, and it remembers.',
   wallHeight: 9, gateHeight: 3.4, gateThickness: 0.5,
+  // (pass 172) A light touch: the white gate and the long stair had floors as pale as their walls; a step darker now,
+  // and the whole a little less exposed, so the snow reads white against them.
   atmosphere: { background: 0x2a3038, fog: 0x8a94a0, fogDensity: 0.0095,
                 moon: { color: 0xf0f4ff, intensity: 2.3, position: [-30, 40, 16] },
                 ambient: { color: 0x56606c, intensity: 1.35 },
                 hemi: { sky: 0xe8eef8, ground: 0x2a3440, intensity: 0.75 },
-                exposure: 0.96, dust: 0.1, rim: 0xe0ecff,
-                grade: { shadowTint: [0.94, 0.97, 1.04], highlightTint: [1.02, 1.02, 1.04], saturation: 0.78 },
+                exposure: 0.92, dust: 0.1, rim: 0xe0ecff,
+                grade: { shadowTint: [0.94, 0.97, 1.04], highlightTint: [1.02, 1.02, 1.04], saturation: 0.78, contrast: 1.08 },
                 surface: { moss: 0.3, grime: 0.6 }, banners: [0x8a2a24, 0xc8ccd4],
                 sky: { zenith: 0x1e2430, sun: 0xd8e4ff, sunDir: [-0.5, 0.3, 0.2] }, silhouettes: 2 },
   realm: {
@@ -44,7 +46,7 @@ const LEVEL_14 = {
     { id: 'first-bough', rect: [14, 48, -2.5, 2.5], y: 24, open: true, height: 6, edges: { n: 'open', s: 'open' }, floor: 0x9a9a94, wall: 0xb0b0aa },
     { id: 'twig', rect: [28, 31, 5, 8], y: 27, open: true, height: 4, edges: { n: 'open', s: 'open', e: 'open', w: 'open' }, floor: 0x9a9a94, wall: 0xb0b0aa },
     { id: 'bough-fork', rect: [48, 72, -10, 10], y: 24, open: true, height: 8, edges: { n: 'rail', s: 'rail', w: 'rail', e: 'rail' }, railHeight: 0.8, floor: 0xb4b4b0, wall: 0xc8c8c4, light: 0xe8f0ff },
-    { id: 'white-gate', rect: [92, 116, -12, 12], y: 16, open: true, height: 9, edges: { n: 'rail', w: 'rail', e: 'rail' }, railHeight: 0.8, floor: 0xb0b2b0, wall: 0xc8cac8, light: 0xe0e8f8,
+    { id: 'white-gate', rect: [92, 116, -12, 12], y: 16, open: true, height: 9, edges: { n: 'rail', w: 'rail', e: 'rail' }, railHeight: 0.8, floor: 0x868a8e, wall: 0xc4c6c4, light: 0xe0e8f8,
       pillars: [[94, 10], [114, 10], [94, -10], [114, -10]], braziers: [[115, 0]] },
     { id: 'shore-yard', rect: [88, 120, -54, -40], open: true, height: 9, floor: 0x7a8088, wall: 0x9aa0a8, light: 0xd8e4f4,
       braziers: [[118.5, -52.5], [118.5, -41.5]] },
@@ -60,7 +62,7 @@ const LEVEL_14 = {
   ],
   ramps: [
     { id: 'bough-down', rect: [72, 92, -2.5, 2.5], axis: 'x', from: 24, to: 16, stairs: true, height: 6, edges: { n: 'open', s: 'open' }, floor: 0x9a9a94, wall: 0xb0b0aa },
-    { id: 'long-stair', rect: [101, 107, -40, -12], axis: 'z', from: 0, to: 16, stairs: true, height: 6, floor: 0xa0a4a8, wall: 0xb8bcc0 },
+    { id: 'long-stair', rect: [101, 107, -40, -12], axis: 'z', from: 0, to: 16, stairs: true, height: 6, floor: 0x80868c, wall: 0xb4b8bc },
   ],
   // Masonry under the white gate's floor, so the stair stands on stone.
   blocks: [{ rect: [92, 116, -12, 12], y0: -10, y1: 15.5, wall: 0xa8acb0 }],

@@ -13,7 +13,14 @@ const { execFileSync } = require('node:child_process');
 const { chromium } = require('../tests/browser.cjs');
 const { createServer } = require('../server/index.cjs');
 
-const [tag, ...ids] = process.argv.slice(2);
+// (pass 172) `--at x,z,yaw` (repeatable) shoots those spots instead of the rooms, e.g. a set piece up close.
+const args = process.argv.slice(2), at = [];
+for (let i = args.indexOf('--at'); i >= 0; i = args.indexOf('--at')) {
+  const [x, z, yaw = 0] = (args[i + 1] || '').split(',').map(Number);
+  if (!Number.isFinite(x) || !Number.isFinite(z) || !Number.isFinite(yaw)) { console.error('--at wants x,z[,yaw]'); process.exit(2); }
+  at.push([x, z, yaw]); args.splice(i, 2);
+}
+const [tag, ...ids] = args;
 if (!tag || !ids.length) { console.error('usage: node tools/story-frames.cjs <tag> <levelId ...>'); process.exit(2); }
 const root = path.join(__dirname, '..'), sheets = path.join(root, 'docs', 'story', 'audit');
 (async () => {
@@ -29,12 +36,13 @@ const root = path.join(__dirname, '..'), sheets = path.join(root, 'docs', 'story
     for (const id of ids) {
       const dir = path.join(root, '.scratch', 'story-frames', id); fs.mkdirSync(dir, { recursive: true });
       for (const f of fs.readdirSync(dir)) if (f.startsWith(tag + '-')) fs.unlinkSync(path.join(dir, f));
-      const shots = await page.evaluate(id => {
+      const shots = await page.evaluate(([id, at]) => {
         const A = window.__arena, sim = A.tests.sim;
         sim.begin(); story.jumpTo(id); Game.loading = 0;
         const L = Game.level, rooms = L.rooms || [];
         const mid = R => ({ x: (R.rect[0] + R.rect[1]) / 2, z: (R.rect[2] + R.rect[3]) / 2, y: R.y || 0 });
         const list = [];
+        if (at.length) return at.map(([x, z, yaw]) => ({ room: `${x},${z}`, x, z, y: 0, yaw }));
         rooms.forEach((R, i) => {
           if (R.rect[1] - R.rect[0] < 3 || R.rect[3] - R.rect[2] < 3) return;   // a doorway, not a place
           const c = mid(R), prev = i ? mid(rooms[i - 1]) : { x: L.start.x, z: L.start.z }, next = rooms[i + 1] ? mid(rooms[i + 1]) : null;
@@ -44,8 +52,10 @@ const root = path.join(__dirname, '..'), sheets = path.join(root, 'docs', 'story
           const to = next && Math.hypot(next.x - at.x, next.z - at.z) < 60 ? next : c;
           list.push({ room: R.id, ...at, yaw: Math.atan2(to.x - at.x, to.z - at.z) || L.start.yaw || 0 });
         });
+        // (pass 172) A hall level (the Long Hall) has no rooms: five shots down its length, facing on.
+        if (L.layout === 'hall') for (let k = 0; k < 5; k++) list.push({ room: `x${Math.round(5 + k * (L.length - 20) / 4)}`, x: 5 + k * (L.length - 20) / 4, z: 0, y: 0, yaw: Math.PI / 2 });
         return list;
-      }, id);
+      }, [id, at]);
       let n = 0;
       for (const s of shots) {
         await page.evaluate(s => {
