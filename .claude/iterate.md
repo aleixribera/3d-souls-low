@@ -1,7 +1,7 @@
 # Iterate: Combat Arena 3D
 
 Model: opus, effort medium
-Skill synced: 6acf5c4
+Skill synced: 52f48ae
 Parts: judge (panel: `docs/scorecard/panel/`), review (weekly, from 2026-11-20), incidents (the game is played online).
 
 ## Vision and plan
@@ -10,8 +10,7 @@ Parts: judge (panel: `docs/scorecard/panel/`), review (weekly, from 2026-11-20),
   part two where it is going. The director writes it with Aleix; a pass moves a piece into part one when it ships.
 - Two tracks at once (when `PLAN.md` says so): each pass in its own worktree, by `docs/two-tracks.md`.
 - Stop point (Aleix, 2026-11-21, "I want all of this done"): every `PLAN.md` "Later" item, in order and shipped on
-  (Aleix confirmed them), then the "Last" balance pass up to "awaiting Aleix's playtest". The pass that reaches it
-  writes the pause line in `STATE.md` "Now". Items 5 to 8 were the previous stop point (pass 159).
+  (Aleix confirmed them), then the "Last" balance pass up to "awaiting Aleix's playtest".
 - Story levels (Aleix, 2026-11-21): "all story levels need redoing, or almost all of them, there are broken parts, not
   only for the 7-14 ones." The Later Story item covers every chapter, and its broken parts are owner's bugs (step 2.2):
   audit each chapter by playing it through, fix what's broken first, then redo the levels.
@@ -43,8 +42,6 @@ node tools/pack-baked.cjs <stem>
 
 - Serve: `python -m http.server 8123 --bind 127.0.0.1`, open
   `combat-arena-3d.html#dev`, then `MODELLAB.open('<modelId>')` (F9): front, back, side and silhouette.
-- A drawing that reads simulation state the snapshot lacks (`abilityPowers`) gets an online path, and its in-page test
-  empties the page's copy (why: Ash Husk's ring showed only in Practice, pass 137's review, retro 140).
 - **Current frames:** `docs/scorecard/now/`. `node tools/now-frames.cjs [lobby|rush|crate]` retakes the lobby
   (desktop, phone), a Boss Rush fight and a crate roll; `node tools/scorecard-frames.cjs docs/scorecard/now fights`
   every boss fighting in Practice.
@@ -57,11 +54,18 @@ node tools/pack-baked.cjs <stem>
 ## Ship and release
 
 - Commit to `main` and push; CI runs on the push.
-- A release whenever a pass ships something players notice: `node tools/release.cjs "<title>" "<text>"` (AGENTS.md
-  "Release"), commit, push, tag `v*`, push the tag, check that the container workflow started.
+- A release whenever a pass ships something players notice: `node tools/release.cjs` (AGENTS.md "Release") commits
+  and tags; push with the line it prints, then check that the container workflow started.
 - Don't wait on CI after your push; the next pass reads what players get with `node tools/live-check.cjs` (its `BROKEN` line is step 2's Broken).
 - After many tests were added or removed, or when one shard runs far longer than the others, refresh the shard
   weights from a green run: `node tools/shard-weights.cjs`, and commit `tests/shard-weights.json`.
+
+## Machine
+
+The PC is CPU-starved with two tracks: a browser only through `node tools/browser-lock.cjs` (one across both tracks,
+the game paused while open), tests at idle priority (`tests/low-priority.cjs`), and a retro reads
+`node tools/browser-lock.cjs log` for where browser time went (why: rounds took 5 to 25 min in passes 160-169 and
+nothing measured the wait, retro 170).
 
 ## Feedback
 

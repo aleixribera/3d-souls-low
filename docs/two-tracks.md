@@ -20,10 +20,10 @@ Read by a pass that runs in a worktree, when `PLAN.md` runs two tracks (moved fr
   foreground command (it polls itself), not by ending your turn. It takes over a lock only when its holder's
   process is gone and its heartbeat stopped a minute ago, and it never breaks a lock without a heartbeat (why: pass
   108 deleted another pass's lock and pass 118 overwrote pass 117's under a bare 30-minute age rule, fixed in
-  pass 119). `node tools/browser-lock.cjs status` shows who holds it.
+  pass 119). `node tools/browser-lock.cjs status` shows who holds it and for what; `log` shows every hold's wait and length.
 - **Ship:** commit on your worktree branch. Then `git fetch` and `git rebase origin/main`. If the incoming commits
-  touch the same files, re-run your tests. Bump the version only now (`node tools/release.cjs`), push with
-  `git push origin HEAD:main`, and then tag. If the push is rejected, drop the bump commit, rebase, and run it again.
+  touch the same files, re-run your tests. Bump the version only now (`node tools/release.cjs`, which commits and tags),
+  then push both with the line it prints. If the push is rejected, it prints how to drop the bump and the tag.
   At the end your work is on `main`; leave the worktree itself to the loop chat.
 - **Loop chat, removing a finished worktree:** first unlink the junctions with `cmd /c rmdir <wt>\node_modules` and
   `<wt>\server\node_modules`. Never let a recursive delete follow them into the main checkout. Then run

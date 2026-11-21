@@ -7,14 +7,9 @@ The iterate loop's working note (`.claude/iterate.md`). Cap: 8,000 characters.
 - Track 1, pass 167 (PLAN Later item 3, Story levels redone in cel, pass 1 of ~3): Aurel, Torn Abbey, Ember Root
   relit (`atmosphere.areas`), Blender fountain, thrall recolour. Next: `docs/story/audit.md` "Left", in order.
   Acceptance: in-page `Aurel:`; `tools/story-frames.cjs` sheets; clip `story-redo.mp4`; audit 0 findings.
-- Track 2, pass 168 (PLAN Later 5, Rush curve settled, 1 of 1): pairs take turns (`pairTurns`; Aleix fell in 29% of
-  pairs, 2% of others), gentler pace, `settle` health for fights 5-7, mods 8/16/26, a pair Finishing Blow crash fixed.
-  Bot medians 5/9/17 to 6/11/23 (targets 4-6, 12-15, 25-30; the gap is fight length: the Last pass). Later 4 checked.
-  Acceptance: `calling`, `boss-pace`, `fair-attacks`; `docs/scorecard/now/rush-curve.md`.
-- Track 1, pass 166 (Aleix: the showcase in the player's view, pass 1 of 1; replaces pass 164's anime opening and its
-  pass 2), v7.215.0: the game's own camera and HUD, three bosses on their own grounds, a fade the only cut; the
-  finale is the Finishing Blow (Later item 4 covered).
-  Acceptance: in-page `Showcase`; `docs/showcase/storyboard.md`; clip `docs/scorecard/now/showcase.mp4`.
+- Track 2, pass 170 (retro, 1 of 1): `tools/release.cjs` commits and tags the bump itself, tags nothing when the
+  commit is refused, refuses a BOM; `browser-lock.cjs log` times every hold. Next on track 2: PLAN Later item 6, the
+  Finishing Blow's look. Acceptance: `tests/release.cjs`; `browser-lock.cjs log` lists holds.
 
 ## Works
 
@@ -28,6 +23,8 @@ The iterate loop's working note (`.claude/iterate.md`). Cap: 8,000 characters.
   validation at load.
 - Figure lessons: thin limbs as open lofts (`hard`), not `soft()`; a band needs its own texture's slot; near-black
   and edge-on sheets take the rim light white: lower `rim` (model or slot).
+- Showcase (pass 166, v7.215.0): the player's view, a fade the only cut, the Finishing Blow its finale; in-page
+  `Showcase`, clip `docs/scorecard/now/showcase.mp4`. Rush curve (pass 168): `pairTurns`, `settle`; `docs/scorecard/now/rush-curve.md`.
 - Pace: `CONFIG.pace`, `CONFIG.enemy.press`, `rushPace`, `bossMove`; `tests/boss-pace.cjs`, `rush-flow.cjs`;
   `tools/rush-curve.cjs bosses|runs|pairs` (`SKILLED=1`, `KIT=`).
 - Bosses fight the group (v7.35.0): `CONFIG.aggro`, `bossTarget` (`js/lobby-sim.js`), `grouped` / `isAreaAttack`
