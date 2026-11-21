@@ -72,8 +72,19 @@ const summonBeasts = (() => {
   const outlineFragment = `
     uniform vec3 uInk; uniform float uCut; uniform float uFrom; varying float vY;
     void main() { if ((vY - uCut) * uFrom > 0.0) discard; gl_FragColor = vec4(uInk, 1.0); }`;
-  function material(F, shared, bright) {
-    return new THREE.ShaderMaterial({ uniforms: { ...shared, uBright: { value: bright ? 1 : 0 } }, vertexShader: vertex, fragmentShader: fragment });
+  function material(F, shared, bright, own = null) {
+    return new THREE.ShaderMaterial({ uniforms: { ...shared, ...own, uBright: { value: bright ? 1 : 0 } }, vertexShader: vertex, fragmentShader: fragment });
+  }
+  // One summon's cel materials (VIS.abilityFx.<kind>: ink, lit, color, core, flicker, outline): `shared` holds the uniforms
+  // they move together (the cut, the time, the glow); `tone(ink, lit)` another ink slot in its own two bands (the owl's
+  // bars). Shared with the birds (js/summon-birds.js).
+  function cel(F) {
+    const shared = { uInk: { value: new THREE.Color(F.ink) }, uLit: { value: new THREE.Color(F.lit) }, uColor: { value: new THREE.Color(F.color) },
+      uCore: { value: new THREE.Color(F.core) }, uCut: { value: 0 }, uFrom: { value: 1 }, uTime: { value: 0 }, uBoost: { value: 1 }, uFlicker: { value: F.flicker } };
+    const outline = new THREE.ShaderMaterial({ uniforms: { uInk: shared.uInk, uCut: shared.uCut, uFrom: shared.uFrom, uWidth: { value: F.outline } },
+      vertexShader: outlineVertex, fragmentShader: outlineFragment, side: THREE.BackSide });
+    return { shared, dark: material(F, shared, false), bright: material(F, shared, true), outline,
+      tone: (ink, lit) => material(F, shared, false, { uInk: { value: new THREE.Color(ink) }, uLit: { value: new THREE.Color(lit) } }) };
   }
   const geos = {};   // kind -> [part, slot, geometry] (shared by the pool)
   function parts(kind) {
@@ -91,11 +102,7 @@ const summonBeasts = (() => {
   const EYE = new THREE.SphereGeometry(0.026, 10, 6);
   function make(kind) {
     const F = VIS.abilityFx[kind], J = BEAST_JOINTS[kind];
-    const shared = { uInk: { value: new THREE.Color(F.ink) }, uLit: { value: new THREE.Color(F.lit) }, uColor: { value: new THREE.Color(F.color) },
-      uCore: { value: new THREE.Color(F.core) }, uCut: { value: 0 }, uFrom: { value: 1 }, uTime: { value: 0 }, uBoost: { value: 1 }, uFlicker: { value: F.flicker } };
-    const dark = material(F, shared, false), bright = material(F, shared, true);
-    const outline = new THREE.ShaderMaterial({ uniforms: { uInk: shared.uInk, uCut: shared.uCut, uFrom: shared.uFrom, uWidth: { value: F.outline } },
-      vertexShader: outlineVertex, fragmentShader: outlineFragment, side: THREE.BackSide });
+    const { shared, dark, bright, outline } = cel(F);
     const eyes = new THREE.MeshBasicMaterial({ color: F.eye, toneMapped: false });
     const root = new THREE.Group(), pivots = {};
     for (const [name, [at, parent]] of Object.entries(J)) {
@@ -342,7 +349,7 @@ const summonBeasts = (() => {
       if (!beasts.length) { makeMarks(); for (const k of KINDS) for (let i = 0; i < 4; i++) beasts.push(make(k)); }
       Game.renderHooks.push(draw); visuals.hooks.stage.push(clear);
     },
-    clear, info: () => beasts.filter(h => h.body).map(h => ({ kind: h.kind, x: h.x, z: h.z, speed: h.speed, lunge: h.lunge !== Infinity, howl: h.howl !== Infinity,
+    clear, cel, info: () => beasts.filter(h => h.body).map(h => ({ kind: h.kind, x: h.x, z: h.z, speed: h.speed, lunge: h.lunge !== Infinity, howl: h.howl !== Infinity,
       tongues: h.F.ring ? tongues.filter(q => q.age !== Infinity).length : 0 })),
   };
 })();

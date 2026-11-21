@@ -65,7 +65,9 @@ const cameraFeel = (() => {
     // Shadow Stitch kicks at its first spike, Quick Draw at its split, never at the press (the stance is still).
     const late = LATE_KICK[d.then];
     if (late !== undefined && (d.strike || 0) !== late) return;
-    const P = F.powers[late !== undefined ? d.then : d.draw ? 'draw' : d.strike ? (d.then === 'twin' || d.then === 'ghostBlade' ? 'echo' : SUMMON_STRIKERS.has(d.then) ? 'bite' : 'strike') : d.then], p = Game.player;
+    // Batch 11: no kick a peck, an arrow or an owl's mark (too many, or too quiet); a hawk's dive kicks as it lands (`stoop`).
+    if (d.strike && (d.then === 'crows' || d.then === 'archer' || d.then === 'owl' || (d.then === 'hawk' && !d.land))) return;
+    const P = F.powers[late !== undefined ? d.then : d.draw ? 'draw' : d.then === 'hawk' && d.land ? 'stoop' : d.strike ? (d.then === 'twin' || d.then === 'ghostBlade' ? 'echo' : SUMMON_STRIKERS.has(d.then) ? 'bite' : 'strike') : d.then], p = Game.player;
     if (!P || !p) return;
     const k = isPlayer(d.body) ? 1 : clamp(1 - Math.hypot(p.x - d.x, p.z - d.z) / F.powerNear, 0, 1);
     if (k > 0) { kick('fov', P[0] * k); kick('y', -P[1] * k); }

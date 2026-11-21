@@ -46,6 +46,7 @@ const CONFIG = {
             powers: { blast: [4, 0.24], lightning: [1.6, 0], strike: [-1.8, 0.06], freeze: [-3.2, 0.05], blades: [-1.4, 0.04], bloodMoon: [3, 0.12],
               twin: [2.6, 0.1], echo: [-0.6, 0.02], gale: [-2.4, 0.05], pyre: [3.2, 0.16], flare: [-1.1, 0.03], spark: [-0.8, 0.02],
               hound: [1.4, 0.05], bite: [-0.5, 0.02], draw: [1.2, 0.03], guardian: [2.2, 0.1], lancer: [1.2, 0.04], fox: [1, 0.03], lantern: [0.6, 0],
+              crows: [0.8, 0.02], archer: [0.8, 0.02], hawk: [1.2, 0.04], stoop: [-0.6, 0.02], owl: [0.6, 0], owlBurst: [-0.4, 0.02],
               wave: [0.8, 0], crescent: [-1.4, 0.06], cyclone: [1.2, 0.04], petals: [1.4, 0.04],
               spikes: [-1.2, 0.04], fist: [2.4, 0.12], risingFire: [1.6, 0.05], clap: [2.0, 0.08],
               flurry: [-0.8, 0.02], drill: [-1.0, 0.02], stitch: [-1.0, 0.03], boomerang: [-0.8, 0.02], clones: [-1.6, 0.04], iai: [-2.2, 0.05],
@@ -370,7 +371,14 @@ const CONFIG = {
       guardian: { gap: 0.7, flank: 1.75, speed: 4, height: 2.3, reach: 1.5, rises: true },
       lancer: { gap: 1.3, flank: -0.4, speed: 16, height: 1.9, reach: 2.2, arrive: 1.1, from: 12, fromTurn: 0.6, hold: 0.4 },
       fox: { gap: 1.4, flank: 0, speed: 12, height: 0.6, reach: 1.6, orbit: 2.2 },
-      lantern: { gap: 0, flank: 0, speed: 9, height: 0.6, reach: 18, perch: true, side: 0.7, lift: 1.9, shot: 14 } } },
+      lantern: { gap: 0, flank: 0, speed: 9, height: 0.6, reach: 18, perch: true, side: 0.7, lift: 1.9, shot: 14 },
+      // Batch 11 (pass 144): `head` (the crows): drawn round the enemy's head; `alt` (the hawk, the owl): drawn circling
+      // that many m over its place; `dive` (the hawk): each strike flies that many s from its circle before it lands;
+      // the owl's mark lasts `markLife` s unburst. The archer rises where it stands and shoots at `shot` m/s.
+      crows: { gap: 0, flank: 0, speed: 16, height: 0.6, reach: 1.5, orbit: 1.4, head: true },
+      archer: { gap: 8, flank: 2.5, speed: 6, height: 2.1, reach: 20, rises: true, shot: 40 },
+      hawk: { gap: 1, flank: -0.8, speed: 18, height: 0.8, reach: 2, alt: 7, orbit: 1.2, dive: 0.35 },
+      owl: { gap: 0, flank: 0, speed: 10, height: 0.6, reach: 30, alt: 6, orbit: 0.8, markLife: 4 } } },
   // A boss fights the group (v7.35.0, the server's targeting): anyone drinking a flask within `healReach` m of its
   // body draws it at once (the closest drinker); otherwise it turns on whoever hurt it most lately, else on the closest.
   // Each player's score is their distance in m, less `damage` m per 1% of its bar they dealt lately (fading with a time
@@ -858,6 +866,26 @@ const CONFIG = {
       lantern: { color: 0x8fb8dc, core: 0xf2f6fa, deep: 0x2c5f8a, ink: 0x0b0d12, outline: 0.006, bob: 0.08, bobTime: 2.2, rise: 0.5, fade: 0.6, ball: 0.3, burstSize: 0.8,
         warm: 0.25, puff: 0.2, sway: 0.35, turn: 8, motes: 0.5,
         burst: { count: 8, speed: 4, color: 0x8fb8dc }, hitBurst: { count: 8, speed: 4, color: 0xf2f6fa } },
+      // The birds (js/summon-birds.js, pass 144): the beasts' cel bands (`ink`, `lit`, a `color` rim; `light` the slot drawn
+      // bright: the hawk's bolts, the owl's eyes; the owl's `bar` slot in its own bands `bar`/`barLit`), at `size`. They
+      // beat `flap` times a second, `wing` rad, gliding at `glide` of a beat; `turn` how fast they head round; `rise` s to
+      // form as they leave their holder, `fade` s to burn away. A strike lights them `glowBoost` for `glowTime` s. Hawk:
+      // `climb` s back up after a dive, its star `star` m and scorch ring `scorch` m. Owl: its rune `rune` m on the boss's
+      // back at `runeUp` of its height, pulsing `pulse` Hz (under 1), bursting in `burstTime` s with a ring `burstRing` m.
+      hawk: { ink: 0x0b0d12, lit: 0x2a3646, color: 0x8fb8dc, core: 0xf2f6fa, eye: 0xf2f6fa, light: 'bolt', outline: 0.012, size: 1.3, flicker: 0.25,
+        flap: 2.6, wing: 0.45, glide: 0.25, turn: 6, rise: 0.6, fade: 0.6, glowBoost: 1, glowTime: 0.4, motes: 0.08, climb: 0.7, star: 1.4, scorch: 1.8,
+        shake: [0.14, 0.08], burst: { count: 18, speed: 4, color: 0x8fb8dc }, hitBurst: { count: 14, speed: 6, color: 0xf2f6fa } },
+      owl: { ink: 0x4a505c, lit: 0xc9ced8, bar: 0x0b0d12, barLit: 0x1e2430, color: 0x8fb8dc, core: 0xf2f6fa, eye: 0xf2f6fa, light: 'eye', outline: 0.012, size: 1.2, flicker: 0,
+        flap: 1.4, wing: 0.55, glide: 0.6, turn: 4, rise: 0.6, fade: 0.7, glowBoost: 1.4, glowTime: 0.5, motes: 0.15,
+        rune: 0.75, runeUp: 0.6, pulse: 0.8, burstTime: 0.3, burstRing: 2.2, burst: { count: 16, speed: 3, color: 0xc9ced8 } },
+      // The Ink Crows (js/summon-crows.js): `count` crows a swarm at `size`, in cel bands with a `color` rim and an ink
+      // outline; they pour off their holder `stagger` s apart, each in `pour` s, and ring the boss's head (at `head` of its
+      // height) `ring` m out, turning `spin` rad/s, `spread` m of height between them, catching their slot at `follow`;
+      // a peck's dart in and back takes `dart` s; they beat `flap` times a second, `flapAmp` of the wing; the draw's
+      // tightening lasts `cryTime` s; they scatter in `fade` s.
+      crows: { ink: 0x0b0d12, lit: 0x232a36, color: 0x8fb8dc, eye: 0xf2f6fa, outline: 0.008, count: 8, size: 1, stagger: 0.06, pour: 0.6, head: 0.9,
+        ring: 0.8, spin: 2.4, spread: 0.7, follow: 6, dart: 0.25, flap: 7, flapAmp: 0.9, cryTime: 0.7, fade: 0.6,
+        burst: { count: 16, speed: 4, color: 0x8fb8dc } },
       // The Stone Guardian and the Lancer of Ash (js/summon-figures.js). Each is its own `model` (the guardian's since
       // pass 78, the lancer's since pass 80) at `scale` and `bulk`, each material slot drawn in its `slots` colour and its
       // `glows` lit, standing in the `idle` style. `solid`: lit (`stone`, or the slot's colour) with a glowing rim; else a
@@ -881,6 +909,18 @@ const CONFIG = {
             impact: { ahead: 1.1, ring: 2.6, crack: 2, dust: 12, chunks: 8, shake: 1 } },
         ],
         burst: { count: 34, speed: 5, color: 0x9a9284 }, hitBurst: { count: 12, speed: 4, color: 0xcfe4f2 } },
+      // The Bone Archer (pass 144): bone lit cold with a blue rim, its eyes, string and arrows of light; it climbs out of
+      // the floor at range (`floor`) and looses (`shoots`: its blow is an arrow, js/summon-figures.js `arrows`), each arrow
+      // `arrow` m long with a trail of motes every `trail` s, a star `star` m on the boss where it lands.
+      archer: { model: 'boneArcher', idle: 'still', scale: 1.15, floor: true, shoots: true,
+        slots: { bone: 0xc8ccc8, cloth: 0x1c1d24, wood: 0x4a3a30 }, glows: ['light'], solid: true, stone: 0x9a9c98, color: 0x8fb8dc, core: 0xf2f6fa, rim: 1.1, body: 0.25,
+        flicker: 0.1, turn: 8, rise: 0.8, fade: 0.7, strikeBoost: 0.8, strikeGlow: 0.25, motes: 0.12, cryTime: 1, shake: [0.12, 0.08],
+        arrow: 0.9, trail: 0.03, star: 0.6,
+        guard: {}, cry: { armL: [-0.7, 0, 0.1], elbowL: [-0.7, 0, 0], armR: [-2.6, 0, 0.3], elbowR: [-0.3, 0, 0], chest: [-0.2, 0, 0], head: [-0.3, 0, 0] },
+        moves: [
+          { name: 'Loose', pose: 'archerLoose', hits: [{ startup: 0.4, active: 0.06, follow: 0.1 }], recovery: 0.2 },
+        ],
+        burst: { count: 30, speed: 5, color: 0xc8ccc8 }, hitBurst: { count: 8, speed: 4, color: 0xcfe4f2 } },
       lancer: { model: 'lancerOfAsh', idle: 'guard', scale: 1.1, slots: { ash: 0xaaa59e, char: 0x3a3534 }, glows: ['cinder'],
         solid: true, stone: 0x4a4644, color: 0x8fb8dc, core: 0xf2f6fa, rim: 1.25, body: 0.26,
         flicker: 0.2, turn: 11, rise: 0.4, fade: 0.6, strikeBoost: 0.9, strikeGlow: 0.22, motes: 0.07, cryTime: 0.9, shake: [0.14, 0.08],

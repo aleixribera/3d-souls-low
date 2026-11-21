@@ -169,10 +169,12 @@ function resolveCombat(game) {
   const enemyHits = p.alive() ? live.filter(e => e.hitbox && !(e.frozen > 0) && e.hitbox.overlaps(p) && !gateBetween(e, p)).map(e => e.hitbox) : [];   // stopped in time: harmless
   // 3. Apply damage, knockback and stagger (an enemy's poise; the player's flinch or a heavy's stagger).
   for (const e of playerHits) {
-    const base = p.hitbox.payload, strike = abilityStrike(p.kit, p.perk, e, base);   // the kit's bonus (online: the server's own)
+    const net = typeof multiplayer !== 'undefined' && multiplayer.active(), base = p.hitbox.payload;
+    const strike = abilityStrike(p.kit, p.perk, e, net ? base : abilityOwlStrike(e, base));   // the kit's bonus and an owl's mark (online: the server's own)
     p.hitbox.markHit(e);
-    const net = typeof multiplayer !== 'undefined' && multiplayer.active(), cracks = e.cracks;
+    const cracks = e.cracks;
     const res = net ? multiplayer.hit(e, base) : e.takeHit(strike, p);
+    if (!net) abilityOwlLanded(e, strike, res);
     // Enemy contacts were captured before this hit. A landed counter cancels that blow even in this same step;
     // ordinary simultaneous swings still trade. The server also cancels the string for every teammate.
     if (strike.riposte && !strike.power && !res.blocked)

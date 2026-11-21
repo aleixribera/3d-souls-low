@@ -80,7 +80,7 @@ globalThis.host = (() => {
     // A legendary fired or striking, for every browser to draw (js/ability-fx.js).
     if (type === 'abilityPower') eventList.push({ type, power: d.power, then: d.then, holder: d.holder, enemy: d.enemy?.netId || null,
       x: d.x, y: d.y, z: d.z, v: d.v, strike: d.strike, draw: d.draw || undefined, path: d.path, flight: d.flight, mark: d.mark || undefined, yaw: d.yaw, over: d.over, end: d.end,
-      burst: d.burst || undefined, sputter: d.sputter || undefined, heal: d.heal || undefined });   // an Ash Husk bursting, a Binding Seal burning out, a lantern's heal
+      burst: d.burst || undefined, sputter: d.sputter || undefined, heal: d.heal || undefined, land: d.land || undefined });   // an Ash Husk bursting, a Binding Seal burning out, a lantern's heal
     const e = d.enemy || d.actor;
     if (type === 'attackStart' && e) e.netAttack = ++attackSerial;
     if (['attackStart', 'attackPhase', 'bossPhase', 'bossRetreat', 'bossGone', 'enemyBlink', 'impact'].includes(type))
@@ -795,8 +795,9 @@ globalThis.host = (() => {
     const riposte = a.id === PLAYER_DEF.moveset.counter.light && msg.riposte === true && fresh && (time - opening <= span + C.riposteSlack || stepOpen);
     const base = makeStrike(a, riposte, msg.charge);
     if (!Number.isFinite(base.damage) || !Number.isFinite(base.poise) || e.invulnerable() || !spendHit(id, e)) return false;
-    const strike = abilityStrike(kit, perkOf(id), e, base);   // the kit's bonus, from what the server knows of them
+    const strike = abilityStrike(kit, perkOf(id), e, abilityOwlStrike(e, base));   // the kit's bonus and an owl's mark, from what the server knows
     const hp = e.hp, cracks = e.cracks, result = e.takeHit(strike, p); sleeping = false;
+    abilityOwlLanded(e, strike, result);
     if (!Number.isFinite(e.hp)) e.hp = hp;   // a bar can never become NaN (alive yet unkillable)
     creditDamage(id, hp - e.hp); noteDamage(e, id, hp - e.hp);
     if (!result.blocked) gainCharge(id, pressGain(strike)); else abilityBlocked(perkOf(id), e, strike);
@@ -807,7 +808,7 @@ globalThis.host = (() => {
     if (result.opened) {   // a stance broken, a wind-up faltered: open, a counter for this player (their browser opens it)
       lastParry.set(id, time); eventList.push({ type: 'opened', player: id, enemy: e.netId });
     }
-    eventList.push({ type: 'strike', player: id, enemy: e.netId, strike, blocked: !!result.blocked,
+    eventList.push({ type: 'strike', player: id, enemy: e.netId, strike: strike.owl ? { ...strike, owl: undefined } : strike, blocked: !!result.blocked,
       at: { x: e.x, y: e.y + e.height * EYE, z: e.z } });
     if (a.charge && msg.charge >= 1 && !result.blocked) abilityPowers.trigger(id, holderOf(id), kit, 'fullHeavy', { enemy: e });   // Storm King
     if (!result.blocked && kit.whens.has('hits')) abilityPowers.trigger(id, holderOf(id), kit, 'hits', { enemy: e, strike });   // Static Edge, Gale Crescent, a twin

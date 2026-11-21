@@ -395,19 +395,25 @@ const AUDIO_CUES = ['hitFlesh', 'hitHurt', 'hitBlock', 'riposteBoom', 'parry', '
   'abilityMail', 'abilityMailShatter', 'abilityPool',
   'abilityWard', 'abilityWardBounce', 'abilityHusk', 'abilityHuskBurst', 'abilityDome', 'abilityDomeStop', 'abilityWait', 'abilityAnswer',
   'abilityRewind', 'abilityRewindEnd', 'abilitySeal', 'abilitySealSputter',
-  'abilityFox', 'abilityFoxSlash', 'abilityYip', 'abilityLantern', 'abilityLanternShot', 'abilityLanternHeal'];
+  'abilityFox', 'abilityFoxSlash', 'abilityYip', 'abilityLantern', 'abilityLanternShot', 'abilityLanternHeal',
+  'abilityCrows', 'abilityPeck', 'abilityArcher', 'abilityArrow', 'abilityArrowHit', 'abilityHawk', 'abilityStoop', 'abilityStoopHit',
+  'abilityOwl', 'abilityMark', 'abilityMarkBurst'];
 // A power's sound by its `then`, its later blows' (`strike`: a lightning bolt, a twin's echo, a hound's bite) by
 // STRIKE_SOUNDS, a summon drawing the boss's eye (`draw`) by DRAW_SOUNDS; a rare's perk its own (ABILITY_PERK_SOUNDS,
 // at a pitch), a pick's pitch by its rarity.
 const ABILITY_SOUNDS = { blast: 'abilityBlast', lightning: 'abilityDragon', freeze: 'abilityFreeze', blades: 'abilityBlades', bloodMoon: 'abilityMoon',
   twin: 'abilityTwin', gale: 'abilityGale', pyre: 'abilityPyre', flare: 'abilityFlare', spark: 'abilitySpark', hound: 'abilityHound',
-  guardian: 'abilityGuardian', lancer: 'abilityLancer', fox: 'abilityFox', lantern: 'abilityLantern', wave: 'abilityWave', crescent: 'abilityMoonfall', cyclone: 'abilityCyclone', petals: 'abilityPetals',
+  guardian: 'abilityGuardian', lancer: 'abilityLancer', fox: 'abilityFox', lantern: 'abilityLantern', crows: 'abilityCrows', archer: 'abilityArcher', hawk: 'abilityHawk', owl: 'abilityOwl', owlBurst: 'abilityMarkBurst', wave: 'abilityWave', crescent: 'abilityMoonfall', cyclone: 'abilityCyclone', petals: 'abilityPetals',
   ghostBlade: 'abilityChime', spikes: 'abilitySpikes', fist: 'abilityFist', risingFire: 'abilityFang', clap: 'abilityClap',
   flurry: 'abilityFlurry', drill: 'abilityDrill', stitch: 'abilityStitch', boomerang: 'abilityBoomerang', clones: 'abilityClones', iai: 'abilitySheathe',
   ward: 'abilityWardBounce', answer: 'abilityAnswer', husk: 'abilityHusk', seal: 'abilitySeal' };   // Echoing Blade armed: a soft chime (each echo: ABILITY_STRIKE_SOUNDS)
 const ABILITY_STRIKE_SOUNDS = { lightning: 'abilityThunder', twin: 'abilityEcho', hound: 'abilityBite', guardian: 'abilityBash', lancer: 'abilityThrust', fox: 'abilityFoxSlash', lantern: 'abilityLanternShot',
+  crows: 'abilityPeck', archer: 'abilityArrow', hawk: 'abilityStoop', owl: 'abilityMark',
   ghostBlade: 'abilityGhostBlade', flurry: 'abilityFlurryHit', stitch: 'abilityPierce' };
-const ABILITY_DRAW_SOUNDS = { twin: 'abilityTaunt', hound: 'abilityHowl', guardian: 'abilityChallenge', lancer: 'abilityChallenge', fox: 'abilityYip' };
+const ABILITY_DRAW_SOUNDS = { twin: 'abilityTaunt', hound: 'abilityHowl', guardian: 'abilityChallenge', lancer: 'abilityChallenge', fox: 'abilityYip',
+  crows: 'abilityCrows', archer: 'abilityChallenge', hawk: 'abilityHawk' };
+// A summon's blow that flew landing (`land`): an arrow's thock, a dive's thunderclap (a lantern's is heard as its heal).
+const ABILITY_LAND_SOUNDS = { archer: 'abilityArrowHit', hawk: 'abilityStoopHit' };
 const ABILITY_PERK_SOUNDS = { empower: ['abilityEmpower', 1], 'streak/heal': ['abilityHeal', 1],
   'dodge/flashBehind': ['abilityStep', 1.15], 'block/charge': ['abilityCharge', 1],
   'finisher/heal': ['abilityHeal', 0.8],
@@ -533,6 +539,7 @@ function registerAudioListeners() {
     if (d.burst || d.sputter) { audio.play(d.burst ? 'abilityHuskBurst' : 'abilitySealSputter', { pos: d.sputter && d.enemy ? chest(d.enemy) : spot(d), vel: 1 }); return; }
     const id = d.draw ? ABILITY_DRAW_SOUNDS[d.then] : d.then === 'iai' && d.strike ? (d.strike === 1 ? 'abilityIaiDraw' : 'abilityIai')
       : d.heal ? (d.body === Game.player ? 'abilityLanternHeal' : null)   // a lantern's shot healed you: a soft chime, only to you
+      : d.land ? ABILITY_LAND_SOUNDS[d.then]
       : d.strike ? ABILITY_STRIKE_SOUNDS[d.then] : ABILITY_SOUNDS[d.then];
     if (!id) return;
     // A summon's howl or taunt comes from the summon (`x`, `z`), never from its holder's ears.

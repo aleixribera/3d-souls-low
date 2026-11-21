@@ -327,6 +327,20 @@ ATTACK_POSES.lancerThrust = {
               neck: [0.08, -0.22, 0], head: [0.04, -0.27, 0], armR: [-0.75, 0, 0.12], elbowR: [0.27, 0, 0], armL: [-0.86, 0, -0.15], elbowL: [0.12, 0, 0] },
   }],
 };
+// The Bone Archer (pass 144; its bow on the left forearm held up before it by its posture, an arrow in the right fist):
+// Loose: side-on, the bow arm pushed out at the boss, the right hand drawn back to the jaw, then let go, flung back.
+ATTACK_POSES.archerLoose = {
+  ease: { windup: 'inOutCubic', active: 'outExpo', follow: 'outCubic', recovery: 'inOutSine' },
+  lag: { armR: 0.03, elbowR: 0.05 },
+  hits: [{
+    windup: { lean: -0.04, legL: [-0.2, 0, 0], legR: [0.15, 0, 0], spin: [0, 0.45, 0], chest: [0, 0.35, 0], neck: [0, -0.35, 0], head: [0.05, -0.4, 0],
+              armL: [-0.48, 0, 0.1], elbowL: [-0.45, 0, 0], armR: [-1.15, 0, -0.55], elbowR: [-1.9, 0, 0] },
+    strike: { lean: -0.06, legL: [-0.22, 0, 0], legR: [0.17, 0, 0], spin: [0, 0.48, 0], chest: [-0.04, 0.38, 0], neck: [0, -0.38, 0], head: [0.05, -0.42, 0],
+              armL: [-0.52, 0, 0.1], elbowL: [-0.5, 0, 0], armR: [-1.1, 0, 0.35], elbowR: [-0.5, 0, 0] },
+    follow: { lean: -0.05, legL: [-0.22, 0, 0], legR: [0.17, 0, 0], spin: [0, 0.46, 0], chest: [-0.03, 0.36, 0], neck: [0, -0.36, 0], head: [0.05, -0.4, 0],
+              armL: [-0.5, 0, 0.1], elbowL: [-0.48, 0, 0], armR: [-1.0, 0, 0.5], elbowR: [-0.35, 0, 0] },
+  }],
+};
 // Falling Pike: a crouch, a leap (the move's `hop`) with the spear raised point-down over the helm, and the fall driving it in.
 ATTACK_POSES.lancerPike = {
   ease: { windup: 'outCubic', active: 'inQuad', follow: 'outCubic', recovery: 'inOutCubic' },

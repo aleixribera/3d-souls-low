@@ -17,7 +17,7 @@
 // across, and thrusts. Both crumble or burn away from the head down. Four of each in the pool (one a player), made at attach and
 // warmed like the rest; nothing allocated per frame.
 const summonFigures = (() => {
-  const KINDS = ['guardian', 'lancer'], pool = [];
+  const KINDS = ['guardian', 'lancer', 'archer'], pool = [];
   const vertex = `
     #include <common>
     #include <skinning_pars_vertex>
@@ -168,7 +168,7 @@ const summonFigures = (() => {
       at.x = x; at.y = y + 0.2; at.z = z; light(at, F.color, 5, 7);
       if (I.shake && near(f.x, f.z)) Game.addShake(F.shake[0] * I.shake, F.shake[1] * I.shake);
     }
-    if (!e || !e.alive()) return;
+    if (!e || !e.alive() || F.shoots) return;   // an archer's blow is its arrow (arrows below)
     const dx = f.x - e.x, dz = f.z - e.z, l = Math.hypot(dx, dz) || 1, r = (e.radius || 1) * 0.85;
     at.x = e.x + dx / l * r; at.y = e.y + Math.min(1.2, (e.height || 1.8) * 0.5); at.z = e.z + dz / l * r;
     ultraFx.sparkBurst(at, 14, 'lunar', [dx / l, 0.3, dz / l], 0.5, 0.8);
@@ -206,7 +206,11 @@ const summonFigures = (() => {
     // Its stance (walking, or its idle and guard) gives way to a move as the wind-up builds and comes back in the recovery.
     const w = guardWeight(f);
     r.reset();
-    if (run > 0.05) { f.phase += dt * (4 + f.speed * 1.2); r.walk(f.phase, 0.55 * run * w); }
+    if (run > 0.05) {
+      const bow = F.shoots && r.armL.rotation.x;   // an archer's bow arm keeps its posture (the walk swings it from hanging)
+      f.phase += dt * (4 + f.speed * 1.2); r.walk(f.phase, 0.55 * run * w);
+      if (F.shoots) r.armL.rotation.x = bow;
+    }
     else lookup(IDLE_STYLES, F.idle || 'none', 'idle style', 'none')(r, now * 0.9 + f.x, w);
     if (f.ac !== Infinity) poseAttackKeys(r, f.m.a, f.ac);
     f.hop = hopAt(f);
@@ -219,6 +223,7 @@ const summonFigures = (() => {
   }
   function draw() {
     const dt = effectSlots.dt(), now = effectSlots.time(), A = CONFIG.abilities.summons;
+    flyArrows(dt);
     for (const f of pool) {
       if (!f.body) continue;
       const b = f.body, alive = b.alive ? b.alive() : true, F = f.F, K = A[f.kind];
@@ -247,15 +252,79 @@ const summonFigures = (() => {
       r.root.visible = true;
     }
   }
+  // ---- The archer's arrows (pass 144): each loosed at the engine's `flight` word from its right hand, flying straight
+  // with a slight arc for `flight` s, a trail of motes behind; it lands with the engine's `land` word in a star of light.
+  const ARROWS = 12, arrows = [], A0 = new THREE.Vector3(), A1 = new THREE.Vector3(), UP = new THREE.Vector3(0, 1, 0);
+  let arrowAt = 0, STAR = null;
+  function makeArrows() {
+    const geo = new THREE.CylinderGeometry(0.018, 0.018, 1, 5, 1); geo.rotateX(Math.PI / 2);   // along z, so lookAt aims it
+    const head = new THREE.ConeGeometry(0.05, 0.16, 5, 1); head.rotateX(Math.PI / 2); head.translate(0, 0, 0.55);
+    const core = new THREE.MeshBasicMaterial({ color: 0xf2f6fa, toneMapped: false }), rim = new THREE.MeshBasicMaterial({ color: 0x0b0d12, side: THREE.BackSide });
+    for (let i = 0; i < ARROWS; i++) {
+      const g = new THREE.Group();
+      for (const [geom, m, s] of [[geo, core, 1], [head, core, 1], [geo, rim, 1.8], [head, rim, 1.25]]) { const o = new THREE.Mesh(geom, m); o.scale.set(s, s, 1); g.add(o); }
+      g.visible = false; g.userData.warmUp = true; scene.add(g);   // warmed as a body (visuals.warmUp), not a pooled effect (it has no one material)
+      arrows.push({ g, e: null, t: Infinity, T: 1, x: 0, y: 0, z: 0, trail: 0 });
+    }
+    const c = document.createElement('canvas'); c.width = c.height = 64;
+    const x = c.getContext('2d'), star = (r0, r1, col) => { x.beginPath(); for (let i = 0; i < 12; i++) { const a = i / 12 * Math.PI * 2, r = i % 2 ? r0 : r1; x.lineTo(32 + Math.cos(a) * r, 32 + Math.sin(a) * r); } x.closePath(); x.fillStyle = col; x.fill(); };
+    star(9, 31, '#0b0d12'); star(7, 26, '#8fb8dc'); star(4, 15, '#f2f6fa');
+    const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace;
+    STAR = [];
+    for (let i = 0; i < 6; i++) { const s = new THREE.Sprite(new THREE.SpriteMaterial({ map: t, transparent: true, depthWrite: false, depthTest: false, toneMapped: false })); s.renderOrder = 14; s.visible = false; scene.add(s); pooledFx.push(s); STAR.push({ s, age: Infinity }); }
+  }
+  const chestOf = (e, p) => { p.x = e.x; p.y = e.y + Math.min(1.3, (e.height || 1.8) * 0.55); p.z = e.z; return p; };
+  function loose(d) {
+    const f = mine(d), e = d.enemy;
+    if (!f || !e) return;
+    const q = arrows[arrowAt++ % ARROWS], s = Math.sin(f.yaw), c = Math.cos(f.yaw), K = f.F.scale;
+    q.e = e; q.t = 0; q.T = Math.max(0.05, d.flight); q.trail = 0;
+    q.x = f.x + s * 0.35 * K - c * 0.1 * K; q.y = f.y + 1.45 * K; q.z = f.z + c * 0.35 * K + s * 0.1 * K;   // from the drawn hand by the jaw
+    q.g.position.set(q.x, q.y, q.z); q.g.visible = true;
+  }
+  function hit(d) {
+    const e = d.enemy;
+    if (!e) return;
+    for (const q of arrows) if (q.e === e && q.t !== Infinity && q.t >= q.T * 0.5) { q.t = Infinity; q.g.visible = false; break; }   // the arrow that landed
+    const F = VIS.abilityFx.archer, p = chestOf(e, at), st = STAR.find(o => o.age === Infinity) || STAR[0];
+    st.age = 0; st.s.position.set(p.x, p.y, p.z); st.s.material.rotation = Math.random() * 1.5; st.s.visible = true;
+    ultraFx.sparkBurst(p, 6, 'lunar', [0, 0.4, 0], 0.4, 0.5); spawnBurst(p, F.hitBurst); light(p, F.color, 2.5, 5);
+  }
+  function flyArrows(dt) {
+    const F = VIS.abilityFx.archer;
+    for (const q of arrows) {
+      if (q.t === Infinity) continue;
+      q.t += dt;
+      const e = q.e;
+      if (!e || !e.alive() || q.t > q.T + 0.15) { q.t = Infinity; q.g.visible = false; continue; }
+      const p = Math.min(1, q.t / q.T), to = chestOf(e, at);
+      A0.set(q.x + (to.x - q.x) * p, q.y + (to.y - q.y) * p + Math.sin(Math.PI * p) * 0.25, q.z + (to.z - q.z) * p);
+      A1.set(to.x, to.y, to.z);
+      q.g.position.copy(A0); q.g.up.copy(UP); q.g.lookAt(A1); q.g.scale.set(1, 1, F.arrow);
+      if ((q.trail -= dt) <= 0) { q.trail = F.trail; ultraFx.moteBurst(A0, 1, F.color, TRAIL); }
+    }
+    for (const o of STAR || []) {
+      if (o.age === Infinity) continue;
+      o.age += dt; const p = o.age / 0.3;
+      if (p >= 1) { o.age = Infinity; o.s.visible = false; continue; }
+      o.s.scale.setScalar(F.star * (0.6 + 0.4 * Math.min(1, p * 4))); o.s.material.opacity = 1 - p * p;
+    }
+  }
+  const TRAIL = { r: 0.04, speed: 0.1, lift: 0.1, life: [0.2, 0.4], up: 0, size: 0.6 };
   events.on('abilityPower', d => {
     if (!KINDS.includes(d.then)) return;
+    if (d.land) { if (VIS.abilityFx[d.then].shoots) hit(d); return; }   // an arrow lands (the loose was its strike)
     if (d.draw) cry(d);
-    else if (d.strike) strike(d);
+    else if (d.strike) { strike(d); if (d.flight !== undefined && VIS.abilityFx[d.then].shoots) loose(d); }
     else call(d);
   });
-  function clear() { for (const f of pool) { f.body = null; f.rig.root.visible = f.rig.shadow.visible = false; } }
+  function clear() {
+    for (const f of pool) { f.body = null; f.rig.root.visible = f.rig.shadow.visible = false; }
+    for (const q of arrows) { q.t = Infinity; q.g.visible = false; }
+    for (const o of STAR || []) { o.age = Infinity; o.s.visible = false; }
+  }
   return {
-    attach() { if (!pool.length) for (const k of KINDS) for (let i = 0; i < 4; i++) pool.push(make(k)); Game.renderHooks.push(draw); visuals.hooks.stage.push(clear); },
+    attach() { if (!pool.length) { makeArrows(); for (const k of KINDS) for (let i = 0; i < 4; i++) pool.push(make(k)); } Game.renderHooks.push(draw); visuals.hooks.stage.push(clear); },
     // The model lab's view (js/model-lab.js): `kind`'s move i, t s into it (past its end, standing guard). Returns its hop.
     poseAt(r, kind, i, t, now) {
       const F = VIS.abilityFx[kind], m = timed(F.moves[i]), f = { F, m, ac: t < m.end ? t : Infinity };

@@ -51,6 +51,11 @@ const ABILITY_ICONS = {
   // Batch 10, Summons I (pass 141)
   'cinder-fox': '<path d="M42 20 L40 14 L37 19 L30 20 L22 22 L18 28 M30 20 L34 27 L38 30 M24 23 L22 30 L18 32 M42 20 L46 23 L41 25 L37 19"/><path d="M18 28 C10 30 6 36 10 41 C14 46 30 46 38 40 C42 37 44 33 44 30" stroke-dasharray="3 2"/>',
   'lantern-spirit': '<ellipse cx="20" cy="22" rx="11" ry="9"/><path d="M13 12 H27 M13 32 H27 M20 13 V31 M13 15 C11 20 11 25 13 30 M27 15 C29 20 29 25 27 30"/><path d="M20 18 C18 20 18 24 20 26 C22 24 22 20 20 18 Z"/><path d="M16 32 V42 M24 32 V44"/><circle cx="42" cy="16" r="2.5"/><path d="M32 20 L38 17" stroke-dasharray="2 2"/>',
+  // Batch 11, Summons II (pass 144)
+  'ink-crows': '<path d="M24 14 C18 14 15 19 16 24 C17 29 31 29 32 24 C33 19 30 14 24 14 Z"/><path d="M18 15 L15 8 M30 15 L33 8"/><path d="M6 20 L10 18 L9 22 Z M38 10 L42 8 L41 12 Z M40 26 L44 25 L42 29 Z M8 32 L12 30 L11 34 Z M24 5 L28 3 L27 7 Z"/><path d="M22 34 V38 M27 35 V41" stroke-dasharray="2 2"/>',
+  'bone-archer': '<path d="M12 4 C24 14 24 34 12 44"/><path d="M12 4 V44" stroke-dasharray="1 2"/><path d="M8 24 H46"/><path d="M41 20 L46 24 L41 28"/><circle cx="24" cy="12" r="4"/><path d="M20 10 C20 5 28 5 28 10"/>',
+  'thunder-hawk': '<path d="M24 34 L10 14 L18 16 L24 6 L30 16 L38 14 Z"/><path d="M24 34 L22 40 L26 42 L23 47"/><path d="M28 2 L25 8 L29 9 L27 14" stroke-dasharray="2 1"/>',
+  'night-owl': '<path d="M4 18 C12 12 18 16 24 20 C30 16 36 12 44 18 C38 20 32 22 28 26 H20 C16 22 10 20 4 18 Z"/><circle cx="21" cy="22" r="1.5"/><circle cx="27" cy="22" r="1.5"/><circle cx="24" cy="40" r="5"/><path d="M21 37 L27 43 M27 37 L21 43"/>',
   'static-edge': '<path d="M6 42 L28 20 L33 17 L30 22 L9 45"/><path d="M34 4 L27 13 L35 15 L29 25"/><path d="M39 19 L44 15 M40 26 L46 26"/>',
   // Crate rares (js/data/crates.js)
   'grave-feast': '<path d="M21 4 V17 L24 23 L27 17 V4 Z"/><path d="M16 8 H32"/><path d="M24 44 C15 38 10 33 10 28 A7 7 0 0 1 22 24 M26 24 A7 7 0 0 1 38 28 C38 33 33 38 24 44"/>',

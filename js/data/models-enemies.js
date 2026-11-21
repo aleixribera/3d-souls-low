@@ -757,6 +757,38 @@ MODEL_DEFS.stoneGuardian = {
 // pauldron on the guard side, ash plate over a charred body, a torn cape and ragged tassets, and a spear longer than
 // itself whose leaf blade burns along its edges. No enemy wears it. In a fight the summon draws it in its own shader, slot
 // by slot (VIS.abilityFx.lancer.slots, js/summon-figures.js); these materials are what the model lab shows.
+// The Bone Archer summon (pass 144, tools/blender/bone_archer.py): a tall skeleton in a torn hooded mantle, its great bow
+// on the left forearm and an arrow of light in the right fist. Its arms at x +-.30; the bow held up before it (the
+// left arm forward, turned over, the forearm raised), so the bow stands upright, its back to the boss.
+MODEL_DEFS.boneArcher = {
+  extends: 'ironKnight', fit: 1.0, budget: 'player',   // an ally like the player (3,588 triangles with its great bow; an enemy's budget is 3,000)
+  proportions: { ...IRONBOUND_PROPS, shoulderX: 0.30, torsoW: 0.19, torsoD: 0.13, armR: 0.04, legR: 0.05 },
+  posture: { chest: [0.06, 0, 0], neck: [0.05, 0, 0], head: [0.04, 0, 0], armL: [-0.9, Math.PI, 0.12], elbowL: [2.1, 0, 0],
+    armR: [-0.2, 0, -0.1], elbowR: [-0.5, 0, 0] },
+  materials: {
+    bone: { tex: 'bone', tint: 0xc8ccc8, decay: 0.4 },
+    cloth: { tex: 'ashSoot', tint: 0x16171c, decay: 0.85 },
+    wood: { tex: 'ashSoot', tint: 0x3a2e26, decay: 0.7 },
+    light: { glow: 0x8fb8dc },
+  },
+  body: { torso: null, pelvis: null, arms: null, legs: null, head: null, neck: null, hands: null, feet: null },
+  bones: {
+    loinF: { parent: 'spin', at: [0.0, -0.02, 0.14] }, loinB: { parent: 'spin', at: [0.0, -0.02, -0.14] },
+    capeA: { parent: 'chest', at: [0, 0.54, -0.14] }, capeB: { parent: 'capeA', at: [0, -0.42, 0] },
+  },
+  parts: Object.entries({
+    head: ['bone', 'cloth', 'light'], neck: ['bone'], chest: ['bone', 'cloth', 'wood', 'light'], spin: ['bone'],
+    loinF: ['cloth'], loinB: ['cloth'], capeA: ['cloth'], capeB: ['cloth'],
+    armL: ['bone'], armR: ['bone'], elbowL: ['bone', 'wood', 'light'], elbowR: ['bone', 'light'],
+    legL: ['bone'], legR: ['bone'], kneeL: ['bone'], kneeR: ['bone'],
+  }).flatMap(([bone, list]) => list.map(s => ({ use: 'baked', mesh: `bonearcher:${bone}__${s}`, bone, slot: s, tile: 0.42 }))),
+  weapon: null,   // the bow and the arrow are part of the figure (elbowL, elbowR)
+  eyes: null,     // its eyes are points of light in the hood (the `light` slot)
+  anim: { ...IRONBOUND_ANIM, cloth: [
+    { bone: 'loinF', gain: 0.14, k: 50, damp: 4.5, flutter: 0.07 }, { bone: 'loinB', gain: 0.16, k: 46, damp: 4.2, flutter: 0.08 },
+    { bone: 'capeA', gain: 0.1, k: 36, damp: 4, flutter: 0.05 }, { bone: 'capeB', gain: 0.12, k: 30, damp: 3.4, flutter: 0.09, sideways: 1.2 },
+  ] },
+};
 MODEL_DEFS.lancerOfAsh = {
   extends: 'ironKnight', fit: 1.0, budget: 'enemy',
   proportions: { ...IRONBOUND_PROPS, shoulderX: 0.33, torsoW: 0.22, torsoD: 0.15, armR: 0.05, legR: 0.075 },

@@ -115,5 +115,10 @@ const { config: C } = require('../js/net-protocol.js');
     assert.equal(app.session.epoch, epoch);
     assert.deepEqual(errors, []);
     console.log('Browsers: lone frozen leader/new active joiner, live empty run, same identity/name/resources across transport loss, reload, menu recovery and explicit leave; retries and removal passed.');
-  } finally { await browser.close(); await app.close(); }
-})().catch(e => { console.error(e); process.exitCode = 1; });
+  } finally {
+    // Teardown is bounded: a page's socket or the server's keep-alive once held the close past CI's limit after every
+    // check had passed (v7.193.0, run 44870837769). Each close gets 10 s, then the process ends on its own result.
+    const bounded = p => Promise.race([p.catch(() => {}), new Promise(r => setTimeout(r, 10000).unref())]);
+    await bounded(browser.close()); await bounded(app.close());
+  }
+})().catch(e => { console.error(e); process.exitCode = 1; }).finally(() => process.exit());

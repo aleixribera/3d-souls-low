@@ -41,6 +41,10 @@ const FILES = {
   'lancer-of-ash': { sources: ['lancer_of_ash'] },
   'cinder-fox': { sources: ['cinder_fox'] },
   'lantern-spirit': { sources: ['lantern_spirit'] },
+  'ink-crows': { sources: ['ink_crows'] },
+  'bone-archer': { sources: ['bone_archer'] },
+  'thunder-hawk': { sources: ['thunder_hawk'] },
+  'night-owl': { sources: ['night_owl'] },
 };
 
 function readGlb(file) {

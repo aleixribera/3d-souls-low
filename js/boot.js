@@ -42,6 +42,8 @@ function registerListeners() {
   abilityFx.attach(); // Boss Rush's legendaries drawn (`abilityPower`, `abilityPerk`; js/ability-fx.js)
   summonBeasts.attach(); // the Grave Hound and the Cinder Fox drawn (js/summon-beasts.js)
   summonLantern.attach(); // the Lantern Spirit drawn (js/summon-lantern.js)
+  summonBirds.attach(); // the Thunder Hawk and the Night Owl drawn (js/summon-birds.js)
+  summonCrows.attach(); // the Ink Crows drawn (js/summon-crows.js)
   afterimage.attach();  // the dash's afterimages (js/afterimage.js)
   counterFx.attach();   // the counter window's dim and mark, the counter's cut (js/counter-fx.js)
   finisherFx.attach();  // the Finishing Blow's cracks, stopped time, steps and cuts (js/finisher-fx.js)
@@ -53,7 +55,7 @@ function registerListeners() {
   strikeFx2.attach();    // Strike II, the flashy key-1 strikes drawn (js/strike-fx-2.js)
   guardFx.attach();      // Guard I, the key-2 guards on yourself drawn (js/guard-fx.js)
   guardFx2.attach();     // Guard II, the key-2 guards that answer the boss drawn (js/guard-fx-2.js)
-  summonFigures.attach(); // the Stone Guardian and the Lancer of Ash drawn (js/summon-figures.js)
+  summonFigures.attach(); // the Stone Guardian, the Lancer of Ash and the Bone Archer drawn (js/summon-figures.js)
   registerAudioListeners();
 }
 

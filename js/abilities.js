@@ -115,6 +115,16 @@ function abilityHeal(p, share, perk, target = null) {
 //   press/lantern:       a summon (a rare's, key 3). Pressed, a lantern floats at its holder's shoulder for `time` s (its
 //                        `perch`) and shoots the enemy every `every` s: each shot lands distance / `shot` s later for
 //                        `damage` and heals its holder `heal` of the bar. It never draws the enemy's eye.
+//   press/crows:         a summon (a rare's, key 3, batch 11). Pressed, ink crows swarm the enemy's head for `time` s,
+//                        pecking every `every` s (`damage`).
+//   press/archer:        a summon (batch 11). Pressed, a bone archer rises `gap` m off the enemy's side and shoots it
+//                        every `every` s: each arrow lands distance / `shot` s later (the lantern's rule) for `damage`.
+//   press/hawk:          a summon (batch 11). Pressed, a thunder hawk circles high over the enemy for `time` s and
+//                        stoops on it every `every` s: each dive lands its kind's `dive` s after it starts, for `damage`.
+//   press/owl:           a summon (batch 11). Pressed, an owl circles over the enemy for `time` s and marks it every
+//                        `every` s (`e.owlMark`, CONFIG.abilities.summons.owl.markLife s): the next weapon blow anyone
+//                        lands on it does `mark` more and bursts it (abilityOwlStrike, abilityOwlLanded). It never
+//                        strikes and never draws the enemy's eye.
 //   press/flare, press/gale, press/blades, press/lightning, press/blast: pressed (key 1 or 4), the power of that name
 //                        on the enemy (the blast round its holder).
 // The effect commons (design/abilities, batch 2: the blade), each a small blow of `damage` (CONFIG.abilities.commons):
@@ -186,6 +196,8 @@ const ABILITY_POWERS = {
   'press/hound': ['charge', 'time', 'every', 'damage', 'draw'], 'low/guardian': ['below', 'time', 'every', 'damage', 'draw'],
   'press/lancer': ['charge', 'time', 'every', 'damage', 'draw'], 'press/fox': ['charge', 'time', 'every', 'damage', 'draw'],
   'press/lantern': ['charge', 'time', 'every', 'damage', 'heal'],
+  'press/crows': ['charge', 'time', 'every', 'damage', 'draw'], 'press/archer': ['charge', 'time', 'every', 'damage', 'draw'],
+  'press/hawk': ['charge', 'time', 'every', 'damage', 'draw'], 'press/owl': ['charge', 'time', 'every', 'mark'],
   'press/flare': ['charge', 'damage'], 'press/gale': ['charge', 'damage', 'reach', 'width'],
   'press/blades': ['charge', 'time', 'every', 'damage'], 'press/lightning': ['charge', 'strikes', 'lead', 'every', 'damage'],
   'press/blast': ['charge', 'radius', 'damage'],
@@ -206,9 +218,12 @@ function isComboHeavy(a) {
   if (!comboHeavies) comboHeavies = new Set(Object.values(PLAYER_DEF.moveset.attacks).map(x => x.next && x.next.heavy).filter(Boolean));
   return !!a && comboHeavies.has(a.id);
 }
-const SUMMONS = new Set(['twin', 'hound', 'guardian', 'lancer', 'fox', 'lantern']);
+const SUMMONS = new Set(['twin', 'hound', 'guardian', 'lancer', 'fox', 'lantern', 'crows', 'archer', 'hawk', 'owl']);
 // The summons that strike on their own, every `every` s from `reach` m off their enemy's body (the twin echoes its holder).
-const SUMMON_STRIKERS = new Set(['hound', 'guardian', 'lancer', 'fox', 'lantern']);
+const SUMMON_STRIKERS = new Set(['hound', 'guardian', 'lancer', 'fox', 'lantern', 'crows', 'archer', 'hawk']);
+// The summons whose blow flies before it lands (a fireball, an arrow, a hawk's dive): each tells every browser twice,
+// as it leaves (`flight`: s until it lands) and as it lands (`land`).
+const SUMMON_SHOTS = new Set(['lantern', 'archer', 'hawk']);
 // Where summon `s` (its `kind`, `x`, `z`, `age`: s since it was called) heads round enemy `e` with its holder at `body`:
 // `gap` m off the enemy's body, `flank` rad round from its side away from the holder (CONFIG.abilities.summons), turning
 // on at its kind's `orbit` rad/s of its own age (the fox circles); with no enemy, beside the holder. A `perch` kind stays
@@ -542,6 +557,19 @@ function abilityStrike(kit, st, e, strike) {
 }
 // A raised blow that was blocked never landed: Hunting Call's mark it spent is the enemy's again.
 function abilityBlocked(st, e, strike) { if (strike.marked && st) { st.mark = e; st.markT = strike.marked; } }
+// Night Owl: a weapon blow (a light, a heavy, a counter, a plunge: not a power's or a summon's) on an enemy an owl marked
+// does the mark's `mul` more, whoever lands it (`owl`: the mark it bursts). Settled where the enemies are owned.
+function abilityOwlStrike(e, strike) {
+  const m = e && e.owlMark;
+  return m && !strike.power ? { ...strike, damage: strike.damage * (1 + m.mul), owl: m } : strike;
+}
+// That blow landed (`res`: its takeHit's): the mark bursts, told to every browser (`owlBurst`). A blocked blow keeps it.
+function abilityOwlLanded(e, strike, res) {
+  if (!strike.owl || (res && res.blocked) || e.owlMark !== strike.owl) return;
+  e.owlMark = null;
+  const m = strike.owl;
+  events.emit('abilityPower', { power: m.power, then: 'owlBurst', holder: m.holder, body: null, enemy: e, x: e.x, y: e.y, z: e.z, v: m.v });
+}
 // A blow this body landed (not blocked): Bloodthirst's count, and the Blood Moon's drink. Returns the health it healed.
 function abilityLanded(p, strike) {
   const kit = p.kit, st = p.perk, v = kit.perks['streak/heal'];
@@ -569,7 +597,7 @@ function abilityReport(body, when, ctx) {
 // its number), the first `lead` s after it fires (the time its dragon takes to reach the boss), then every `every` s; damage goes through Enemy.takeHit like any blow and `credit` (the server's) counts it to the holder.
 const ECHO_DELAY = 0.06;   // s from its holder's blow to the twin's: the two land as one
 // The powers that need a live enemy to strike (the one parried, struck, broken or dodged).
-const ON_ENEMY = new Set(['lightning', 'blades', 'flare', 'spark', 'gale', 'pyre', 'hound', 'lancer', 'fox', 'lantern', 'lick', 'molten', 'lateCut', 'afterimage',
+const ON_ENEMY = new Set(['lightning', 'blades', 'flare', 'spark', 'gale', 'pyre', 'hound', 'lancer', 'fox', 'lantern', 'crows', 'archer', 'hawk', 'owl', 'lick', 'molten', 'lateCut', 'afterimage',
   'thorns', 'shards', 'reflect', 'wave', 'spikes', 'fist', 'risingFire', 'clap',
   'flurry', 'drill', 'stitch', 'boomerang', 'clones', 'iai', 'seal']);
 // The powers whose blow lands a beat after they fire: each tells every browser again as it lands (`strike`).
@@ -612,7 +640,7 @@ const abilityPowers = (() => {
   // `bodyOf(holder)`: the holder's body now (the server's, whose bodies are remade each pose); else the one it was called with.
   // `perkOf(holder)`: the holder's perk clocks where its body carries none (the server's persons: Hunting Call's mark).
   const api = { trigger, tick, reset, twinOf, summonOf, decoy, credit: null, bodyOf: null, perkOf: null, running, ahead, husks };
-  function reset() { abilityPools.clear(); abilityDomes.clear(); husks.clear(); running.length = 0; ahead.length = 0; ready.clear(); counts.clear(); summons.clear(); waiting.clear(); ghosts.clear(); clock = 0; }
+  function reset() { for (const o of Game.enemies || []) o.owlMark = null; abilityPools.clear(); abilityDomes.clear(); husks.clear(); running.length = 0; ahead.length = 0; ready.clear(); counts.clear(); summons.clear(); waiting.clear(); ghosts.clear(); clock = 0; }
   // A power's blow: magic, so it comes from behind the enemy's facing (a shield never takes it). Never a counter: the
   // Finishing Blow is the holder's to earn.
   function wound(e, damage, holder, power) {
@@ -744,7 +772,7 @@ const abilityPowers = (() => {
       case 'pyre':   // one pillar an enemy: a second break lights it afresh
         for (let i = running.length - 1; i >= 0; i--) if (running[i].pw === pw && running[i].holder === holder && running[i].enemy === e) running.splice(i, 1);
         running.push({ pw, holder, enemy: e, left: Math.round(v.time / v.every), next: v.every, n: 0 }); break;
-      case 'twin': case 'hound': case 'guardian': case 'lancer': case 'fox': case 'lantern': {
+      case 'twin': case 'hound': case 'guardian': case 'lancer': case 'fox': case 'lantern': case 'crows': case 'archer': case 'hawk': case 'owl': {
         const out = summonOf(holder), from = out || at, K = CONFIG.abilities.summons;
         const s = { kind: pw.then, pw, body, until: clock + v.time, n: out ? out.n : 0, x: from.x, y: from.y, z: from.z, yaw: from.yaw || 0,
           enemy: e, wait: out ? 0 : summonArrive(pw.then), bite: 0, drew: out ? out.drew : false, lure: out ? out.lure : null, lureUntil: out ? out.lureUntil : 0, decoy: null,
@@ -889,11 +917,20 @@ const abilityPowers = (() => {
       s.drew = true; s.lure = e; s.lureUntil = clock + v.draw;
       events.emit('abilityPower', { power: s.pw.id, then: s.kind, holder, body: s.body, enemy: e, x: s.x, y: s.y, z: s.z, v, draw: true });
     }
+    // An owl marks its enemy every `every` s (one mark an enemy, whoever's owl: a new one renews it).
+    if (s.kind === 'owl' && (s.bite -= dt) <= 0) {
+      s.bite = v.every; s.n++;
+      // Two owls on one boss: the stronger mark holds (a weaker one only renews its time).
+      if (e.owlMark && e.owlMark.mul > v.mark) e.owlMark.t = K.owl.markLife;
+      else e.owlMark = { mul: v.mark, holder, power: s.pw.id, v, t: K.owl.markLife };
+      events.emit('abilityPower', { power: s.pw.id, then: s.kind, holder, body: s.body, enemy: e, x: s.x, y: s.y, z: s.z, v, strike: s.n });
+      return;
+    }
     // A hound bites, a guardian bashes, a lancer thrusts: whatever it is beside, every `every` s.
     if (SUMMON_STRIKERS.has(s.kind) && (s.bite -= dt) <= 0 && Math.hypot(e.x - s.x, e.z - s.z) - (e.radius || 1) <= K[s.kind].reach) {
       s.bite = v.every; s.n++;
-      if (K[s.kind].shot) {   // a lantern's fireball: it lands distance / `shot` s on (shotTick), its flight told now
-        const flight = Math.max(0.05, Math.hypot(e.x - s.x, e.z - s.z) / K[s.kind].shot);
+      if (SUMMON_SHOTS.has(s.kind)) {   // a fireball or an arrow lands distance / `shot` s on, a dive its `dive` s (shotTick); its flight told now
+        const flight = K[s.kind].dive ?? Math.max(0.05, Math.hypot(e.x - s.x, e.z - s.z) / K[s.kind].shot);
         s.shots.push({ e, t: flight, n: s.n });
         events.emit('abilityPower', { power: s.pw.id, then: s.kind, holder, body: s.body, enemy: e, x: s.x, y: s.y, z: s.z, v, strike: s.n, flight });
         return;
@@ -904,8 +941,8 @@ const abilityPowers = (() => {
       if (s.mark && st && e.alive()) { st.mark = e; st.markT = CONFIG.abilities.mark.keep; }
     }
   }
-  // A lantern's fireballs in flight: each lands on its enemy (still there and open to a blow) and heals its holder
-  // `heal` of the bar, told with the landing (`heal`). A body the engine owns (the page's player, a bot) heals here; a
+  // A lantern's fireballs, an archer's arrows and a hawk's dives in flight: each lands on its enemy (still there and open
+  // to a blow), told with the landing (`land`); a lantern's heals its holder `heal` of the bar (`heal`). A body the engine owns (the page's player, a bot) heals here; a
   // person's browser heals its own on that word (js/net-view.js). A shot that finds its enemy gone heals nothing.
   function shotTick(holder, s, dt) {
     for (let i = s.shots.length - 1; i >= 0; i--) {
@@ -917,14 +954,16 @@ const abilityPowers = (() => {
       const hp = e.hp; wound(e, s.pw.v.damage, holder, s.pw.id);
       if (!(e.hp < hp)) continue;
       const b = (api.bodyOf && api.bodyOf(holder)) || s.body;
-      events.emit('abilityPower', { power: s.pw.id, then: s.kind, holder, body: b, enemy: e, x: e.x, y: e.y, z: e.z, v: s.pw.v, strike: q.n, heal: s.pw.v.heal, mark: s.mark || undefined });
-      if (b && b.hpCap && b.alive && b.alive()) b.hp = Math.min(b.hpCap(), b.hp + b.maxHp * s.pw.v.heal);
+      const heal = s.pw.v.heal || undefined;
+      events.emit('abilityPower', { power: s.pw.id, then: s.kind, holder, body: b, enemy: e, x: e.x, y: e.y, z: e.z, v: s.pw.v, strike: q.n, land: true, heal, mark: s.mark || undefined });
+      if (heal && b && b.hpCap && b.alive && b.alive()) b.hp = Math.min(b.hpCap(), b.hp + b.maxHp * heal);
       const st = (api.perkOf && api.perkOf(holder)) || (b && b.perk);   // Hunting Call: a landed shot marks the enemy too
       if (s.mark && st && e.alive()) { st.mark = e; st.markT = CONFIG.abilities.mark.keep; }
     }
   }
   function tick(dt) {
     clock += dt;
+    for (const o of Game.enemies) if (o.owlMark && ((o.owlMark.t -= dt) <= 0 || !o.alive())) o.owlMark = null;   // an owl's mark lapses unburst
     if (husks.size) huskTick();
     for (const [holder, s] of summons) { if (s.shots.length) shotTick(holder, s, dt); summonTick(holder, s, dt); }
     // A low-health summon kept out by another comes when that one is gone, while its holder lives and is still low.

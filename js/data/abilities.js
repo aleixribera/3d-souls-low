@@ -21,7 +21,7 @@
 // pressed ability to exactly one key. Its text is the effect only: the card and the HUD show its key.
 const ABILITY_UNITS = { window: 's', after: 's', time: 's', every: 's', lead: 's', cooldown: 's', draw: 's', radius: 'm', reach: 'm', width: 'm', hits: 'n', strikes: 'n', charge: 'n' };
 // The numbers that are a share of something whole (of the health bar, of the damage dealt): never above 1.
-const ABILITY_SHARES = ['below', 'heal', 'drain', 'share', 'cut'];
+const ABILITY_SHARES = ['below', 'heal', 'drain', 'share', 'cut', 'mark'];
 const ABILITIES = [
   // ---- Commons: half plain numbers, half one move made better ----
   { id: 'keen-edge', name: 'Keen Edge', rarity: 'common', plain: true, text: '{damage} more damage.', mods: true,
@@ -132,6 +132,23 @@ const ABILITIES = [
     power: { when: 'press', then: 'lantern' },
     levels: [{ charge: 18, time: 10, every: 1.5, damage: 10, heal: 0.02 }, { charge: 17, time: 11, every: 1.4, damage: 12, heal: 0.025 },
       { charge: 16, time: 12, every: 1.3, damage: 14, heal: 0.03 }] },
+  // Batch 11 (design/abilities, Summons II): crows of ink pecking at the boss's head, a bone archer shooting from range,
+  // a hawk of lightning stooping from high, and an owl whose marks make anyone's next blow on the boss hit harder.
+  { id: 'ink-crows', name: 'Ink Crows', rarity: 'rare', key: 'summon', text: 'Ink crows swarm the boss for {time}.',
+    power: { when: 'press', then: 'crows' },
+    levels: [{ charge: 18, time: 7, every: 0.25, damage: 5, draw: 1.5 }, { charge: 16, time: 8, every: 0.25, damage: 6, draw: 1.8 },
+      { charge: 15, time: 9, every: 0.25, damage: 7, draw: 2 }] },
+  { id: 'bone-archer', name: 'Bone Archer', rarity: 'rare', key: 'summon', text: 'A bone archer shoots the boss for {time}.',
+    power: { when: 'press', then: 'archer' },
+    levels: [{ charge: 17, time: 9, every: 0.9, damage: 14, draw: 0.5 }, { charge: 16, time: 10, every: 0.85, damage: 16, draw: 0.6 },
+      { charge: 15, time: 11, every: 0.8, damage: 18, draw: 0.7 }] },
+  { id: 'thunder-hawk', name: 'Thunder Hawk', rarity: 'rare', key: 'summon', text: 'A thunder hawk dives on the boss for {time}.',
+    power: { when: 'press', then: 'hawk' },
+    levels: [{ charge: 18, time: 8, every: 1.6, damage: 26, draw: 1 }, { charge: 17, time: 9, every: 1.5, damage: 30, draw: 1.2 },
+      { charge: 16, time: 10, every: 1.4, damage: 34, draw: 1.4 }] },
+  { id: 'night-owl', name: 'Night Owl', rarity: 'rare', key: 'summon', text: 'An owl marks the boss; marks take {mark} more.',
+    power: { when: 'press', then: 'owl' },
+    levels: [{ charge: 16, time: 10, every: 2, mark: 0.7 }, { charge: 15, time: 11, every: 1.8, mark: 0.85 }, { charge: 14, time: 12, every: 1.6, mark: 1 }] },
   // Key 1, Strike: a burst of attack on the boss.
   { id: 'fire-burst', name: 'Fire Burst', rarity: 'rare', key: 'strike', text: 'Fire bursts on the boss.',
     power: { when: 'press', then: 'flare' },

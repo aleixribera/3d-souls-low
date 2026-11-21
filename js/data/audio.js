@@ -420,6 +420,73 @@ const AUDIO = {
       { wave: 'sine', freq: 1300, to: 1900, glide: 0.08, at: 0.12, a: 0.004, d: 0.1, gain: 0.14 },
       { wave: 'sine', freq: 1400, to: 2000, glide: 0.08, at: 0.3, a: 0.004, d: 0.12, gain: 0.12 },
     ] },
+    // Summons II (pass 144, design/abilities batch 11). Ink Crows: a coat snapping open, many wings beating with a fast
+    // flutter, three harsh caws.
+    abilityCrows: { bus: 'sfx', priority: 3, cooldown: 0.4, max: 1, verb: 0.5, heat: 0.3, jitter: 30, layers: [   // wing beats as staggered bursts
+      { noise: 'white', filter: { type: 'bandpass', freq: 1500, q: 2 }, a: 0.002, d: 0.03, gain: 0.55 },
+      { noise: 'pink', filter: { type: 'bandpass', freq: 900, q: 1.2 }, at: 0.03, a: 0.01, d: 0.06, gain: 0.45 },
+      { noise: 'pink', filter: { type: 'bandpass', freq: 1000, q: 1.2 }, at: 0.11, a: 0.01, d: 0.06, gain: 0.45 },
+      { noise: 'pink', filter: { type: 'bandpass', freq: 850, q: 1.2 }, at: 0.19, a: 0.01, d: 0.06, gain: 0.45 },
+      { noise: 'pink', filter: { type: 'bandpass', freq: 950, q: 1.2 }, at: 0.27, a: 0.01, d: 0.06, gain: 0.45 },
+      { noise: 'pink', filter: { type: 'bandpass', freq: 900, q: 1.2 }, at: 0.35, a: 0.01, d: 0.06, gain: 0.45 },
+      { noise: 'pink', filter: { type: 'bandpass', freq: 820, q: 1.2 }, at: 0.43, a: 0.01, d: 0.06, gain: 0.45 },
+      { wave: 'sawtooth', freq: 420, to: 380, filter: { type: 'bandpass', freq: 1200, q: 2 }, at: 0.25, a: 0.01, d: 0.14, gain: 0.12 },
+      { wave: 'sawtooth', freq: 440, to: 390, filter: { type: 'bandpass', freq: 1200, q: 2 }, at: 0.45, a: 0.01, d: 0.14, gain: 0.1 },
+      { wave: 'sawtooth', freq: 410, to: 360, filter: { type: 'bandpass', freq: 1200, q: 2 }, at: 0.65, a: 0.01, d: 0.16, gain: 0.09 },
+    ] },
+    // Each peck: a dry tick, throttled and jittered so four a second read as a flurry.
+    abilityPeck: { bus: 'sfx', priority: 1, cooldown: 0.2, max: 1, verb: 0.15, heat: 0.08, jitter: 400, layers: [
+      { noise: 'white', filter: { type: 'bandpass', freq: 4000, q: 3 }, a: 0.001, d: 0.008, gain: 0.45 },
+    ] },
+    // Bone Archer: stone cracking, bones and grit climbing out, a low wooden creak.
+    abilityArcher: { bus: 'sfx', priority: 3, cooldown: 0.4, max: 1, verb: 0.6, heat: 0.3, jitter: 20, layers: [
+      { noise: 'white', filter: { type: 'bandpass', freq: 2000, q: 2 }, a: 0.002, d: 0.03, gain: 0.6 },
+      { noise: 'brown', filter: { type: 'lowpass', freq: 500 }, a: 0.05, h: 0.35, d: 0.2, gain: 0.55 },
+      { noise: 'white', filter: { type: 'bandpass', freq: 3000, q: 4 }, at: 0.1, a: 0.001, d: 0.012, gain: 0.3 },
+      { noise: 'white', filter: { type: 'bandpass', freq: 3200, q: 4 }, at: 0.22, a: 0.001, d: 0.012, gain: 0.3 },
+      { noise: 'white', filter: { type: 'bandpass', freq: 2900, q: 4 }, at: 0.37, a: 0.001, d: 0.012, gain: 0.25 },
+      { wave: 'sawtooth', freq: 90, to: 80, filter: { type: 'bandpass', freq: 400, q: 1.5 }, at: 0.5, a: 0.05, d: 0.35, gain: 0.14 },
+    ] },
+    // Each arrow loosed: the string's thrum and a falling whistle.
+    abilityArrow: { bus: 'sfx', priority: 2, cooldown: 0.15, max: 2, verb: 0.3, heat: 0.15, jitter: 60, layers: [
+      { wave: 'sine', freq: 196, a: 0.002, d: 0.2, gain: 0.28 },
+      { noise: 'white', filter: { type: 'bandpass', freq: 4000, to: 2000, q: 4 }, a: 0.01, d: 0.2, gain: 0.25 },
+    ] },
+    // An arrow landing on the boss: a dull thock.
+    abilityArrowHit: { bus: 'sfx', priority: 2, cooldown: 0.15, max: 2, verb: 0.2, heat: 0.15, jitter: 90, layers: [
+      { noise: 'brown', filter: { type: 'lowpass', freq: 700 }, a: 0.002, d: 0.05, gain: 0.6 },
+    ] },
+    // Thunder Hawk: a crack of static, a hawk's scream, a far roll of thunder.
+    abilityHawk: { bus: 'sfx', priority: 3, cooldown: 0.4, max: 1, verb: 0.7, heat: 0.35, jitter: 30, layers: [
+      { noise: 'white', filter: { type: 'bandpass', freq: 5000, q: 2 }, a: 0.001, d: 0.015, gain: 0.6 },
+      { wave: 'sawtooth', freq: 1800, to: 1300, glide: 0.4, filter: { type: 'bandpass', freq: 2200, q: 2 }, at: 0.05, a: 0.02, d: 0.4, gain: 0.12 },
+      { noise: 'brown', filter: { type: 'lowpass', freq: 200 }, at: 0.2, a: 0.1, h: 0.3, d: 0.7, gain: 0.5 },
+    ] },
+    // Each dive: wind rising over the stoop (it starts as the dive does, `dive` s before the strike).
+    abilityStoop: { bus: 'sfx', priority: 2, cooldown: 0.3, max: 1, verb: 0.3, heat: 0.2, jitter: 30, layers: [
+      { noise: 'white', filter: { type: 'bandpass', freq: 1000, to: 4000, q: 2 }, a: 0.2, d: 0.15, gain: 0.3 },
+    ] },
+    // The dive's strike: a short thunderclap, a cousin of abilityThunder.
+    abilityStoopHit: { bus: 'sfx', priority: 3, cooldown: 0.3, max: 1, verb: 0.5, heat: 0.4, jitter: 40, layers: [
+      { noise: 'white', filter: { type: 'highpass', freq: 2500 }, a: 0.001, d: 0.01, gain: 0.6, drive: 2 },
+      { wave: 'sine', freq: 60, to: 40, a: 0.003, d: 0.3, gain: 0.6, drive: 1.5 },
+      { noise: 'brown', filter: { type: 'lowpass', freq: 300 }, a: 0.01, d: 0.35, gain: 0.4 },
+    ] },
+    // Night Owl: soft wing air, a low hoot twice, a quiet wind.
+    abilityOwl: { bus: 'sfx', priority: 3, cooldown: 0.4, max: 1, verb: 0.7, heat: 0.2, jitter: 15, layers: [
+      { noise: 'pink', filter: { type: 'lowpass', freq: 600 }, a: 0.03, d: 0.15, gain: 0.4 },
+      { wave: 'sine', freq: 330, to: 290, glide: 0.25, at: 0.12, a: 0.05, d: 0.2, gain: 0.16 },
+      { wave: 'sine', freq: 330, to: 290, glide: 0.25, at: 0.47, a: 0.05, d: 0.2, gain: 0.14 },
+      { noise: 'white', filter: { type: 'bandpass', freq: 400, q: 1 }, at: 0.3, a: 0.2, d: 0.4, gain: 0.15 },
+    ] },
+    // Each mark: a small chime. Each burst: a bright glass ring over the blow's own hit.
+    abilityMark: { bus: 'sfx', priority: 1, cooldown: 0.3, max: 1, verb: 0.4, heat: 0.05, jitter: 10, layers: [
+      { wave: 'sine', freq: 1175, a: 0.003, d: 0.3, gain: 0.05 },
+    ] },
+    abilityMarkBurst: { bus: 'sfx', priority: 2, cooldown: 0.1, max: 1, verb: 0.5, heat: 0.15, jitter: 20, layers: [
+      { wave: 'sine', freq: 1568, a: 0.002, d: 0.4, gain: 0.12 },
+      { wave: 'sine', freq: 3763, a: 0.002, d: 0.25, gain: 0.05 },
+    ] },
     // Lantern Spirit (pass 141): paper unfolding in four crinkles, a candle catching, a soft wind chime.
     abilityLantern: { bus: 'sfx', priority: 3, cooldown: 0.4, max: 1, verb: 0.7, heat: 0.25, jitter: 20, layers: [
       { noise: 'white', filter: { type: 'bandpass', freq: 3000, q: 2 }, a: 0.002, d: 0.03, gain: 0.35 },

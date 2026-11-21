@@ -3,7 +3,7 @@
 // each fired twice, its name in the corner: docs/scorecard/now/<set>-commons.mp4. The clock is stepped by hand
 // (Game.manualClock) and every other step is a frame, so a clip plays at real speed whatever the PC's speed. With
 // `--stills`, the guard set's current frames too (guard-*.jpg, desktop; -phone for two).
-// Usage: node tools/ability-clips.cjs [blade|guard|mirror|rares|triggers|echo|strikes|flashy|self|boss|summons ...] [--stills]   (no set = all). One headless Edge; needs ffmpeg.
+// Usage: node tools/ability-clips.cjs [blade|guard|mirror|rares|triggers|echo|strikes|flashy|self|boss|summons|summons2 ...] [--stills]   (no set = all). One headless Edge; needs ffmpeg.
 require('../tests/low-priority.cjs');
 const fs = require('node:fs');
 const os = require('node:os');
@@ -149,6 +149,14 @@ const SETS = {
     ['Grave Hound', `p => { p.grantAbilities(['grave-hound']); __face(); __key3(); }`, 150, 'summons-grave-hound', 70],
     ['Lancer of Ash', `p => { p.grantAbilities(['ash-lancer']); __face(); __key3(); }`, 140, 'summons-ash-lancer', 64],
     ['Stone Guardian', `p => { p.grantAbilities(['stone-guardian']); __face(); p.hp = p.lastHp = p.maxHp * 0.2; __fire('low'); }`, 170, 'summons-stone-guardian', 110],
+  ] },
+  // Summons II (pass 144, batch 11): docs/scorecard/now/summons-two.mp4; with --stills summons-<id>.jpg (-phone for the
+  // first two). The owl's mark burst by the player's own blow (through abilityOwlStrike / abilityOwlLanded, as combat does).
+  summons2: { ids: [], file: 'summons-two', phone: 2, crf: 30, beats: [
+    ['Ink Crows', `p => { p.grantAbilities(['ink-crows']); __face(); __key3(); }`, 170, 'summons-ink-crows', 100],
+    ['Bone Archer', `p => { p.grantAbilities(['bone-archer']); __face(); __key3(); }`, 200, 'summons-bone-archer', 128],
+    ['Thunder Hawk', `p => { p.grantAbilities(['thunder-hawk']); __face(); __key3(); }`, 220, 'summons-thunder-hawk', 116],
+    ['Night Owl', `(p, e) => { p.grantAbilities(['night-owl']); __face(); __key3(); __later(110, () => { const s = abilityOwlStrike(e, { attackId: 'light', damage: 10, poise: 0, knock: 0, hitstop: 0 }); abilityOwlLanded(e, s, e.takeHit(s, p)); }); }`, 170, 'summons-night-owl', 90],
   ] },
 };
 

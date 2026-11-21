@@ -168,13 +168,19 @@ function validateData({ visual = true } = {}) {
     const S = SUM[k] || {}, opt = (key, lo = 0) => S[key] === undefined || (num(S[key]) && S[key] >= lo);
     need(opt('arrive') && opt('from') && opt('hold') && (S.fromTurn === undefined || num(S.fromTurn)) && (S.orbit === undefined || num(S.orbit))
       && [undefined, true, false].includes(S.perch) && opt('side') && opt('lift') && (S.shot === undefined || (num(S.shot) && S.shot > 0))
-      && (S.hold === undefined || S.hold < (S.arrive ?? SUM.arrive)) && (!S.perch || (num(S.side) && num(S.lift) && num(S.shot))),
-      `CONFIG.abilities.summons.${k}: arrive, from, hold, side and lift 0 or more, fromTurn and orbit numbers, perch true or false (a perch needs side, lift and shot), shot above 0, hold under its arrive.`);
+      && (S.hold === undefined || S.hold < (S.arrive ?? SUM.arrive)) && (!S.perch || (num(S.side) && num(S.lift) && num(S.shot)))
+      && opt('alt') && opt('dive') && [undefined, true, false].includes(S.head),
+      `CONFIG.abilities.summons.${k}: arrive, from, hold, side, lift, alt and dive 0 or more, fromTurn and orbit numbers, perch and head true or false (a perch needs side, lift and shot), shot above 0, hold under its arrive.`);
   }
   for (const b of ABILITIES) {
     const pw = b.power;
     if (!pw || !SUMMONS.has(pw.then) || !SUM || !SUM[pw.then]) continue;
     if (SUM[pw.then].perch) need(b.levels.every(v => v.draw === undefined), `Ability ${b.id}: a perched summon never draws the boss (no draw).`);
+    // Batch 11: a summon whose blow flies needs its speed (`shot`) or its time (`dive`); an owl's `mark` a share above 0.
+    if (SUMMON_SHOTS.has(pw.then)) need((num(SUM[pw.then].shot) && SUM[pw.then].shot > 0) || (num(SUM[pw.then].dive) && SUM[pw.then].dive > 0),
+      `CONFIG.abilities.summons.${pw.then}: a shot speed or a dive time above 0 (its blow flies).`);
+    if (pw.then === 'owl') need(b.levels.every(v => num(v.mark) && v.mark > 0 && v.mark <= 1 && v.draw === undefined) && num(SUM.owl.markLife) && SUM.owl.markLife > 0,
+      `Ability ${b.id}: mark a share above 0, at most 1, no draw (an owl draws nothing), and CONFIG.abilities.summons.owl a markLife above 0.`);
     if (pw.then === 'lantern') need(b.levels.every(v => num(v.heal) && v.heal > 0 && v.heal <= 1) && SUM.lantern.shot > 0,
       `Ability ${b.id}: heal a share above 0, at most 1, and CONFIG.abilities.summons.lantern a shot speed.`);
   }
@@ -221,6 +227,20 @@ function validateData({ visual = true } = {}) {
         && [F.burst, F.hitBurst].every(B => B && pos(B, ['count', 'speed']) && hx(B.color)) && Array.isArray(F.shake) && F.shake.length === 2 && F.shake.every(num),
         `CONFIG.VISUALS.abilityFx.${k}: a beast needs colours color, core, eye, ink and lit as hex, a bright slot's name, outline, size, turn, rise, fade, gallopAt, strideRate, prowlRate, lunge, howlTime, snap, motes, pool and biteBoost above 0, climb and flicker 0 or more, snapAt between 0 and 1, a ring (if any) with every, width and life above 0, burst and hitBurst with count, speed and a hex colour, and shake two numbers.`);
     }
+    // The birds (js/summon-birds.js) and the crows (js/summon-crows.js), pass 144.
+    for (const k of ['hawk', 'owl']) {
+      const B = CONFIG.VISUALS.abilityFx[k];
+      need(B && ['color', 'core', 'eye', 'ink', 'lit'].every(n => hx(B[n])) && typeof B.light === 'string' && (B.bar === undefined || (hx(B.bar) && hx(B.barLit)))
+        && pos(B, ['outline', 'size', 'flap', 'wing', 'glide', 'turn', 'rise', 'fade', 'glowBoost', 'glowTime', 'motes']) && num(B.flicker) && B.flicker >= 0 && B.burst && pos(B.burst, ['count', 'speed']),
+        `CONFIG.VISUALS.abilityFx.${k}: a bird needs color, core, eye, ink and lit as hex (bar and barLit too, if it has bars), a light slot's name, outline, size, flap, wing, glide, turn, rise, fade, glowBoost, glowTime and motes above 0, flicker 0 or more, and a burst.`);
+    }
+    const Hk = CONFIG.VISUALS.abilityFx.hawk, Ow = CONFIG.VISUALS.abilityFx.owl, Cr = CONFIG.VISUALS.abilityFx.crows;
+    need(Hk && pos(Hk, ['climb', 'star', 'scorch']) && Hk.hitBurst && Array.isArray(Hk.shake) && Hk.shake.length === 2 && Hk.shake.every(num)
+      && Ow && pos(Ow, ['rune', 'runeUp', 'pulse', 'burstTime', 'burstRing']) && Ow.pulse < 1,
+      'CONFIG.VISUALS.abilityFx: the hawk needs climb, star and scorch above 0, a hitBurst and a shake; the owl rune, runeUp, burstTime and burstRing above 0 and a pulse under 1 Hz.');
+    need(Cr && Number.isInteger(Cr.count) && Cr.count > 0 && ['color', 'eye', 'ink', 'lit'].every(n => hx(Cr[n]))
+      && pos(Cr, ['outline', 'size', 'stagger', 'pour', 'head', 'ring', 'spin', 'spread', 'follow', 'dart', 'flap', 'flapAmp', 'cryTime', 'fade']) && Cr.burst,
+      'CONFIG.VISUALS.abilityFx.crows: a whole count above 0, color, eye, ink and lit as hex, outline, size, stagger, pour, head, ring, spin, spread, follow, dart, flap, flapAmp, cryTime and fade above 0, and a burst.');
     const L = CONFIG.VISUALS.abilityFx.lantern;
     need(L && ['color', 'core', 'deep', 'ink'].every(n => hx(L[n])) && [L.burst, L.hitBurst].every(B => B && pos(B, ['count', 'speed']) && hx(B.color)) && pos(L, ['outline', 'bob', 'bobTime', 'rise', 'fade', 'ball', 'burstSize', 'warm', 'puff', 'sway', 'turn', 'motes']),
       'CONFIG.VISUALS.abilityFx.lantern: color, core, deep and ink as hex, burst and hitBurst with count, speed and a hex colour; outline, bob, bobTime, rise, fade, ball, burstSize, warm, puff, sway, turn and motes above 0.');
