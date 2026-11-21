@@ -106,6 +106,13 @@ stopped telling us anything. A flat judge is replaced, not fixed against again: 
   render style is out of the comparison. Use at least three references (`.scratch/ref-clips`: both Sekiro clips and
   `stellar-dodge.mp4`) and two of our attacks, so one guess is not the whole verdict. Its question is motion and
   readability; spectacle and the look wait for a judge against cel-shaded references (clips not yet in `ref-clips`).
+- **Judge `bars-1`** (from pass 128) replaces the per-boss `edges-1` round, which repeated the same gaps for every boss
+  (caught 9/10 in each of rounds 1-9) and never saw that Aldric's sweep was the Giant's. It scores against the system's
+  bars, not "which is real": a blind subagent gets cel strips (`tools/anim-strip.cjs`) of two or three of the new boss's
+  attacks shuffled among one each from the bosses already through the system, unlabelled, and answers per strip: does
+  its wind-up match another strip's (a shared wind-up fails), is the body readable through the wind-up (nothing covers
+  it), and can you tell at the wind-up whether to parry or roll. One round per boss; fix what fails and recheck it
+  yourself. `edges-1` stays a regression check only when a pass changes the shared animation engine.
 - **Once a judge goes flat, the boss gets one fix and one round with the fresh judge, then goes to Aleix** (why: Aleix's fight is
   the real bar, and six rounds of one judge spent five track-1 passes with no plan check met, retro 120).
 

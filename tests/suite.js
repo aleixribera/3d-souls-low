@@ -2613,7 +2613,7 @@
   // Pass 123: every boss whose model opts in (the Captain, the Bell Warden): the system's check, not one boss's.
   test('Boss edge tells: every boss with an edgeTell keeps the wind-up tell on the weapon, never over the body', () => {
     const ids = ENEMY_DEFS.filter(d => d.phases && KIT.resolve(d.model).edgeTell).map(d => d.id);
-    expect.ok(['pillagerCaptain', 'bellWarden', 'giant'].every(id => ids.includes(id)), `opted in: ${ids.join(', ')}`);
+    expect.ok(['pillagerCaptain', 'bellWarden', 'giant', 'varn'].every(id => ids.includes(id)), `opted in: ${ids.join(', ')}`);
     for (const id of ids) {
       Game.startFight(id); Game.loading = 0; sim.begin();
       const e = Game.duel, r = e.rig, over = e.def.attacks.find(a => a.rollOnly && a.heavy && !a.invulnerable && !a.hits[0].tell), T = r.edgeTell, slot = KIT.resolve(e.def.model).edgeTell.slot;
@@ -2695,6 +2695,10 @@
     const aldric = A.ENEMY_BY_ID.varn;
     expect.ok(aldric.hp === 1600 && aldric.phases.field.hp === 1600 && aldric.phases.throne.hp === 1400 && aldric.phases.knell.hp === 1500, 'Aldric health as set in v7.65.0; the throne room bars trimmed for the mending Ember (pass 75)');
     expect.ok(!aldric.attacks.some(a => a.origin), 'Aldric has no borrowed moves');
+    // Pass 128 (docs/bosses/aldric.md): his sweep's wind-up is his own, not the Giant's; the man has a second string, which opens as the sweep
+    const P = ATTACK_POSES, wind = id => JSON.stringify(P[id].hits[0].windup);
+    expect.ok(wind('aldricSweep') !== wind('giantSweep') && wind('aldricTurningKey') === wind('aldricSweep'), 'the Gaol Sweep has its own wind-up; the Turning Key opens on it');
+    for (const ph of ['field', 'throne']) expect.ok(aldric.phases[ph].attacks.filter(id => aldric.attacks.find(x => x.id === id).hits.length > 1).length >= 2, `Aldric's ${ph} bar holds two strings`);
   });
   test('Story boss moves: source animations and hit data are preserved without shared objects or foreign branches', () => {
     for (const b of STORY_BOSS_MOVES) for (const a of A.ENEMY_BY_ID[b.id].attacks.filter(a => a.origin)) {

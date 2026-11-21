@@ -16,7 +16,8 @@
 // Every wind-up is his own, and he holds the blade in both hands (the model's `grip`, Rig.holdHaft): `haft: [pitch, yaw,
 // roll]` is where the blade points in his chest's heading (pitch 0 level ahead, -1.57 straight up, positive dips the
 // point; yaw + to his left; roll 3.14 its edges up and down, 4.71 its edges level). His guard: the point low before him,
-// to his left. The blade hauled back low behind his right hip, his back half turned (the sweep); over his right shoulder,
+// to his left. The blade laid flat over his left shoulder, point behind him, his right fist up by his left ear (the sweep,
+// since pass 128: it was the Giant's haul behind the hip); over his right shoulder,
 // point to the sky (the two cuts); laid across the back of his neck like a headsman's yoke, point out to his left (the
 // withheld sentence); drawn back level at his right hip, point at you (the lunge); let down along his right thigh,
 // point trailing, his left hand off it and his left shoulder squared to you (the shoulder); crouched with the blade over
@@ -40,12 +41,14 @@ MODEL_DEFS.varn = {
     dark: { tex: 'dentedSteel', tint: 0x3a3836, decay: 0.8 },
     iron: { tex: 'rustedIron', tint: 0x5a5048, decay: 0.8 },
     mail: { tex: 'knightMail', tint: 0x777b82, decay: 0.65 },
-    tabard: { tex: 'oathLinen', tint: 0x485d7a, decay: 0.5, double: true, rim: 0.15 },
+    // (pass 128, in cel) the cloth's colour is its texture's (a tint sets hue only): the light linen drew his slate tabard
+    // pale blue and his ash-grey cloak flat white
+    tabard: { tex: 'midnightCloth', tint: 0x485d7a, decay: 0.5, double: true, rim: 0.15 },
     stripe: { tex: 'rottenCloth', tint: 0x9a7a3a, decay: 0.6, double: true, rim: 0.15 },
-    cloak: { tex: 'oathLinen', tint: 0xa4a1a0, decay: 0.6, size: 512, double: true, rim: 0.15 },   // broad sheets: edge-on they take the rim as white
-    cloakHem: { tex: 'tatteredFabric', tint: 0x4a4644, decay: 0.7, size: 512, double: true, rim: 0.15 },
+    cloak: { tex: 'abbeyStorm', tint: 0xa4a1a0, decay: 0.6, size: 512, double: true, rim: 0.15 },   // broad sheets: edge-on they take the rim as white
+    cloakHem: { tex: 'abbessWool', tint: 0x4a4644, decay: 0.7, size: 512, double: true, rim: 0.15 },
     leather: { tex: 'crackedLeather', tint: 0x4e4a44, decay: 0.75 },
-    blade: { tex: 'dentedSteel', tint: 0x8a8a8e, decay: 0.55, size: 512, rim: 0.3 },   // a thin bright blade takes less rim (v7.39.0)
+    blade: { tex: 'dentedSteel', tint: 0x8a8a8e, decay: 0.55, size: 512, rim: 0.3, steel: true },   // a thin bright blade takes less rim (v7.39.0); in cel banded steel with a glint (pass 128)
     void: { tex: 'ashSoot', tint: 0x141210, decay: 0.4 },
     burn: { glow: 0xff7a28, burn: true },   // the Ember in the cracks: drawn while he burns or a wound is open
     eye: { glow: 0xffc070 },
@@ -71,6 +74,14 @@ MODEL_DEFS.varn = {
   }).flatMap(([bone, list]) => list.map(s => ({ use: 'baked', mesh: `aldric:${bone}__${s}`, bone, slot: s.split('.')[0], tile: 0.42,
     ...(bone === 'weapon' ? { weapon: true } : {}) }))),
   weapon: null,   // his greatsword is part of the figure (the `weapon: true` pieces above)
+  // (pass 128, docs/bosses/system.md 4) his wind-ups glow on the blade's edge near its point, not over his body and cloak
+  edgeTell: { slot: 'blade', size: 0.55, along: 0.88 },
+  // ... but the Turning Key's last blow is the pommel's: its tell glows at his fists (a bars judge, pass 128: the blade's
+  // point lit over his head as a pillar of light while the blow came from the hilt)
+  tells: { pommel: { bone: 'elbowR', at: [0, -0.3, 0.05], size: 0.4 } },
+  // (pass 128) his joints bend as one body, as the Captain's: waist, neck, shoulders, elbows, hips, knees, tabard and cloak
+  softJoints: { chest: 0.16, neck: 0.08, armL: 0.13, armR: 0.13, elbowL: 0.1, elbowR: 0.1, legL: 0.14, legR: 0.14, kneeL: 0.1, kneeR: 0.1,
+                loinF: 0.12, loinB: 0.12, capeB: 0.22, capeC: 0.22, capeD: 0.18 },
   // Both hands on the grip, the left below the right (span: along the blade from the right fist, toward the pommel); at
   // rest the point hangs low before him, to his left.
   grip: { span: [-0.27, -0.11], gap: 0.11, rest: [0.55, 0.4, 3.14] },
@@ -91,14 +102,36 @@ MODEL_DEFS.varn = {
   const heavy = { windup: 'inOutSine', active: 'outQuad', follow: 'outCubic', recovery: 'inOutCubic' };  // a weight that gathers, then falls
   const lunge = { windup: 'inOutSine', active: 'outExpo', follow: 'outQuad', recovery: 'inOutCubic' };
 
-  // Gaol Sweep: the blade hauled back low behind his right hip, point trailing, his back half turned; swung flat across at
-  // your waist, and the weight carries him round to his left.
-  const hauled = { crouch: 0.28, lean: 0.1, legL: [-0.5, 0, 0], legR: [0.45, 0, 0], spin: [0, -0.8, 0], chest: [0.05, -0.35, 0], neck: [0, 0.5, 0], head: [0, 0.6, 0],
-    armR: [-0.45, 0, -0.6], elbowR: [-0.35, 0, 0], haft: [0.55, -1.15, 4.71], armL: [-0.8, 0, -0.5], elbowL: [-0.9, 0, 0] };
+  // Gaol Sweep (pass 128: his own; it was the Giant's haul behind the right hip): the blade laid flat over his left
+  // shoulder, point behind him, edges level, his right fist up by his left ear and his chest turned to his left, his
+  // head on you over his right shoulder; swung flat across at your waist from his left to his right, and the weight
+  // carries him round to his right.
+  const shouldered = { crouch: 0.22, lean: 0.02, legL: [-0.5, 0, 0], legR: [0.45, 0, 0], spin: [0, 0.6, 0], chest: [-0.05, 0.4, 0], neck: [0, -0.4, 0], head: [0, -0.5, 0],
+    armR: [-1.8, 0, 1.0], elbowR: [-1.4, 0, 0], haft: [-0.15, 2.4, 4.71], armL: [-1.1, 0, 0.35], elbowL: [-1.5, 0, 0] };
+  const sweptR = { crouch: 0.24, lean: 0.12, legL: [-0.6, 0, -0.1], legR: [0.4, 0, 0.12], spin: [0, -0.4, 0], chest: [0.05, -0.25, 0], neck: [0, 0.25, 0], head: [0, 0.35, 0],
+    armR: [-1.25, 0, -0.55], elbowR: [-0.1, 0, 0], haft: [0.2, 0.2, 4.71], armL: [-1.15, 0, -0.3], elbowL: [-0.3, 0, 0] };
+  const sweptROn = { ...sweptR, crouch: 0.28, spin: [0, -0.65, 0], chest: [0.05, -0.35, 0], haft: [0.35, -0.7, 4.71] };
+  // his chest turns back first and the blade trails over his shoulder a beat, then whips across
+  const sweepVia = { active: [{ t: 0.4, rel: true, crouch: 0.03, spin: [0, -0.15, 0], chest: [0, -0.15, 0], haft: [0, 0.35, 0] }] };
+  ATTACK_POSES.aldricSweep = { ease: cut, lag: { weapon: 0.1 }, hits: [{ windup: shouldered, strike: sweptR, follow: sweptROn, via: sweepVia }] };
+  // The swing back the other way (the Turning Key's second blow): from his right, flat across to his left.
   const swept = { crouch: 0.22, lean: 0.1, legL: [-0.6, 0, -0.1], legR: [0.4, 0, 0.12], spin: [0, 0.4, 0], chest: [0.05, 0.2, 0], neck: [0, -0.2, 0], head: [0, -0.3, 0],
     armR: [-1.15, 0, 0.85], elbowR: [-0.1, 0, 0], haft: [0.25, -0.2, 4.71], armL: [-1.0, 0, 0.6], elbowL: [-0.3, 0, 0] };
-  const sweptOn = { ...swept, crouch: 0.28, spin: [0, 0.6, 0], chest: [0.05, 0.3, 0], haft: [0.35, 0.6, 4.71] };
-  ATTACK_POSES.aldricSweep = { ease: cut, lag: { weapon: 0.1 }, hits: [{ windup: hauled, strike: swept, follow: sweptOn }] };
+
+  // The Turning Key (pass 128, the man's second string): it opens as the Gaol Sweep, the same wind-up, and you can't tell
+  // which it is until the first blow is through; then the blade turns over at his right, wrists rolled like a key in a
+  // lock, and comes back flat across to his left; then, stepping in, both fists drive the pommel (the Oath's lock) at
+  // your face, the blade standing up behind his right shoulder.
+  const turned = { ...sweptROn, crouch: 0.26, spin: [0, -0.75, 0], chest: [0.0, -0.45, 0], armR: [-1.0, 0, -0.95], elbowR: [-0.6, 0, 0], haft: [0.15, -1.35, 1.57] };
+  const keyBack = { ...swept, haft: [0.25, -0.1, 1.57] };
+  const pommelUp = { crouch: 0.2, lean: -0.02, legL: [-0.45, 0, 0], legR: [0.45, 0, 0], spin: [0, -0.3, 0], chest: [-0.1, -0.2, 0], neck: [0, 0.1, 0], head: [0, 0.15, 0],
+    armR: [-1.3, 0, -0.2], elbowR: [-1.6, 0, 0], haft: [-1.2, 2.6, 3.14], armL: [-1.2, 0, 0.1], elbowL: [-1.6, 0, 0] };
+  const pommelled = { crouch: 0.24, lean: 0.35, legL: [-0.85, 0, 0], kneeL: [0.35, 0, 0], legR: [0.7, 0, 0], spin: [0, 0.05, 0], chest: [0.2, 0, 0], neck: [-0.1, 0, 0], head: [-0.15, 0, 0],
+    armR: [-1.6, 0, 0.05], elbowR: [-0.15, 0, 0], haft: [-0.9, 2.9, 3.14], armL: [-1.55, 0, -0.05], elbowL: [-0.2, 0, 0] };
+  ATTACK_POSES.aldricTurningKey = { ease: cut, lag: { weapon: 0.08 },
+    hits: [{ windup: shouldered, strike: sweptR, follow: sweptROn, via: sweepVia },
+      { windup: turned, strike: keyBack, follow: { ...keyBack, spin: [0, 0.55, 0], haft: [0.3, 0.4, 1.57] } },
+      { windup: pommelUp, strike: pommelled, follow: pommelled }] };
 
   // Two Cuts: over his right shoulder, point to the sky; down across to his left knee (parry it); then from low at his left
   // up across to his right shoulder (parry it).
@@ -146,10 +179,10 @@ MODEL_DEFS.varn = {
   ATTACK_POSES.aldricLeap = { ease: heavy, lag: { weapon: 0.08 }, hits: [{ windup: coiled, strike: crashed, follow: { ...crashed, crouch: 0.44 } }] };
 
   // Tolling Chain (burning): four cuts through four of his guards: over his right shoulder and down left; from low left up
-  // right; hauled back right and swept flat; then the yoke, held a beat, and straight down.
+  // right; over his left shoulder and swept flat to his right; then the yoke, held a beat, and straight down.
   ATTACK_POSES.aldricChain = { ease: cut, lag: { weapon: 0.08 },
     hits: [{ windup: cocked, strike: downLeft, follow: downLeft }, { windup: lowLeft, strike: rising, follow: rising },
-      { windup: hauled, strike: swept, follow: swept }, { windup: yoke, strike: fell, follow: fellOn }] };
+      { windup: shouldered, strike: sweptR, follow: sweptR }, { windup: yoke, strike: fell, follow: fellOn }] };
 
   // Ash Wave (burning): the point dragged on the floor behind him at his right, crouched and turned away; flung up and
   // across, and the burning cut runs on along the floor.
@@ -194,10 +227,17 @@ MODEL_DEFS.varn = {
   const BLAST = { w: 6.4, h: 2.0, d: 6.4, fwd: 0, y: 1.0, round: true };   // a disc round him (pass 93)
 
   // ---- the man: the Field of Answer and the throne room's first bar ------------------------------------------------------
-  // Gaol Sweep: hauled back low at his right hip; flat across at your waist. Parry it.
+  // Gaol Sweep: the blade flat over his left shoulder; flat across at your waist. Parry it.
   const sweep = { id: 'varnSweep', name: 'Gaol Sweep', anim: 'sweep', pose: 'aldricSweep', tracking: { rate: 2.2, commit: 0.65 }, markers: glint(0), poseScale: 1.1,
     hits: [{ startup: 1.2, active: 0.14, follow: 0.38 }], recovery: 2,
     damage: 38, heavy: true, poise: 60, knock: 8, lunge: 1.2, range: 3.4, box: SWEEP };
+  // The Turning Key (pass 128): the Gaol Sweep's wind-up and blow, then back across, then the pommel at your face. Parry
+  // all three; roll after the first and the second catches you. The pommel is short: step back from it, or parry.
+  const turningKey = { id: 'varnKey', name: 'The Turning Key', anim: 'sweep', pose: 'aldricTurningKey', tracking: { rate: 2.2, commit: 0.65 }, markers: glint(0, 1),   // no glint on the pommel: it lit the blade's point over his head as a pillar
+    poseScale: 1.1, chance: 0.8,
+    hits: [{ startup: 1.2, active: 0.14, follow: 0.3 }, { startup: 0.55, active: 0.14, follow: 0.34 },
+      { startup: 0.6, active: 0.12, follow: 0.3, tell: 'pommel', damage: 20, box: { w: 1.6, h: 1.8, d: 2.2, fwd: 1.3, y: 1.4 } }], recovery: 2,
+    damage: 30, heavy: true, poise: 50, knock: 7, lunge: 1.4, range: 3.4, box: SWEEP };   // heavy as the Sweep: its opening gives nothing away
   // Two Cuts: over his right shoulder; down across (parry it), then up across (parry it).
   const cleave = { id: 'varnCleave', name: 'Two Cuts', anim: 'sweep', pose: 'aldricTwoCuts', tracking: { rate: 2.6, commit: 0.7 }, markers: glint(0, 1), poseScale: 1.1,
     hits: [{ startup: 0.9, active: 0.13, follow: 0.64 }, { startup: 0.62, active: 0.13, follow: 0.3 }], recovery: 1.9,
@@ -240,6 +280,8 @@ MODEL_DEFS.varn = {
   const knellLeap = hot(leap, { id: 'knellLeap', tracking: { rate: 2.6, commit: 0.45 }, poseScale: 1.15, chance: 0.25,
     hits: [{ startup: 1.7, active: 0.16, follow: 0.45, leap: { from: 0.45, max: 14, short: 1.4 } }], recovery: 4.8, damage: 50, range: 14, box: LANDING(2.8),
     impact: { ring: 7.0, crack: 3.0, dust: 30, shake: 0.22 } });
+  const knellKey = hot(turningKey, { id: 'knellKey', tracking: { rate: 3.2, commit: 0.65 }, poseScale: 1.15, chance: 0.9,
+    hits: [{ startup: 0.95, active: 0.14, follow: 0.28 }, { startup: 0.46, active: 0.14, follow: 0.3 }, { ...turningKey.hits[2], startup: 0.5 }], recovery: 2.3, damage: 26, lunge: 1.6 });
   const knellRebuke = hot(rebuke, { id: 'knellRebuke', chance: 2.2, hits: [{ startup: 0.62, active: 0.14, follow: 0.2 }] });
 
   // ---- the Ember-Crowned: his own -----------------------------------------------------------------------------------------
@@ -290,19 +332,19 @@ MODEL_DEFS.varn = {
     phases: {
       // Outside: still a man. Slower and readable, teaching his blade; his wounds stay. Ends in a retreat (the placement's `boss.retreat`).
       field: { hp: 1600, cooldown: [3, 5.6], approach: 0.35, kite: 0.25, speed: 2.0,
-        attacks: ['varnSweep', 'varnCleave', 'varnDelay', 'varnLunge', 'varnShoulder', 'varnLeap'] },
+        attacks: ['varnSweep', 'varnKey', 'varnCleave', 'varnDelay', 'varnLunge', 'varnShoulder', 'varnLeap'] },
       // The throne room's first bar: the same blade, pressed harder, and the Ember closes his wounds. Pass 75: the bars
       // in the throne room 1600 and 1700 before the Ember mended him; trimmed so a fight lasts about as long as it did.
       throne: { hp: 1400, cooldown: [2.1, 4], approach: 0.6, kite: 0, speed: 2.2, mend: MEND,
-        attacks: ['varnSweep', 'varnCleave', 'varnDelay', 'varnLunge', 'varnShoulder', 'varnRebuke', 'varnLeap'] },
+        attacks: ['varnSweep', 'varnKey', 'varnCleave', 'varnDelay', 'varnLunge', 'varnShoulder', 'varnRebuke', 'varnLeap'] },
       // After the transition (5 s, invulnerable; 15 s before v7.160.0, too long a wait, Aleix): burning, faster, fiercer
       // tracking in the wind-ups (commit points unchanged), four of his own, and the Ember mends him faster.
       knell: { name: 'Aldric, the Ember-Crowned', hp: 1500, transition: 5, ignite: true, cooldown: [1.6, 3.0], approach: 0.85, kite: 0, speed: 2.7,
         turnRate: 3.6, trackRate: 2.2, parriedTime: 1.7, mend: { ...MEND, share: 0.55, cap: 0.14, delay: 2.0, rate: 0.065 },
-        attacks: ['knellSweep', 'knellCleave', 'knellDelay', 'knellLunge', 'knellRebuke', 'knellLeap', 'tollingChain', 'ashWave', 'burningAscent', 'lastToll'] },
+        attacks: ['knellSweep', 'knellKey', 'knellCleave', 'knellDelay', 'knellLunge', 'knellRebuke', 'knellLeap', 'tollingChain', 'ashWave', 'burningAscent', 'lastToll'] },
     },
-    attacks: [sweep, cleave, sentence, lungeAt, shoulder, rebuke, leap,
-      knellSweep, knellCleave, knellSentence, knellLunge, knellRebuke, knellLeap, chain, ashWave, ascent, lastToll],
+    attacks: [sweep, turningKey, cleave, sentence, lungeAt, shoulder, rebuke, leap,
+      knellSweep, knellKey, knellCleave, knellSentence, knellLunge, knellRebuke, knellLeap, chain, ashWave, ascent, lastToll],
   };
   ENEMY_DEFS.push(ALDRIC); ENEMY_BY_ID[ALDRIC.id] = ALDRIC;
 }

@@ -36,8 +36,8 @@ const BOSS_FX = {
   bellWarden: { element: 'toll', aura: 0xb8d4f0, trail: { edge: 0.2, life: 0.18, smear: 0.3 }, attacks: { wardenHammerfall: { impact: 'toll', windup: 'gather' }, wardenBackhand: { impact: 'toll' },
     wardenAnswer: { impact: 'toll', windup: 'gather' }, wardenAnswerTwice: { impact: 'toll', windup: 'gather' }, wardenWaking: { impact: 'toll', windup: 'gather' },
     wardenFall: { impact: 'toll' }, wardenThreeTolls: { impact: 'toll' } } },
-  varn: { element: 'steel', aura: 0xff8040, phases: { throne: 'fire', knell: 'fire' }, attacks: {
-    varnLeap: { impact: 'shatter' }, knellSweep: { element: 'fire' }, knellLeap: { impact: 'blaze' },
+  varn: { element: 'steel', aura: 0xff8040, trail: { edge: 1, life: 0.16, smear: 0.45 }, phases: { throne: 'fire', knell: 'fire' }, attacks: {
+    varnLeap: { impact: 'shatter' }, knellSweep: { element: 'fire' }, knellKey: { element: 'fire' }, knellLeap: { impact: 'blaze' },
     tollingChain: { element: 'toll' }, lastToll: { element: 'toll', impact: 'toll', windup: 'gather' },
     ashWave: { element: 'fire' }, burningAscent: { element: 'fire', impact: 'blaze', windup: 'gather' } } },
   // Old Ostrey (Level 7): iron on iron, and coals from his lantern; once he opens it (the second phase), fire.

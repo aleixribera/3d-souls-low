@@ -9,13 +9,12 @@ The iterate loop's working note (`.claude/iterate.md`). Cap: 8,000 characters.
   claim now takes Guard keys too. Acceptance: `tests/rare-triggers.cjs`, in-page `rare triggers` (2); clip
   `docs/scorecard/now/echo-overcharge.mp4` (`node tools/ability-clips.cjs echo`). Next on track 2: batch 6 of
   `design/abilities/BUILD-ORDER.md`. Browser lock: `node tools/browser-lock.cjs run <pass> -- <cmd>` (docs/two-tracks.md).
-- Track 1, pass 127, PLAN item 6 (pass 2 of the Giant): the Giant Skeleton in cel, by data. Black irons, the club's
-  tell on its skull (`edgeTell` slot `clubHead`), smaller claw and foot halos, a soft spine, a smear on his swings, and
-  in-between keys on the Sweep, Claw, Slam and Club and Claw (`via`, `slamLanded`). `edges-1` round 9: motion 5,
-  readability 7, spectacle 4; one fix (bigger floor cracks), so he is awaiting Aleix. Acceptance: in-page `Boss edge
-  tells`, `Giant` (7), `model`, `fair-attacks`, `pose-via`; clip `docs/scorecard/now/giant-cel.mp4`. Then Aldric's
-  moveset audit (`docs/bosses/aldric.md`): his Gaol Sweep shares the Giant's wind-up and the man has one string.
-  Next on track 1: Aldric's own sweep wind-up and a second string for the man, then his cel look.
+- Track 1, pass 128, PLAN item 6 (pass 1 of Aldric): his own Gaol Sweep wind-up (the blade flat over his left shoulder,
+  swept left to right; it was the Giant's), the Turning Key (the man's second string: sweep, back across, the pommel, its
+  tell at his fists; burning as well), and his cel look (dark cloth, banded steel, the tell on the blade's edge, soft
+  joints, a smear). Judge: `bars-1` replaces the per-boss `edges-1` round (docs/bosses/system.md 6). Acceptance:
+  in-page `Aldric`, `Story boss moves`, `Boss edge tells`; `tests/boss-pages.cjs`; clip `docs/scorecard/now/aldric-cel.mp4`.
+  Next on track 1: Aldric's in-between keys where his strips look stiff, then Aleix; then the Antlered Hunger's audit.
 
 ## Works
 
@@ -71,6 +70,7 @@ The iterate loop's working note (`.claude/iterate.md`). Cap: 8,000 characters.
 
 ## Needs Aleix
 
+- Fight Aldric too, when pass 129 has his keys (Practice, `?style=cel`).
 - Fight the Giant Skeleton too (Practice, `?style=cel`; tried: one `edges-1` round, the judge repeats the others' gaps).
 - Fight the Bell Warden too (same: Practice, `?style=cel`; tried: two `edges-1` rounds, the judge repeats the Captain's gap).
 - Fight the Pillager Captain (PLAN item 5's last gate; tried: six judge rounds, nothing left a judge can settle). Practice,
