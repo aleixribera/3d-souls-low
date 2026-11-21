@@ -92,6 +92,30 @@ const seeded = seed => () => { seed = (seed + 0x6d2b79f5) >>> 0; let t = seed; t
   if (left.length) assert.ok(left.every(b => b.rarity === 'legendary') && late.draw(rng).rarity === 'legendary', 'what is left is what a crate gives');
 }
 
+// ---- 2b. The legendary pity (pass 173, PLAN "Last"): over 200 fresh collections opened to the end, a legendary within
+// the first CRATES.pity.first crates and never more than `apart` crates apart while one is left; overall the odds hold.
+{
+  const { CRATES, ABILITIES } = browser(store()), P = CRATES.pity, rng = seeded(173), legends = ABILITIES.filter(b => b.rarity === 'legendary').length;
+  const tally = { common: 0, rare: 0, legendary: 0 }, firstAt = [];
+  let worst = 0, early = 0, earlyN = 0;
+  for (let k = 0; k < 200; k++) {
+    const pr = browser(store()).progress; pr.award({ won: 3000, time: 0 }, 'all');
+    const got = []; let o; while ((o = pr.open(rng))) got.push(o.ability.rarity);
+    assert.equal(got.length, ABILITIES.length - CRATES.starter.length, 'the whole pool opened');
+    const at = got.map((r, i) => r === 'legendary' ? i + 1 : 0).filter(Boolean);
+    assert.equal(at.length, legends - CRATES.starter.filter(id => ABILITIES.find(b => b.id === id).rarity === 'legendary').length, 'every legendary once');
+    assert.ok(at[0] <= P.first, `a legendary within the first ${P.first} crates (crate ${at[0]})`);
+    firstAt.push(at[0]);
+    for (let i = 1; i < at.length; i++) worst = Math.max(worst, at[i] - at[i - 1]);
+    // The odds while every rarity is still well stocked: the first 20 crates.
+    for (const r of got.slice(0, 20)) { tally[r]++; earlyN++; if (r === 'legendary') early++; }
+  }
+  assert.ok(worst <= P.apart, `never more than ${P.apart} crates between legendaries (${worst})`);
+  console.log(`  pity: first legendary at crate ${Math.min(...firstAt)}-${Math.max(...firstAt)}, longest gap ${worst}; first 20 crates ` +
+    Object.entries(tally).map(([r, n]) => `${r} ${(100 * n / earlyN).toFixed(1)}%`).join(', '));
+  assert.ok(early / earlyN < 0.15, 'the pity lifts legendaries, it does not flood them');
+}
+
 // ---- 3. The active pool: on and off, never under the minimum ---------------------------------------------------------
 {
   const { progress, CRATES, ABILITY_BY_ID } = browser(store());

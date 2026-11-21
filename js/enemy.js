@@ -212,7 +212,7 @@ class Enemy {
     const press = this.isBoss() ? CONFIG.enemy.press : null;
     this.rest = press ? press.rest : 1; this.chain = press ? press.chain : 1;
     this.health = 1;   // its bars' share of its own health (setHealth: Boss Rush's pairs, Story's chapters)
-    this.damageMul = 1;   // its blows' share of their own damage (setMight: Story's chapters)
+    this.damageMul = this.isBoss() ? E.bossDamage : 1;   // its blows' share of their own damage (CONFIG.enemy.bossDamage; setMight: Story's chapters)
     this.phaseIds = def.phases ? (this.boss && this.boss.phases) || def.defaultPhases || null : null;
     this.phase = -1;
     if (this.phaseIds) this.enterPhase(0);
@@ -242,7 +242,7 @@ class Enemy {
   // its bars at `health` of its own, its blows, bolts and fires at `damage` of theirs.
   setMight(m) {
     if (!m) return;
-    this.pace *= m.pace; this.damageMul = m.damage; this.setHealth(m.health);
+    this.pace *= m.pace; this.damageMul = m.damage * (this.isBoss() ? CONFIG.enemy.bossDamage : 1); this.setHealth(m.health);
   }
   // A boss: a def with phases (isBossDef), or any `boss` placement. The one rule for the Finishing Blow (a boss's result
   // waits for the end of it), checkpoints and saves (a beaten boss stays beaten).

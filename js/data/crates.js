@@ -9,6 +9,8 @@
 //   at least `least` for any run that ended (a run lost at once still counts as playing).
 // `level`: the xp from one level to the next: `first`, then `step` more each level, never above `most`.
 // `odds`: a crate's rarity, drawn by weight among the rarities that still hold an ability you don't own.
+// `pity` (pass 173, PLAN "Last"): while a legendary is left to unlock, one of the first `first` crates holds one, and
+//   never more than `apart` crates go by without one (the `apart`th since the last always holds one).
 // `roll`: the strip: `tiles` in it, the ability at `land`, `time` s to spin down (`still` s with reduced motion).
 // `starter`: the abilities every player owns from the start (ids of ABILITIES); never in a crate. How many of each
 //   rarity it holds is the least a player keeps active (CRATE_MIN).
@@ -22,6 +24,7 @@ const CRATES = {
   xp: { fight: 100, crowned: 150, minute: 15, least: 50 },
   level: { first: 250, step: 100, most: 1500 },
   odds: { common: 70, rare: 25, legendary: 5 },
+  pity: { first: 3, apart: 10 },
   roll: { tiles: 46, land: 40, time: 6.2, still: 1.2 },
   save: 2,
   starter: ['keen-edge', 'iron-blood', 'breaker', 'keen-eye', 'light-step', 'quick-draught',

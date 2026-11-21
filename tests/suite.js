@@ -1895,10 +1895,10 @@
     expect.near(p.payload.damage, H.damage * H.charge.mul, 0.01, 'a full charge does charge.mul x damage');
     expect.ok(p.stateTime > tapTime + H.charge.hold * 0.9, 'the hold lengthened the wind-up');
   });
-  test('player: 1.2x health, ordinary hits a third weaker (pass 85); no guard bar, stamina or poise (pass 96)', () => {
+  test('player: 1.2x health, ordinary hits 1.9x those of pass 85 (pass 173); no guard bar, stamina or poise (pass 96)', () => {
     const S = A.PLAYER_DEF.stats, M = A.PLAYER_DEF.moveset.attacks;
     expect.ok(S.maxHp === 120 && Object.keys(S).join() === 'maxHp', `stats: ${JSON.stringify(S)}`);
-    expect.ok(M.heavy.damage === 36 && M.light.damage === 16, `heavy ${M.heavy.damage}, light ${M.light.damage} (53 and 24 before)`);
+    expect.ok(M.heavy.damage === 68 && M.light.damage === 30, `heavy ${M.heavy.damage}, light ${M.light.damage} (36 and 16 before pass 173)`);
     Game.startLevel('test-training'); sim.begin();
     const p = Game.player;
     expect.ok(p.hp === 120 && !('stamina' in p) && !('poise' in p) && !document.getElementById('pSt'), 'a fresh player starts full, with health and dashes the only meters');
@@ -4158,7 +4158,7 @@
     expect.ok(late && late.damageMul === roadMight('torn-abbey', false).damage && late.health === roadMight('torn-abbey', false).health && late.pace === roadMight('torn-abbey', false).pace, 'a level\'s foes are as strong as its chapter');
     expect.ok(Game.player.inventory.flask.max === roadFlasks('torn-abbey', true), 'off Story, the chapter\'s flasks');
     Game.startFight('hollis'); sim.begin();
-    expect.ok(Game.duel.pace === CONFIG.pace.boss && Game.duel.damageMul === 1 && Game.duel.health === 1, 'a duel is the boss as written');
+    expect.ok(Game.duel.pace === CONFIG.pace.boss && Game.duel.damageMul === CONFIG.enemy.bossDamage && Game.duel.health === 1, 'a duel is the boss as written (its blows at CONFIG.enemy.bossDamage, pass 173)');
   });
   test('Story: a broken or foreign save never crashes and offers a new story', withSave(() => {
     for (const bad of ['{not json', JSON.stringify({ v: 1, level: 'nowhere' }), JSON.stringify({ v: 99 }), '"x"']) {
@@ -4550,7 +4550,7 @@
   test('Finishing Blow: it kills a Knight that is low; the player is untouchable throughout and takes no input', () => {
     Game.startFight('knight'); Game.loading = 0; sim.begin();
     const p = Game.player, e = Game.duel; finLog.length = 0;
-    e.hp = 60; cracked(e); counterOn(e, p);
+    e.hp = 120; cracked(e); counterOn(e, p);   // the counter (82.5 since pass 173) leaves it under the blow's 90
     sim.until(() => p.state === PS.EXECUTE, 1);
     expect.ok(p.state === PS.EXECUTE && e.state === ES.EXECUTED && finLog.includes('finisherStart'), `the counter is the Finishing Blow (${p.state}, ${e.state})`);
     let alwaysSafe = true;
@@ -4584,11 +4584,12 @@
     e.x = e.home.x; e.z = e.home.z; e.notice = 0; e.setState(ES.RETURN); sim.seconds(0.1);
     expect.ok(e.cracks === 0 && finLog.filter(t => t === 'guardCrack').length === 2, `a foe that gives up and walks home has its guard whole again (${e.cracks}, ${e.state})`);
   });
-  test('Finishing Blow: 90 off an ordinary foe and 480 off a boss, at most half its bar, with its heal', () => {
+  test('Finishing Blow: 90 off an ordinary foe and CONFIG.finisher.damage off a boss, at most half its bar, with its heal', () => {
     for (const [id, want] of [['knight', 'hurt'], ['executioner', 'hurt'], ['warden', 'hurt'], ['shover', 'hurt'], ['sentinel', 'hurt'], ['giant', 'boss'], ['pillagerCaptain', 'boss'], ['bellWarden', 'boss'], ['varn', 'boss']]) {
       Game.startFight(id); Game.loading = 0; sim.begin(); sturdy(Game.player);
       const p = Game.player, e = Game.duel, max = e.def.hp, D = CONFIG.finisher.damage;
       p.maxHp = 200; p.hp = 100;
+      if (want === 'hurt') e.hp = Math.max(e.hp, 300);   // the counter that starts it lands first (82.5 since pass 173)
       cracked(e); counterOn(e, p);
       sim.until(() => p.state === PS.EXECUTE, 1);
       expect.ok(p.state === PS.EXECUTE, `${id}: the Finishing Blow starts`);

@@ -77,7 +77,8 @@ async function peer(origin, name) {
     assert.ok(boss.rest > press.rest && boss.chain > press.chain, 'Fewer pauses and Longer combos set the rests and the strings');
     assert.equal(boss.maxHp ?? boss.def.hp, hp, 'no modifier adds health');
     app.sim.setRushFight(E.opening); assert.ok(boss.rest === press.rest && boss.chain === press.chain, 'a fight without modifiers is plain: the boss presses as it does everywhere');
-    assert.equal(boss.def.hp, Math.round(hp * E.settle[E.opening - G('CONFIG').pace.warm]), 'a boss alone has its own share there (CONFIG.endless.settle), not a pair share');
+    const settleAt = E.settle[E.opening - G('CONFIG').pace.warm] ?? 1;   // empty since pass 173: whole
+    assert.equal(boss.def.hp, Math.round(hp * settleAt), 'a boss alone has its own share there (CONFIG.endless.settle), not a pair share');
     // The warm-up (pass 73): its bosses come at their RUSH.warmHealth share; every fight after it, whole.
     const warm = G('CONFIG').pace.warm;
     assert.ok(E.opening >= warm && RUSH.opening.length > warm, 'the warm-up draws from its own bosses, more of them than its fights');

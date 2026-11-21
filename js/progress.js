@@ -15,7 +15,8 @@ const progress = (() => {
   function legacyName() {
     try { const n = ArenaNet.name(localStorage.getItem('combatArena.onlineName') || ''); return /^Player \d+$/.test(n) ? '' : n; } catch { return ''; }
   }
-  const blank = () => ({ v: CRATES.save, xp: 0, crates: 0, owned: [...CRATES.starter], off: [], counted: [], name: legacyName() });
+  // `dry`: crates opened since the last legendary (CRATES.pity); an optional field, so no new CRATES.save.
+  const blank = () => ({ v: CRATES.save, xp: 0, crates: 0, dry: 0, owned: [...CRATES.starter], off: [], counted: [], name: legacyName() });
   const whole = (x, most = 1e9) => Number.isInteger(x) && x >= 0 ? Math.min(x, most) : 0;
   const rarityOf = id => ABILITY_BY_ID[id].rarity;
   // A stored state made safe: unknown abilities dropped, the starter set always owned, nothing turned off that would
@@ -32,7 +33,7 @@ const progress = (() => {
       }
     }
     const counted = Array.isArray(s.counted) ? s.counted.filter(k => typeof k === 'string' && k.length <= 80).slice(-KEEP_RUNS) : [];
-    return { v: CRATES.save, xp: whole(s.xp), crates: whole(s.crates, 999), owned, off, counted, name: ArenaNet.name(s.name) || b.name };
+    return { v: CRATES.save, xp: whole(s.xp), crates: whole(s.crates, 999), dry: whole(s.dry, 999), owned, off, counted, name: ArenaNet.name(s.name) || b.name };
   }
   function read() {
     try { const raw = localStorage.getItem(KEY); if (raw) return clean(JSON.parse(raw)); } catch { /* unreadable: start again */ }
@@ -88,8 +89,14 @@ const progress = (() => {
     const of = pool.filter(x => x.rarity === rarity);
     return of[Math.floor(rng() * of.length)];
   }
-  // What a crate holds: an ability you don't own yet; null when you own them all.
-  const draw = (rng = Math.random) => drawFrom(prizes().filter(b => !state.owned.includes(b.id)), rng);
+  // What a crate holds: an ability you don't own yet; null when you own them all. A legendary when one is due
+  // (CRATES.pity): no crate has given one yet and this is the `first`th, or this is the `apart`th since the last.
+  function draw(rng = Math.random) {
+    const pool = prizes().filter(b => !state.owned.includes(b.id)), legends = pool.filter(b => b.rarity === 'legendary');
+    const found = state.owned.some(id => rarityOf(id) === 'legendary' && !CRATES.starter.includes(id)), P = CRATES.pity;
+    const due = state.dry + 1 >= (found ? P.apart : P.first);
+    return due && legends.length ? legends[Math.floor(rng() * legends.length)] : drawFrom(pool, rng);
+  }
   // The roll's strip: CRATES.roll.tiles abilities drawn by the odds from every prize, with `ability` at `land`.
   function strip(ability, rng = Math.random) {
     const R = CRATES.roll, all = prizes();
@@ -104,6 +111,7 @@ const progress = (() => {
     if (!ability) return null;
     state.crates--;
     state.owned = [...state.owned, ability.id];
+    state.dry = ability.rarity === 'legendary' ? 0 : state.dry + 1;
     save();
     return { ability, strip: strip(ability, rng) };
   }

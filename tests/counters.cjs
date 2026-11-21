@@ -17,7 +17,8 @@ const claim = (e, id, attack = 'counter', swing = '1') => sim.hit(id, { enemy: e
   assert.deepEqual(Object.keys(PLAYER_DEF.moveset.counter), ['light'], 'one counter, on light');
   assert.ok(!PLAYER_DEF.moveset.attacks.counterHeavy, 'the rising cut is gone');
   const dmg = makeStrike(PLAYER_DEF.moveset.attacks.counter, true, 0).damage;
-  assert.ok(dmg >= 34 && dmg <= 38, `the counter deals about 36 (${dmg})`);
+  const light = makeStrike(PLAYER_DEF.moveset.attacks.light, false, 0).damage;   // PLAN "Last": a counter is 2-3x a light (pass 173)
+  assert.ok(dmg >= 2 * light && dmg <= 3 * light, `the counter deals 2-3x a light (${dmg} against ${light})`);
 }
 for (const index of [0, 1, 2]) {
   const e = setup(), a = e.def.attacks.find(a => a.hits.length === 3 && !a.noParry);

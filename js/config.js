@@ -135,10 +135,11 @@ const CONFIG = {
   // then every cut opens at once. Every number of the system is here.
   finisher: {
     cracks: 2, steps: 3, past: 1.4,   // the cracks' look: ANIM_SETTINGS.finisherFx (js/finisher-fx.js)
-    // Damage: `mul` times `base` for normal enemies (90); `bossMul` times `base` for bosses (24 x 20 = 480, about a
-    // seventh of a boss's bar), never above `bossCap` of a boss's bar. A blow that would empty a bar leaves 1 hp until
-    // the attack ends; the death, phase change or retreat follows it.
-    damage: { base: 24, mul: 3.75, bossMul: 20, bossCap: 0.5 },
+    // Damage: `mul` times `base` for normal enemies (90); `bossMul` times `base` for bosses (24 x 11 = 264, about 8% of a
+    // boss's bar, about 9 light blows; was 480, a seventh of a bar: pass 173, PLAN "Last", attacking pays), never above
+    // `bossCap` of a boss's bar. A blow that would empty a bar leaves 1 hp until the attack ends; the death, phase change
+    // or retreat follows it.
+    damage: { base: 24, mul: 3.75, bossMul: 11, bossCap: 0.5 },
     heal: 0.08,          // share of the striker's max health the cuts opening heal (capped at hpCap)
     hitstop: 0.14,       // s the world freezes as the cuts open (with the `finisher` attack's 1.06 s: about 1.2 s in all)
     grace: 0.25,         // s the player stays untouchable after the attack ends
@@ -198,6 +199,9 @@ const CONFIG = {
            // Rush's modifiers multiply). Wind-ups, strikes and recoveries keep their own timing: every tell stays as told.
            // Pass 96: 1.3 and 1.4 (were 1.15 and 1.25), as only heavy blows stagger the player now and a block never breaks.
            press: { rest: 1.3, chain: 1.4 },
+           // Every boss's blows, bolts and fires deal this share of their own damage, everywhere (pass 173, PLAN "Last": a
+           // full-health player falls to 3-4 clean boss hits early in a run; as the player's own blows rose 1.9x).
+           bossDamage: 1.25,
            attackFacing: 0.4,        // must face the player within this angle (rad) to start an attack
            deathFade: 2.0, poiseResetTime: 5,
            riseTime: 1.5, leapVelocity: 6.5, leapSpeed: 6.5, leapTime: 0.5,
@@ -273,7 +277,9 @@ const CONFIG = {
   // one with no abilities around 11 (was 9), with a strong kit around 22 (was 17), none past 34. Pass 90's curve (x2.8 by
   // fight 15) was a wall for a strong kit at fights 13-15. It depends on the fights won alone: never on health, damage or
   // the team's size.
-  pace: { boss: 1, rise: 0.165, scale: 6.5, steady: 20, max: 12, tell: 0.25, tellFloor: 0.6, warm: 4, warmFrom: 0.85 },
+  // Pass 173 (PLAN "Last", the balance pass): rise 0.2 (was 0.165) and the warm-up from 0.9 (was 0.85), with the
+  // player's blows 1.9x and the bosses' 1.25x (CONFIG.enemy.bossDamage): docs/balance/README.md.
+  pace: { boss: 1, rise: 0.2, scale: 6.5, steady: 20, max: 12, tell: 0.25, tellFloor: 0.6, warm: 4, warmFrom: 0.9 },
   // Swift kill (v7.69.0): each Boss Rush fight has a par, the fight-length target: `par` s at the base pace, growing with
   // the curve's pace and by `pair` for each boss past the first, at most `max` s. The HUD shows it beside the fight's
   // clock. A fight won under par adds `extra` choices to that fight's ability offer.
@@ -299,7 +305,8 @@ const CONFIG = {
   // docs/scorecard/now/rush-curve.md). `settle` (pass 168): each boss's share of its health in the fights right after the
   // warm-up, one entry a fight (fights 5, 6, 7), so health climbs to whole: the default bot fell at fight 5 in half its
   // runs, against one in ten at fight 4. `longest`: a bound on a run's fights for the draw; the curve makes it unreachable.
-  endless: { opening: 4, crowned: 5, crownedOffer: 4, pairFrom: 9, pairEvery: 5, pairRest: 0.5, pairTurns: true, pairHealth: 0.5, settle: [0.7, 0.8, 0.9], mods: [8, 16, 26], longest: 999 },
+  // Pass 173: `settle` emptied (whole health from fight 5): with fights half as long, the new player no longer fell there.
+  endless: { opening: 4, crowned: 5, crownedOffer: 4, pairFrom: 9, pairEvery: 5, pairRest: 0.5, pairTurns: true, pairHealth: 0.5, settle: [], mods: [8, 16, 26], longest: 999 },
   // The kill moment (v7.69.0), drawn only: when a Boss Rush fight's last boss falls, its death and the effects play at
   // `slow` of their speed for `time` s (the simulation and the other players run on), `embers` embers burst from it
   // (a third as many under reduced motion, which also skips the slow), and "Boss n down" stands until the pick.

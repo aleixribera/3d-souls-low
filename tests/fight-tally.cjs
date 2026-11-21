@@ -36,22 +36,22 @@ assert.equal(hit('ember', e), true);
 e.hp = 3;
 assert.equal(hit('ember', e), true);
 const rows = complete();
-assert.deepEqual(rows.map(r => [r.id, r.damage]), [['ember', 19], ['ash', 16], ['idle', 0]], 'trusted damage, overkill cap and zero damage participants');
+assert.deepEqual(rows.map(r => [r.id, r.damage]), [['ember', 33], ['ash', 30], ['idle', 0]], 'trusted damage, overkill cap and zero damage participants');
 sim.registerPlayer('ash', 'Changed after victory');
 assert.equal(sim.fightTally().find(r => r.id === 'ash').name, 'Ash', 'a won fight keeps its numbers');
 
-e = begin(); e.hp = 100; finisherBy('ash', e);
+e = begin(); e.hp = 300; finisherBy('ash', e);
 const held = e.hp;
 assert.equal(hit('ember', e), false, 'nobody strikes a foe held for a Finishing Blow');
 sim.endFinisher('ember', e.netId);
 assert.equal(e.hp, held, 'another player cannot end the Finishing Blow');
 sim.endFinisher('ash', e.netId);
-assert.equal(complete()[0].damage, 100, 'a Finishing Blow credits its owner, capped at remaining HP');
+assert.equal(complete()[0].damage, 300, 'a Finishing Blow credits its owner, capped at remaining HP');
 
-e = begin(); e.hp = 80; finisherBy('ember', e);
+e = begin(); e.hp = 250; finisherBy('ember', e);
 sim.setPlayers([]);
 for (let i = 0; i < 600 && e.netExec; i++) sim.tick(1 / C.tickRate);
-assert.equal(complete()[0].damage, 80, 'a disconnected Finishing Blow owner retains credit on reservation timeout');
+assert.equal(complete()[0].damage, 250, 'a disconnected Finishing Blow owner retains credit on reservation timeout');
 
 e = begin(); e.setState('phase');
 assert.equal(hit('ash', e), false, 'invulnerable contacts are rejected');
@@ -59,13 +59,13 @@ assert.equal(complete().find(r => r.id === 'ash').damage, 0);
 
 e = begin(); e.def = { ...e.def, lifesteal: { flat: 40, pct: 0.02 } };   // the opt-in lifesteal of v5.9, no longer on any boss
 hit('ash', e); e.lifesteal(); hit('ash', e);
-assert.equal(complete()[0].damage, 32, 'healing never subtracts previously earned damage');
+assert.equal(complete()[0].damage, 60, 'healing never subtracts previously earned damage');
 
 e = begin();
 hit('ash', e); hit('ember', e);
 sim.setPlayers([]);
 const ties = complete();
-assert.deepEqual(ties.map(r => [r.name, r.damage]), [['Ash', 16], ['Ember', 16], ['Idle', 0]], 'disconnected contributors remain');
+assert.deepEqual(ties.map(r => [r.name, r.damage]), [['Ash', 30], ['Ember', 30], ['Idle', 0]], 'disconnected contributors remain');
 
 e = begin('arena', 'varn'); e.hp = 10;
 hit('ash', e);

@@ -10,8 +10,15 @@
 // No abilities unless KIT (below): the no-ability target. ONLY=a,b limits the bosses (bosses mode). JOBS=n splits the work over n child processes, each at
 // idle priority. CURVE='{"rise":0.3}' merges into CONFIG.pace, to try a curve without editing js/config.js.
 // ABILITIES='{"pickTime":20}' merges into CONFIG.abilities. PRESS='{"rest":1.3}' merges into CONFIG.enemy.press (pass 96).
-// SHARES='{"vesper":0.7}' merges into RUSH.health, a boss's Boss Rush share of its health (pass 168).
+// BOT='{"aggression":0.1}' merges into every BOT_PROFILES entry (pass 173: a bot that presses every opening against one
+// that waits to deflect). BOTCFG='{"parryChanceScale":1,"tempo":{"comboBase":0.5}}' merges into CONFIG.bot (one level deep).
+// HITS=1.5 scales every player attack's damage; FINISHER='{"bossMul":12}' merges into CONFIG.finisher.damage (pass 173).
+// ENEMY='{"bossDamage":1.2}' merges into CONFIG.enemy (pass 173).
+// SHARES='{"vesper":0.7}' merges into RUSH.health, a boss's Boss Rush share of its health (pass 168); WARM the same into
+// RUSH.warmHealth, the warm-up's shares (pass 173).
 // DUMP=file (runs mode) writes each run's fights (number, time, win, breaks, par, might) as JSON.
+// SPLIT=1 (bosses mode) prints each boss's damage by source (plain blows, counters, Finishing Blows, powers, other); the
+// TOTAL line always does (pass 173).
 // BY=1 adds the damage taken by what dealt it, and the last blow of each fall (BY=2: by blow of a string).
 // SLOW='{"oswin":[1.2,1.1,0.8,0.2]}' scales a boss's idle gaps (every `cooldown`), recoveries and follow-up chances, and adds
 // seconds to the beat between the blows of each string (every hit's `follow` but the last), to try a
@@ -29,7 +36,7 @@ const curve = process.env.CURVE ? JSON.parse(process.env.CURVE) : null;
 const slow = process.env.SLOW ? JSON.parse(process.env.SLOW) : {};
 const patch = process.env.PATCH ? JSON.parse(process.env.PATCH) : {};
 // The stand-in's skill: SKILLED=1 is the skilled player of PLAN.md item 10's curve targets, the bot mistiming a quarter
-// as many rolls as its moods say (BOT_MOODS slip, 0.3 to 0.5: a decent friend new to the genre, the default).
+// as many rolls as its moods say and deflecting as often as its profile says (setup) (BOT_MOODS slip, 0.3 to 0.5: a decent friend new to the genre, the default).
 const skill = process.env.SKILLED ? 0.25 : 1;
 // KIT (pass 56): the abilities held, the first the free pick before fight 1 (a rare since pass 96, CONFIG.abilities.first),
 // then one picked after each fight won, in this order: fight n holds the first n. KIT=strong is item 10's "rare, great
@@ -65,9 +72,17 @@ function setup(sim) {
   if (curve) Object.assign(global(sim, 'CONFIG').pace, curve);
   if (process.env.ENDLESS) Object.assign(global(sim, 'CONFIG').endless, JSON.parse(process.env.ENDLESS));
   if (process.env.ABILITIES) Object.assign(global(sim, 'CONFIG').abilities, JSON.parse(process.env.ABILITIES));
+  if (process.env.ENEMY) Object.assign(global(sim, 'CONFIG').enemy, JSON.parse(process.env.ENEMY));
   if (process.env.PRESS) Object.assign(global(sim, 'CONFIG').enemy.press, JSON.parse(process.env.PRESS));
   if (process.env.SHARES) Object.assign(global(sim, 'RUSH').health, JSON.parse(process.env.SHARES));
-  if (skill !== 1) for (const m of Object.values(global(sim, 'BOT_MOODS'))) m.slip *= skill;
+  if (process.env.WARM) Object.assign(global(sim, 'RUSH').warmHealth, JSON.parse(process.env.WARM));
+  // SKILLED also deflects at its profile's own rate (CONFIG.bot.parryChanceScale 1, the companions' 0.1): pass 173, as
+  // Aleix's recorded solo fights ran 2-2.5x quicker than the skilled bot's (node tools/replays.cjs).
+  if (skill !== 1) { for (const m of Object.values(global(sim, 'BOT_MOODS'))) m.slip *= skill; global(sim, 'CONFIG').bot.parryChanceScale = 1; }
+  if (process.env.HITS) for (const a of Object.values(global(sim, 'PLAYER_DEF').moveset.attacks)) a.damage *= Number(process.env.HITS);
+  if (process.env.FINISHER) Object.assign(global(sim, 'CONFIG').finisher.damage, JSON.parse(process.env.FINISHER));
+  if (process.env.BOTCFG) for (const [k, v] of Object.entries(JSON.parse(process.env.BOTCFG))) { const B = global(sim, 'CONFIG').bot; B[k] = v && typeof v === 'object' && !Array.isArray(v) ? { ...B[k], ...v } : v; }
+  if (process.env.BOT) for (const p of global(sim, 'BOT_PROFILES')) Object.assign(p, JSON.parse(process.env.BOT));
   const byId = global(sim, 'ENEMY_BY_ID');
   for (const [id, [cd, rec, fu, beat = 0]] of Object.entries(slow)) {
     const d = byId[id]; if (!d) throw new Error('SLOW: no boss ' + id);
@@ -104,9 +119,21 @@ function fight(boss, won, seed, partners = [], mods = []) {
   const ES = global(sim, 'ES'), bosses = Game.enemies.filter(e => e.isBoss()), was = bosses.map(e => e.state);
   let time = 0, taken = 0, prev = body.hp, result = 'loss', blow = null, last = null, breaks = 0;   // last: what dealt the last damage (BY)
   const by = {};   // BY=1: the damage taken by what dealt it (an attack's id, or 'other' for fire, seams and the like)
+  // The bosses' damage by what dealt it (pass 173, PLAN "Last": attacking pays): plain blows, counters, Finishing Blows,
+  // the kit's powers, and the rest (burns, echoes and the like: whatever took health outside a blow).
+  const split = { plain: 0, counter: 0, finisher: 0, power: 0, other: 0 }, Enemy = global(sim, 'Enemy'), take = Enemy.prototype.takeHit;
+  let struck = 0;   // health a blow took this tick
+  Enemy.prototype.takeHit = function (strike, from) {
+    const hp = this.hp, res = take.call(this, strike, from), d = Math.max(0, hp - this.hp);
+    if (this.isBoss()) { split[strike.power ? 'power' : strike.riposte ? 'counter' : 'plain'] += d; struck += d; }
+    return res;
+  };
+  global(sim, 'events').on('finisher', d => { if (d.enemy.isBoss()) { split.finisher += d.damage; struck += d.damage; } });
+  const hpOf = () => bosses.reduce((n, e) => n + Math.max(0, e.hp), 0);
   if (process.env.BY) global(sim, 'events').on('strike', d => { if (d.target === body) blow = (d.attacker && d.attacker.attack && d.attacker.attack.id + (process.env.BY === '2' ? '#' + d.attacker.hitIndex + (d.attacker.state === 'recover' || d.attacker.state === 'chase' ? d.attacker.state : '') : '')) || 'blow'; });
   for (; time < LIMIT; time += 1 / 60) {
-    sim.setPlayers([]); blow = null; sim.tick(1 / 60);
+    sim.setPlayers([]); blow = null; struck = 0; const before = hpOf(); sim.tick(1 / 60);
+    split.other += Math.max(0, before - hpOf() - struck);
     bosses.forEach((e, i) => { if (e.state === ES.EXECUTED && was[i] !== ES.EXECUTED) breaks++; was[i] = e.state; });   // Finishing Blows (pass 100; were posture breaks)
     if (body.hp < prev) { taken += prev - body.hp; const k = blow || 'other'; by[k] = (by[k] || 0) + prev - body.hp; last = k; }
     prev = body.hp;
@@ -114,16 +141,18 @@ function fight(boss, won, seed, partners = [], mods = []) {
     if (sim.botsDown()) break;
   }
   const might = global(sim, 'kitMight')(kit), par = global(sim, 'rushPar')(won, 1 + partners.length, might);
-  return { result, time, taken, by, last: result === 'win' ? null : last, breaks, par, might };
+  Enemy.prototype.takeHit = take;
+  return { result, time, taken, by, last: result === 'win' ? null : last, breaks, par, might, split };
 }
 function work(job) {
   if (job.mode === 'bosses') {
     return job.bosses.map(([boss, from, to]) => {
-      const r = { boss, wins: 0, time: 0, winTime: 0, taken: 0, fights: 0, by: {}, fell: {}, breaks: 0, swift: 0 };
+      const r = { boss, wins: 0, time: 0, winTime: 0, taken: 0, fights: 0, by: {}, fell: {}, breaks: 0, swift: 0, split: {} };
       for (let t = from; t < to; t++) {
         const f = fight(boss, job.won, Number(process.env.SEED || 1000) + t);
         r.fights++; r.time += f.time; r.taken += f.taken; r.breaks += f.breaks; if (f.result === 'win' && f.time <= f.par) r.swift++;
         for (const [k, v] of Object.entries(f.by)) r.by[k] = (r.by[k] || 0) + v;
+        for (const [k, v] of Object.entries(f.split)) r.split[k] = (r.split[k] || 0) + v;
         if (f.result === 'win') { r.wins++; r.winTime += f.time; } else if (f.last) r.fell[f.last] = (r.fell[f.last] || 0) + 1;
       }
       return r;
@@ -147,7 +176,7 @@ function work(job) {
     for (let won = 0; ; won++) {
       const g = probe.calling(run, won), mods = process.env.MODS === '0' ? [] : g.modifiers;
       const f = fight(g.boss, won, 9000 + n * 101 + won, g.partners, mods);
-      fights.push({ number: won + 1, time: f.time, win: f.result === 'win', breaks: f.breaks, par: f.par, might: f.might, bosses: 1 + g.partners.length });
+      fights.push({ number: won + 1, time: f.time, win: f.result === 'win', breaks: f.breaks, par: f.par, might: f.might, bosses: 1 + g.partners.length, split: f.split });
       if (f.result !== 'win' || won >= 40) return { run: n, reached: won + 1, fell: f.result !== 'win' ? [g.boss, ...g.partners].join('+') : null, pace: probe.inspect().Game.update.constructor('return rushPace')()(won), fights };
     }
   });
@@ -178,19 +207,24 @@ if (process.env.RUSH_CHILD) {
         if (!m) { merged.set(r.boss, r); continue; }
         for (const k of ['wins', 'time', 'winTime', 'taken', 'fights', 'breaks', 'swift']) m[k] += r[k];
         for (const [k, v] of Object.entries(r.by)) m.by[k] = (m.by[k] || 0) + v;
+        for (const [k, v] of Object.entries(r.split)) m.split[k] = (m.split[k] || 0) + v;
         for (const [k, v] of Object.entries(r.fell)) m.fell[k] = (m.fell[k] || 0) + v;
       }
       rows = [...merged.values()];
       rows.sort((a, b) => ALL.indexOf(a.boss) - ALL.indexOf(b.boss));
       console.log(`# alone, ${count} fights each at the pace for ${fightArg} won (x${probe.inspect().Game.update.constructor('return rushPace')()(fightArg).toFixed(2)}), ${kitList.length ? `KIT ${process.env.KIT} (the first ${fightArg})` : 'no abilities'}, ${skill === 1 ? 'the default bot' : 'SKILLED'}`);
-      let w = 0, n = 0;
+      let w = 0, n = 0, wt = 0, ws = 0;
+      const all = {};
+      const shares = sp => { const t = Object.values(sp).reduce((a, b) => a + b, 0) || 1; return Object.entries(sp).map(([k, v]) => `${k} ${Math.round(v / t * 100)}%`).join(' '); };
       for (const r of rows) {
-        w += r.wins; n += r.fights;
+        w += r.wins; n += r.fights; wt += r.winTime; ws += r.wins;
+        for (const [k, v] of Object.entries(r.split)) all[k] = (all[k] || 0) + v;
+        if (process.env.SPLIT) console.log(`${''.padEnd(14)} damage: ${shares(r.split)}`);
         console.log(`${r.boss.padEnd(14)} wins ${r.wins}/${r.fights}  falls ${((r.fights - r.wins) / r.fights).toFixed(2)}  time ${(r.time / r.fights).toFixed(0)}s  win time ${r.wins ? (r.winTime / r.wins).toFixed(0) + 's' : '-'}  taken ${(r.taken / r.fights).toFixed(0)}  swift ${r.swift}  s/break ${r.breaks ? (r.time / r.breaks).toFixed(0) : '-'}` +
           (process.env.BY ? '  by ' + Object.entries(r.by).sort((a, b) => b[1] - a[1]).map(([k, v]) => `${k} ${(v / r.fights).toFixed(0)}`).join(', ') +
             '  last blow ' + Object.entries(r.fell).sort((a, b) => b[1] - a[1]).map(([k, v]) => `${k} ${v}`).join(', ') : ''));
       }
-      console.log(`TOTAL          wins ${w}/${n}  falls ${((n - w) / n).toFixed(2)}`);
+      console.log(`TOTAL          wins ${w}/${n}  falls ${((n - w) / n).toFixed(2)}  win time ${ws ? (wt / ws).toFixed(0) + 's' : '-'}  damage: ${shares(all)}`);
     } else {
       rows.sort((a, b) => a.run - b.run);
       if (process.env.DUMP) require('fs').writeFileSync(process.env.DUMP, JSON.stringify(rows));   // each run's fights, to study offline

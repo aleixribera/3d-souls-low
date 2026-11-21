@@ -488,6 +488,8 @@ function validateData({ visual = true } = {}) {
   const STARTER = CR.starter;
   need(Array.isArray(STARTER) && STARTER.every(id => Object.hasOwn(ABILITY_BY_ID, id)) && new Set(STARTER).size === STARTER.length, 'CRATES.starter: ability ids, each once.');
   need(Number.isInteger(CR.save) && CR.save >= 1, 'CRATES.save: a whole version of 1 or more.');
+  need(Number.isInteger(CR.pity?.first) && Number.isInteger(CR.pity?.apart) && CR.pity.first >= 1 && CR.pity.apart >= CR.pity.first,
+    'CRATES.pity: whole numbers first (1 or more) and apart (at least first).');
   if (Array.isArray(STARTER)) {
     need(DRAWN.every(r => CRATE_MIN[r] >= 1) && cratePool(STARTER)?.length === STARTER.length, 'CRATES.starter: at least one of each rarity.');
     for (const key of ABILITY_KEYS) need(STARTER.some(id => ABILITY_BY_ID[id]?.key === key), `CRATES.starter: an ability for key ${key}.`);
@@ -924,6 +926,7 @@ function validateData({ visual = true } = {}) {
     && num(AG.areaMul) && AG.areaMul >= 1, 'CONFIG.aggro: damage, healReach, hold, margin, crowd and areaWidth must be 0 or more, memory above 0 and areaMul 1 or more.');
   need(num(CONFIG.parry.counterReel) && CONFIG.parry.counterReel > 0, 'CONFIG.parry.counterReel must be positive.');
   // The Finishing Blow (js/finisher.js): the attack it runs, and every tuning number.
+  need(num(CONFIG.enemy.bossDamage) && CONFIG.enemy.bossDamage > 0, 'CONFIG.enemy.bossDamage: a share above 0 of the damage of every boss blow.');
   { const Fa = M.attacks.finisher, F = CONFIG.finisher;
     need(Fa && Fa.pose && Fa.hits.length === 1 && Fa.damage === 0, 'Player moveset: the Finishing Blow needs a one-hit "finisher" attack with a pose and no damage of its own.');
     need(F && Number.isInteger(F.cracks) && F.cracks >= 1 && Number.isInteger(F.steps) && F.steps >= 1

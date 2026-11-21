@@ -44,7 +44,7 @@ function peer(url, origin) {
   assert.equal(e.netTarget, 'a', 'server selects nearby player');
   const hp = e.hp;
   assert.equal(sim.hit('a', { enemy: e.netId, attack: 'light', charge: 0 }), true);
-  assert.equal(e.hp, hp - 16, 'server computes damage from game data');   // the light's 16 (pass 85)
+  assert.equal(e.hp, hp - 30, 'server computes damage from game data');   // the light's 30 (pass 173; 16 since pass 85)
   assert.equal(sim.hit('a', { enemy: e.netId, attack: 'missing', charge: 0 }), false);
   const parryable = e.baseDef.attacks.find(a => !a.noParry && !a.projectile && !a.rollOnly);
   e.beginAttack(parryable); sim.tick(1 / 60); const oldSerial = e.netAttack;
@@ -63,7 +63,7 @@ function peer(url, origin) {
   sim.setPlayers([{ ...pose(6, -3), id: 'a' }, { ...pose(-12, 0), id: 'b' }]);
   assert.equal(counter(7), true); assert.equal(e.cracks, 1, 'a counter cracks the guard');
   const h1 = e.hp; counter(7);
-  assert.equal(h1 - e.hp, 16, 'a duplicate contact cannot crack the same guard twice');
+  assert.equal(h1 - e.hp, 30, 'a duplicate contact cannot crack the same guard twice');
   for (let i = 0; i < 60; i++) sim.tick(1 / 60);
   counter(); assert.equal(e.cracks, 1, 'one counter an opening');
   e.cracks = X.cracks; e.crackBy = null;
@@ -116,12 +116,12 @@ function peer(url, origin) {
     a.send({ type: 'hit', epoch, seq: 1, enemy: 'duel/ostrey', attack: 'light', charge: 0, swing: 'one' });
     a.send({ type: 'hit', epoch, seq: 2, enemy: 'duel/ostrey', attack: 'light', charge: 0, swing: 'one' });
     await a.next('frame', m => m.frame.enemies[0].hp < full);
-    assert.equal(app.sim.inspect().Game.duel.hp, full - 16, 'duplicate contacts do not damage twice');
+    assert.equal(app.sim.inspect().Game.duel.hp, full - 30, 'duplicate contacts do not damage twice');
     b.send({ type: 'hit', epoch: epoch - 1, seq: 3, enemy: 'duel/ostrey', attack: 'heavy', charge: 0, swing: 'old' });
     const c = peer(url, origin); peers.push(c); await c.join();
     assert.equal((await c.next('start')).session.epoch, epoch, 'late join gets current session');
     c.send({ type: 'ready', epoch });
-    assert.equal((await c.next('frame')).frame.enemies[0].hp, full - 16, 'late join gets shared current health');
+    assert.equal((await c.next('frame')).frame.enemies[0].hp, full - 30, 'late join gets shared current health');
     a.send({ type: 'control', action: 'transfer', player: wb.id });
     await b.next('roster', m => m.leader === wb.id);
     b.send({ type: 'control', action: 'restart' });
