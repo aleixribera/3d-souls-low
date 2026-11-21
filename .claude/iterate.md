@@ -1,7 +1,7 @@
 # Iterate: Combat Arena 3D
 
 Model: opus, effort medium
-Skill synced: 0770cf8
+Skill synced: 86c263a
 Parts: judge (panel: `docs/scorecard/panel/`), review (weekly, from 2026-11-20), incidents (the game is played online).
 
 ## Vision and plan
@@ -50,17 +50,15 @@ node tools/pack-baked.cjs <stem>
 - **References for judges:** `.scratch/ref-clips` (never committed); the panel's lineup and prompt are
   `docs/scorecard/panel/` (`lineup.py`, `prompt.txt`).
 - **Boss judge:** `docs/bosses/system.md` section 6; after each round `node tools/boss-judge.cjs` (plot, `FLAT`).
+  Before filming a boss's strips, `node tools/body-check.cjs <bossId>` clears every hit (why: "only the weapon
+  travels" was the judges' giveaway in 6 of 10 rounds, one round each, and the key poses show it in a second, retro 130).
 
 ## Ship and release
 
 - Commit to `main` and push; CI runs on the push.
 - A release whenever a pass ships something players notice: `node tools/release.cjs "<title>" "<text>"` (AGENTS.md
   "Release"), commit, push, tag `v*`, push the tag, check that the container workflow started.
-- **Don't wait on CI after your push.** The next pass starts with `node tools/live-check.cjs`: players' version
-  and the newest CI and container runs (why: players sat on v7.159.0 through three held releases unseen, retro 110).
-- A test that fails on CI and passes locally gets hardened in that pass (a wait on the state it needs, not a fixed
-  delay), not just noted (why: a 250 ms key press in `alone-browser` failed under CI's SwiftShader and held v7.161.0's
-  container behind the green-CI gate, retro 105).
+- Don't wait on CI after your push; the next pass reads what players get with `node tools/live-check.cjs`.
 - After many tests were added or removed, or when one shard runs far longer than the others, refresh the shard
   weights from a green run: `node tools/shard-weights.cjs`, and commit `tests/shard-weights.json`.
 

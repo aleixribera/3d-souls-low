@@ -3,7 +3,8 @@
 The fourth boss through the system (`system.md`; PLAN item 6, the roster in the order players meet them). Data:
 `js/data/bosses/aldric.js` (boss id `varn`, model `varn`); model: `tools/blender/aldric.py`. Status: pass 128, his
 own sweep wind-up, the Turning Key (the man's second string) and his cel look (dark cloth, banded steel, the tell on
-the blade's edge, soft joints, a smear on his swings). Next: in-between keys where his strips look stiff, then Aleix.
+the blade's edge, soft joints, a smear on his swings); pass 130, every follow-through carries him on past the strike
+(`tools/body-check.cjs`: 23 hits flagged before, none after). Awaiting Aleix.
 
 ## Moveset audit (pass 127): restyle, plus a string and a wind-up of his own
 

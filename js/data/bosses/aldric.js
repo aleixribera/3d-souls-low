@@ -123,15 +123,18 @@ MODEL_DEFS.varn = {
   // lock, and comes back flat across to his left; then, stepping in, both fists drive the pommel (the Oath's lock) at
   // your face, the blade standing up behind his right shoulder.
   const turned = { ...sweptROn, crouch: 0.26, spin: [0, -0.75, 0], chest: [0.0, -0.45, 0], armR: [-1.0, 0, -0.95], elbowR: [-0.6, 0, 0], haft: [0.15, -1.35, 1.57] };
-  const keyBack = { ...swept, haft: [0.25, -0.1, 1.57] };
+  const keyBack = { ...swept, crouch: 0.3, haft: [0.25, -0.1, 1.57] };   // the backswing sinks into his hips (pass 130)
   const pommelUp = { crouch: 0.2, lean: -0.02, legL: [-0.45, 0, 0], legR: [0.45, 0, 0], spin: [0, -0.3, 0], chest: [-0.1, -0.2, 0], neck: [0, 0.1, 0], head: [0, 0.15, 0],
     armR: [-1.3, 0, -0.2], elbowR: [-1.6, 0, 0], haft: [-1.2, 2.6, 3.14], armL: [-1.2, 0, 0.1], elbowL: [-1.6, 0, 0] };
   const pommelled = { crouch: 0.24, lean: 0.35, legL: [-0.85, 0, 0], kneeL: [0.35, 0, 0], legR: [0.7, 0, 0], spin: [0, 0.05, 0], chest: [0.2, 0, 0], neck: [-0.1, 0, 0], head: [-0.15, 0, 0],
     armR: [-1.6, 0, 0.05], elbowR: [-0.15, 0, 0], haft: [-0.9, 2.9, 3.14], armL: [-1.55, 0, -0.05], elbowL: [-0.2, 0, 0] };
+  // Pass 130 (tools/body-check.cjs): every follow-through below carries the body on past its strike (on round, or bent
+  // further over) instead of stopping dead on the strike's pose, the judges' "only the weapon travels".
+  const pommelledOn = { ...pommelled, crouch: 0.28, lean: 0.42, spin: [0, 0.15, 0], chest: [0.28, 0.08, 0] };
   ATTACK_POSES.aldricTurningKey = { ease: cut, lag: { weapon: 0.08 },
     hits: [{ windup: shouldered, strike: sweptR, follow: sweptROn, via: sweepVia },
       { windup: turned, strike: keyBack, follow: { ...keyBack, spin: [0, 0.55, 0], haft: [0.3, 0.4, 1.57] } },
-      { windup: pommelUp, strike: pommelled, follow: pommelled }] };
+      { windup: pommelUp, strike: pommelled, follow: pommelledOn }] };
 
   // Two Cuts: over his right shoulder, point to the sky; down across to his left knee (parry it); then from low at his left
   // up across to his right shoulder (parry it).
@@ -142,8 +145,10 @@ MODEL_DEFS.varn = {
   const lowLeft = { ...downLeft, crouch: 0.32, spin: [0, 0.4, 0], armR: [-0.9, 0, 0.8], haft: [0.95, 0.9, 3.14] };
   const rising = { crouch: 0.1, lean: -0.05, legL: [-0.4, 0, 0], legR: [0.55, 0, 0], spin: [0, -0.55, 0], chest: [-0.15, -0.35, 0], neck: [0, 0.3, 0], head: [0, 0.35, 0],
     armR: [-2.3, 0, -0.45], elbowR: [-0.3, 0, 0], haft: [-1.05, -0.3, 3.14], armL: [-2.0, 0, -0.3], elbowL: [-0.4, 0, 0] };
+  const downLeftOn = { ...downLeft, crouch: 0.3, lean: 0.3, spin: [0, 0.5, 0], chest: [0.35, 0.3, 0], haft: [0.85, 0.8, 3.14] };
+  const risingOn = { ...rising, spin: [0, -0.75, 0], chest: [-0.2, -0.45, 0], haft: [-1.35, -0.5, 3.14] };
   ATTACK_POSES.aldricTwoCuts = { ease: cut, lag: { weapon: 0.08 },
-    hits: [{ windup: cocked, strike: downLeft, follow: downLeft }, { windup: lowLeft, strike: rising, follow: { ...rising, haft: [-1.35, -0.5, 3.14] } }] };
+    hits: [{ windup: cocked, strike: downLeft, follow: downLeftOn }, { windup: lowLeft, strike: rising, follow: risingOn }] };
 
   // The Withheld Sentence: the blade laid across the back of his neck like a headsman's yoke, point out to his left, both
   // fists up at his right ear; held, as long as he likes; brought over and straight down ahead.
@@ -151,7 +156,7 @@ MODEL_DEFS.varn = {
     armR: [-2.6, 0, -0.6], elbowR: [-1.7, 0, 0], haft: [-0.15, 2.3, 4.71], armL: [-2.6, 0, 0.2], elbowL: [-1.6, 0, 0] };
   const fell = { crouch: 0.26, lean: 0.38, legL: [-0.95, 0, 0], kneeL: [0.45, 0, 0], legR: [0.65, 0, 0], kneeR: [0.2, 0, 0], chest: [0.4, 0, 0], neck: [-0.2, 0, 0], head: [-0.3, 0, 0],
     armR: [-1.35, 0, 0.1], elbowR: [0, 0, 0], haft: [0.95, 0.05, 3.14], armL: [-1.3, 0, -0.05], elbowL: [-0.1, 0, 0] };
-  const fellOn = { ...fell, crouch: 0.3, armR: [-1.15, 0, 0.1], haft: [1.15, 0.05, 3.14] };
+  const fellOn = { ...fell, crouch: 0.3, lean: 0.44, chest: [0.46, 0, 0], armR: [-1.15, 0, 0.1], haft: [1.15, 0.05, 3.14] };
   ATTACK_POSES.aldricSentence = { ease: heavy, lag: { weapon: 0.1 }, hits: [{ windup: yoke, strike: fell, follow: fellOn }] };
 
   // Shackle Lunge: drawn back level at his right hip, point at you, his weight back; he runs it through you.
@@ -159,7 +164,8 @@ MODEL_DEFS.varn = {
     armR: [-0.55, 0, -0.3], elbowR: [-1.5, 0, 0], haft: [0, 0.5, 4.71], armL: [-0.9, 0, 0.1], elbowL: [-1.3, 0, 0] };
   const thrust = { crouch: 0.3, lean: 0.5, legL: [-1.05, 0, 0], kneeL: [0.45, 0, 0], legR: [0.85, 0, 0], spin: [0, 0.15, 0], chest: [0.25, 0.1, 0], neck: [-0.15, -0.1, 0], head: [-0.2, -0.1, 0],
     armR: [-1.5, 0, 0.15], elbowR: [-0.05, 0, 0], haft: [0.05, -0.1, 4.71], armL: [-1.45, 0, 0.1], elbowL: [-0.15, 0, 0] };
-  ATTACK_POSES.aldricLunge = { ease: lunge, lag: { weapon: 0.05 }, hits: [{ windup: drawn, strike: thrust, follow: thrust }] };
+  const thrustOn = { ...thrust, crouch: 0.33, lean: 0.58, spin: [0, 0.25, 0], chest: [0.3, 0.15, 0] };
+  ATTACK_POSES.aldricLunge = { ease: lunge, lag: { weapon: 0.05 }, hits: [{ windup: drawn, strike: thrust, follow: thrustOn }] };
 
   // Iron Shoulder: the blade let down low along his right thigh, point trailing behind him, his left hand off it and his
   // left pauldron squared to you, deep in a crouch; he drives the shoulder into you. (Pass 75's judge: held upright, its
@@ -168,7 +174,8 @@ MODEL_DEFS.varn = {
     neck: [0, 0.6, 0], head: [-0.05, 0.75, 0], armR: [-0.3, 0, -0.35], elbowR: [-0.3, 0, 0], haft: [1.0, -1.3, 4.71], grip: false, armL: [-0.2, 0, 0.6], elbowL: [-1.8, 0, 0] };
   const rammed = { crouch: 0.3, lean: 0.55, legL: [-1.05, 0, 0], kneeL: [0.45, 0, 0], legR: [0.85, 0, 0], spin: [0, -0.4, 0], chest: [0.35, -0.5, 0], neck: [-0.1, 0.5, 0], head: [-0.1, 0.65, 0],
     armR: [-0.4, 0, -0.4], elbowR: [-0.25, 0, 0], haft: [0.9, -1.2, 4.71], grip: false, armL: [-0.3, 0, 0.7], elbowL: [-1.9, 0, 0] };
-  ATTACK_POSES.aldricShoulder = { ease: lunge, lag: { weapon: 0.04 }, hits: [{ windup: braced, strike: rammed, follow: rammed }] };
+  const rammedOn = { ...rammed, lean: 0.62, spin: [0, -0.3, 0], chest: [0.4, -0.42, 0] };
+  ATTACK_POSES.aldricShoulder = { ease: lunge, lag: { weapon: 0.04 }, hits: [{ windup: braced, strike: rammed, follow: rammedOn }] };
 
 
   // Judgement Leap: a deep crouch, the blade over his right shoulder with its point behind him; a leap along his locked aim,
@@ -176,13 +183,14 @@ MODEL_DEFS.varn = {
   const coiled = { crouch: 0.45, lean: 0.35, legL: [-0.9, 0, 0], kneeL: [0.6, 0, 0], legR: [0.4, 0, 0], kneeR: [0.6, 0, 0], spin: [0, -0.4, 0], chest: [0.35, -0.25, 0], neck: [-0.25, 0.2, 0], head: [-0.3, 0.25, 0],
     armR: [-2.1, 0, -0.55], elbowR: [-1.2, 0, 0], haft: [-0.4, -2.25, 3.14], armL: [-1.6, 0, -0.4], elbowL: [-1.2, 0, 0] };
   const crashed = { ...fell, crouch: 0.4, lean: 0.45, haft: [1.1, 0, 3.14] };
-  ATTACK_POSES.aldricLeap = { ease: heavy, lag: { weapon: 0.08 }, hits: [{ windup: coiled, strike: crashed, follow: { ...crashed, crouch: 0.44 } }] };
+  const crashedOn = { ...crashed, crouch: 0.44, lean: 0.52, chest: [0.48, 0, 0] };
+  ATTACK_POSES.aldricLeap = { ease: heavy, lag: { weapon: 0.08 }, hits: [{ windup: coiled, strike: crashed, follow: crashedOn }] };
 
   // Tolling Chain (burning): four cuts through four of his guards: over his right shoulder and down left; from low left up
   // right; over his left shoulder and swept flat to his right; then the yoke, held a beat, and straight down.
   ATTACK_POSES.aldricChain = { ease: cut, lag: { weapon: 0.08 },
-    hits: [{ windup: cocked, strike: downLeft, follow: downLeft }, { windup: lowLeft, strike: rising, follow: rising },
-      { windup: shouldered, strike: sweptR, follow: sweptR }, { windup: yoke, strike: fell, follow: fellOn }] };
+    hits: [{ windup: cocked, strike: downLeft, follow: downLeftOn }, { windup: lowLeft, strike: rising, follow: risingOn },
+      { windup: shouldered, strike: sweptR, follow: sweptROn }, { windup: yoke, strike: fell, follow: fellOn }] };
 
   // Ash Wave (burning): the point dragged on the floor behind him at his right, crouched and turned away; flung up and
   // across, and the burning cut runs on along the floor.
@@ -190,7 +198,8 @@ MODEL_DEFS.varn = {
     armR: [-0.25, 0, -0.55], elbowR: [-0.2, 0, 0], haft: [1.0, -1.15, 4.71], armL: [-0.5, 0, -0.6], elbowL: [-0.6, 0, 0] };
   const flung = { crouch: 0.18, lean: 0.05, legL: [-0.5, 0, 0], legR: [0.6, 0, 0], spin: [0, 0.45, 0], chest: [-0.05, 0.3, 0], neck: [0, -0.2, 0], head: [0, -0.25, 0],
     armR: [-2.0, 0, 0.7], elbowR: [-0.1, 0, 0], haft: [-0.7, 0.15, 4.71], armL: [-1.7, 0, 0.4], elbowL: [-0.3, 0, 0] };
-  ATTACK_POSES.aldricAshWave = { ease: { ...cut, active: 'outExpo' }, lag: { weapon: 0.12 }, hits: [{ windup: trailing, strike: flung, follow: flung }] };
+  const flungOn = { ...flung, crouch: 0.2, spin: [0, 0.65, 0], chest: [-0.08, 0.4, 0] };
+  ATTACK_POSES.aldricAshWave = { ease: { ...cut, active: 'outExpo' }, lag: { weapon: 0.12 }, hits: [{ windup: trailing, strike: flung, follow: flungOn }] };
 
   // Burning Ascent: the blade low at his left, point behind; a rising cut that lifts him off his feet with it, the blade
   // high over his head; and down with him into the floor.
@@ -198,7 +207,8 @@ MODEL_DEFS.varn = {
   const risen = { crouch: 0.02, lean: -0.2, legL: [-0.3, 0, 0], legR: [0.3, 0, 0], chest: [-0.3, 0, 0], neck: [-0.1, 0, 0], head: [-0.25, 0, 0],
     armR: [-2.9, 0, 0.1], elbowR: [-0.3, 0, 0], haft: [-1.55, 0, 3.14], armL: [-2.9, 0, -0.1], elbowL: [-0.3, 0, 0] };
   ATTACK_POSES.aldricAscent = { ease: heavy, lag: { weapon: 0.08 },
-    hits: [{ windup: lowBehind, strike: risen, follow: risen }, { windup: { ...risen, chest: [-0.4, 0, 0], haft: [-1.8, 0, 3.14] }, strike: crashed, follow: crashed }] };
+    hits: [{ windup: lowBehind, strike: risen, follow: { ...risen, lean: -0.26, chest: [-0.36, 0, 0] } },
+      { windup: { ...risen, chest: [-0.4, 0, 0], haft: [-1.8, 0, 3.14] }, strike: crashed, follow: crashedOn }] };
 
   // The Last Toll (burning): the hilt raised to his chest in both fists, the blade hanging point-down; driven into the floor,
   // three times, each a toll and a ring of fire; then both arms flung up and wide and the fire breaks out round him.
@@ -207,11 +217,12 @@ MODEL_DEFS.varn = {
   const driven = { crouch: 0.38, lean: 0.2, legL: [-0.7, 0, 0], kneeL: [0.5, 0, 0], legR: [0.5, 0, 0], kneeR: [0.4, 0, 0], chest: [0.3, 0, 0], head: [-0.3, 0, 0],
     armR: [-1.1, 0, 0.25], elbowR: [-0.3, 0, 0], haft: [1.52, 0, 3.14], armL: [-1.1, 0, -0.25], elbowL: [-0.3, 0, 0] };
   const bowed = { ...driven, crouch: 0.45, chest: [0.45, 0, 0], head: [-0.45, 0, 0] };
+  const drivenOn = { ...driven, crouch: 0.41, lean: 0.25, chest: [0.36, 0, 0] };
   const flungWide = { crouch: 0.05, lean: -0.25, legL: [-0.35, 0, 0], legR: [0.35, 0, 0], chest: [-0.35, 0, 0], head: [-0.4, 0, 0],
     armR: [-2.6, 0, -0.7], elbowR: [-0.2, 0, 0], haft: [-1.2, -0.6, 3.14], grip: false, armL: [-2.2, 0, 0.9], elbowL: [-0.1, 0, 0] };
   ATTACK_POSES.aldricLastToll = { ease: heavy, lag: { weapon: 0.05 },
-    hits: [{ windup: hung, strike: driven, follow: driven }, { windup: hung, strike: driven, follow: driven }, { windup: hung, strike: driven, follow: driven },
-      { windup: bowed, strike: flungWide, follow: flungWide }] };
+    hits: [{ windup: hung, strike: driven, follow: drivenOn }, { windup: hung, strike: driven, follow: drivenOn }, { windup: hung, strike: driven, follow: drivenOn },
+      { windup: bowed, strike: flungWide, follow: { ...flungWide, lean: -0.3, chest: [-0.42, 0, 0] } }] };
 }
 
 // ---- the boss -----------------------------------------------------------------------------------------------------------

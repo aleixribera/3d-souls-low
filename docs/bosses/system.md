@@ -67,7 +67,11 @@ with in-between keys where a straight blend looks stiff:
   `hold.creep` (0 to 1) the body keeps creeping on through the wind-up at that share of its pace instead of freezing,
   and the strike still lands on time (`Enemy.creepTime`). Film one with `HOLD=<s>` on `tools/anim-strip.cjs`.
 - Check: `node tools/anim-strip.cjs boss:<attackId> <out.jpg> 14 2 1.9` (and `NOVIA=1` for the same attack without its
-  in-between keys) shows the move; `tests/pose-via.cjs` holds the curve smooth.
+  in-between keys) shows the move; `tests/pose-via.cjs` holds the curve smooth. `node tools/body-check.cjs <bossId>`
+  (retro 130) reads every hit's key poses: the torso's turn, the hips' drop, the follow-through carrying on past the
+  strike, and the body's share of the swing; a hit flagged `ARM ONLY`, `NO WEIGHT` or `NO OVERSHOOT` is fixed in its
+  key poses before any strip is filmed (a follow-through held on the strike's own pose is the usual cause).
+  `tests/body-check.cjs` holds each boss that has cleared it.
 
 ## 4. Effects
 

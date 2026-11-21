@@ -9,12 +9,12 @@ The iterate loop's working note (`.claude/iterate.md`). Cap: 8,000 characters.
   Fire Burst's lotus and Wind Blade's crescent (`js/strike-fx.js`). Acceptance: `tests/strike-shapes.cjs`, in-page
   `strike shapes`; clip `docs/scorecard/now/strike-shapes.mp4` (`node tools/ability-clips.cjs strikes`). Next on track 2:
   batch 7, Strike II. Browser lock: `node tools/browser-lock.cjs run <pass> -- <cmd>` (docs/two-tracks.md).
-- Track 1, pass 128, PLAN item 6 (pass 1 of Aldric): his own Gaol Sweep wind-up (the blade flat over his left shoulder,
-  swept left to right; it was the Giant's), the Turning Key (the man's second string: sweep, back across, the pommel, its
-  tell at his fists; burning as well), and his cel look (dark cloth, banded steel, the tell on the blade's edge, soft
-  joints, a smear). Judge: `bars-1` replaces the per-boss `edges-1` round (docs/bosses/system.md 6). Acceptance:
-  in-page `Aldric`, `Story boss moves`, `Boss edge tells`; `tests/boss-pages.cjs`; clip `docs/scorecard/now/aldric-cel.mp4`.
-  Next on track 1: Aldric's in-between keys where his strips look stiff, then Aleix; then the Antlered Hunger's audit.
+- Track 1, pass 130 (retro, then PLAN item 6, Aldric pass 2 of 2): `tools/body-check.cjs` reads each boss hit's key
+  poses (torso turn, hips' drop, follow-through past the strike) and flags ARM ONLY / NO WEIGHT / NO OVERSHOOT, the
+  judges' repeated giveaway; Aldric's follow-throughs now carry on past every strike (23 flagged, then 0). Acceptance:
+  `tests/body-check.cjs`; in-page `Aldric`, `Story boss moves`, `Boss edge tells` (16/16); clip
+  `docs/scorecard/now/aldric-follow.mp4`. Aldric awaits Aleix. Next on track 1: the Antlered Hunger's step-0 audit
+  (`docs/bosses/system.md`), cleared by the body check before its strips.
 
 ## Works
 
@@ -58,6 +58,7 @@ The iterate loop's working note (`.claude/iterate.md`). Cap: 8,000 characters.
 - The Finishing Blow (pass 100-103, `js/finisher.js`, `js/finisher-fx.js`): the 3rd counter; its look is "Later".
 - Art styles (pass 108): `?style=cel|dark|paint`, `js/data/styles.js`, `js/style-lab.js`; `tests/style-browser.cjs`;
   retake `node tools/style-frames.cjs [styles] [still,fight,clip,time]`.
+- Body check (retro 130): `tools/body-check.cjs [bossId]`; `tests/body-check.cjs` holds Aldric.
 - Scorecard frames: `tools/scorecard-frames.cjs`; current frames `docs/scorecard/now/` (`tools/now-frames.cjs`).
 
 ## Broken
@@ -70,7 +71,7 @@ The iterate loop's working note (`.claude/iterate.md`). Cap: 8,000 characters.
 
 ## Needs Aleix
 
-- Fight Aldric too, when pass 129 has his keys (Practice, `?style=cel`).
+- Fight Aldric too (Practice, `?style=cel`; the Turning Key ends on a pommel strike unless you say all blade).
 - Fight the Giant Skeleton too (Practice, `?style=cel`; tried: one `edges-1` round, the judge repeats the others' gaps).
 - Fight the Bell Warden too (same: Practice, `?style=cel`; tried: two `edges-1` rounds, the judge repeats the Captain's gap).
 - Fight the Pillager Captain (PLAN item 5's last gate; tried: six judge rounds, nothing left a judge can settle). Practice,

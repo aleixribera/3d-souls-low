@@ -25,6 +25,10 @@ them (`git show 88f1abd:BACKLOG.md`).
 
 ## Boss Rush and Story
 
+- Body check (retro 130, `node tools/body-check.cjs`): the Captain 17 of 22 hits flagged, the Bell Warden 13 of 18,
+  the Giant 10 of 18, mostly follow-throughs held on the strike's pose. A data-only fix each, as Aldric's in pass 130,
+  once Aleix has fought them (his word may rework them first).
+
 - The Boss Rush curve (PLAN "Later"): fights run 68-160 s at 1x; one swift-kill par for every boss
   (`CONFIG.swift.late`) favours quick bosses: a par from each boss's own health would even it. Bots never hold a heavy
   to full charge, so charge abilities are unmeasured by `tools/rush-curve.cjs`.
