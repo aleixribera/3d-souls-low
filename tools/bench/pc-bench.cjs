@@ -3,7 +3,7 @@
 //   node tools/bench/pc-bench.cjs <out.json> [qualities=normal,ultra] [opts json | @file.json]
 // Env: SIZE=WxH (1920x1080), SHOTS=<dir> (instead of timing, one frame per level per preset: <dir>/<level>-<preset>.jpg,
 // the player at the level's start, as the level faces them, enemies frozen). Takes the shared browser lock itself
-// (.scratch/browser.lock in the main checkout, .claude/iterate.md); a run is one browser, closed at the end.
+// (tools/browser-lock.cjs); a run is one browser, closed at the end.
 const fs = require('node:fs');
 const path = require('node:path');
 const { chromium } = require('../../tests/browser.cjs');
@@ -16,14 +16,10 @@ const [width, height] = (process.env.SIZE || '1920x1080').split('x').map(Number)
 const shots = process.env.SHOTS ? path.resolve(process.env.SHOTS) : null;
 const benchPage = fs.readFileSync(path.join(__dirname, 'bench-page.js'), 'utf8');
 
-// The main checkout's lock, also from a worktree (.claude/worktrees/<name>/ is three levels down).
-const root = path.resolve(__dirname, '../..');
-const main = /[\\/]\.claude[\\/]worktrees[\\/]/.test(root) ? path.resolve(root, '../../..') : root;
-const lock = path.join(main, '.scratch', 'browser.lock');
+const { acquire } = require('../browser-lock.cjs');
 
 (async () => {
-  try { fs.mkdirSync(lock); } catch (e) { throw new Error(`the browser lock is taken (${lock}): ${fs.readFileSync(path.join(lock, 'owner.txt'), 'utf8').trim()}`); }
-  fs.writeFileSync(path.join(lock, 'owner.txt'), `pc-bench ${process.pid}\n`);
+  const freeLock = await acquire(`pc-bench ${process.pid}`);
   const app = createServer({ dev: true });
   await new Promise(resolve => app.server.listen(0, '127.0.0.1', resolve));
   const browser = await chromium.launch({ channel: 'msedge', headless: true, args: ['--disable-gpu-vsync', '--disable-frame-rate-limit'] });
@@ -68,7 +64,7 @@ const lock = path.join(main, '.scratch', 'browser.lock');
     }
   } finally {
     await browser.close(); await app.close();
-    fs.rmSync(lock, { recursive: true, force: true });
+    freeLock();
   }
   fs.writeFileSync(out, JSON.stringify({ size: [width, height], machine: 'pc', results }, null, 2));
 })().catch(e => { console.error(e.message || e); process.exitCode = 1; });

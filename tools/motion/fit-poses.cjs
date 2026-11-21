@@ -13,7 +13,7 @@
 //             image's left). Default: the average way the person's chest faces over the clip.
 // Writes <out.json> ({ model, fps, frames: [{ t, pose }] }, each pose ready to paste as a key pose) and <out>-sheet.jpg:
 // every `--every`th frame, the clip (with its capture overlay) above the fitted body seen from the clip's camera.
-// One headless Edge, closed at the end; idle priority. Take the browser lock (docs/two-tracks.md) before running it.
+// One headless Edge, closed at the end; idle priority. Run it under node tools/browser-lock.cjs run <pass> --.
 require('../../tests/low-priority.cjs');
 const fs = require('node:fs');
 const path = require('node:path');

@@ -11,7 +11,7 @@
 // VIEW=game films through the game's own camera behind the player instead of from the side. HOLD=<s> (pass 115): every
 // hit with a `hold` takes it, for exactly that long (0: never), so a delayed wind-up can be filmed the same way twice.
 // STYLE=<id> (pass 116): drawn in that art style (js/data/styles.js; cel is the game's chosen look).
-// One headless Edge, closed at the end; idle priority. Take the browser lock (.claude/iterate.md) before running it.
+// One headless Edge, closed at the end; idle priority. Run it under node tools/browser-lock.cjs run <pass> --.
 require('../tests/low-priority.cjs');
 const fs = require('node:fs');
 const path = require('node:path');

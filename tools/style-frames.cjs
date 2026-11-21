@@ -22,8 +22,8 @@ const parts = new Set(partArg.split(','));
 const STYLES = styleArg === 'all' ? ['control', 'cel', 'dark', 'paint'] : styleArg.split(',');
 const BOSS = 'pillagerCaptain', W = 1280, H = 720, CLIP = 10;
 const main = /[\\/]\.claude[\\/]worktrees[\\/]/.test(root) ? path.resolve(root, '../../..') : root;
-const lock = path.join(main, '.scratch', 'browser.lock');
-let ownLock = false, cleanup = () => {};
+const { acquire } = require('./browser-lock.cjs');
+let cleanup = () => {};
 
 // In the page: the fight started, loaded and awake, the player unhurt; `botOn`: a bot at the player's keys.
 const startFight = async (page, botOn) => page.evaluate(async ([boss, botOn]) => {
@@ -54,11 +54,9 @@ const measure = (page, ms) => page.evaluate(ms => new Promise(done => {
 
 (async () => {
   fs.mkdirSync(out, { recursive: true });
-  try { fs.mkdirSync(lock); } catch (e) { throw new Error(`the browser lock is taken (${lock})`); }
-  ownLock = true;
-  fs.writeFileSync(path.join(lock, 'owner.txt'), `style-frames ${process.pid}\n`);
+  const freeLock = await acquire(`style-frames ${process.pid}`);
   const app = createServer({ dev: true }); await new Promise(r => app.server.listen(0, '127.0.0.1', r));
-  cleanup = () => { app.server.close(); if (ownLock) { ownLock = false; fs.rmSync(lock, { recursive: true, force: true }); } };
+  cleanup = () => { app.server.close(); freeLock(); };
   const base = `http://127.0.0.1:${app.server.address().port}/combat-arena-3d.html`;
   const browser = await chromium.launch({ channel: 'msedge', headless: true, args: ['--disable-gpu-vsync', '--disable-frame-rate-limit'] });
   const timesFile = path.join(out, 'frame-times.json');
