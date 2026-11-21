@@ -9,12 +9,11 @@ The iterate loop's working note (`.claude/iterate.md`). Cap: 8,000 characters.
   `js/rare-strike-fx.js`. Acceptance: `tests/rare-triggers.cjs`, in-page `rare triggers`; clip
   `docs/scorecard/now/rare-triggers.mp4` (`node tools/ability-clips.cjs triggers`). Next on track 2: batch 5 pass 2,
   Echoing Blade and Overcharge. Browser lock: `node tools/browser-lock.cjs run <pass> -- <cmd>` (docs/two-tracks.md).
-- Track 1, pass 123, PLAN item 5's real check (the second boss through the system, pass 1 of ~3): the Bell Warden.
-  Design page `docs/bosses/bell-warden.md` (every attack named, `tests/boss-pages.cjs`); his cel look by data alone, no
-  engine code: dark bronze (`bellBronzeDark`), the bell the one bright metal (`steel`), the tell on the bell
-  (`edgeTell`), soft joints, a smear (`BOSS_FX` trail). Acceptance: strips show his body clear through every wind-up
-  (`docs/scorecard/now/warden-*.jpg`, clip `warden-cel.mp4`); in-page `Boss edge tells`. Next on track 1: his
-  animation (in-between keys), then the `edges-1` judge and Aleix. The Pillager Captain is awaiting Aleix.
+- Track 1, pass 124, PLAN item 5's real check (the second boss through the system, pass 2 of ~3): the Bell Warden.
+  Moveset audit first (`docs/bosses/system.md` step 0, Aleix 2026-11-21: rework vs restyle): restyle, plus a third real
+  string, Sweep and Return. In-between keys on seven attacks (`via`; the Bronze Fall's coil and bell-overhead leap).
+  Acceptance: `tests/pose-via.cjs` (Warden: ends kept, keys bend, no jump); strips `docs/scorecard/now/warden-*.jpg`,
+  clip `warden-animation.mp4`. Next on track 1: the `edges-1` judge, then Aleix. The Pillager Captain is awaiting Aleix.
 
 ## Works
 

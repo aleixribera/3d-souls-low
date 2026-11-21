@@ -6,6 +6,7 @@
 //   title    a few words
 //   text     one to three sentences, shown under the list when the entry is selected
 const CHANGELOG = [
+  { version: 'v7.175.0', title: 'The Bell Warden moves', text: 'The Bell Warden swings with his whole weight now: his hips turn first and the bell follows, and his leap lifts the bell over his head in the air. He has a new string, Sweep and Return: the sweep, then straight back the other way. Parry both.' },
   { version: 'v7.174.0', title: 'Six new rares', text: 'Six new rare abilities: Riptide sends a wave after a counter, Moonfall Cut drops a crescent from a light jump attack, Iron Cyclone spins a ring of steel on a string\'s heavy, Petal Storm bursts round a Finishing Blow, Ironclad keeps a drink from being knocked off, and Hunting Call lets your summon mark the boss for your next hit.' },
   { version: 'v7.173.0', title: 'The Bell Warden in cel', text: 'The Bell Warden is cast in dark bronze now, with his bell the one bright metal on him. His wind-ups glow on the bell, not over his body, so you can read his pose.' },
   { version: 'v7.172.0', title: 'The Captain\'s bill', text: 'The Pillager Captain\'s swings now smear through the air, and in the cel look his bill is dark banded steel with a glint instead of a flat white shape.' },
