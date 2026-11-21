@@ -11,6 +11,7 @@
 //   blade-*                       the blade commons' effects (pass 112) in the cel style, on the Pillager Captain
 //   story-given-desktop / -phone  Story: Scarlet Draw given on the road, its toast and story-coloured key (pass 159)
 //   cel-default-desktop / -phone  the default look (cel, no ?style=) in a Practice fight; cel-default-fight.mp4: 10 s of it
+//   cel-enemy-<id>, cel-enemies.mp4  `enemies` (pass 162): four restyled enemies fought in the arena's ruins, 6 s each
 require('../tests/low-priority.cjs');
 const fs = require('node:fs');
 const path = require('node:path');
@@ -89,6 +90,41 @@ const shot = (page, name, clip) => page.screenshot({ path: path.join(out, name +
         '-pix_fmt', 'yuv420p', '-crf', '30', '-preset', 'slow', '-movflags', '+faststart', path.join(out, 'cel-default-fight.mp4')]);
       fs.rmSync(dir, { recursive: true, force: true });
       console.log('cel clip');
+    }
+    if (want('enemies')) {
+      // (pass 162) the cel look carried to the enemies and the arena: a bot at the player's keys fights the Hollow Soldier,
+      // the Undead Knight, the Empty Sentinel and the Executioner in turn among the arena's new ruins, 6 s each, as
+      // cel-enemies.mp4, and a still of each fight as cel-enemy-<id>.jpg.
+      const ids = ['hollow', 'knight', 'sentinel', 'executioner'];
+      const dir = path.join(out, '.video'), t0 = Date.now(), cuts = [];
+      const context = await browser.newContext({ viewport: { width: 1280, height: 720 }, recordVideo: { dir, size: { width: 1280, height: 720 } } });
+      const page = await context.newPage();
+      page.on('pageerror', e => errors.push(e.message.slice(0, 200)));
+      await page.addInitScript(() => localStorage.setItem('combat-arena-3d.settings', JSON.stringify({ graphics: 'normal', volume: 0, lessons: false })));
+      await page.goto(url); await page.waitForFunction(() => window.__arenaReady, null, { timeout: 120000 });
+      for (const id of ids) {
+        await page.evaluate(async id => {
+          Game.startFight(id);
+          while (!(Game.player && Game.loading <= 0 && !Game.pendingLoad)) await new Promise(r => setTimeout(r, 100));
+          document.getElementById('publicLobby')?.classList.add('hidden');
+          const p = Game.player; p.maxHp = p.hp = 1e7; Game.worldWaiting = false; Game.setLock?.(Game.enemies[0]);
+          const brain = bot.create(BOT_PROFILES[0]); p.ctl = brain.hands;
+          Game.moveInput = () => brain.think(CONFIG.step, p, Game.enemies.filter(e => e.alive()), [], projectiles.live(), null).mv;
+          for (const e of Game.enemies) e.hp = 1e6;   // the fight lasts the clip
+        }, id);
+        await page.waitForTimeout(1200); cuts.push((Date.now() - t0) / 1000);
+        await page.waitForTimeout(3000); await shot(page, `cel-enemy-${id}`);
+        await page.waitForTimeout(3000); cuts.push((Date.now() - t0) / 1000);
+        console.log('enemy clip', id);
+      }
+      const video = page.video(); await context.close();
+      const raw = await video.path(), parts = [];
+      for (let i = 0; i < cuts.length; i += 2) parts.push(`[0:v]trim=${cuts[i].toFixed(2)}:${cuts[i + 1].toFixed(2)},setpts=PTS-STARTPTS[v${i / 2}]`);
+      require('node:child_process').execFileSync('ffmpeg', ['-y', '-loglevel', 'error', '-i', raw, '-filter_complex',
+        parts.join(';') + ';' + ids.map((_, i) => `[v${i}]`).join('') + `concat=n=${ids.length}:v=1:a=0[o]`, '-map', '[o]', '-an', '-c:v', 'libx264',
+        '-pix_fmt', 'yuv420p', '-crf', '30', '-preset', 'slow', '-movflags', '+faststart', path.join(out, 'cel-enemies.mp4')]);
+      fs.rmSync(dir, { recursive: true, force: true });
+      console.log('enemies clip');
     }
     if (want('rush')) {
       const page = await open(1280, 720); await joinLobby(page);

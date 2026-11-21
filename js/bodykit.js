@@ -1670,7 +1670,7 @@ const KIT = (() => {
       bad('a halo needs a bone, at [x, y, z], a color, a size above 0 and an opacity in (0, 1].');
     if ('edgeTell' in M) {   // (pass 113) the wind-up tell on the blade's edge, off the body
       const T = M.edgeTell;
-      if (!(T && typeof T.slot === 'string' && M.parts.some(o => o.weapon && o.slot === T.slot) && typeof T.size === 'number' && T.size > 0 && T.size <= 1.5 && typeof T.along === 'number' && T.along >= 0 && T.along <= 1))
+      if (!(T && typeof T.slot === 'string' && (M.parts.some(o => o.weapon && o.slot === T.slot) || (M.weapon && Object.values(M.weapon.slots).includes(T.slot))) && typeof T.size === 'number' && T.size > 0 && T.size <= 1.5 && typeof T.along === 'number' && T.along >= 0 && T.along <= 1))
         bad('edgeTell needs slot (a weapon: true part\'s material slot; a hidden one shows once a phase reveals it), size (the halo, m, above 0, up to 1.5) and along (where on the weapon it sits, 0 the hilt to 1 the tip).');
     }
     if ('tellsGrow' in M && !(M.tellsGrow === true && M.tells && Object.keys(M.tells).length))

@@ -22,7 +22,7 @@ MODEL_DEFS.rogue = {   // (v5.5; v7.25.0 built in Blender, after the reference a
     mask: { tex: 'rogueHood', tint: 0x2a2a2a, decay: 0.4, double: true },
     steel: { tex: 'rogueSteel', decay: 0.5 },
     strap: { tex: 'rogueLeather', tint: 0x8a7a66, decay: 0.6 },
-    blade: { tex: 'rustedIron', tint: 0xa8a49e, decay: 0.4 },
+    blade: { tex: 'dentedSteel', tint: 0xb8b8b4, decay: 0.3, steel: true },   // (pass 162) banded as steel with a glint in cel
     eye: { glow: 0x8a5a28 },
   },
   body: { torso: null, pelvis: null, arms: null, legs: null, head: null, neck: null, hands: null, feet: null },
@@ -37,6 +37,7 @@ MODEL_DEFS.rogue = {   // (v5.5; v7.25.0 built in Blender, after the reference a
     { use: 'dagger', slot: 'blade', guardSlot: 'steel', bone: 'elbowL' },
   ],
   weapon: { use: 'scimitar', slots: { blade: 'blade', grip: 'leather', guard: 'steel' } },
+  edgeTell: { slot: 'blade', size: 0.4, along: 0.75 },   // (pass 162) the wind-up glows on the edge, not over the body
   eyes: { color: 0x8a5a28, size: 0.01, spread: 0.044, at: [0, 0.095, 0.1] },   // a dim glint in the mask's slit
   anim: {
     idle: { breathRate: 2.2, breath: 0.03, headDrift: 0.14, sway: 0.03, twitch: 1.0 }, walk: { twist: 0.26, roll: 0.09, headNod: 0.09, elbow: 0.7, drag: 0.2 },
@@ -56,7 +57,7 @@ MODEL_DEFS.paleDuelist = {   // (v7.26.0 built in Blender) a gaunt fallen noble:
     plume: { tex: 'duelistVelvet', decay: 0.4, double: true },
     trim: { tex: 'wornGilt', tint: 0xd9cec0, decay: 0.4 },
     leather: { tex: 'crackedLeather', tint: 0x5e6460, decay: 0.55 },
-    blade: { tex: 'dentedSteel', tint: 0xb0b4ba, decay: 0.3 },
+    blade: { tex: 'dentedSteel', tint: 0xb0b4ba, decay: 0.3, steel: true },   // (pass 162) banded as steel with a glint in cel
     iron: { tex: 'dentedSteel', tint: 0x8a8e94, decay: 0.45 },
     eye: { glow: 0xd8e0ff },
   },
@@ -74,6 +75,7 @@ MODEL_DEFS.paleDuelist = {   // (v7.26.0 built in Blender) a gaunt fallen noble:
     { use: 'dagger', slot: 'blade', guardSlot: 'iron', bone: 'elbowL' },
   ],
   weapon: { use: 'rapier', slots: { blade: 'blade', grip: 'leather', guard: 'iron' } },
+  edgeTell: { slot: 'blade', size: 0.35, along: 0.8 },   // (pass 162) the wind-up glows on the edge, not over the body
   eyes: { color: 0xd8e0ff, size: 0.013, spread: 0.042, at: [0, 0.095, 0.1] },
   anim: {
     idle: { breathRate: 1.9, breath: 0.022, headDrift: 0.08, sway: 0.02, twitch: 0.6 }, walk: { twist: 0.16, roll: 0.05, headNod: 0.05, elbow: 0.3, drag: 0 },
@@ -166,13 +168,14 @@ MODEL_DEFS.undeadKnight = {
   posture: { chest: [0.06, 0, 0], neck: [0.1, 0, 0], head: [0.04, 0, 0.03], elbowL: [-0.3, 0, 0], elbowR: [-0.35, 0, 0] },
   materials: {
     ...IRONBOUND_MATS,
-    plate: { tex: 'knightPlate', tint: 0xc4c6cc, decay: 0.55 },
-    gauntlet: { tex: 'knightPlate', tint: 0x8a8c92, decay: 0.65 },
-    mail: { tex: 'knightMail', tint: 0x8a8a8e, decay: 0.7 },
-    trousers: { tex: 'rottenCloth', tint: 0x5a4434, decay: 0.75 },
-    leather: { tex: 'crackedLeather', tint: 0x5a3e2c, decay: 0.7 },
+    // (pass 162) three values, as the bosses have: pale plate, dark iron at the joints, near-black cloth; it read one beige
+    plate: { tex: 'knightPlate', tint: 0xc8cad0, decay: 0.35 },
+    gauntlet: { tex: 'knightPlate', tint: 0x55575e, decay: 0.45 },
+    mail: { tex: 'knightMail', tint: 0x5c5c62, decay: 0.5 },
+    trousers: { tex: 'rottenCloth', tint: 0x3a2a22, decay: 0.45 },
+    leather: { tex: 'crackedLeather', tint: 0x3e2a1e, decay: 0.45 },
     dark: { tex: 'ashSoot', tint: 0x0c0c0e, decay: 0.9 },
-    blade: { tex: 'knightPlate', tint: 0xa8aaae, decay: 0.5 },
+    blade: { tex: 'knightPlate', tint: 0xb8babe, decay: 0.35, steel: true },   // (pass 162) banded as steel with a glint in cel
     guard: { tex: 'knightPlate', tint: 0x8a8c90, decay: 0.6 },
   },
   body: { torso: null, pelvis: null, arms: null, legs: null, head: null, neck: null, hands: null, feet: null },
@@ -182,6 +185,7 @@ MODEL_DEFS.undeadKnight = {
     legL: ['trousers', 'plate'], legR: ['trousers', 'plate'], kneeL: ['plate', 'gauntlet'], kneeR: ['plate', 'gauntlet'],
   }).flatMap(([bone, list]) => list.map(s => ({ use: 'baked', mesh: `knight:${bone}__${s}`, bone, slot: s, tile: 0.42 }))),
   weapon: { use: 'knightGreatsword', slots: { blade: 'blade', grip: 'leather', guard: 'guard' } },
+  edgeTell: { slot: 'blade', size: 0.55, along: 0.75 },   // (pass 162) the wind-up glows on the edge, not over the body
   eyes: { color: 0x9ab8ff, size: 0.014, spread: 0.055, at: [0, 0.183, 0.18] },
   anim: { ...IRONBOUND_ANIM, cloth: [] },
 };
@@ -202,7 +206,7 @@ MODEL_DEFS.ironWarden = {   // (v7.27.0 built in Blender) the gaoler of the Sunk
     shieldFace: { tex: 'wardenShield', tint: 0xe8d0c0, decay: 0.65 },
     shieldTrim: { tex: 'wardenBrass', tint: 0xd0c6b4, decay: 0.5 },
     grip: { tex: 'crackedLeather', tint: 0x8a4228, decay: 0.55 },
-    blade: { tex: 'knightPlate', tint: 0xb4b8c0, decay: 0.45 },
+    blade: { tex: 'knightPlate', tint: 0xb4b8c0, decay: 0.35, steel: true },   // (pass 162) banded as steel with a glint in cel
     guard: { tex: 'wardenPlate', tint: 0x90949c, decay: 0.55 },
     dark: { tex: 'ashSoot', tint: 0x0c0c0e, decay: 0.9 },
   },
@@ -219,6 +223,7 @@ MODEL_DEFS.ironWarden = {   // (v7.27.0 built in Blender) the gaoler of the Sunk
     { use: 'greatshield', slot: 'shieldFace', metal: 'shieldTrim', bone: 'elbowL', w: 0.74, h: 1.48, at: [0.08, -0.22, 0.22] },
   ],
   weapon: { use: 'wardenGreatsword', slots: { blade: 'blade', grip: 'grip', guard: 'guard' } },
+  edgeTell: { slot: 'blade', size: 0.5, along: 0.75 },   // (pass 162) the wind-up glows on the edge, not over the body
   eyes: { color: 0x9ab8ff, size: 0.013, spread: 0.048, at: [0, 0.152, 0.165] },
   anim: { ...IRONBOUND_ANIM, cloth: [] },
 };
@@ -325,7 +330,7 @@ MODEL_DEFS.ashLancer = {
     leather: { tex: 'crackedLeather', tint: 0x3a2e26, decay: 0.78 },
     iron: { tex: 'rustedIron', tint: 0x62564e, decay: 0.8 },
     rust: { tex: 'rustedIron', tint: 0x744226, decay: 0.9 },
-    blade: { tex: 'glaiveSteel', tint: 0xb8bcc2, decay: 0.58 },
+    blade: { tex: 'glaiveSteel', tint: 0xb8bcc2, decay: 0.4, steel: true },   // (pass 162) banded as steel with a glint in cel
     wood: { tex: 'crackedLeather', tint: 0x38281e, decay: 0.72 },
     eye: { glow: 0xd8a858 },
   },
@@ -346,6 +351,7 @@ MODEL_DEFS.ashLancer = {
     legL: ['bone', 'darkBone'], legR: ['bone', 'darkBone'], kneeL: ['bone', 'leather'], kneeR: ['bone', 'leather'],
   }).flatMap(([bone, list]) => list.map(s => ({ use: 'baked', mesh: `lancer:${bone}__${s}`, bone, slot: s, tile: 0.42 }))),
   weapon: { use: 'glaive', slots: { blade: 'blade', rust: 'rust', hole: 'socket', grip: 'wood', guard: 'iron', wrap: 'rags' } },
+  edgeTell: { slot: 'blade', size: 0.45, along: 0.9 },   // (pass 162) the wind-up glows on the edge, not over the body
   eyes: { color: 0xd8a858, size: 0.009, spread: 0.036, at: [0, 0.112, 0.105] },
   anim: {
     idle: { breathRate: 1.2, breath: 0.018, headDrift: 0.06, sway: 0.025, twitch: 0.12 },
@@ -386,7 +392,7 @@ MODEL_DEFS.ashExecutioner = {
     darkLeather: { tex: 'crackedLeather', tint: 0x282422, decay: 0.6 },
     gauntlet: { tex: 'rogueScales', tint: 0x7c7e86, decay: 0.45 },
     iron: { tex: 'dentedSteel', tint: 0x5a5856, decay: 0.65 },
-    blade: { tex: 'execBlade', tint: 0xa89e9a, decay: 0.65 },
+    blade: { tex: 'execBlade', tint: 0xa89e9a, decay: 0.45, steel: true },   // (pass 162) banded as steel with a glint in cel
     haft: { tex: 'bone', tint: 0x9a8878, decay: 0.6 },
     eye: { glow: 0xffe0b8 },
   },
@@ -411,6 +417,7 @@ MODEL_DEFS.ashExecutioner = {
     kneeL: ['darkLeather', 'darkLeather.1', 'iron'], kneeR: ['darkLeather', 'darkLeather.1', 'iron'],
   }).flatMap(([bone, list]) => list.map(s => ({ use: 'baked', mesh: `exec:${bone}__${s}`, bone, slot: s.split('.')[0], tile: 0.42 }))),
   weapon: { use: 'executionerAxe', slots: { blade: 'blade', grip: 'haft', guard: 'iron', wrap: 'cord' } },
+  edgeTell: { slot: 'blade', size: 0.6, along: 0.85 },   // (pass 162) the wind-up glows on the edge, not over the body
   eyes: { color: 0xffe0b8, size: 0.011, spread: 0.042, at: [0, 0.12, 0.108] },
   anim: {
     idle: { breathRate: 1.1, breath: 0.016, headDrift: 0.04, sway: 0.015, twitch: 0 },
@@ -508,14 +515,15 @@ MODEL_DEFS.emptySentinel = {
     armR: [-0.04, 0, -0.12], elbowR: [-0.34, 0, -0.05],
   },
   materials: {
-    plate: { tex: 'sentinelBrass', tint: 0xdcb464, decay: 0.42 },
-    filigree: { tex: 'sentinelFiligree', tint: 0xd8ae5e, decay: 0.44 },
-    mail: { tex: 'sentinelMail', tint: 0x9e723c, decay: 0.58 },
+    // (pass 162) a darker bronze shell, so the gold filigree and the white cloth read on it: it drew as one orange blob in cel
+    plate: { tex: 'sentinelBrass', tint: 0x9a7444, decay: 0.42 },
+    filigree: { tex: 'sentinelFiligree', tint: 0xf0c868, decay: 0.3 },
+    mail: { tex: 'sentinelMail', tint: 0x5e4428, decay: 0.5 },
     plume: { tex: 'sentinelMail', tint: 0x624626, decay: 0.65 },
     cloth: { tex: 'sentinelCloth', tint: 0xdedad2, decay: 0.45, double: true },
     rags: { tex: 'sentinelRags', tint: 0xd8d4cc, decay: 0.52, double: true },
     trim: { tex: 'sentinelTrim', tint: 0xc8c2b8, decay: 0.48, double: true },
-    blade: { tex: 'sentinelSteel', tint: 0xc2c6cc, decay: 0.42, rim: 0.6 },
+    blade: { tex: 'sentinelSteel', tint: 0xc2c6cc, decay: 0.42, rim: 0.6, steel: true },   // (pass 162) banded as steel with a glint in cel
     haft: { tex: 'sentinelBrass', tint: 0xdcb464, decay: 0.42, rim: 0.4 },   // a long thin shaft is all edge: little rim light
     void: { tex: 'ashSoot', tint: 0x0a0908, decay: 0.9 },
     eye: { glow: 0xcfe2ff },
@@ -536,6 +544,7 @@ MODEL_DEFS.emptySentinel = {
     kneeL: ['plate', 'plate.1'], kneeR: ['plate', 'plate.1'],
   }).flatMap(([bone, list]) => list.map(s => ({ use: 'baked', mesh: `sentinel:${bone}__${s}`, bone, slot: s.split('.')[0], tile: 0.42 }))),
   weapon: { use: 'sentinelHalberd', slots: { blade: 'blade', grip: 'haft', guard: 'filigree' } },
+  edgeTell: { slot: 'blade', size: 0.6, along: 0.88 },   // (pass 162) the wind-up glows on the edge, not over the body
   eyes: { color: 0xcfe2ff, size: 0.01, spread: 0.045, at: [0, 0.195, 0.126] },
   anim: {
     ...IRONBOUND_ANIM,

@@ -939,6 +939,9 @@ function validateData({ visual = true } = {}) {
   need(typeof ARENA.fullTracking === 'boolean' && typeof BOSS_BATTLE_ARENA.fullTracking === 'boolean', 'Arena: fullTracking must be true or false.');
   // Levels
   const levelIds = new Set();
+  // (pass 162) `ruins: true`: the arena's walls and columns drawn from the Blender stones (js/baked/arena-ruins.js)
+  for (const L of [ARENA, ...ALL_LEVELS]) if ('ruins' in L) need(L.layout === 'arena' && L.ruins === true && L.wallHeight === 1.3 && L.wallThickness === 0.9 && Number.isInteger(L.halfX) && Number.isInteger(L.halfZ) && (!visual || ['column', 'broken', 'stump', 'drum', 'wall', 'pier'].every(k => `arena:${k}__stone` in BAKED)),
+    `Level "${L.id}": ruins must be true, on an arena layout with whole-metre halfX/halfZ, the stones' 1.3 m wall height and 0.9 m thickness, and js/baked/arena-ruins.js loaded.`);
   for (const L of ALL_LEVELS) {
     const where = `Level "${L.id}"`;
     need(typeof L.id === 'string' && !levelIds.has(L.id), `${where}: missing or duplicate id.`);

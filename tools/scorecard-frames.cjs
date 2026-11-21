@@ -1,8 +1,10 @@
 'use strict';
 // Evidence frames: the title menu at desktop and phone width, one frame per Ashmere level from
 // its start (with frame time, draw calls and triangles on High), and one frame per boss in a Practice duel, front-lit at
-// fighting distance. Usage: node tools/scorecard-frames.cjs [outDir=docs/scorecard] [levels|bosses|fights|menu ...]
-// BOSS=<id> (pass 123): only that boss in `bosses` and `fights`; STYLE=<id>: drawn in that art style (js/data/styles.js).
+// fighting distance. Usage: node tools/scorecard-frames.cjs [outDir=docs/scorecard] [levels|bosses|fights|menu|enemies|windup|arena ...]
+// BOSS=<id> (pass 123): only that boss in `bosses` and `fights` (`enemies`: every common enemy the same way, pass 162,
+// ENEMY=<id,...> to pick, bosses too, for a side-by-side; `arena`: the duel arena every Practice and Boss Rush fight is in, wide, from two corners);
+// STYLE=<id>: drawn in that art style (js/data/styles.js).
 // One headless Edge, closed at the end; idle priority through tests/low-priority.cjs.
 require('../tests/low-priority.cjs');
 const fs = require('node:fs');
@@ -13,6 +15,8 @@ const { createServer } = require('../server/index.cjs');
 const [outDir = 'docs/scorecard', ...parts] = process.argv.slice(2);
 const want = p => !parts.length || parts.includes(p);
 const ONLY = process.env.BOSS || '', STYLE = process.env.STYLE ? `?style=${encodeURIComponent(process.env.STYLE)}` : '';
+const ENEMIES = (process.env.ENEMY || '').split(',').filter(Boolean);
+const enemyIds = page => page.evaluate(only => only.length ? only : ENEMY_DEFS.filter(d => !isBossDef(d) && !TEST_DEFS.includes(d) && !d.arena).map(d => d.id), ENEMIES);
 const bossIds = page => page.evaluate(only => ENEMY_DEFS.filter(isBossDef).map(d => d.id).filter(id => !only || id === only), ONLY);
 const shot = (page, name) => page.screenshot({ path: path.join(outDir, name + '.jpg'), type: 'jpeg', quality: 62 });
 
@@ -60,6 +64,42 @@ const measure = (page, ms) => page.evaluate(ms => new Promise(done => {
       report.levels[id] = await measure(page, 3000);
       await shot(page, `level-${id}`);
       console.log(id, JSON.stringify(report.levels[id]));
+    }
+    const still = async (ids, tag) => { for (const id of ids) {
+      await page.evaluate(id => Game.startFight(id), id); await settle(page, 500);
+      await page.evaluate(() => {
+        // close up: the player hidden at 2-3 m on the enemy's lit side, the camera pulled in to its nearest
+        const e = Game.enemies[0], p = Game.player, d = 1.6 + (e.def.scale || 1) * 1.2;
+        for (const o of Game.enemies) o.step = function (dt) { this.stateTime += dt; };
+        p.rig.root.visible = false; p.rig.root.onBeforeRender = () => {}; Game.zoomTarget = Game.cam.zoom = CONFIG.zoom.min;
+        const yaw = (e.yaw ?? 0) + 0.45; p.x = e.x + Math.sin(yaw) * d; p.z = e.z + Math.cos(yaw) * d;
+        p.yaw = Math.atan2(e.x - p.x, e.z - p.z); if (Game.cam) Game.cam.yaw = p.yaw; Game.setLock?.(e);
+      });
+      await page.waitForTimeout(1800);
+      await shot(page, `${tag}-${id}`); console.log(tag, id);
+    } };
+    if (want('enemies')) await still(await enemyIds(page), 'enemy');
+    // `windup`: each enemy (ENEMY as above) awake, caught late in an attack's wind-up from 3 m, the player hidden: where its tell glows
+    if (want('windup')) for (const id of await enemyIds(page)) {
+      await page.evaluate(id => Game.startFight(id), id); await settle(page, 300);
+      await page.evaluate(() => {
+        const e = Game.enemies[0], p = Game.player; Game.worldWaiting = false; p.maxHp = p.hp = 1e7;
+        const yaw = (e.yaw ?? 0) + 0.45, d = 2.2 + (e.def.scale || 1); p.x = e.x + Math.sin(yaw) * d; p.z = e.z + Math.cos(yaw) * d;
+        p.yaw = Math.atan2(e.x - p.x, e.z - p.z); if (Game.cam) Game.cam.yaw = p.yaw; Game.setLock?.(e);
+        p.rig.root.visible = false; Game.zoomTarget = Game.cam.zoom = CONFIG.zoom.min;
+      });
+      const got = await page.waitForFunction(() => { const e = Game.enemies[0], h = e.attack && e.attack.hits[e.hitIndex || 0];
+        Game.player.rig.root.visible = false;
+        return e.state === ES.WINDUP && h && e.stateTime > h.startup * 0.7; }, null, { timeout: 15000, polling: 'raf' }).then(() => true, () => false);
+      await shot(page, `windup-${id}`); console.log('windup', id, got ? '' : '(no wind-up caught)');
+    }
+    if (want('arena')) {
+      await page.evaluate(() => Game.startFight('hollow')); await settle(page, 500);
+      for (const [i, [x, z, yaw]] of [[-15, 10, 2.3], [14, -10, -0.75]].entries()) {
+        await page.evaluate(([x, z, yaw]) => { const p = Game.player; for (const o of Game.enemies) o.step = function (dt) { this.stateTime += dt; };
+          p.x = x; p.z = z; p.yaw = yaw; Game.setLock?.(null); if (Game.cam) Game.cam.yaw = yaw; }, [x, z, yaw]);
+        await page.waitForTimeout(1500); await shot(page, `arena-${i + 1}`); console.log('arena', i + 1);
+      }
     }
     if (want('bosses')) for (const id of await bossIds(page)) {
       await page.evaluate(id => Game.startFight(id), id); await settle(page, 500);

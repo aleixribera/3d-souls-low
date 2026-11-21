@@ -108,6 +108,7 @@ function buildPortcullis(group, x, width, height) {
 function buildArena(A) {
   const G = new THREE.Group(), R = A.pillarRing;
   addFloor(G, 0, 0, A.halfX * 2, A.halfZ * 2, A.border, A.grid);
+  if (A.ruins) return buildArenaRuins(A, G);
   const t = A.wallThickness, h = A.wallHeight;
   addBox(G, A.halfX * 2 + t * 2, h, t, MAT.wall, 0, h / 2, A.halfZ + t / 2);
   addBox(G, A.halfX * 2 + t * 2, h, t, MAT.wall, 0, h / 2, -A.halfZ - t / 2);
@@ -124,6 +125,54 @@ function buildArena(A) {
   for (let z = -pz + 6.6; z < pz - 1; z += 6.6) { pillar(-px, z, 9); pillar(px, z, 6.5 + Math.abs(z) % 3); }
   for (const b of A.bonfires) addBonfire(G, b.x, b.z, A.bonfireLight);
   return { group: G, gates: [] };
+}
+// (pass 162) The arena drawn from its Blender stones (js/baked/arena-ruins.js, tools/blender/arena_ruins.py): the parapet in 2 m
+// lengths with a pier at each corner, the ring of columns round it whole, snapped or broken to a stump (a fallen drum
+// beside each stump), all merged into one mesh of the weathered wall material. The same places as the boxes, so the
+// parapet stands where the level's collision is; the columns stand outside it. Drawing only.
+function buildArenaRuins(A, G) {
+  const R = A.pillarRing, t = A.wallThickness, list = [];
+  const hx = A.halfX + t / 2, hz = A.halfZ + t / 2;
+  for (let x = -A.halfX + 1, k = 0; x < A.halfX; x += 2, k++) for (const s of [-1, 1]) list.push(['wall', x, s * hz, (k & 1) * Math.PI]);
+  for (let z = -A.halfZ + 1, k = 0; z < A.halfZ; z += 2, k++) for (const s of [-1, 1]) list.push(['wall', s * hx, z, Math.PI / 2 + (k & 1) * Math.PI]);
+  for (const sx of [-1, 1]) for (const sz of [-1, 1]) list.push(['pier', sx * hx, sz * hz, 0]);
+  const KINDS = ['column', 'broken', 'column', 'stump', 'column', 'broken', 'broken', 'column'];
+  let n = 0;
+  const pillar = (x, z) => {
+    const kind = KINDS[n % KINDS.length], j = n++ * 2.39996;   // the golden angle: turns and heights that never line up
+    list.push([kind, x, z, Math.sin(j) * 0.12, [1, kind === 'stump' ? 1 : 1 + 0.12 * Math.sin(j * 1.7), 1]]);
+    if (kind === 'stump') list.push(['drum', x + Math.sign(x || 1) * 2.1, z + Math.sign(z || 1) * 0.6, 0.6 + j % 1]);
+  };
+  const px = A.halfX + R.inset, pz = A.halfZ + R.inset;
+  for (let x = -px; x <= px + 0.1; x += (px * 2) / 5) { pillar(x, -pz); pillar(x, pz); }
+  for (let z = -pz + 6.6; z < pz - 1; z += 6.6) { pillar(-px, z); pillar(px, z); }
+  G.add(new THREE.Mesh(bakedMerged(list.map(([k, ...r]) => [`arena:${k}__stone`, ...r])), MAT.wall));
+  addBox(G, A.outerGround, 0.5, A.outerGround, MAT.dark, 0, -0.3, 0);
+  for (const b of A.bonfires) addBonfire(G, b.x, b.z, A.bonfireLight);
+  return { group: G, gates: [] };
+}
+// Baked meshes placed and merged into one geometry: [name, x, z, yaw, [sx, sy, sz]?] each, standing on y 0.
+function bakedMerged(list) {
+  const src = {}, M = new THREE.Matrix4(), N = new THREE.Matrix3(), q = new THREE.Quaternion(), up = new THREE.Vector3(0, 1, 0), v = new THREE.Vector3();
+  let nv = 0, ni = 0;
+  for (const [name] of list) { const g = src[name] || (src[name] = bakedGeometry(name)); nv += g.attributes.position.count; ni += g.index.count; }
+  const pos = new Float32Array(nv * 3), nor = new Float32Array(nv * 3), idx = new Uint32Array(ni);
+  let at = 0, ai = 0;
+  for (const [name, x, z, yaw, s = [1, 1, 1]] of list) {
+    const g = src[name], P = g.attributes.position, Nn = g.attributes.normal, I = g.index.array;
+    M.compose(v.set(x, 0, z), q.setFromAxisAngle(up, yaw), new THREE.Vector3(...s)); N.getNormalMatrix(M);
+    for (let k = 0; k < P.count; k++) {
+      v.fromBufferAttribute(P, k).applyMatrix4(M); pos[(at + k) * 3] = v.x; pos[(at + k) * 3 + 1] = v.y; pos[(at + k) * 3 + 2] = v.z;
+      v.fromBufferAttribute(Nn, k).applyMatrix3(N).normalize(); nor[(at + k) * 3] = v.x; nor[(at + k) * 3 + 1] = v.y; nor[(at + k) * 3 + 2] = v.z;
+    }
+    for (let k = 0; k < I.length; k++) idx[ai + k] = I[k] + at;
+    at += P.count; ai += I.length;
+  }
+  for (const g of Object.values(src)) g.dispose();
+  const out = new THREE.BufferGeometry();
+  out.setAttribute('position', new THREE.BufferAttribute(pos, 3)); out.setAttribute('normal', new THREE.BufferAttribute(nor, 3));
+  out.setIndex(new THREE.BufferAttribute(idx, 1)); out.computeBoundingSphere();
+  return out;
 }
 function buildHall(L) {
   const S = { ...HALL_STYLE, ...(L.style || {}) };

@@ -92,19 +92,26 @@ MODEL_DEFS.hollowSoldier = {
   proportions: { shoulderX: 0.32, torsoW: 0.21, torsoD: 0.14, armR: 0.06, legR: 0.092, headR: 0.118, handR: 0.052, footLen: 0.28 },
   limbs: { armL: { len: 1.04 }, legL: { thick: 0.97 } },
   posture: { chest: [0.16, 0, 0.03], neck: [0.22, 0, -0.04], head: [0.0, 0, 0.08], elbowL: [-0.14, 0, 0], elbowR: [-0.3, 0, 0] },
+  // (pass 162, the cel look carried to the enemies) bold flat colour in three values, as the bosses have: the gambeson
+  // the light mass (ochre-olive), the trousers a deep madder, the leather near-black accents; the helm, cops and sword
+  // banded as steel with a glint. Low decay: the grime broke the flat fills into mud, and the whole figure read as one
+  // rust-brown beside the bosses' black-and-red and black-and-white (audit frames, pass 162).
   materials: {
-    skin: { tex: 'rotSkin', tint: 0x9a7a58, decay: 0.8 },
-    quilt: { tex: 'quiltedGambeson', tint: 0xa08a4e, decay: 0.75 },
-    trousers: { tex: 'rottenCloth', tint: 0x9a4a30, decay: 0.75 },
-    leather: { tex: 'crackedLeather', tint: 0x6e5440, decay: 0.75 },
-    strap: { tex: 'crackedLeather', tint: 0x7a6650, decay: 0.85 },
-    iron: { tex: 'dentedSteel', tint: 0x7c7e82, decay: 0.8, double: true },
-    blade: { tex: 'rustedIron', tint: 0x9a9a98, decay: 0.55 },
-    eye: { glow: 0xd89a50 },
+    skin: { tex: 'rotSkin', tint: 0xa49a7c, decay: 0.45 },
+    quilt: { tex: 'quiltedGambeson', tint: 0xb4b06c, decay: 0.3 },
+    trousers: { tex: 'rottenCloth', tint: 0x8c2c22, decay: 0.35 },
+    leather: { tex: 'crackedLeather', tint: 0x3a2a20, decay: 0.4 },
+    strap: { tex: 'crackedLeather', tint: 0x4a3426, decay: 0.4 },
+    iron: { tex: 'dentedSteel', tint: 0xb4b8be, decay: 0.35, double: true, steel: true },
+    blade: { tex: 'dentedSteel', tint: 0xc8ccd2, decay: 0.3, steel: true },
+    eye: { glow: 0xffb050 },
   },
   body: { torso: null, pelvis: null, arms: null, legs: null, head: null, neck: null, hands: null, feet: null },
   parts: Object.entries(piecesOf).flatMap(([bone, list]) => list.map(s => ({ use: 'baked', mesh: `hollow:${bone}__${s}`, bone, slot: s.split('.')[0], tile: 0.42 }))),
   weapon: { use: 'ruinedSword', slots: { blade: 'blade', grip: 'leather', guard: 'iron' } },
+  edgeTell: { slot: 'blade', size: 0.45, along: 0.75 },   // (pass 162) the wind-up glows on the sword's edge, not over the body
+  // (pass 162) waist, neck, shoulders, elbows, hips and knees bend as one body, not as a doll's parts (the Captain's, pass 118)
+  softJoints: { chest: 0.12, neck: 0.06, armL: 0.1, armR: 0.1, elbowL: 0.08, elbowR: 0.08, legL: 0.11, legR: 0.11, kneeL: 0.08, kneeR: 0.08 },
   anim: {
     attackMul: 1,
     idle: { breathRate: 1.3, breath: 0.025, headDrift: 0.1, sway: 0.03, twitch: 0.4 },
@@ -112,7 +119,7 @@ MODEL_DEFS.hollowSoldier = {
     flinch: { head: 1, chest: 1, arms: 1 },
     death: { buckle: 1, slump: 1 },
   },
-  eyes: { color: 0xd89a50, size: 0.013, spread: 0.048, at: [0, 0.095, 0.1] },
+  eyes: { color: 0xffb050, size: 0.013, spread: 0.048, at: [0, 0.095, 0.1] },
 };
 }
 

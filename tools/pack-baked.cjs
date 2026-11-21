@@ -61,6 +61,7 @@ const FILES = {
   'ash-legion': { sources: ['ash_legion'] },
   'seven-founder': { sources: ['seven_founder'] },
   'ghost-bell': { sources: ['ghost_bell'] },
+  'arena-ruins': { sources: ['arena_ruins'] },
 };
 
 function readGlb(file) {
