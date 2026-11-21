@@ -6,6 +6,7 @@
 //   title    a few words
 //   text     one to three sentences, shown under the list when the entry is selected
 const CHANGELOG = [
+  { version: 'v7.202.0', title: 'Gemini shows her blade', text: 'Gemini\'s wind-ups now glow on her crescent instead of behind her, and her whole body carries every blow. The Lunar Tempest has its own opening, low with the glaive trailed behind her, and ends on a rising cut. The King\'s Blade\'s Ember Leaps no longer hides it in fire as it lands.' },
   { version: 'v7.201.0', title: 'Legendaries I', text: 'Storm King crowns the boss with six bolts and a seventh that falls through it. Gale Crescent closes a cage of spinning blades round it. The Ember Twin is now its own figure of ash and embers, and every legendary lands with a one-frame flash (a soft darken with reduced motion).' },
   { version: 'v7.200.0', title: 'The King\'s Blade, made fair', text: 'The King\'s Blade\'s sword now shows its wind-up on the blade. The Ember Leaps has its own crouch before the jump and can be parried as it lands. The Shield Burns swings the burning shield at you first (parry), then slams it down (roll). The Shield Wall\'s cut over the shield can be parried. The Kindling Tree no longer glows red all over before its fire blows, and the Reaching Bough has its own wind-up.' },
   { version: 'v7.199.0', title: 'The Kindling Tree, reworked', text: 'The Kindling Tree fights anew: parry its boughs, jump its low sweep, and when it burns, get out from under it as it falls.' },
