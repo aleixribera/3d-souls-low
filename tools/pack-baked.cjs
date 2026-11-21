@@ -63,6 +63,7 @@ const FILES = {
   'ghost-bell': { sources: ['ghost_bell'] },
   'arena-ruins': { sources: ['arena_ruins'] },
   'fountain': { sources: ['fountain'] },
+  'town-bits': { sources: ['town_bits'] },
 };
 
 function readGlb(file) {

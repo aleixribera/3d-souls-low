@@ -4,9 +4,10 @@ The iterate loop's working note (`.claude/iterate.md`). Cap: 8,000 characters.
 
 ## Now
 - Resumed 2026-11-21: next the PLAN "Later" items in order, then the balance pass (loop file stop point).
-- Track 1, pass 167 (PLAN Later item 3, Story levels redone in cel, pass 1 of ~3): Aurel, Torn Abbey, Ember Root
-  relit (`atmosphere.areas`), Blender fountain, thrall recolour. Next: `docs/story/audit.md` "Left", in order.
-  Acceptance: in-page `Aurel:`; `tools/story-frames.cjs` sheets; clip `story-redo.mp4`; audit 0 findings.
+- Track 1, pass 169 (PLAN Later item 3, Story redone in cel, 2 of ~3): Night Gaol warm cells and cold
+  bridges, fog gates as drifting fog (`js/fog-gate.js`), Aurel in Ash relit, Burning Town house variety (`townLook`,
+  Blender bays and dormers), Keyless, Cinderfolk recoloured. Next: `docs/story/audit.md` "Left" (Sunken Keep).
+  Acceptance: `tools/story-frames.cjs` sheets; clip `story-redo-2.mp4` (`tools/story-clip.cjs`); audit 0 findings.
 - Track 2, pass 170 (retro, 1 of 1): `tools/release.cjs` commits and tags the bump itself, tags nothing when the
   commit is refused, refuses a BOM; `browser-lock.cjs log` times every hold. Next on track 2: PLAN Later item 6, the
   Finishing Blow's look. Acceptance: `tests/release.cjs`; `browser-lock.cjs log` lists holds.

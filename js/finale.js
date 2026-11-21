@@ -92,16 +92,6 @@ const finale = (() => {
     out.light = new THREE.PointLight(0xff6a28, 0, 46, 1.2); out.light.position.set(R.glow[0], y + 7, R.glow[1]); g.add(out.light);
     return out;
   }
-  // The fog over the throne room's door: a pale curtain of light, there while the fight is still to be won.
-  function buildFog(gate) {
-    const alongX = gate.box.x1 - gate.box.x0 > gate.box.z1 - gate.box.z0, w = alongX ? gate.box.x1 - gate.box.x0 : gate.box.z1 - gate.box.z0;
-    const m = new THREE.Mesh(new THREE.PlaneGeometry(w, 5.5), new THREE.MeshBasicMaterial({ color: 0xffe8c0, transparent: true, opacity: 0.35,
-      depthWrite: false, side: THREE.DoubleSide, blending: THREE.AdditiveBlending }));
-    m.position.set(gate.x + (alongX ? 0 : -0.4), gate.y + 2.75, gate.z); if (!alongX) m.rotation.y = Math.PI / 2;
-    group.add(m);
-    return m;
-  }
-
   // ---- the level's state, from its start --------------------------------------------------------------------------
   function reset(game) {
     clear();
@@ -128,7 +118,7 @@ const finale = (() => {
     if (fogEntry) {
       const gate = world.gates.find(g => g.id === fogEntry.id);
       gate.open = true; gate.lift = 1;
-      st.fog = { gate, zoneId: fogEntry.fog, plane: buildFog(gate), sealed: false };
+      st.fog = { gate, zoneId: fogEntry.fog, look: fogGate.build(group, gate, fogGate.colorFor(L, fogEntry)), sealed: false };   // its look: js/fog-gate.js
     }
   }
 
@@ -331,8 +321,7 @@ const finale = (() => {
     }
     if (st.fog) {
       const zone = game.zones.find(z => z.id === st.fog.zoneId);
-      st.fog.plane.visible = !zone.gate.open;
-      st.fog.plane.material.opacity = 0.28 + 0.08 * Math.sin(t * 1.7);
+      fogGate.update(st.fog.look, !zone.gate.open, t, dt);
     }
     const R = st.room;
     if (R) {

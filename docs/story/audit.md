@@ -154,14 +154,32 @@ Frames: `docs/story/audit/<chapter>-before.jpg` and `-after.jpg`, one shot per r
 (`node tools/browser-lock.cjs run <pass> -- node tools/story-frames.cjs <tag> <levelId ...>`; the before shots come
 from a clean checkout of the previous release). Walk-through: `docs/scorecard/now/story-redo.mp4`.
 
+### Pass 169: the Night Gaol, the fog gates, Aurel in Ash, the Burning Town
+
+- **The Night Gaol**: the night is a cold blue-violet over the bridges (moon up, saturation 0.62), and each cell and
+  isle is warm under its own lamps (`lamps` on every cell, `areas` with an amber ambient). The great ring sits between,
+  violet and amber. Bridge floors raised a step so the way across reads.
+- **Fog gates** (`js/fog-gate.js`, tuned in `CONFIG.finale.fogGate`): three layers of drifting, domain-warped noise
+  spread through the doorway, thinning at the sides and top and thickest at the floor; seen edge-on a layer fades out,
+  so the gate never reads as a slab. Its colour leans toward the chapter's moon, or `fogColor` on the gate (validated).
+  It eases away when the gate opens. Every chapter with fog gets it.
+- **Aurel in Ash**: the night over the ash is a cool smoke-grey and the fire is in its sources (houses, lamps, embers
+  on the ground). The cellar is warm under four lamps on a neutral base (it was near black); the plaza is in the red
+  glow of the city burning; the throne court is a cold violet ash. Floors darker than the pale ash walls.
+- **The Burning Town**: house variety (`townLook` on the level, `js/town.js`, validated). Each house draws its plaster
+  (limewash, ochre, rose, sage, oxblood), roof (red tile, slate, brown) and timber from palettes, its framing from three
+  patterns (corner posts, crossed braces, a mid rail), and some carry a bay window on carved brackets or gabled dormers:
+  Blender pieces, `tools/blender/town_bits.py` (196 triangles). 24 bays and 51 dormers in the chapter. A level
+  without `townLook` keeps its old houses. Close-ups: `docs/story/audit/burning-town-houses.jpg`.
+- **Story recolours**: the Keyless (Night Gaol) in bone, indigo and rust; the Cinderfolk (Aurel in Ash) in ash, char
+  and ember-brown.
+
+Walk-through: `docs/scorecard/now/story-redo-2.mp4`, made by `node tools/story-clip.cjs <out.mp4> <tag> <levelId ...>`
+from the `tools/story-frames.cjs` frames.
+
 ### Left, in order
 
-1. **The Night Gaol**: all blue. It wants warm cell lamps against the cold bridges, as areas, and its fog gates.
-2. **Fog gates everywhere** (the Night Gaol, the Torn Abbey, the Root of the Ember, Aurel) are flat white slabs that
-   read as walls of light. They need a fog look: depth, drift, the room behind faintly seen.
-3. **Aurel in Ash**: readable already; areas for its plaza and throne, and darker floors.
-4. **The Burning Town**: the orange suits a town on fire. It needs house variety (more Blender facades), not a
-   relight.
-5. **The Sunken Keep**: long corridors of one stone. Areas per wing and floors a step down.
-6. **The Tower, Saltgrave and the Final Castle**: areas, and set pieces for the bare yard and field.
-7. **The Long Hall, the Church, the Windward Moor and the Still Mere**: they read well. Last, light touches only.
+1. **The Sunken Keep**: long corridors of one stone. Areas per wing and floors a step down.
+2. **The Tower, Saltgrave and the Final Castle**: areas, and set pieces for the bare yard and field.
+3. **The Long Hall, the Church, the Windward Moor and the Still Mere**: they read well. Last, light touches only.
+4. Optional: `townLook` for Aurel and Aurel in Ash, whose houses share the Burning Town's builder.

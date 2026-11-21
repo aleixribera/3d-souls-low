@@ -31,6 +31,11 @@ const LEVEL_3 = {
                 surface: { moss: 0.2, grime: 1.1 }, banners: [0x3a2a2a, 0x2a2e3a], debris: 0.1,
                 sky: { zenith: 0x262038, sun: 0xff7a3a, sunDir: [1, 0.08, 0.05] }, silhouettes: 2,
                 landmark: { x: 700, z: 60, y: -20, height: 300, width: 320 } },
+  // (pass 169, the cel redo) Its houses drawn from palettes, so a street is no longer one house over and over: limewash,
+  // ochre, rose and sage plaster, oxblood paint; red tile, slate and brown roofs; framing in three patterns; some with a
+  // bay window or dormers (js/town.js `townLook`).
+  townLook: { plaster: [0xc8bca4, 0xc4a470, 0xbc9a88, 0xa8ac90, 0x8e5a48], roof: [0x6a382a, 0x3e3a42, 0x5a4030, 0x7a4430],
+              timber: [0x3a291c, 0x24201e, 0x4a2e1e], patterns: ['ends', 'cross', 'rail'], oriels: 0.4, dormers: 0.45 },
   start: { x: 4, z: 1, yaw: Math.PI / 2 },
   lessons: [{ lesson: 'blue', when: { glint: 'blue' } }],   // v7.19.0: the Lancer's charged thrust, the first blue glint
   rooms: [

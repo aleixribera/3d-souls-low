@@ -658,17 +658,19 @@ MODEL_DEFS.lanternBearer = {
 };
 // The Keyless (Level 9, v7.42.0; STORY.md 10e): the Hollow Soldier's figure as a prisoner of the Night Gaol: skin grey
 // under the starlight, a faded prison quilt, rusted iron at the straps and plates, a length of fetter for a blade. A
-// stand-in until its own Blender figure.
+// stand-in until its own Blender figure. (pass 169, the cel redo) Three flat values, as the Hollow Soldier since pass 162:
+// the prison quilt bleached to bone, the trousers a deep indigo, the iron rust-brown; grey on grey it was lost in the
+// gaol's blue stone.
 MODEL_DEFS.keyless = {
   extends: 'hollowSoldier',
   materials: {
     ...MODEL_DEFS.hollowSoldier.materials,
-    skin: { tex: 'rotSkin', tint: 0xa4a8b0, decay: 0.75 },
-    quilt: { tex: 'quiltedGambeson', tint: 0x6a6c74, decay: 0.8 },
-    trousers: { tex: 'rottenCloth', tint: 0x4a4c56, decay: 0.8 },
-    strap: { tex: 'rustedIron', tint: 0x7a6656, decay: 0.8 },
-    iron: { tex: 'rustedIron', tint: 0x7a6a5c, decay: 0.75, double: true },
-    blade: { tex: 'rustedIron', tint: 0x6a625a, decay: 0.7 },
+    skin: { tex: 'rotSkin', tint: 0x9ca4b0, decay: 0.45 },
+    quilt: { tex: 'quiltedGambeson', tint: 0xb0aca0, decay: 0.3 },
+    trousers: { tex: 'rottenCloth', tint: 0x2c3352, decay: 0.35 },
+    strap: { tex: 'rustedIron', tint: 0x6a4434, decay: 0.4 },
+    iron: { tex: 'rustedIron', tint: 0x8a5e44, decay: 0.4, double: true },
+    blade: { tex: 'rustedIron', tint: 0x9a7458, decay: 0.35 },
     eye: { glow: 0xb8c8ff },
   },
   eyes: { color: 0xb8c8ff, size: 0.011 },
@@ -696,17 +698,19 @@ MODEL_DEFS.gildedThrall = {
 };
 // The Cinderfolk (Level 11, v7.46.0; STORY.md 10g): the Hollow Soldier's figure as a citizen of Aurel after the burning:
 // skin charred grey-black, clothes burned to the colour of ash, embers where the eyes were. A stand-in until its own
-// Blender figure.
+// Blender figure. (pass 169, the cel redo) Three flat values: skin charred near-black, the gambeson burned to a pale ash
+// (the light mass, so the figure reads on the dark streets), the trousers scorched ember-brown; low decay, as the
+// Hollow Soldier since pass 162.
 MODEL_DEFS.cinderfolk = {
   extends: 'hollowSoldier',
   materials: {
     ...MODEL_DEFS.hollowSoldier.materials,
-    skin: { tex: 'rotSkin', tint: 0x6a625a, decay: 0.85 },
-    quilt: { tex: 'ashSoot', tint: 0x6a625c, decay: 0.8 },   // the gambeson burned to soot (a tint keeps a texture's brightness)
-    trousers: { tex: 'rottenCloth', tint: 0x3a3430, decay: 0.85 },
-    strap: { tex: 'crackedLeather', tint: 0x2a2420, decay: 0.85 },
-    iron: { tex: 'rustedIron', tint: 0x5a4a40, decay: 0.8, double: true },
-    blade: { tex: 'rustedIron', tint: 0x7a6658, decay: 0.75 },
+    skin: { tex: 'ashSoot', tint: 0x5a4438, decay: 0.5 },   // charred: a tint sets only the hue, so the soot texture gives the black
+    quilt: { tex: 'quiltedGambeson', tint: 0xa49c92, decay: 0.35 },   // the gambeson burned to ash
+    trousers: { tex: 'rottenCloth', tint: 0x5c2a1a, decay: 0.4 },
+    strap: { tex: 'crackedLeather', tint: 0x1e1814, decay: 0.45 },
+    iron: { tex: 'rustedIron', tint: 0x4a3e38, decay: 0.45, double: true },
+    blade: { tex: 'rustedIron', tint: 0x8a7464, decay: 0.4 },
     eye: { glow: 0xff7a2a },
   },
   eyes: { color: 0xff7a2a, size: 0.012 },

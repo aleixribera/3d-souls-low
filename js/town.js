@@ -186,11 +186,36 @@ function sideBox(g, S, w, h, d, mat, a, y, off, tilt = 0) {
 // over the street, windows lit or dark, doors, a tiled gable roof with a chimney; a tower in stone under a spire.
 // `burning` houses have fire in their upper windows, a flame and a real light (a culled light source), and smoke
 // (`out.smoke`, emitters drawn by the visuals); `ruined` ones are blackened, roof half gone.
-function buildHouses(G, L, TR, out) {
-  for (const H of L.houses) buildHouse(G, H, TR, seeded(strSeed(`${L.id}:${H.rect.join(',')}`)), out, L.bonfires);
+// (pass 169, the Story levels redone) A level's `townLook` gives its houses variety, so a street is no longer one house
+// repeated (docs/story/audit.md): each house draws its plaster, roof and timber from the look's palettes and its framing
+// from `patterns`; `oriels` and `dormers` are the shares of houses with a bay window on an upper storey and a dormer on
+// the roof (Blender pieces, tools/blender/town_bits.py). A level without it keeps the one look and its old random draws.
+const TOWN_LOOK_MATS = new Map();
+function townLookMat(kind, color) {
+  const key = `${kind}:${color}`;
+  if (!TOWN_LOOK_MATS.has(key)) TOWN_LOOK_MATS.set(key, weather(new THREE.MeshStandardMaterial({ color, roughness: 0.92 }), kind === 'roof' ? 'roof' : kind === 'timber' ? 'wood' : 'plaster'));
+  return TOWN_LOOK_MATS.get(key);
 }
-function buildHouse(G, H, TR, rnd, out, bonfires) {
-  const V = VIS.town, M = TOWN_MAT, r = H.rect, y = houseBase(H, TR.regions), eaves = y + H.eaves, gr = 0.03;
+function houseLook(look, rnd) {
+  if (!look) return null;
+  const pick = list => list[Math.floor(rnd() * list.length) % list.length];
+  return { M: { ...TOWN_MAT, plaster: townLookMat('plaster', pick(look.plaster)), roof: townLookMat('roof', pick(look.roof)),
+                timber: townLookMat('timber', pick(look.timber)) },
+           pattern: pick(look.patterns || ['ends']), oriel: rnd() < (look.oriels || 0), dormer: rnd() < (look.dormers || 0) };
+}
+const bakedTownBits = () => typeof BAKED !== 'undefined' && !!BAKED['town-bits:oriel__plaster'];
+// A Blender piece (oriel or dormer) in g at x, y, z turned by ry, its slots in the house's materials.
+function townBit(g, piece, mats, x, y, z, ry) {
+  const p = new THREE.Group(); p.position.set(x, y, z); p.rotation.y = ry;
+  for (const slot of ['plaster', 'timber', 'roof', 'glass']) p.add(new THREE.Mesh(bakedGeometry(`town-bits:${piece}__${slot}`), mats[slot]));
+  g.add(p);
+}
+function buildHouses(G, L, TR, out) {
+  for (const H of L.houses) buildHouse(G, H, TR, seeded(strSeed(`${L.id}:${H.rect.join(',')}`)), out, L.bonfires, L.townLook);
+}
+function buildHouse(G, H, TR, rnd, out, bonfires, townLook) {
+  const look = houseLook(townLook, rnd);
+  const V = VIS.town, M = look ? look.M : TOWN_MAT, r = H.rect, y = houseBase(H, TR.regions), eaves = y + H.eaves, gr = 0.03;
   const fronts = houseFronts(H, TR.regions), stone = !!H.stone || H.kind === 'tower', inner = TR.regions.filter(R => (H.rooms || []).includes(R.id));
   const burnt = !!(H.burning || H.ruined), upperMat = burnt ? M.soot : M.plaster, wallMat = stone ? (burnt ? M.soot : M.stone) : upperMat;
   const groundTop = stone ? eaves : Math.min(eaves - 2, y + V.groundFloor), jet = k => !stone && fronts.has(k) ? V.jetty : 0;
@@ -239,12 +264,25 @@ function buildHouse(G, H, TR, rnd, out, bonfires) {
         for (let i = 0; i <= n; i++) sideBox(G, S, 0.17, b1 - b0, 0.13, M.timber, S.a0 + i * bay + (i === 0 ? 0.08 : i === n ? -0.08 : 0), (b0 + b1) / 2, j + 0.06);
         for (const i of [0, n - 1]) if (bay > 0.8) sideBox(G, S, Math.hypot(bay, b1 - b0 - 0.2) - 0.1, 0.14, 0.11, M.timber,
           S.a0 + (i + 0.5) * bay, (b0 + b1) / 2 + 0.05, j + 0.05, (i === 0 ? 1 : -1) * Math.atan2(b1 - b0 - 0.2, bay));
+        const glazed = new Set();
         if (b1 - b0 > 2) for (let i = 1; i < n - 1; i++) if (rnd() < V.windows) {
           const m = windowMat(true), wy = b0 + Math.min(1.35, (b1 - b0) * 0.55);
           sideBox(G, S, Math.min(0.8, bay * 0.6), 1.0, 0.1, m, S.a0 + (i + 0.5) * bay, wy, j + 0.05);
           sideBox(G, S, Math.min(1.0, bay * 0.75), 0.1, 0.22, M.timber, S.a0 + (i + 0.5) * bay, wy - 0.56, j + 0.1);
           if (m === M.fire) fires.push({ S, a: S.a0 + (i + 0.5) * bay, y: wy, off: j + 0.25 });
+          glazed.add(i);
         }
+        // A `townLook` house's framing: crossed braces in each bay without a window, or a mid rail with short posts.
+        if (look && look.pattern === 'cross' && bay > 0.8) for (let i = 1; i < n - 1; i++) if (!glazed.has(i)) for (const t of [1, -1])
+          sideBox(G, S, Math.hypot(bay, b1 - b0 - 0.2) - 0.1, 0.12, 0.1, M.timber, S.a0 + (i + 0.5) * bay, (b0 + b1) / 2 + 0.05, j + 0.05, t * Math.atan2(b1 - b0 - 0.2, bay));
+        // The rail runs at the windows' sill line, under the glass.
+        if (look && look.pattern === 'rail') sideBox(G, S, S.len + j0 + j1 + 0.1, 0.14, 0.12, M.timber, (S.a0 + S.a1 + j1 - j0) / 2, b0 + Math.min(1.35, (b1 - b0) * 0.55) - 0.56, j + 0.05);
+      }
+      // A bay window jutting from the first upper storey, over a bay in the front's middle third.
+      if (look && look.oriel && bakedTownBits() && !burnt && bands.length && S.len >= 6 && bands[0][0] + 3.3 <= eaves + 0.2) {
+        const a = S.a0 + (Math.floor(n / 2) + 0.5) * bay, [ox, , oz] = S.pt(a, 0, j + 0.02);
+        townBit(G, 'oriel', { ...M, glass: windowMat(true) }, ox, bands[0][0] + 0.3, oz, S.ry);
+        look.oriel = false;   // one to a house
       }
       sideBox(G, S, S.len + j0 + j1 + 0.1, 0.24, 0.18, M.timber, (S.a0 + S.a1 + j1 - j0) / 2, eaves - 0.12, j + 0.08);
     }
@@ -296,6 +334,13 @@ function buildHouse(G, H, TR, rnd, out, bonfires) {
       gab.position.set(s * (len / 2 - 0.15 + gr + jet(alongX ? (s > 0 ? 'e' : 'w') : (s > 0 ? 'n' : 's'))), 0, 0); gab.rotation.y = Math.PI / 2; g.add(gab);
     }
     if (!missing) townBox(g, len + 2 * ov, 0.2, 0.28, M.timber, 0, rise + 0.16, 0);
+    // A `townLook` house's dormers: on a slope that looks onto the street, up to 40% of the way up from the eaves, low
+    // enough that the piece's body (2.6 m deep, tools/blender/town_bits.py) stays on its own slope, under the ridge.
+    const dormT = Math.min(0.4, 1 - 2.7 / half);
+    if (look && look.dormer && !H.ruined && bakedTownBits() && len >= 5 && dormT >= 0.15) {
+      const s = fronts.has(alongX ? 'n' : 'e') ? 1 : -1, t = dormT, nd = len >= 10 ? 2 : 1, dz = s * half * (1 - t), dy = -ov * pitch + (rise + ov * pitch) * t + 0.12;
+      for (let i = 0; i < nd; i++) townBit(g, 'dormer', { ...M, glass: windowMat(true) }, nd === 1 ? 0 : (i - 0.5) * len * 0.45, dy, dz, s > 0 ? 0 : Math.PI);
+    }
     const chx = (rnd() - 0.5) * len * 0.5, chs = rnd() < 0.5 ? -1 : 1;
     if (!H.ruined) townBox(g, 0.75, rise * 0.55 + 1.3, 0.75, M.stone, chx, rise * 0.45 + (rise * 0.55 + 1.3) / 2, chs * dep * 0.18);
     G.add(g);

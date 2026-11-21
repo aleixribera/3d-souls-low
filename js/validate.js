@@ -1386,6 +1386,12 @@ function validateRooms(L, where, need, num, visual = true) {
   // Houses (js/terrain.js, drawn by js/town.js) and props (js/data/props.js): their shapes.
   const houseTag = H => `${where} house at [${H && Array.isArray(H.rect) ? H.rect.join(', ') : '?'}]`;
   if ('houses' in L) check(Array.isArray(L.houses), `${where}: houses must be a list.`);
+  if ('townLook' in L) {   // pass 169: the houses' palettes and pieces (js/town.js)
+    const T = L.townLook, cols = v => Array.isArray(v) && v.length > 0 && v.every(c => Number.isInteger(c) && c >= 0 && c <= 0xffffff), share = v => v === undefined || (num(v) && v >= 0 && v <= 1);
+    check(T && 'houses' in L && cols(T.plaster) && cols(T.roof) && cols(T.timber) && share(T.oriels) && share(T.dormers)
+      && (T.patterns === undefined || Array.isArray(T.patterns) && T.patterns.length > 0 && T.patterns.every(k => ['ends', 'cross', 'rail'].includes(k))),
+      `${where}: townLook needs houses, and plaster, roof and timber lists of colours; patterns of 'ends', 'cross' or 'rail'; oriels and dormers shares 0..1.`);
+  }
   for (const Hs of Array.isArray(L.houses) ? L.houses : []) {
     const tag = houseTag(Hs);
     check(Hs && rectOk(Hs.rect), `${tag}: rect must be [x0, x1, z0, z1] with x0 < x1 and z0 < z1.`);
@@ -1497,6 +1503,7 @@ function validateRooms(L, where, need, num, visual = true) {
     need(typeof sg.id === 'string' && !zoneIds.has(sg.id), `${tag}: missing id, or the same as a zone, a shortcut or another sealed gate.`); zoneIds.add(sg.id);
     checkGate(sg.gate, tag);
     if ('fog' in sg) need(L.gated.some(g => g.id === sg.fog), `${tag}: fog must name the zone it seals (a zone of the level).`);
+    if ('fogColor' in sg) need('fog' in sg && Number.isInteger(sg.fogColor) && sg.fogColor >= 0 && sg.fogColor <= 0xffffff, `${tag}: fogColor is a fog gate's colour (0xrrggbb), on a gate with fog.`);
   }
   // Traps: a collapse area on one room's floor, with a floor below it to land on; a trigger on a floor; a warning time.
   if ('traps' in L) need(Array.isArray(L.traps), `${where}: traps must be a list.`);

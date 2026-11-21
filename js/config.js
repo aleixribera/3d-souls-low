@@ -565,6 +565,10 @@ const CONFIG = {
     pulse: { calm: 2.4, hot: 1.2 },          // s between beats of the boss pulse: his first bars / the Ember-Crowned
     grit: { range: 4, every: 0.7, dust: 6 },  // a perched enemy's warning: within its notice + `range` m, grit and a grind every `every` s
     fogClose: 0.7,                            // s for the throne room portcullis to drop behind the player
+    // A boss's fog gate (js/fog-gate.js, pass 169): `layers` sheets of drifting fog spread `depth` m through the doorway,
+    // `overlap` m wider than it and `rise` m taller (their soft edges sit in the wall); `opacity` at the thickest; the
+    // base `color` taken `tintMoon` of the way to the level's moon light; `fade` s to thin away once the fight is won.
+    fogGate: { layers: 3, depth: 0.9, overlap: 0.8, rise: 0.6, opacity: 0.42, color: 0xd0d0cc, tintMoon: 0.35, fade: 1.4 },
     // The transition into the Ember-Crowned (s into it; the phase's own `transition` is its length). Nothing here can hurt.
     timeline: [{ at: 0.15, act: 'toll' }, { at: 0.65, act: 'shatter' }, { at: 1.3, act: 'toll' }, { at: 1.75, act: 'pillar', i: 0 },
                { at: 2.25, act: 'pillar', i: 1 }, { at: 2.7, act: 'toll' }, { at: 3.1, act: 'ignite' }, { at: 3.6, act: 'roar' }],
