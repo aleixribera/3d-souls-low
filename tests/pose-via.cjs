@@ -115,4 +115,34 @@ const bad = one('__viaTest'); bad.hits[0].hold = { at: 0.5, time: [0.2, 0.4], ch
 const badErrs = []; G.checkAttackAnim(bad, 'creep', (ok, msg) => { if (!ok) badErrs.push(msg); });
 assert.ok(badErrs.some(m => m.includes('creep')), 'a creep of 1 or more is refused');
 
+// 6. The Bell Warden's in-between keys (pass 124): every attack with a via keeps its authored ends at every phase change,
+// bends the blend in every phase that has keys, and has no single-frame jump in any channel through the whole attack.
+const warden = G.ENEMY_DEFS.find(d => d.id === 'bellWarden');
+const viaAttacks = warden.attacks.filter(a => (G.ATTACK_POSES[a.pose].hits || []).some(h => h.via));
+assert.ok(['wardenSweep', 'wardenHammerfall', 'wardenBackhand', 'wardenUpswing', 'wardenFall', 'wardenThreeTolls', 'wardenSweepReturn'].every(id => viaAttacks.some(a => a.id === id)),
+  `the Warden's heavy swings have in-between keys (${viaAttacks.map(a => a.id).join(', ')})`);
+for (const a of viaAttacks) {
+  const PA = G.ATTACK_POSES[a.pose], id = '__plain_' + a.id;
+  G.ATTACK_POSES[id] = { ...PA, hits: PA.hits.map(h => { const c = { ...h }; delete c.via; return c; }) };
+  const flat = { ...a, pose: id };
+  a.hits.forEach((h, i) => {
+    const vh = PA.hits[i].via || {};
+    for (const ph of ['windup', 'active', 'follow']) {
+      const [s0, len] = G.phaseSpan(a, ph, i);
+      if (!(len > 0)) continue;
+      if (ph !== 'windup' || i > 0) assert.ok(maxDiff(sample(a, s0 + 0.0001), sample(flat, s0 + 0.0001)) < 0.02, `${a.id} hit ${i}: the ${ph} starts on its authored pose`);
+      assert.ok(maxDiff(sample(a, s0 + len - 0.0001), sample(flat, s0 + len - 0.0001)) < 0.02, `${a.id} hit ${i}: the ${ph} ends on its authored pose`);
+      if (!vh[ph]) continue;
+      const bent = Math.max(...[0.2, 0.3, 0.4, 0.5, 0.6, 0.75].map(k => maxDiff(sample(a, s0 + len * k), sample(flat, s0 + len * k))));
+      assert.ok(bent > 0.05, `${a.id} hit ${i}: the ${ph}'s keys bend the blend (${bent.toFixed(2)} rad)`);
+    }
+  });
+  const endA = G.phaseSpan(a, 'recovery', a.hits.length - 1)[0] + a.recovery, st = [], at = [];
+  let pv = sample(a, 0);
+  for (let t = 1 / 60; t < endA; t += 1 / 60) { const s = sample(a, t); st.push({ t, d: s.map((v, i) => Math.abs(v - pv[i])) }); pv = s; }
+  st.forEach((s, k) => s.d.forEach((d, i) => { const p = st[k - 1], n = st[k + 1]; if (p && n && d > 0.03 && d > 2.5 * Math.max(p.d[i], n.d[i])) at.push(`${CH[i]} at ${s.t.toFixed(3)} s`); }));
+  assert.equal(at.length, 0, `${a.id}: no single-frame jump in any channel (${at.join(', ')})`);
+}
+
+console.log(`pose via: the Bell Warden's ${viaAttacks.length} attacks with in-between keys keep their ends and never jump`);
 console.log(`pose via: the Captain's cleave raise ${mid.toFixed(2)} rad off the straight blend at most, fastest wind-up frame ${worstWind.toFixed(3)} rad, all checks pass`);

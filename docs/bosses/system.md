@@ -4,6 +4,18 @@ How a boss is made, start to finish, so the next one takes about three passes an
 Hollis bar and the old boss rules (`.claude/feedback.md` 2026-11-14). Proven first on the Pillager Captain
 (`pillager-captain.md`); the second is the Bell Warden (`bell-warden.md`, from pass 123). Each step names its tool and the check that closes it.
 
+## 0. The moveset audit: rework or restyle
+
+Every boss starts here (Aleix, 2026-11-21: "Keep in mind that some bosses still need to be reworked, not just
+restyled."). Check his moveset as it is against the bars of step 1: 8 to 12 attacks of his own, 3 or 4 combos, one or two
+signature moments a phase, a real phase two, and no move renamed from another boss or taken from the borrowed move
+sources (`godfrey.js`, `godrick.js`, `maliketh.js`, `radagon.js`, `crucible-knight.js`, `js/data/move-sources.js`).
+- All met: a **restyle** (model in cel, animation, effects, the judge).
+- One bar short by a move or a string: add it, then restyle.
+- More short, or any move borrowed or renamed: a **rework**: new moves, animation and phase two from a new one-page
+  design, before any restyle.
+Write the verdict, bar by bar, at the top of the boss's page (`bell-warden.md` "Moveset audit").
+
 ## 1. The one-page design
 
 `docs/bosses/<id>.md`, one page, copied from `pillager-captain.md`'s headings:

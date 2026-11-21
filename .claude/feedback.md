@@ -107,3 +107,7 @@ took it (once taken).
 - 2026-11-20, Aleix's art style pick (PLAN item 4), from `docs/style/`: "Let's go with Cel-shaded anime!! It looks
   great!! This is the new style for the entire game!" So cel (`?style=cel`, `js/data/styles.js`) is the game's style:
   the Pillager Captain's model and effects are built in it (item 5), then player and bosses, enemies, levels.
+
+- 2026-11-21, Aleix, on the cel style: "OMG cel shaded graphics are so good!"
+- 2026-11-21, Aleix: "Keep in mind that some bosses still need to be reworked, not just restyled." So every boss through
+  the system starts with an audit of its moveset against the bars (`docs/bosses/system.md` step 0): rework or restyle.

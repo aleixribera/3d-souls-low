@@ -2,7 +2,8 @@
 
 The second boss through the system (`system.md`; PLAN item 5's real check). Data: `js/data/bosses/bell-warden.js`; model:
 `tools/blender/bellwarden.py`. Status: pass 123, the design page and the cel look (dark bronze, the bell the one bright
-metal, the tell on the bell's lip, soft joints, a smear on his swings), all by data. Next: animation, judge, Aleix.
+metal, the tell on the bell's lip, soft joints, a smear on his swings), all by data. Pass 124: the moveset audit (below),
+a second cold string, and in-between keys on seven attacks. Next: the `edges-1` judge, then Aleix.
 
 ## Idea
 
@@ -18,7 +19,20 @@ whose head is a real cast bell on a long haft. From 20 m the stacked bells and t
 else in the game. Cel style: dark weathered bronze, near black-green with worn gold trim bands; the maul's bell the one
 bright bronze on him (where his reach ends); the pale green hum at his breast the one light until he wakes.
 
-## Moveset (12 attacks; 3 strings)
+## Moveset audit (pass 124): restyle, not rework
+
+Against the system's bars (`system.md` section 0), with Aleix's word that some bosses need a rework, not a restyle:
+- **8 to 12 attacks of his own: meets.** 11 moves made for him in pass 68 (his own `warden*` key poses, no move sources,
+  nothing renamed from another boss), plus two variants (the charge sooner, the answer twice).
+- **3 or 4 combos: met only now.** Backhand and Hammer, Three Tolls and the Peal, but the Peal is one toll twice and the
+  silent phase had a single string. Pass 124 adds **Sweep and Return** (both phases), so three real strings.
+- **One or two signature moments a phase: meets.** The Answering Toll; the Waking.
+- **A real phase two: meets.** New moves (the Waking, the Bronze Fall, Three Tolls, the Peal) and a new rule (his bronze
+  fills at 4 blows, not 6, and answers twice).
+
+So he keeps his moves; the work is the look, the animation and the judge.
+
+## Moveset (13 attacks; 4 strings)
 
 | Attack | Tell (his own pose) | Answer | Punishes |
 | --- | --- | --- | --- |
@@ -27,6 +41,7 @@ bright bronze on him (where his reach ends); the pale green hum at his breast th
 | The Ward Push | haft crosswise before his chest, shoulder down | parry | standing near the edge |
 | Rampart Charge | head down like a bull, the bell levelled under his arm | parry | backing off |
 | Backhand and Hammer | maul high over his LEFT shoulder | parry the backhand; roll the hammer | rolling early |
+| Sweep and Return | the sweep's haul, then the maul lifted over his left shoulder | parry, parry | rolling away after the sweep |
 | The Upswing | bell let down on the floor ahead, crouched over it | parry | standing in front |
 | The Answering Toll | maul hugged upright, head bowed, shaking | roll, or be out of reach | too many blows |
 | Rampart Charge (punish) | the charge, sooner | don't drink in his sight | healing |
@@ -36,7 +51,7 @@ bright bronze on him (where his reach ends); the pale green hum at his breast th
 | The Answering Peal (woken) | the answer's hug | roll twice | too many blows |
 
 Strings, every one broken by a counter (PLAN item 3): **Backhand and Hammer** (the backhand decides where the hammer
-falls); **Three Tolls**, right, left, then the held fall; **the Answering Peal**, two tolls. Unparryable: the Answering Toll, the Waking and the Peal (3 of 12; the
+falls); **Sweep and Return** (the sweep carries him round, and the backhand comes straight back); **Three Tolls**, right, left, then the held fall; **the Answering Peal**, two tolls. Unparryable: the Answering Toll, the Waking and the Peal (3 of 12; the
 Hammerfall, the Bronze Fall and the strings' last blows are roll only).
 
 ## Signature moments
@@ -60,6 +75,8 @@ leave a thin arc at the bell with a smear (`BOSS_FX` `trail`).
 
 ## Animation
 
-Key poses per hit in the data file (one pose each, no in-between keys yet). Next: in-between keys where his weight
-should lead the maul (the Hammerfall's heave, the Sweep's turn), from the pose library's `haftOverheadRaise` where the
-build fits.
+Pass 124: in-between keys (`via`) on the Sweep, the Hammerfall, Backhand and Hammer, Sweep and Return, the Upswing, the
+Bronze Fall and Three Tolls: his hips and chest lead and the bell trails, then whips through; on impact his weight sinks
+on. Every heave overhead goes through the pose library's `haftOverheadRaise` with a last arch (the load); the held
+hammers creep through their holds (`hold.creep`). The Bronze Fall now holds its coil on the ground (the tell) and swings
+the bell overhead in the air, knees tucked, instead of flipping it up from behind as it lands.

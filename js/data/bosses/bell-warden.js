@@ -80,6 +80,19 @@ MODEL_DEFS.bellWarden = {
   const heavy = { windup: 'inOutSine', active: 'inQuad', follow: 'outCubic', recovery: 'inOutCubic' };   // a weight that gathers, then falls
   const swing = { windup: 'inOutCubic', active: 'outCubic', follow: 'outQuad', recovery: 'inOutCubic' };
 
+  // In-between keys (pass 124, docs/bosses/system.md "Animation"; `via`, js/attack-anim.js). His weight leads the maul: the
+  // hips and chest move first and the arms and bell trail, then whip through; on impact the bronze keeps sinking a moment.
+  // A heave overhead from low goes through the pose library's captured raise (the Captain's, the same skeleton), with a
+  // last arch before the fall (the load).
+  const load = { t: 0.9, rel: true, crouch: 0.03, lean: -0.08, chest: [-0.12, 0, 0], head: [-0.08, 0, 0] };
+  const heave = [...POSE_LIBRARY.haftOverheadRaise.keys, load];
+  // A fall from overhead: the chest drives down first, arms and bell trailing with the elbows bent, then whipping through.
+  const fallDown = [{ t: 0.2, rel: true, crouch: 0.06, lean: 0.2, chest: [0.15, 0, 0], head: [0.12, 0, 0], armR: [-0.5, 0, 0], armL: [-0.45, 0, 0], elbowR: [-0.45, 0, 0], elbowL: [-0.4, 0, 0], haft: [-0.4, 0, 0] },
+    { t: 0.6, rel: true, haft: [0.1, 0, 0] }];
+  const sinkOn = [{ t: 0.4, rel: true, crouch: 0.06, lean: 0.08, kneeL: [0.12, 0, 0], haft: [0.06, 0, 0] }];
+  // A short diagonal toll (Three Tolls' first two): the same lead, smaller.
+  const tollDown = [{ t: 0.4, rel: true, crouch: 0.04, chest: [0.22, 0, 0], armR: [-0.35, 0, 0], armL: [-0.3, 0, 0], elbowR: [-0.3, 0, 0], haft: [-0.3, 0, 0] }];
+
   // Bronze Sweep: the maul hauled back low on his right, the bell trailing at his right heel, his back half turned; swung
   // flat across at your hips, and the weight carries him on round to his left.
   const hauled = { crouch: 0.26, lean: 0.12, legL: [-0.45, 0, 0], legR: [0.45, 0, 0], spin: [0, -1.1, 0], chest: [0.05, -0.4, 0], neck: [0, 0.5, 0], head: [0, 0.7, 0],
@@ -87,7 +100,14 @@ MODEL_DEFS.bellWarden = {
   const swept = { crouch: 0.22, lean: 0.08, legL: [-0.55, 0, -0.1], legR: [0.35, 0, 0.12], spin: [0, 1.0, 0], chest: [0.05, 0.45, 0], neck: [0, -0.35, 0], head: [0, -0.45, 0],
     armR: [-1.35, 0, 0.9], elbowR: [-0.1, 0, 0], haft: [0.18, 1.35, 3.14], armL: [-1.0, 0, 0.5], elbowL: [-0.4, 0, 0] };
   ATTACK_POSES.wardenSweep = { ease: { ...swing, active: 'inOutSine' }, lag: { weapon: 0.1 },
-    hits: [{ windup: hauled, strike: swept, follow: { ...swept, crouch: 0.3, spin: [0, 1.3, 0], haft: [0.4, 1.9, 3.14] } }] };
+    hits: [{ windup: hauled, strike: swept, follow: { ...swept, crouch: 0.3, spin: [0, 1.3, 0], haft: [0.4, 1.9, 3.14] }, via: {
+      // (pass 124) he sinks and winds past the haul, then settles into it; the hips turn first and the bell trails at his heel
+      // till it whips across; the weight carries him on round
+      windup: [{ t: 0.55, rel: true, crouch: 0.03, spin: [0, -0.1, 0] }, { t: 0.85, rel: true, crouch: 0.05, spin: [0, -0.18, 0], chest: [0, -0.1, 0], haft: [0, -0.2, 0] }],
+      active: [{ t: 0.4, rel: true, crouch: 0.05, spin: [0, 0.45, 0], chest: [0, 0.2, 0], head: [0, -0.25, 0], armR: [0.25, 0, -0.35], haft: [0, -0.5, 0] },
+               { t: 0.75, rel: true, spin: [0, 0.1, 0], haft: [0, -0.15, 0] }],
+      follow: [{ t: 0.3, rel: true, crouch: 0.05, spin: [0, 0.12, 0], head: [0, -0.1, 0], haft: [0, 0.15, 0] }],
+    } }] };
 
   // The Hammerfall: the maul raised straight up over his head in both hands, up on his toes, his back arched; held; brought
   // down mouth-first into the floor ahead with all his bronze behind it.
@@ -97,7 +117,7 @@ MODEL_DEFS.bellWarden = {
   const fallen = { crouch: 0.12, lean: 0.28, legL: [-0.95, 0, 0], kneeL: [0.5, 0, 0], legR: [0.6, 0, 0], kneeR: [0.2, 0, 0], chest: [0.3, 0, 0], neck: [-0.2, 0, 0], head: [-0.25, 0, 0],
     armR: [-1.9, 0, 0], elbowR: [0, 0, 0], haft: [1.3, 0, 3.14], armL: [-1.85, 0, 0], elbowL: [-0.1, 0, 0] };
   ATTACK_POSES.wardenHammerfall = { ease: heavy, lag: { weapon: 0.08 },
-    hits: [{ windup: raised, strike: fallen, follow: { ...fallen, crouch: 0.06, armR: [-1.95, 0, 0], armL: [-1.9, 0, 0] } }] };
+    hits: [{ windup: raised, strike: fallen, follow: { ...fallen, crouch: 0.06, armR: [-1.95, 0, 0], armL: [-1.9, 0, 0] }, via: { windup: heave, active: fallDown, follow: sinkOn } }] };
 
   // The Ward Push: the haft held crosswise before his chest in both fists, his left shoulder lowered into it; driven out
   // at you, both arms straight: a push, not a blow, and the tower top has an open edge.
@@ -127,7 +147,18 @@ MODEL_DEFS.bellWarden = {
     armR: [-2.9, 0, -0.2], elbowR: [-0.6, 0, 0], haft: [-1.75, -0.35, 3.14], armL: [-2.8, 0, -0.1], elbowL: [-0.6, 0, 0] };
   const fallenRight = { ...fallen, spin: [0, -0.25, 0], chest: [0.3, -0.15, 0], haft: [1.25, -0.2, 3.14] };
   ATTACK_POSES.wardenBackhand = { ease: swing, lag: { weapon: 0.08, armR: 0.03 },
-    hits: [{ windup: overLeft, strike: backhanded, follow: backhanded }, { windup: heaved, strike: fallenRight, follow: fallenRight }] };
+    hits: [{ windup: overLeft, strike: backhanded, follow: backhanded, via: {
+      // (pass 124) the hips turn into the backhand first, the bell trailing over his shoulder
+      active: [{ t: 0.4, rel: true, crouch: 0.04, spin: [0, -0.35, 0], chest: [0, -0.15, 0], armR: [-0.2, 0, 0.3], haft: [0, 0.45, 0] }] } },
+      { windup: heaved, strike: fallenRight, follow: fallenRight, via: { windup: heave, follow: sinkOn } }] };
+
+  // Sweep and Return (pass 124, the moveset audit: his cold phase had one string): the Bronze Sweep, and the weight that carried
+  // him round to his left lifts the maul over his left shoulder and brings it back low across to his right, the backhand.
+  // Two flat blows, parry both; a roll away after the first is caught by the second's reach.
+  ATTACK_POSES.wardenSweepReturn = { ease: { ...swing, active: 'inOutSine' }, lag: { weapon: 0.1, armR: 0.03 },
+    hits: [{ ...ATTACK_POSES.wardenSweep.hits[0], follow: { ...swept, crouch: 0.26, spin: [0, 1.15, 0], haft: [0.3, 1.6, 3.14] },
+        via: { windup: ATTACK_POSES.wardenSweep.hits[0].via.windup, active: ATTACK_POSES.wardenSweep.hits[0].via.active } },
+      { windup: overLeft, strike: backhanded, follow: { ...backhanded, crouch: 0.34 }, via: ATTACK_POSES.wardenBackhand.hits[0].via }] };
 
   // The Upswing: the bell let down onto the floor ahead of him, crouched deep over it, still; scooped up from the floor
   // under you and on up over his head.
@@ -136,7 +167,10 @@ MODEL_DEFS.bellWarden = {
   const upswung = { crouch: 0.04, lean: -0.3, legL: [-0.4, 0, 0], legR: [0.35, 0, 0], chest: [-0.35, 0, 0], neck: [-0.15, 0, 0], head: [-0.3, 0, 0],
     armR: [-2.7, 0, 0.05], elbowR: [-0.2, 0, 0], haft: [-1.2, 0, 3.14], armL: [-2.6, 0, -0.05], elbowL: [-0.3, 0, 0] };
   ATTACK_POSES.wardenUpswing = { ease: { windup: 'inOutSine', active: 'outCubic', follow: 'outQuad', recovery: 'inOutCubic' }, lag: { weapon: 0.08 },
-    hits: [{ windup: scoop, strike: upswung, follow: { ...upswung, haft: [-1.5, 0, 3.14] } }] };
+    hits: [{ windup: scoop, strike: upswung, follow: { ...upswung, haft: [-1.5, 0, 3.14] }, via: {
+      // (pass 124) his legs and back drive up first while the bell stays low, then it is flung up after him
+      active: [{ t: 0.35, rel: true, crouch: -0.1, lean: -0.18, armR: [0.4, 0, 0], armL: [0.4, 0, 0], haft: [0.4, 0, 0] }],
+      follow: [{ t: 0.3, rel: true, lean: -0.05, chest: [-0.08, 0, 0], haft: [-0.12, 0, 0] }] } }] };
 
   // The Answering Toll: he hugs the maul upright against his chest, hunched over it, head bowed, and his bronze shakes;
   // then he flings his arms wide, his head back, and every bell on him rings at once.
@@ -161,8 +195,12 @@ MODEL_DEFS.bellWarden = {
   // mouth-first.
   const coiled = { crouch: 0.55, lean: 0.35, legL: [-0.85, 0, 0], kneeL: [0.6, 0, 0], legR: [0.5, 0, 0], kneeR: [0.5, 0, 0], chest: [0.3, 0, 0], neck: [-0.35, 0, 0], head: [-0.4, 0, 0],
     armR: [0.45, 0, -0.2], elbowR: [-0.2, 0, 0], haft: [0.3, 3.0, 3.14], armL: [0.3, 0, 0.1], elbowL: [-0.4, 0, 0] };
+  // (pass 124) He leaps at half the wind-up (`leap.from`): the coil is held on the ground (the tell), then in the air the bell
+  // swings up over his head and his knees tuck, so the strike falls from overhead instead of flipping up from behind.
+  const aloft = { ...raised, crouch: 0.1, lean: -0.15, legL: [-1.0, 0, 0], kneeL: [1.1, 0, 0], legR: [-0.2, 0, 0], kneeR: [1.2, 0, 0] };
   ATTACK_POSES.wardenFall = { ease: heavy, lag: { weapon: 0.1 },
-    hits: [{ windup: coiled, strike: { ...fallen, lean: 0.3 }, follow: { ...fallen, crouch: 0.06, armR: [-1.95, 0, 0], armL: [-1.9, 0, 0] } }] };
+    hits: [{ windup: aloft, strike: { ...fallen, lean: 0.3 }, follow: { ...fallen, crouch: 0.06, armR: [-1.95, 0, 0], armL: [-1.9, 0, 0] },
+      via: { windup: [{ t: 0.3, ...coiled, lean: 0.2 }, { t: 0.5, ...coiled, crouch: 0.5, lean: 0.22 }], active: fallDown, follow: sinkOn } }] };
 
   // Three Tolls: the maul over his right shoulder, down across to his left; over his left shoulder, down across to his
   // right; then raised straight up, held, and brought down ahead.
@@ -172,8 +210,8 @@ MODEL_DEFS.bellWarden = {
   const overLeft2 = { ...overRight, spin: [0, 0.7, 0], chest: [-0.15, 0.35, 0], neck: [0, -0.3, 0], head: [0, -0.4, 0], armR: [-2.6, 0, 0.5], haft: [-1.55, 0.75, 3.14], armL: [-2.5, 0, 0.3] };
   const downRight = { ...fallen, spin: [0, -0.55, 0], chest: [0.4, -0.3, 0], head: [-0.2, 0.3, 0], haft: [0.85, -0.5, 3.14] };
   ATTACK_POSES.wardenThreeTolls = { ease: heavy, lag: { weapon: 0.08, armR: 0.03 },
-    hits: [{ windup: overRight, strike: downLeft, follow: downLeft }, { windup: overLeft2, strike: downRight, follow: downRight },
-      { windup: raised, strike: fallen, follow: { ...fallen, crouch: 0.06, armR: [-1.95, 0, 0], armL: [-1.9, 0, 0] } }] };
+    hits: [{ windup: overRight, strike: downLeft, follow: downLeft, via: { active: tollDown } }, { windup: overLeft2, strike: downRight, follow: downRight, via: { active: tollDown } },
+      { windup: raised, strike: fallen, follow: { ...fallen, crouch: 0.06, armR: [-1.95, 0, 0], armL: [-1.9, 0, 0] }, via: { windup: heave, active: fallDown, follow: sinkOn } }] };
 }
 
 // ---- the boss -----------------------------------------------------------------------------------------------------------
@@ -199,7 +237,7 @@ MODEL_DEFS.bellWarden = {
     hits: [{ startup: 1.25, active: 0.16, follow: 0.4 }], recovery: 1.15, damage: 34, heavy: true, poise: 60, knock: 8, lunge: 1.0, range: 3.6, box: SWEEP };
   // The Hammerfall: raised straight up, held; down mouth-first ahead. Roll it.
   const hammerfall = { id: 'wardenHammerfall', name: 'The Hammerfall', anim: 'chop', pose: 'wardenHammerfall', tracking: { rate: 2, commit: 0.5 }, rollOnly: true, chance: 0.45,
-    hits: [{ startup: 1.55, active: 0.14, follow: 0.45, hold: { at: 0.55, time: [0.4, 1.0], chance: 0.6 }, impact: TOLL }], recovery: 1.4,
+    hits: [{ startup: 1.55, active: 0.14, follow: 0.45, hold: { at: 0.55, time: [0.4, 1.0], chance: 0.6, creep: 0.22 }, impact: TOLL }], recovery: 1.4,
     damage: 58, heavy: true, poise: 90, knock: 8, lunge: 1.2, range: 3.4, box: SLAM };
   // The Ward Push: crosswise before his chest; driven out at you. It sends you a long way, and the tower top has an open
   // edge. Parry it.
@@ -212,6 +250,10 @@ MODEL_DEFS.bellWarden = {
   const backhand = { id: 'wardenBackhand', name: 'Backhand and Hammer', anim: 'sweep', pose: 'wardenBackhand', tracking: { rate: 2.6, commit: 0.7 }, markers: glint(0), chance: 0.55,
     hits: [{ startup: 0.95, active: 0.15, follow: 0.2, box: BACKHAND }, { startup: 0.85, active: 0.14, follow: 0.4, noParry: true, damage: 46, box: SLAM, impact: TOLL }],
     recovery: 1.35, damage: 26, poise: 50, knock: 7, lunge: 1.2, range: 3.2, box: BACKHAND };
+  // Sweep and Return: the sweep, then over his left shoulder and back low across (pass 124). Parry both.
+  const sweepReturn = { id: 'wardenSweepReturn', name: 'Sweep and Return', anim: 'sweep', pose: 'wardenSweepReturn', tracking: { rate: 2.2, commit: 0.7 }, markers: glint(0, 1), chance: 0.4,
+    hits: [{ startup: 1.25, active: 0.16, follow: 0.22, box: SWEEP }, { startup: 0.8, active: 0.15, follow: 0.3, damage: 24, box: BACKHAND }],
+    recovery: 1.3, damage: 28, poise: 55, knock: 8, lunge: 1.0, range: 3.6, box: SWEEP };   // not heavy: a landed sweep only flinches, so the return can still be parried
   // The Upswing: the bell let down on the floor ahead, crouched over it; scooped up under you. Parry it.
   const upswing = { id: 'wardenUpswing', name: 'The Upswing', anim: 'overhead', pose: 'wardenUpswing', tracking: { rate: 2.4, commit: 0.65 }, markers: glint(0), chance: 0.4,
     hits: [{ startup: 1.05, active: 0.16, follow: 0.35 }], recovery: 1.2, damage: 30, heavy: true, poise: 60, knock: 10, lunge: 1.4, range: 3.3, box: UPSWING };
@@ -240,7 +282,7 @@ MODEL_DEFS.bellWarden = {
   // down ahead (roll it).
   const threeTolls = { id: 'wardenThreeTolls', name: 'Three Tolls', anim: 'chop', pose: 'wardenThreeTolls', tracking: { rate: 2.6, commit: 0.65 }, markers: glint(0, 1), chance: 0.55,
     hits: [{ startup: 1.0, active: 0.14, follow: 0.18, impact: TOLL }, { startup: 0.7, active: 0.14, follow: 0.18, impact: TOLL },
-           { startup: 1.0, active: 0.14, follow: 0.45, noParry: true, damage: 50, hold: { at: 0.6, time: [0.3, 0.8], chance: 0.5 }, impact: TOLL }],
+           { startup: 1.0, active: 0.14, follow: 0.45, noParry: true, damage: 50, hold: { at: 0.6, time: [0.3, 0.8], chance: 0.5, creep: 0.22 }, impact: TOLL }],
     recovery: 1.45, damage: 28, poise: 50, knock: 7, lunge: 1.0, range: 3.4, box: SLAM };
   // Woken, his answer rings twice.
   const answerTwice = { ...JSON.parse(JSON.stringify(answer)), id: 'wardenAnswerTwice', name: 'The Answering Peal',
@@ -264,16 +306,16 @@ MODEL_DEFS.bellWarden = {
     defaultPhases: ['silent', 'woken'],
     phases: {
       silent: { hp: 2600, resonance: RESONANCE,
-        attacks: ['wardenSweep', 'wardenHammerfall', 'wardenPush', 'wardenCharge', 'wardenBackhand', 'wardenUpswing', 'wardenAnswer', 'wardenChargePunish'] },
+        attacks: ['wardenSweep', 'wardenHammerfall', 'wardenPush', 'wardenCharge', 'wardenBackhand', 'wardenSweepReturn', 'wardenUpswing', 'wardenAnswer', 'wardenChargePunish'] },
       // At half his strength he rings himself awake: the chains fall from the bell, its crack lights, and his bronze fills faster.
       woken: { at: 0.5, name: 'The Bell Warden, Woken', opener: 'wardenWaking', conceal: ['muffle'], reveal: ['toll'],
         revealBurst: { color: 0xb8ffd0, count: 40, speed: 6 },
         resonance: { ...RESONANCE, max: 4, decay: 2.5 },
         cooldown: [1.1, 2.2], approach: 0.75, kite: 0.05, speed: 2.1, trackRate: 1.5,
-        attacks: ['wardenWaking', 'wardenSweep', 'wardenHammerfall', 'wardenPush', 'wardenBackhand', 'wardenUpswing', 'wardenFall', 'wardenThreeTolls',
+        attacks: ['wardenWaking', 'wardenSweep', 'wardenHammerfall', 'wardenPush', 'wardenBackhand', 'wardenSweepReturn', 'wardenUpswing', 'wardenFall', 'wardenThreeTolls',
                   'wardenAnswerTwice', 'wardenChargePunish'] },
     },
-    attacks: [sweep, hammerfall, push, charge, backhand, upswing, answer, chargePunish, waking, fall, threeTolls, answerTwice],
+    attacks: [sweep, hammerfall, push, charge, backhand, sweepReturn, upswing, answer, chargePunish, waking, fall, threeTolls, answerTwice],
   };
   ENEMY_DEFS.push(WARDEN); ENEMY_BY_ID[WARDEN.id] = WARDEN;
 }
