@@ -8,10 +8,11 @@ The iterate loop's working note (`.claude/iterate.md`). Cap: 8,000 characters.
   Also CI: `tests/reconnect-browser.cjs` teardown bounded (v7.193/194 browser-smoke hung). Acceptance:
   `tests/summons-two.cjs`, in-page `summons` 3/3; clip `docs/scorecard/now/summons-two.mp4`. Next on track 2:
   batch 12, Summons III. Browser lock: `node tools/browser-lock.cjs run <pass> -- <cmd>` (docs/two-tracks.md).
-- Track 1, pass 145 (PLAN item 6, Oswin, pass 1 of 2), done: audit a rework (crowned 7 moves; roll-only 5 of 8
-  and 7 of 9; body check 19/25). Now 9 and 10 moves (Royal Progress, Empty Reign, Sworn Fist, Open Hand new), roll-only
-  2 a phase, body check 0/31, tells on axe edge, fists, feet; in-page `Aurel in Ash` 9/9; clip
-  `docs/scorecard/now/oswin-cel.mp4`. Pass 2: the `bars-1` round. Then Agathe's audit.
+- Track 1, pass 146 (PLAN item 6, Oswin, pass 2 of 2), done: `bars-1` round (10 strips): his uncrowned wind-ups
+  washed him red (the cast-off axe's effect light, `js/effect-lighting.js`): now a blow lights only as it lands, from
+  the fist; halos a size down; Empty Reign turns less. In-page `Guiding light: with the weapon cast off` (fails before);
+  clip `docs/scorecard/now/oswin-uncrowned.mp4`. Agathe's audit: restyle, parries and body check 18/24
+  (`docs/bosses/drafts/agathe.md`). Next: Agathe pass 1 (parries, body check, cel tells, page up).
 
 ## Works
 
