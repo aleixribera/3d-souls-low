@@ -9,12 +9,13 @@ The iterate loop's working note (`.claude/iterate.md`). Cap: 8,000 characters.
   `js/rare-strike-fx.js`. Acceptance: `tests/rare-triggers.cjs`, in-page `rare triggers`; clip
   `docs/scorecard/now/rare-triggers.mp4` (`node tools/ability-clips.cjs triggers`). Next on track 2: batch 5 pass 2,
   Echoing Blade and Overcharge. Browser lock: `node tools/browser-lock.cjs run <pass> -- <cmd>` (docs/two-tracks.md).
-- Track 1, pass 125, PLAN items 5-6 (pass 1 of the Giant): the Bell Warden's `edges-1` rounds 7-8 (caught 9/10, motion
-  4-5; one fix, his weight sinks after mouth-first blows), so he is awaiting Aleix, and item 5's second boss is through in
-  three passes. Then the Giant Skeleton's moveset audit (`docs/bosses/giant-skeleton.md`): restyle plus a string. New gaol
-  string Claw and Taking (rake, then the hand back along the floor), the Bonewheel's first turn parryable (noParry was 4
-  of 10). Acceptance: in-page `Giant Skeleton` (6), `boss-pages`, `fair-attacks`; clip `docs/scorecard/now/giant-claw-taking.mp4`.
-  Next on track 1: the Giant in cel (edge tells on club and claw, soft joints), in-between keys, the judge.
+- Track 1, pass 127, PLAN item 6 (pass 2 of the Giant): the Giant Skeleton in cel, by data. Black irons, the club's
+  tell on its skull (`edgeTell` slot `clubHead`), smaller claw and foot halos, a soft spine, a smear on his swings, and
+  in-between keys on the Sweep, Claw, Slam and Club and Claw (`via`, `slamLanded`). `edges-1` round 9: motion 5,
+  readability 7, spectacle 4; one fix (bigger floor cracks), so he is awaiting Aleix. Acceptance: in-page `Boss edge
+  tells`, `Giant` (7), `model`, `fair-attacks`, `pose-via`; clip `docs/scorecard/now/giant-cel.mp4`. Then Aldric's
+  moveset audit (`docs/bosses/aldric.md`): his Gaol Sweep shares the Giant's wind-up and the man has one string.
+  Next on track 1: Aldric's own sweep wind-up and a second string for the man, then his cel look.
 
 ## Works
 
@@ -70,6 +71,7 @@ The iterate loop's working note (`.claude/iterate.md`). Cap: 8,000 characters.
 
 ## Needs Aleix
 
+- Fight the Giant Skeleton too (Practice, `?style=cel`; tried: one `edges-1` round, the judge repeats the others' gaps).
 - Fight the Bell Warden too (same: Practice, `?style=cel`; tried: two `edges-1` rounds, the judge repeats the Captain's gap).
 - Fight the Pillager Captain (PLAN item 5's last gate; tried: six judge rounds, nothing left a judge can settle). Practice,
   with `?style=cel` in the address (cel is not yet every player's default); say what feels off or unfair.

@@ -40,7 +40,8 @@ MODEL_DEFS.giantSkeleton = {
     bone: { tex: 'spectralBone', tint: 0xd8dde6, decay: 0.55, size: 512 },
     dark: { tex: 'spectralBone', tint: 0xaab0bc, decay: 0.8 },
     void: { tex: 'ashSoot', tint: 0x181a20, decay: 0.4 },
-    iron: { tex: 'rustedIron', tint: 0x5a524c, decay: 0.85, rim: 0.25 },
+    iron: { tex: 'wardenPlate', tint: 0x2c2826, decay: 0.85, rim: 0.25 },   // (pass 127) black gaol iron in cel: rustedIron read mid-grey, a tint sets hue only
+    clubHead: { tex: 'spectralBone', tint: 0xd8dde6, decay: 0.55 },   // (pass 127) the skull fused to the club's end, its own slot: the wind-up tell's (edgeTell)
     core: { glow: 0xe8eeff },
     heat: { glow: 0xffb060 },
     eye: { glow: 0xc8d8ff },
@@ -53,13 +54,19 @@ MODEL_DEFS.giantSkeleton = {
     armL: ['bone'], armR: ['bone'], elbowL: ['bone', 'bone.1', 'iron'], elbowR: ['bone', 'bone.1', 'iron'],
     legL: ['bone'], legR: ['bone'], kneeL: ['bone', 'bone.1', 'iron'], kneeR: ['bone', 'bone.1'], chainClaw: ['iron'],
     weapon: ['bone', 'bone.1', 'void', 'iron'],
-  }).flatMap(([bone, list]) => list.map(s => ({ use: 'baked', mesh: `giant:${bone}__${s}`, bone, slot: s.split('.')[0], tile: 0.42,
+  }).flatMap(([bone, list]) => list.map(s => ({ use: 'baked', mesh: `giant:${bone}__${s}`, bone, slot: bone === 'weapon' && s === 'bone.1' ? 'clubHead' : s.split('.')[0], tile: 0.42,
     ...(bone === 'weapon' ? { weapon: true } : {}) }))),
   weapon: null,            // pass 74: its club is part of the figure (the `weapon: true` pieces above): a gaol-ironed thigh bone
   weaponRest: 0.5,         // the club's head on the floor, not sunk in it
   hidden: ['heat'],        // the heat in its ribs: shown by the gathered phase's `reveal`
   // Where a blow that is not the club's shows its wind-up glow (a hit's `tell`): the claw, and each foot.
-  tells: { claw: { bone: 'elbowL', at: [0, -0.5, 0.02] }, footL: { bone: 'kneeL', at: [0, -0.38, 0.06] }, footR: { bone: 'kneeR', at: [0, -0.38, 0.06] } },
+  // (pass 127) sizes: the default halo, at his 2.3x, lit his whole hip and shoulder through the claw's wind-up in cel.
+  tells: { claw: { bone: 'elbowL', at: [0, -0.5, 0.02], size: 0.45 }, footL: { bone: 'kneeL', at: [0, -0.38, 0.06], size: 0.5 }, footR: { bone: 'kneeR', at: [0, -0.38, 0.06], size: 0.5 } },
+  // (pass 127, docs/bosses/system.md 4) the club's tell on the skull at its end, small and growing through a heavy's wind-up;
+  // the haft and his body keep their colour (the whole club lit blue and his body tinted orange through the Gaol Slam).
+  edgeTell: { slot: 'clubHead', size: 0.5, along: 0.92 },
+  // (pass 127) his spine and neck bend as one column; the limbs stay hinged, as bones are
+  softJoints: { chest: 0.14, neck: 0.1 },
   eyes: { color: 0xff9a48, size: 0.02, spread: 0.105, at: [0, 0.265, 0.19] },   // pass 74: embers deep in the sockets (the heat that raised it), not white discs
   aura: { color: 0xcfdcff, size: 3.6, opacity: 0.16 },
   anim: {
@@ -75,6 +82,14 @@ MODEL_DEFS.giantSkeleton = {
 {
   const heavy = { windup: 'inOutSine', active: 'inQuad', follow: 'outCubic', recovery: 'inOutCubic' };   // a weight that gathers, then falls
   const swing = { windup: 'inOutCubic', active: 'outCubic', follow: 'outQuad', recovery: 'inOutCubic' };
+  // In-between keys (pass 127, docs/bosses/system.md "Animation"; `via`, js/attack-anim.js). His weight leads the club and
+  // the claw: the hips and chest turn or drop first, the arm and the club trail a beat, then whip through; on a blow into
+  // the floor his bones keep sinking a moment. Every key is `rel`: an offset from the straight blend between his poses.
+  const loadUp = [{ t: 0.45, rel: true, crouch: 0.06, lean: 0.06, chest: [0.12, 0, 0] },   // a dip before the rise
+    { t: 0.9, rel: true, crouch: 0.03, lean: -0.08, chest: [-0.12, 0, 0], head: [-0.08, 0, 0] }];   // a last arch: the load
+  const clubDown = [{ t: 0.25, rel: true, crouch: 0.06, lean: 0.2, chest: [0.18, 0, 0], head: [0.12, 0, 0], armR: [-0.5, 0, 0], elbowR: [-0.45, 0, 0], weapon: [-0.4, 0, 0] },
+    { t: 0.6, rel: true, weapon: [0.1, 0, 0] }];
+  const sinkOn = [{ t: 0.25, rel: true, crouch: 0.06, lean: 0.04, kneeL: [0.15, 0, 0], kneeR: [0.1, 0, 0], armR: [-0.08, 0, 0] }];
 
   // Club Sweep: the club hauled back low behind its right hip, its back half turned, the skull on you over its left
   // shoulder; swung flat across at your hips, and the weight carries it round to its left.
@@ -83,7 +98,14 @@ MODEL_DEFS.giantSkeleton = {
   const swept = { crouch: 0.22, lean: 0.12, legL: [-0.5, 0, -0.08], legR: [0.35, 0, 0.1], spin: [0, 0.9, 0], chest: [0.0, 0.45, 0], neck: [0, -0.3, 0], head: [0, -0.4, 0],
     armR: [-1.45, 0, 0.95], elbowR: [0.05, 0, 0], weapon: [0.6, 0, -0.5], armL: [0.2, 0, 0.5], elbowL: [-0.3, 0, 0] };
   ATTACK_POSES.giantSweep = { ease: { ...swing, active: 'inOutSine' }, lag: { weapon: 0.1 },
-    hits: [{ windup: hauled, strike: swept, follow: { ...swept, crouch: 0.26, spin: [0, 1.2, 0], armR: [-1.1, 0, 1.2], weapon: [0.8, 0, -0.6] } }] };
+    hits: [{ windup: hauled, strike: swept, follow: { ...swept, crouch: 0.26, spin: [0, 1.2, 0], armR: [-1.1, 0, 1.2], weapon: [0.8, 0, -0.6] }, via: {
+      // (pass 127) he winds past the haul and settles into it; his hips turn first and the club trails behind his heel till
+      // it whips across; the weight carries him on round
+      windup: [{ t: 0.55, rel: true, crouch: 0.03, spin: [0, -0.12, 0] }, { t: 0.85, rel: true, crouch: 0.05, spin: [0, -0.2, 0], chest: [0, -0.1, 0], weapon: [0.1, 0, 0.15] }],
+      active: [{ t: 0.4, rel: true, crouch: 0.05, spin: [0, 0.4, 0], chest: [0, 0.2, 0], head: [0, -0.2, 0], armR: [0.25, 0, -0.3], weapon: [0, 0, 0.35] },
+               { t: 0.75, rel: true, spin: [0, 0.1, 0], weapon: [0, 0, 0.1] }],
+      follow: [{ t: 0.3, rel: true, crouch: 0.05, spin: [0, 0.12, 0], head: [0, -0.1, 0] }],
+    } }] };
 
   // Stomp: one knee raised to its hip, both arms spread for balance, the skull bowed to look down between its feet; the foot
   // comes down and the floor jumps.
@@ -101,7 +123,13 @@ MODEL_DEFS.giantSkeleton = {
   const raked = { crouch: 0.26, lean: 0.25, legL: [-0.55, 0, 0], legR: [0.4, 0, 0], spin: [0, -0.6, 0], chest: [0.15, -0.35, 0], neck: [0, 0.3, 0], head: [0, 0.3, 0],
     armL: [-0.7, 0, -0.75], elbowL: [-0.1, 0, 0], armR: [-0.2, 0, -0.5], elbowR: [-0.2, 0, 0], weapon: [0.5, 0, 0] };
   ATTACK_POSES.giantClaw = { ease: swing, lag: { armL: 0.04, elbowL: 0.08 },
-    hits: [{ windup: clawUp, strike: raked, follow: { ...raked, crouch: 0.3, spin: [0, -0.8, 0], armL: [-0.4, 0, -0.9] } }] };
+    hits: [{ windup: clawUp, strike: raked, follow: { ...raked, crouch: 0.3, spin: [0, -0.8, 0], armL: [-0.4, 0, -0.9] }, via: {
+      // (pass 127) the shoulder lifts before the hand; on the rake his chest turns and drops first, the long arm trailing
+      // bent, then flung straight across
+      windup: [{ t: 0.5, rel: true, crouch: 0.04, chest: [0.1, 0, 0], armL: [0.4, 0, 0], elbowL: [-0.3, 0, 0] }],
+      active: [{ t: 0.35, rel: true, crouch: 0.04, spin: [0, -0.3, 0], chest: [0.12, -0.15, 0], armL: [-0.35, 0, 0.35], elbowL: [-0.4, 0, 0] }],
+      follow: [{ t: 0.3, rel: true, crouch: 0.04, spin: [0, -0.1, 0], armL: [0, 0, -0.1] }],
+    } }] };
 
   // Gaol Slam: the club raised high over its right shoulder, the claw stretched out at you to take its aim; held; brought
   // down into the floor ahead with all its weight behind it.
@@ -109,8 +137,10 @@ MODEL_DEFS.giantSkeleton = {
     armR: [-2.9, 0, -0.35], elbowR: [-0.6, 0, 0], weapon: [-0.7, 0, 0], armL: [-1.5, 0, 0.1], elbowL: [-0.1, 0, 0] };
   const slammed = { crouch: 0.34, lean: 0.35, legL: [-0.75, 0, 0], kneeL: [0.4, 0, 0], legR: [0.5, 0, 0], spin: [0, 0.2, 0], chest: [0.35, 0.1, 0], neck: [-0.1, 0, 0], head: [-0.1, 0, 0],
     armR: [-1.1, 0, 0.05], elbowR: [0, 0, 0], weapon: [1.1, 0, 0], armL: [-0.2, 0, 0.5], elbowL: [-0.3, 0, 0] };
+  // (pass 127) the club lands with him: his hips drop and his knees give under it after the blow, instead of rising off it
+  const slamLanded = { ...slammed, crouch: 0.44, lean: 0.4, kneeL: [0.7, 0, 0], kneeR: [0.35, 0, 0], chest: [0.42, 0.1, 0], armR: [-1.2, 0, 0.05] };
   ATTACK_POSES.giantSlam = { ease: heavy, lag: { weapon: 0.08 },
-    hits: [{ windup: clubHigh, strike: slammed, follow: { ...slammed, crouch: 0.38 } }] };
+    hits: [{ windup: clubHigh, strike: slammed, follow: slamLanded, via: { windup: loadUp, active: clubDown, follow: sinkOn } }] };
 
   // The Taking: crouched and twisted to its left, the open claw held out wide and low at its left, the skull lowered at
   // you; the hand scoops forward low across the floor and closes; it straightens and lifts you up before its skull (where
@@ -141,7 +171,7 @@ MODEL_DEFS.giantSkeleton = {
   ATTACK_POSES.giantClubClaw = { ease: swing, lag: { weapon: 0.08, armL: 0.03 },
     hits: [{ windup: cocked, strike: backhanded, follow: backhanded },
       { windup: { ...clawUp, spin: [0, 0.2, 0] }, strike: raked, follow: raked },
-      { windup: clubHigh, strike: slammed, follow: { ...slammed, crouch: 0.38 } }] };
+      { windup: clubHigh, strike: slammed, follow: slamLanded, via: { windup: loadUp, active: clubDown, follow: sinkOn } }] };
 
   // ---- gathered (second phase) ----
   // The Gathering (the phase opener): both hands raised high over its skull; driven down into the floor before it, and the
@@ -197,7 +227,8 @@ MODEL_DEFS.giantSkeleton = {
   const SCOOP = { w: 3.0, h: 1.8, d: 3.0, fwd: 2.3, y: 0.9 };
   const WHEEL = { w: 8.4, h: 2.0, d: 8.4, fwd: 0, y: 1.2 };
   const BACKHAND = { w: 5.0, h: 2.0, d: 3.6, fwd: 2.0, y: 1.2 };
-  const SHATTER = { ring: 3.2, crack: 1.8, dust: 16, shake: 0.14 };   // a blow into the floor
+  // (pass 127, boss judge round 9: "the world does not react when it lands") wider cracks and more stone and dust
+  const SHATTER = { ring: 3.6, crack: 2.6, dust: 24, shake: 0.18 };   // a blow into the floor
   // The grip: carried from where you stood up before its skull over `lift` s, burning `dps` a second for at most `time`
   // s; a strike, roll or parry pressed wins back `escape` s; thrown `throw` m/s when it lets go (Player.seize).
   const GRIP = { at: [0.55, 2.8, 2.15], lift: 0.5, time: 2.4, dps: 11, escape: 0.22, throw: 12 };

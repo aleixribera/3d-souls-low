@@ -28,7 +28,7 @@ const FX_ELEMENTS = {
   eclipse: { core: 0xfff0ff, glow: 0x9c54ff, mote: 0xd4a4ff, trail: 0xb874ff, sparks: 'eclipse', impact: 'prism', smoke: 0x120820 },
 };
 const BOSS_FX = {
-  giant: { element: 'bone', aura: 0xd8d0c0, phases: { gathered: 'fire' }, attacks: { stomp: { impact: 'shatter', windup: 'gather' },
+  giant: { element: 'bone', aura: 0xd8d0c0, trail: { edge: 0.3, life: 0.18, smear: 0.35 }, phases: { gathered: 'fire' }, attacks: { stomp: { impact: 'shatter', windup: 'gather' },
     giantSlam: { impact: 'shatter', windup: 'gather' }, giantClubClaw: { impact: 'shatter' }, giantGathering: { impact: 'shatter', windup: 'gather' },
     giantPitStomps: { impact: 'shatter' }, giantReach: { impact: 'shatter', windup: 'gather' } } },
   pillagerCaptain: { element: 'steel', aura: 0xff9a50, trail: { edge: 1, life: 0.16, smear: 0.45 }, phases: { lit: 'fire' }, attacks: { captainOverhead: { impact: 'shatter', windup: 'gather', trail: { edge: 0.12, life: 0.36, smear: 0.45 } },

@@ -10,7 +10,7 @@
 // (ffmpeg on PATH). For boss:<attackId> clips (pass 113): REPEAT=<n> plays the attack n times (the strip keeps the first),
 // VIEW=game films through the game's own camera behind the player instead of from the side. HOLD=<s> (pass 115): every
 // hit with a `hold` takes it, for exactly that long (0: never), so a delayed wind-up can be filmed the same way twice.
-// STYLE=<id> (pass 116): drawn in that art style (js/data/styles.js; cel is the game's chosen look).
+// boss:<attackId>@<bossId> (pass 127) picks the boss when two share an attack id. STYLE=<id> (pass 116): drawn in that art style (js/data/styles.js; cel is the game's chosen look).
 // One headless Edge, closed at the end; idle priority. Run it under node tools/browser-lock.cjs run <pass> --.
 require('../tests/low-priority.cjs');
 const fs = require('node:fs');
@@ -40,8 +40,8 @@ const REPEAT = Math.max(1, +process.env.REPEAT || 1), VIEW = process.env.VIEW ||
       Game.manualClock = true; input.now = () => clock; gamepad.poll = () => {}; gamepad.move = { x: 0, y: 0 };
       let mv = null; Game.moveInput = () => mv ? { x: mv.x, z: mv.z, has: true } : { x: 0, z: 0, has: false };
       input.clear();
-      const bossAttack = move.startsWith('boss:') ? move.slice(5) : null;
-      const bossDef = bossAttack && ENEMY_DEFS.find(d => d.attacks.some(a => a.id === bossAttack));
+      const [bossAttack, bossOnly] = move.startsWith('boss:') ? move.slice(5).split('@') : [null, null];   // boss:<attackId>@<bossId> (pass 127: ids like 'sweep' are shared)
+      const bossDef = bossAttack && ENEMY_DEFS.find(d => (!bossOnly || d.id === bossOnly) && d.attacks.some(a => a.id === bossAttack));
       if (bossAttack && !bossDef) throw new Error('no enemy has the attack ' + bossAttack);
       Game.startFight(move === 'finisher' ? 'pillagerCaptain' : bossDef ? bossDef.id : 'hollow'); Game.loading = 0;
       if (move !== 'finisher' && !bossDef) { for (const e of Game.enemies) e.rig.dispose(); Game.enemies = []; for (const z of Game.zones) z.actors = []; }

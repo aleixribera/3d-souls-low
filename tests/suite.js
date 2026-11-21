@@ -2584,10 +2584,10 @@
   // Pass 123: every boss whose model opts in (the Captain, the Bell Warden): the system's check, not one boss's.
   test('Boss edge tells: every boss with an edgeTell keeps the wind-up tell on the weapon, never over the body', () => {
     const ids = ENEMY_DEFS.filter(d => d.phases && KIT.resolve(d.model).edgeTell).map(d => d.id);
-    expect.ok(ids.includes('pillagerCaptain') && ids.includes('bellWarden'), `opted in: ${ids.join(', ')}`);
+    expect.ok(['pillagerCaptain', 'bellWarden', 'giant'].every(id => ids.includes(id)), `opted in: ${ids.join(', ')}`);
     for (const id of ids) {
       Game.startFight(id); Game.loading = 0; sim.begin();
-      const e = Game.duel, r = e.rig, over = e.def.attacks.find(a => a.rollOnly && a.heavy && !a.invulnerable), T = r.edgeTell, slot = KIT.resolve(e.def.model).edgeTell.slot;
+      const e = Game.duel, r = e.rig, over = e.def.attacks.find(a => a.rollOnly && a.heavy && !a.invulnerable && !a.hits[0].tell), T = r.edgeTell, slot = KIT.resolve(e.def.model).edgeTell.slot;
       expect.ok(T && r.weaponSlotMeshes[slot].material === r.weaponMat, `${id}: the tell colours the weapon's ${slot}, not the haft`);
       const scaleAt = f => { e.attack = over; e.hitIndex = 0; e.holdLeft = 0; e.setState(ES.WINDUP); e.stateTime = over.hits[0].startup * f; Game.render(0, STEP); return r.warnGlow.scale.x; };
       const early = scaleAt(0.2), late = scaleAt(0.95);

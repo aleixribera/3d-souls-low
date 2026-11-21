@@ -2,8 +2,8 @@
 
 The third boss through the system (`system.md`; PLAN item 6, the roster in the order players meet them). Data:
 `js/data/bosses/giant-skeleton.js`; model: `tools/blender/giant.py`. Status: pass 125, the moveset audit (below) and a
-second string for the gaol phase, Claw and Taking. Next: the cel look (the model's bone and iron in the style's bands,
-an edge tell on the club and the claw, soft joints), in-between keys, the `edges-1` judge, then Aleix.
+second string for the gaol phase, Claw and Taking. Pass 127: the cel look (black iron, the club's tell on its skull,
+smaller claw and foot halos, a soft spine), in-between keys, the `edges-1` judge (round 9) and its one fix. Awaiting Aleix.
 
 ## Moveset audit (pass 125): restyle, plus one string
 
@@ -35,7 +35,9 @@ the hand, not the arm.
 A spectral giant (2.3x): a huge domed skull hung low before the chest on a long neck, a barrel of ribs on a white-hot
 spine, a long clawed left hand with a manacle and a swinging chain, and a gaoler's club (a thigh bone bound in iron) in
 the right. From 20 m: the low skull and the long hand. Cel style (next pass): pale bone in flat bands, black iron, the
-spine the one light until the heat fills his ribs.
+spine the one light until the heat fills his ribs. Pass 127: the irons in black (`wardenPlate`; `rustedIron` read mid
+grey, and in cel a tint sets hue only); his spine and neck bend as one column (`softJoints`), his limbs stay hinged, as
+bones are.
 
 ## Moveset (12 attacks; 4 strings)
 
@@ -76,9 +78,23 @@ the rule changes: distance is no longer safe (the Reaching Hand leaps up to 11 m
 ## Effects
 
 On impact (the Slam's and the stamps' cracks and dust), the Taking's grip, the Gathering and the phase change (the
-`revealBurst`). Next pass: the wind-up tell on the club and the claw's edge (`edgeTell`), not over his body.
+`revealBurst`). Pass 127, from his first strips in cel: the Gaol Slam lit the whole club blue and tinted his body
+orange, and the claw's halo covered his hip and shoulder. Now the club's tell sits on the skull at its end (`edgeTell` on
+its own `clubHead` slot), the claw's and the feet's halos are half the size, his body keeps its colour, and his swings
+leave a thin arc with a smear (`BOSS_FX` `trail`). His blows into the floor (the Slam, Club and Claw's last) crack it
+wider and throw more stone (judge round 9).
 
 ## Animation
 
 Key poses per hit in the data file (pass 72). Claw and Taking reuses the Long Claw's hit, and its grab comes back from
-where the rake ended, so the hand never resets between the blows. Next: in-between keys where the strips look stiff.
+where the rake ended, so the hand never resets between the blows.
+
+Pass 127: in-between keys (`via`) on the Club Sweep, the Long Claw, the Gaol Slam and Club and Claw's last blow. His
+hips and chest lead and the club or the long arm trails, then whips through; a raise overhead dips before it rises and
+arches at the top (the load); after a blow into the floor his hips drop and his knees give (`slamLanded`).
+
+Judge `edges-1`, round 9 (line drawings; Sekiro x2 and Stellar Blade beside the Slam and the Sweep): caught 9/10, motion
+5, readability 7, spectacle 4 (the Sweep 5, 7, 3); giveaway: a small clean silhouette under a fixed wide camera, and the
+world does not react when it lands. One fix (wider cracks, more stone and dust on his floor blows); the judge's camera
+and dust gaps are the Captain's and the Warden's again, and the edge filter drops soft dust, so he goes to Aleix
+(`system.md` section 6).

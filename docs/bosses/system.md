@@ -3,7 +3,7 @@
 How a boss is made, start to finish, so the next one takes about three passes and no new engine code. It replaces the
 Hollis bar and the old boss rules (`.claude/feedback.md` 2026-11-14). Proven first on the Pillager Captain
 (`pillager-captain.md`); the second is the Bell Warden (`bell-warden.md`, from pass 123); then the roster in PLAN item 6's order (the Giant
-Skeleton, `giant-skeleton.md`, from pass 125). Each step names its tool and the check that closes it.
+Skeleton, `giant-skeleton.md`, from pass 125; Aldric, `aldric.md`, from pass 127). Each step names its tool and the check that closes it.
 
 ## 0. The moveset audit: rework or restyle
 
@@ -44,7 +44,7 @@ shared skeleton (`tools/blender/<name>.py` from the closest finished figure, `js
   `knightMail`), not a dark tint. Big flat shapes read; small rounded stacks read as a toy.
 - **Soft joints** (pass 118): `softJoints: { <bone>: r }` on the model shares the vertices within r m of a joint with
   the bone across it, so knees, elbows, waist and cloak bend as one body instead of hinging as rigid parts.
-- Film it in cel: `STYLE=cel node tools/anim-strip.cjs boss:<attackId> <out.jpg> 14 2 1.9` (Model Lab draws no style).
+- Film it in cel: `STYLE=cel node tools/anim-strip.cjs boss:<attackId> <out.jpg> 14 2 1.9` (Model Lab draws no style); `boss:<attackId>@<bossId>` when two bosses share an attack id (the Giant's `sweep`).
 
 ## 3. Animation
 
