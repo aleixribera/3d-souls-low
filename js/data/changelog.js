@@ -6,6 +6,7 @@
 //   title    a few words
 //   text     one to three sentences, shown under the list when the entry is selected
 const CHANGELOG = [
+  { version: 'v7.216.0', title: 'The Bowman, the Gargoyle and the lobby in cel', text: 'The Rampart Bowman wears dark teal over slate, the Gargoyle is carved pale stone with an ember-lit throat, and the lobby now shows your party standing in the duel arena against the sunset.' },
   { version: 'v7.215.0', title: 'The showcase, as you play it', text: 'The showcase now plays from your own view: the game\'s camera and HUD, three bosses each on their own ground, a fade between fights, and a small Showcase tag so you know nobody is at the controls. It ends on the game\'s name.' },
   { version: 'v7.214.0', title: 'An opening worth watching', text: 'The opening is recut like an anime opening: each boss fights on its own ground, the camera goes in close and tilts, hits land in slow motion, big words cut to the music, and the title slams in on its own beat. The white glare is gone.' },
   { version: 'v7.213.0', title: 'The abbey\'s knight comes down', text: 'In the Torn Abbey, the Undead Knight now waits in the undercroft he guards, so dropping in early no longer shuts you in with him out of reach. Gates in open places no longer leave a stone block hanging in the air.' },
