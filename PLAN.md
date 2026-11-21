@@ -10,7 +10,7 @@ reads it every pass and doesn't edit it: cuts and finds go to `BACKLOG.md`, asks
 - The bar is the vision's: AAA feel, runs on a toaster, anime action against fair, cunning bosses.
 - **Balance is the loop's** (Aleix, 2026-11-20: "current numbers are not final"): every number in the game and in
   this plan (damage, health, timings, windows, odds, the starter set's counts, the difficulty curve) is a starting
-  point. Any pass may change one, with its evidence (bot runs, replays, a judge, Aleix's feedback) in the commit.
+  point. A pass may change one its step needs, with evidence in the commit; the full retune is the last item.
 - Work done outside the loop (other tools, other models) is a draft like any other: the loop reads it into `STATE.md`
   and judges it like its own. Nothing reaches players without green CI.
 
@@ -134,13 +134,6 @@ Check: a fresh profile owns exactly the starter set; a crate unlocks a new abili
 the whole pool); the panel enforces the minimum and locks during a run, on desktop and phone width; an online run
 offers only active abilities; screenshots of the panel and a crate opening.
 
-### 7b. Legendaries are OP and noticeable (Aleix, 2026-11-21)
-
-Pass 73's nerf is overturned (Thunder Call is ~13% of a 2,600-health boss per 40 s charge). A legendary changes the
-fight the moment it fires: a big chunk of the bar, a freeze, a summon that matters; the curve allows for stacking.
-Check: `tools/rush-curve.cjs SKILLED=1`: each legendary takes a kit clearly further (beyond noise); its clip reads as
-the fight's biggest moment.
-
 ### 8. The ability pool
 
 Build `design/abilities/` (110 abilities and Story's four) in the batches of its `BUILD-ORDER.md`, one batch a pass,
@@ -155,6 +148,13 @@ In this order once the tracks above are through or idle: the style carried to en
 14 out of rough form; the showcase's finale as the Finishing Blow (`js/showcase.js`); the Boss Rush curve as settled
 (no wall, ever: slowly harder every fight); the Finishing Blow's look (judge's last gaps in `STATE.md`).
 
+
+### Last: one balance pass for the whole game (Aleix, 2026-11-21)
+
+Once every ability is built, the roster reworked, the player finished and the style set, one pass retunes every number
+so the game is balanced and fun; before then passes tune only what their own step needs. It includes legendaries that
+are OP and noticeable (pass 73's nerf overturned). Its design comes from a grilling with Aleix; until then this line
+is a placeholder.
 ## Scorecard rows
 
 What a 5 means, for the judge (`SCORECARD.md`):
