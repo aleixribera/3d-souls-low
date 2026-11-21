@@ -3,16 +3,20 @@
 The iterate loop's working note (`.claude/iterate.md`). Cap: 8,000 characters.
 
 ## Now
-- Resumed by Aleix, 2026-11-21: next the PLAN "Later" items in order, then the balance pass (loop file stop point).
+- Resumed 2026-11-21: next the PLAN "Later" items in order, then the balance pass (loop file stop point).
 - Pass 163 (Aleix: Story's broken parts, the audit, pass 1 of 1): every chapter walks clean; the abbey softlock and
   14 floating gate lintels fixed. Acceptance: `tools/story-audit.cjs` 0 findings, `tests/story-placements.cjs`;
   `docs/story/audit.md`.
 - Track 2, pass 162 (PLAN Later item 2, cel to enemies and levels, pass 1 of 2), v7.211.0: the duel arena in Blender
-  ruins; 8 enemies recoloured with steel blades and edge tells. Left: Story-only recolours (after the Story redo), bowman,
+  ruins; 8 enemies recoloured with steel blades and edge tells. Left: Story-only recolours, bowman,
   gargoyle, lobby scene.
-  Acceptance: in-page `model`/`arena`; clip `docs/scorecard/now/cel-enemies.mp4`.
-- Track 1, pass 155 (Aleix's ask: cel the default, pass 1 of 1), v7.205.0: cel with no `?style=`, `classic` the way
-  back. Acceptance: `tests/style-browser.cjs`; frames `docs/scorecard/now/cel-default-*`. Track 1 has no plan item left.
+  Acceptance: in-page `model`/`arena`; clip `cel-enemies.mp4`.
+- Track 1, pass 164 (Aleix: the opening spectacular, pass 1 of 2), v7.214.0: each boss on its own ground, close-ups,
+  Dutch angles, whip pans, slow-mo ramps, DASH/COUNTER/FINISH full-screen words cut to the music, the title's own slam,
+  glare cut (judge: 7 v 4, 6 v 3.5). Pass 2: manga panels or split screens, a real face portrait (`face`
+  gets the sword arm), fuller Final Castle wide, the white blowout at Legion and the finisher, a bigger "3D" stamp,
+  anime reference stills (need Aleix's OK). The finale is the Finishing Blow: PLAN Later item 4 covered.
+  Acceptance: in-page `Showcase`; `docs/showcase/storyboard.md`; clip `docs/scorecard/now/showcase.mp4`.
 
 ## Works
 
@@ -37,18 +41,15 @@ The iterate loop's working note (`.claude/iterate.md`). Cap: 8,000 characters.
 - The end of Act I (v7.36.0): `LORE.ending`, `showEnding` (`js/finale.js`), `LEVEL_5.next`, `goesOn`, `resume`;
   in-page `Story`, `Church`; `docs/scorecard/act1-*.jpg`.
 - Chapters 7-14 (v7.38.0-v7.51.0, rough): `js/levels/windward-moor.js`, `saltgrave.js`, `night-gaol.js`, `aurel.js`,
-  `aurel-in-ash.js`, `torn-abbey.js`, `ember-root.js`, `still-mere.js`; bosses in `js/data/bosses/ostrey.js`,
-  `castellans.js` (the opt-in `alone` phase), `ringer.js`, `hollis.js`, `oswin.js`, `agathe.js`, `kindling-tree.js`
-  (an enemy's `holyLight`), `kings-blade.js` (own moves since pass 55); each an old
-  boss's moves renamed, but the King's Blade, Ostrey and the castellans (v7.58.0, v7.62.0: baked `weapon: true` parts, `anim.hang`, `halos`, `breathFrom`). In-page filters by chapter name (`Moor`, `Saltgrave`, `Night Gaol`,
+  `aurel-in-ash.js`, `torn-abbey.js`, `ember-root.js`, `still-mere.js`; bosses in `js/data/bosses/` (`castellans.js`:
+  the opt-in `alone` phase; `kindling-tree.js`: `holyLight`); baked `weapon: true` parts, `anim.hang`, `halos`, `breathFrom`. In-page filters by chapter name (`Moor`, `Saltgrave`, `Night Gaol`,
   `Aurel`, `Aurel in Ash`, `Torn Abbey`, `Ember Root`, `Still Mere`). A material's `tint` sets hue only. A phase's `opener` must be in its own `attacks` (validated since v7.51.0).
 - The story's ending (pass 30; over the world, pass 82): `LORE.endings`, `tellEnding` in `js/finale.js`; in-page
   `Story moments:` (`inControl`), `Still Mere:`; `moments-*.jpg`.
 - Story's road (pass 79): `CONFIG.story.road`, `might`, `roadMight`/`roadFlasks`, `flaskFinds` (save `finds`);
   in-page `Story road:`, `Story: a flask`; `tools/story-curve.cjs`.
-- Bots: `tests/bot-temperament.cjs`, `bot-behavior.cjs`; `node tools/bot-fights.cjs story 10` (`PERSON=1`).
-- Replays (pass 104): online runs recorded (`server/replays.cjs`, hooks in `lobby-host.js`; REPLAY_DIR, 60 days,
-  starred kept; 11.5-13.3 MB/h, ~0.09 ms a snapshot), viewer `js/replay.js` behind the tailnet-only door
+- Bots: `tests/bot-temperament.cjs`, `bot-behavior.cjs`; `tools/bot-fights.cjs story 10`.
+- Replays (pass 104): `server/replays.cjs` (REPLAY_DIR, 60 days, starred kept, ~12 MB/h), viewer `js/replay.js` behind the tailnet-only door
   (REPLAY_PORT, homelab :3083), list `replays/`; notes `node tools/replays.cjs`; `tests/server-replays.cjs`; audit
   `docs/design-audit/2026-11-15.md`.
 - Abilities and crates (pass 107, v7.162.0): `js/data/crates.js`, `js/progress.js` (save `v` 2), `js/crate-screen.js`;
@@ -65,7 +66,7 @@ The iterate loop's working note (`.claude/iterate.md`). Cap: 8,000 characters.
 
 ## Broken
 
-- Not in CI: `lobby-polish-browser` (flaky), `experience-browser` (320x568). `calling-browser` runs in `browser-smoke`.
+- Not in CI: `lobby-polish-browser` (flaky), `experience-browser` (320x568). `tests/revive.cjs` flaky once (pass 164). `calling-browser` runs in `browser-smoke`.
 
 ## wip// branches
 
@@ -81,8 +82,7 @@ The iterate loop's working note (`.claude/iterate.md`). Cap: 8,000 characters.
 - Fight the Regent Hollis (Practice; the Pavane is new, and the Feast's blade is parried unless you say).
 - Fight the Ringer (Practice; her stamping foot and Over the Line's ball are parried unless you say).
 - Fight Hale and Harrow (Practice; Harrow's axe stays hidden until the whole phase unless you say).
-- Fight Old Ostrey, the Antlered Hunger, Aldric, the Giant Skeleton and the Bell Warden too (Practice;
-  the pending calls are in the commits: Ostrey's landing parried, the Hunger's follow-ups, Aldric's pommel strike).
+- Fight Old Ostrey, the Antlered Hunger, Aldric, the Giant Skeleton and the Bell Warden too (Practice; calls in commits).
 - Fight the Pillager Captain (PLAN item 5's last gate; six judge rounds tried). Practice,
   say what feels off or unfair.
 Answered: the art style is cel-shaded anime (Aleix, 2026-11-20). The home server's `/souls/` address is PUBLIC (Aleix, 2026-11-20).
