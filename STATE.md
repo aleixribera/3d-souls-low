@@ -3,11 +3,11 @@
 The iterate loop's working note (`.claude/iterate.md`). Cap: 8,000 characters.
 
 ## Now
-- Track 2, pass 114, PLAN item 8 batch 3 (pass 1 of 2), done in v7.167.0: eleven guard and run commons (Ringing
-  Steel, Thorn Guard, Ash Veil, Bitter Draught, Grit, Kindling, Tithe, Glint, Hunter's Pace, Kindred Ember, Shatter
-  Guard); the server checks the block claim. Cel hit flash in the body's own colours (`tintFromSkin`). Acceptance: each
-  fires on the Captain, drawn and heard: `tests/guard-commons.cjs`; clips `docs/scorecard/now/{blade,guard}-commons.mp4`
-  (`node tools/ability-clips.cjs`). Next on track 2: batch 3 pass 2, Mirror Shard (a reflected bolt the server lacks).
+- Track 2, pass 117, PLAN item 8 batch 3 (pass 2 of 2), done in v7.169.0: Mirror Shard. A bolt meeting its holder's
+  armed deflect turns back and strikes the shooter on arrival (`parryShot/reflect`); the server checks the claim
+  against the shots it fired (`shotsFired`), and bots turn bolts in `flyBolts`. Acceptance: the bolt turns, is drawn
+  and heard, and the shooter is struck: `tests/mirror-shard.cjs`, in-page `mirror shard`; clip
+  `docs/scorecard/now/mirror-shard.mp4`. Batch 3 is done (pass 114: the other eleven). Next on track 2: batch 4.
 - Track 1, pass 116: item 5 (the cleave's strike, pass 3 of the judge's motion gap), the Captain: the floor burst waits
   for the bill to land (`impact.at`), his swing leaves a thin arc at the bill's edge (`BOSS_FX` `trail`), and weapon
   ribbons age on the effect clock (filmed strips had shown them as a band over the whole swing). Acceptance:
@@ -59,7 +59,7 @@ The iterate loop's working note (`.claude/iterate.md`). Cap: 8,000 characters.
   (REPLAY_PORT, homelab :3083), list `replays/`; notes `node tools/replays.cjs`; `tests/server-replays.cjs`; audit
   `docs/design-audit/2026-11-15.md`.
 - Abilities and crates (pass 107, v7.162.0): `js/data/crates.js`, `js/progress.js` (save `v` 2), `js/crate-screen.js`;
-  `tests/crates.cjs`. Plain commons' touches (pass 109): `js/ability-touch.js`; in-page `plain commons`. Blade commons (pass 112): `js/common-fx.js`; `tests/blade-commons.cjs`, in-page `blade commons`.
+  `tests/crates.cjs`. Plain commons' touches (pass 109): `js/ability-touch.js`; in-page `plain commons`. Blade commons (pass 112): `js/common-fx.js`; `tests/blade-commons.cjs`, in-page `blade commons`. Guard commons (114, 117): `tests/guard-commons.cjs`, `mirror-shard.cjs`.
 - Art styles (pass 108): `?style=cel|dark|paint`, `js/data/styles.js`, `js/style-lab.js`; `tests/style-browser.cjs`;
   retake `node tools/style-frames.cjs [styles] [still,fight,clip,time]`.
 - Scorecard frames: `tools/scorecard-frames.cjs`; current frames `docs/scorecard/now/` (`tools/now-frames.cjs`).
