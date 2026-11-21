@@ -15,25 +15,9 @@
 //   (ATTACK_POSES.finisherStrike).
 // Reduced motion: no swing or punch, steady cracks, fewer sparks, no flash as time stops. Flashes: one as time stops,
 // one as the cuts open, half a second apart (under 3 Hz).
-// Looks (pass 171): ANIM_SETTINGS.finisherFx.look is the one players get; `?finisher=<id>` picks another of its `looks`
-// for that page (Aleix compares them). A look is the base values with its own laid over, section by section.
+// Ink (pass 171, Aleix's pick): each cut a hard dark stroke round a red core, the world keeping its colour.
 const finisherFx = (() => {
-  const asked = (() => { try { return new URLSearchParams(location.search).get('finisher'); } catch (e) { return null; } })();
-  let lookId = null, merged = null;
-  function setLook(id) {
-    const B = ANIM_SETTINGS.finisherFx, L = B.looks || {};
-    lookId = id && L[id] ? id : L[B.look] ? B.look : null;
-    const over = (lookId && L[lookId]) || {};
-    merged = {};
-    for (const k of Object.keys(B)) {
-      if (k === 'looks') continue;
-      const v = B[k];
-      merged[k] = v && typeof v === 'object' && !Array.isArray(v) ? { ...v, ...(over[k] || {}) } : v;
-    }
-    if (made) inkBlend();
-    return lookId;
-  }
-  const S = () => merged || (setLook(asked), merged);
+  const S = () => ANIM_SETTINGS.finisherFx;
   const fxOn = () => typeof ultraFx !== 'undefined' && ultraFx.on();
   const outBack = x => 1 + 2.70158 * (x - 1) ** 3 + 1.70158 * (x - 1) ** 2;
   function canvasTex(w, h, draw) {
@@ -75,22 +59,11 @@ const finisherFx = (() => {
       g.fillStyle = fade; g.fillRect(0, 0, w, w);
     });
   }
-  let CRACKS = null, LINE = null, STREAK = null, STAR = null, BLADE = null;
+  let CRACKS = null, STREAK = null, STAR = null, BLADE = null;
   function textures() {
-    if (LINE) return;
+    if (BLADE) return;
     CRACKS = [crackTex(7919), crackTex(104729), crackTex(1299709)];
-    LINE = canvasTex(256, 32, (g, w, h) => {   // a cut: bright through its middle, soft at its ends and edges
-      const along = g.createLinearGradient(0, 0, w, 0);
-      along.addColorStop(0, 'rgba(255,255,255,0)'); along.addColorStop(0.15, 'rgba(255,255,255,0.9)'); along.addColorStop(0.5, 'rgba(255,255,255,1)');
-      along.addColorStop(0.85, 'rgba(255,255,255,0.9)'); along.addColorStop(1, 'rgba(255,255,255,0)');
-      g.fillStyle = along; g.fillRect(0, 0, w, h);
-      g.globalCompositeOperation = 'destination-in';
-      const across = g.createLinearGradient(0, 0, 0, h);
-      across.addColorStop(0, 'rgba(0,0,0,0)'); across.addColorStop(0.4, 'rgba(0,0,0,0.8)'); across.addColorStop(0.5, 'rgba(0,0,0,1)');
-      across.addColorStop(0.6, 'rgba(0,0,0,0.8)'); across.addColorStop(1, 'rgba(0,0,0,0)');
-      g.fillStyle = across; g.fillRect(0, 0, w, h);
-    });
-    BLADE = canvasTex(512, 32, (g, w, h) => {   // an ink look's cut (pass 171): a hard-edged stroke, widest a third along, sharp at both tips
+    BLADE = canvasTex(512, 32, (g, w, h) => {   // a cut (pass 171): a hard-edged ink stroke, widest a third along, sharp at both tips
       const m = h / 2;
       g.fillStyle = '#fff'; g.beginPath(); g.moveTo(2, m);
       g.quadraticCurveTo(w * 0.3, m - h * 0.62, w - 2, m); g.quadraticCurveTo(w * 0.3, m + h * 0.62, 2, m); g.fill();
@@ -133,7 +106,7 @@ const finisherFx = (() => {
     made = true; textures();
     // A crack set per cracked foe: up to three cracks on its body.
     for (let i = 0; i < 4; i++) sets.push({ foe: null, s: [0, 1, 2].map(j => sprite(CRACKS[j], 11, true)), level: 0, shown: [0, 0, 0], pop: [9, 9, 9], since: 0, gone: Infinity, flare: 0, burst: Infinity });
-    for (let i = 0; i < 4; i++) cuts.push({ core: sprite(LINE, 14, false), glow: sprite(LINE, 13, false), age: Infinity, rot: 0, h: 0.6, side: 0, len: 2 });
+    for (let i = 0; i < 4; i++) cuts.push({ core: sprite(BLADE, 14, false), glow: sprite(BLADE, 13, false), age: Infinity, rot: 0, h: 0.6, side: 0, len: 2 });
     const geo = new THREE.PlaneGeometry(1, 1);
     for (let i = 0; i < 4; i++) {
       const m = new THREE.Mesh(geo, new THREE.MeshBasicMaterial({ map: STREAK, blending: THREE.AdditiveBlending, transparent: true, depthWrite: false, side: THREE.DoubleSide, fog: false }));
@@ -141,15 +114,7 @@ const finisherFx = (() => {
       streaks.push({ m, age: Infinity, fx: 0, fz: 0, tx: 0, tz: 0, y: 0 });
     }
     star = { s: sprite(STAR, 15, false), age: Infinity, x: 0, y: 0, z: 0, size: 1 };
-    inkBlend();
-  }
-  // An ink look's cuts: the wide stroke drawn over the world in its dark colour, the core still light.
-  function inkBlend() {
-    const ink = S().cut.ink > 0, b = ink ? THREE.NormalBlending : THREE.AdditiveBlending;
-    for (const C of cuts) {
-      C.glow.material.blending = b;
-      for (const sp of [C.core, C.glow]) { sp.material.map = ink ? BLADE : LINE; sp.material.needsUpdate = true; }
-    }
+    for (const C of cuts) C.glow.material.blending = THREE.NormalBlending;   // the stroke drawn over the world in its dark colour
   }
 
   // ---- the blow's state (the striker's own screen) ----
@@ -230,7 +195,7 @@ const finisherFx = (() => {
     const C = cuts[d.i % cuts.length], T = K.cut.tilts;
     C.age = -K.cut.delay; C.rot = T[d.i % T.length]; C.h = K.cut.heights[d.i % K.cut.heights.length]; C.side = (d.i % 2 ? -1 : 1) * 0.08;
     C.len = K.cut.length * Math.sqrt(Math.max(1, (e.radius || 0.5) / 0.6)) * ((e.height || 1.8) / 1.8) ** 0.5;
-    if (fxOn()) { ultraFx.sparkBurst(chestOf(e), reducedMotion() ? 6 : 16, 'parry', null, 0, 1.2); if (d.i === 0 && !reducedMotion() && K.burst.light > 0) ultraFx.flashAt(at, K.cut.ink ? K.cut.color : K.cut.glow, 5, 6); }
+    if (fxOn()) { ultraFx.sparkBurst(chestOf(e), reducedMotion() ? 6 : 16, 'parry', null, 0, 1.2); if (d.i === 0 && !reducedMotion() && K.burst.light > 0) ultraFx.flashAt(at, K.cut.color, 5, 6); }
     else spawnBurst({ x: d.to.x, y: d.player.y + 1, z: d.to.z }, CONFIG.finisher.bursts.step);
   });
   events.on('finisher', d => {
@@ -335,8 +300,7 @@ const finisherFx = (() => {
       if (e) { C.x = v.x; C.y = v.y; C.z = v.z; }
       right.set(1, 0, 0).applyQuaternion(camera.quaternion);
       // an ink cut: a dark stroke round a red core that never blooms white (pass 171)
-      if (K.ink > 0) { placeCut(C, C.core, len * 0.96, w * 0.45, 1, K.color, Math.min(1, bright)); placeCut(C, C.glow, len, w, 1.1, K.glow, Math.min(1, bright * 1.6) * K.ink); }
-      else { placeCut(C, C.core, len, w, 1, K.color, bright * 1.4); placeCut(C, C.glow, len, w, 2.6, K.glow, bright * 0.8); }
+      placeCut(C, C.core, len * 0.96, w * 0.45, 1, K.color, Math.min(1, bright)); placeCut(C, C.glow, len, w, 1.1, K.glow, Math.min(1, bright * 1.6));
     }
   }
   function placeCut(C, s, len, w, wide, hex, bright) {
@@ -375,7 +339,7 @@ const finisherFx = (() => {
     if (f >= 1) { star.age = Infinity; star.s.visible = false; return; }
     const g = Math.min(1, star.age / 0.06), size = star.size * (0.35 + 0.65 * EASE.outCubic(g)) * (1 + 0.2 * f);
     star.s.position.set(star.x, star.y, star.z); star.s.scale.set(size, size, 1); star.s.material.rotation = 0.25 * f;
-    star.s.material.color.setHex(K.color).lerp(col2.setHex(0xffffff), Math.min(1, K.white / 0.7 * (1 - g * 0.7))).multiplyScalar(1.3 * (1 - f) * (1 - f));
+    star.s.material.color.setHex(K.color).multiplyScalar(1.3 * (1 - f) * (1 - f));
     star.s.visible = true;
   }
   // The stopped world: colour drained but for its reds, the edges closed in, the dust held; the colour comes back with
@@ -441,8 +405,7 @@ const finisherFx = (() => {
   }
   return {
     attach() { make(); Game.renderHooks.push(render); visuals.hooks.clear.push(clear); },
-    clear, hold, view, setLook, settings: () => S(),
-    get look() { S(); return lookId; },
+    clear, hold, view,
     get grading() { return graded; },   // the freeze owns the grade now (js/visuals.js atmosphere.areas waits)
     // tests: what shows now
     get state() {

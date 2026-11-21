@@ -12,8 +12,6 @@ them (`git show 88f1abd:BACKLOG.md`).
   events that never come), `rig.js`, `world-hints.js`, `tests/onboarding.cjs`. Clear them with PLAN 3.
 - A client never learns its boss's pace (`session.pace` sent, unused): the parry lead (`parryTiming`) shrinks with
   `tellRate()` to 0.072 s at fight 40. Set `Enemy.pace` from the session, or count the lead in real time.
-- After 2026-11-28: drop the Finishing Blow's unpicked looks (`ANIM_SETTINGS.finisherFx.looks`), or ship the one Aleix
-  picks instead of `ink` (pass 171).
 - A pressed ability the server refuses spends the client's charge with no refund.
 - Server claim gaps (harmless among friends): flask use (`useItem`) is not checked; a parry claim during a gilt echo
   is not rejected; a bolt inside a parryable attack is checked with `canParryAttack`, not `canParryHit`.

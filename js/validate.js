@@ -82,26 +82,18 @@ function validateData({ visual = true } = {}) {
       && Cf.aura.pulse > 0 && Cf.aura.pulse < 3 && Cf.aura.body >= 0 && Cf.aura.body <= 1 && num(Cf.aura.in) && num(Cf.aura.out)
       && Cf.aura.ring && hex(Cf.aura.ring.color) && pos(Cf.aura.ring.from) && pos(Cf.aura.ring.to) && Cf.aura.ring.to < Cf.aura.ring.from,
       'ANIM_SETTINGS.counterFx: dim (peak 0 to 0.8, in and out s), mark (size m, time s, colour), trail (colour, boost, life at least 1), cut (length, thin < wide m, show s, colour, sparks and arcSparks counts, tilt rad), aura (colour, size, boost, min 0 to 1, breath under 0.5, pulse under 3 Hz, body 0 to 1, in and out s, ring colour and from > to m).');
-    // (pass 171) the base look, and every one of `looks` laid over it, as js/finisher-fx.js lays them
-    const Fb = A.finisherFx, unit = v => typeof v === 'number' && v >= 0 && v <= 1;
-    const lookOf = over => { const o = {}; for (const k of Object.keys(Fb)) { const v = Fb[k]; o[k] = v && typeof v === 'object' && !Array.isArray(v) ? { ...v, ...(over[k] || {}) } : v; } return o; };
-    need(Fb && Fb.looks && typeof Fb.looks === 'object' && Fb.looks[Fb.look]
-      && Object.values(Fb.looks).every(L => L && typeof L === 'object' && Object.keys(L).every(k => ['crack', 'freeze', 'streak', 'cut', 'burst', 'camera'].includes(k))),
-      'ANIM_SETTINGS.finisherFx: `look` names one of `looks`, and each look changes only crack, freeze, streak, cut, burst or camera.');
-    for (const [lookName, over] of Object.entries((Fb && Fb.looks) || {})) {
-    const Ff = lookOf(over), Fk = Ff.crack, Fz = Ff.freeze, Fc = Ff.cut;
+    const Ff = A.finisherFx, Fk = Ff && Ff.crack, Fz = Ff && Ff.freeze, Fc = Ff && Ff.cut, unit = v => typeof v === 'number' && v >= 0 && v <= 1;
     need(Fk && pos(Fk.size) && unit(Fk.depth) && pos(Fk.boost) && [Fk.color, Fk.hot].every(hex) && num(Fk.pop) && Fk.breath >= 0 && Fk.breath < 0.5
       && Fk.pulse > 0 && Fk.pulse < 3 && pos(Fk.out) && pos(Fk.burstTime)
       && Fz && unit(Fz.sat) && unit(Fz.vignette) && unit(Fz.dark) && Fz.dark < 1 && unit(Fz.hold) && num(Fz.in) && num(Fz.out) && unit(Fz.kick) && unit(Fz.flash)
       && Array.isArray(Fz.tint) && Fz.tint.length === 3 && Fz.tint.every(v => v >= 0 && v <= 2) && hex(Fz.flashColor)
       && Ff.streak && pos(Ff.streak.width) && num(Ff.streak.life) && unit(Ff.streak.held) && hex(Ff.streak.color)
-      && Fc && pos(Fc.length) && num(Fc.thin) && Fc.wide > Fc.thin && unit(Fc.held) && num(Fc.show) && hex(Fc.color) && hex(Fc.glow) && Fc.delay >= 0 && unit(Fc.ink)
+      && Fc && pos(Fc.length) && num(Fc.thin) && Fc.wide > Fc.thin && unit(Fc.held) && num(Fc.show) && hex(Fc.color) && hex(Fc.glow) && Fc.delay >= 0
       && Array.isArray(Fc.heights) && Fc.heights.length > 0 && Fc.heights.every(unit) && Array.isArray(Fc.tilts) && Fc.tilts.length > 0 && Fc.tilts.every(Number.isFinite)
       && Ff.burst && pos(Ff.burst.size) && num(Ff.burst.time) && hex(Ff.burst.color) && Number.isInteger(Ff.burst.sparks) && unit(Ff.burst.flash)
-      && unit(Ff.burst.white) && Ff.burst.light >= 0 && Ff.burst.light <= 20 && ['parry', 'ember'].includes(Ff.burst.kind) && hex(Ff.burst.flashColor) && unit(Ff.burst.tint)
+      && Ff.burst.light >= 0 && Ff.burst.light <= 20 && ['parry', 'ember'].includes(Ff.burst.kind) && hex(Ff.burst.flashColor) && unit(Ff.burst.tint)
       && Ff.camera && Ff.camera.swing >= 0 && Ff.camera.swing < 1.2 && num(Ff.camera.back) && unit(Ff.camera.punch) && pos(Ff.camera.punchRate),
-      `ANIM_SETTINGS.finisherFx (look ${lookName}): crack (size, depth 0 to 1, boost, colour, hot colour, pop s, breath under 0.5, pulse under 3 Hz, out and burstTime s), freeze (sat, vignette, hold, kick and flash 0 to 1, dark 0 to under 1, in and out s, tint [r, g, b] 0 to 2, flashColor), streak (width, life s, held 0 to 1, colour), cut (length, thin < wide m, held 0 to 1, show and delay s, colour, glow colour, heights 0 to 1, tilts rad, ink 0 to 1), burst (size, time s, colour, sparks, flash and white 0 to 1, light 0 to 20, kind parry or ember, flashColor, tint 0 to 1) and camera (swing under 1.2 rad, back s, punch 0 to 1, punchRate 1/s).`);
-    }
+      'ANIM_SETTINGS.finisherFx: crack (size, depth 0 to 1, boost, colour, hot colour, pop s, breath under 0.5, pulse under 3 Hz, out and burstTime s), freeze (sat, vignette, hold, kick and flash 0 to 1, dark 0 to under 1, in and out s, tint [r, g, b] 0 to 2, flashColor), streak (width, life s, held 0 to 1, colour), cut (length, thin < wide m, held 0 to 1, show and delay s, colour, glow colour, heights 0 to 1, tilts rad), burst (size, time s, colour, sparks, flash 0 to 1, light 0 to 20, kind parry or ember, flashColor, tint 0 to 1) and camera (swing under 1.2 rad, back s, punch 0 to 1, punchRate 1/s).');
     const Gd = A.guard;
     need(Gd && Gd.drop >= 0 && Gd.drop < 0.3 && rot(Gd.pose), 'ANIM_SETTINGS.guard: drop (0 to 0.3 m) and a pose of [x, y, z] per bone.');
     need(L && num(L.rise) && num(L.hold) && num(L.fall) && num(L.drop) && num(L.min) && L.ref > 0 && Number.isFinite(L.lean), 'ANIM_SETTINGS.land: rise, hold and fall (s), drop (m), min (0 to 1), ref (m/s) and lean (rad).');
