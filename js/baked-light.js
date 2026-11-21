@@ -256,17 +256,41 @@ uniform float bkMoonOn, bkGain;
     }
     V.texA.needsUpdate = V.texB.needsUpdate = true;
   }
-  function tex(V) {
-    const t = new THREE.Data3DTexture(new Uint8Array(V.nx * V.ny * V.nz * 4), V.nx, V.ny, V.nz);
+  function tex(V, data) {
+    const t = new THREE.Data3DTexture(data, V.nx, V.ny, V.nz);
     t.format = THREE.RGBAFormat; t.type = THREE.UnsignedByteType;
     t.minFilter = t.magFilter = THREE.LinearFilter; t.wrapS = t.wrapT = t.wrapR = THREE.ClampToEdgeWrapping;
     t.unpackAlignment = 1;
     return t;
   }
 
-  function bake(def, built) {
+  // Volumes already baked, by stage and lights: a stage built again (the showcase's cuts, a Boss Rush ground met again,
+  // a level reloaded) takes its volume back instead of baking it again (hundreds of ms on a laptop). Its arrays are
+  // shared, not copied, and kept as the bonfires since left them (`fires`: by index, the intensity each one's light has
+  // in the volume). Newest first, at most B.cacheCells cells.
+  // Only the volume in use keeps its float arrays (37 bytes a cell); one set aside keeps its two encoded textures'
+  // data (8 bytes a cell), and is baked in full again only if a bonfire changes it after it comes back (whole()).
+  const cache = [];
+  const lightKey = l => {
+    const p = l.getWorldPosition(new THREE.Vector3());
+    return [p.x, p.y, p.z, l.color.r, l.color.g, l.color.b, l.intensity, l.distance, l.decay].map(v => +v.toFixed(4)).join(',');
+  };
+  function bake(def, built, fresh = false) {
     const t0 = performance.now();
     drop();
+    const lights = stageLights(built), moonDir = moonLight.position.clone().normalize();
+    const key = [def.id, B.cell, B.maxVolume, B.pad, B.range, B.openRange, B.maxCells, moonDir.toArray().map(v => v.toFixed(4)).join(','), ...lights.map(lightKey)].join('|');
+    const hit = fresh ? -1 : cache.findIndex(c => c.key === key);
+    if (hit >= 0) {
+      const V = cache[hit].V; cache.splice(hit, 1); cache.unshift({ key, V });
+      V.pos = new Map(); V.baked = new Map();
+      for (const l of lights) { V.pos.set(l, l.getWorldPosition(new THREE.Vector3())); V.baked.set(l, l.intensity); }
+      const fires = built.bonfireFires || [];
+      for (const [i, had] of V.fires) if (fires[i] && fires[i].flame.light) V.baked.set(fires[i].flame.light, had);
+      V.texA = tex(V, V.dataA); V.texB = tex(V, V.dataB); V.texA.needsUpdate = V.texB.needsUpdate = true;
+      use(V, lights.length, t0);
+      return;
+    }
     const O = occluders(def, built);
     let cell = B.cell, nx, ny, nz;
     for (;;) {   // a coarser grid on a very large level, so the volume stays within `maxVolume` cells
@@ -287,19 +311,36 @@ uniform float bkMoonOn, bkGain;
       const f = b.roof ? 2 : 1;
       for (let k = k0; k <= k1; k++) for (let j = j0; j <= j1; j++) for (let i = i0; i <= i1; i++) { const g = (k * ny + j) * nx + i; if (V.solid[g] !== 1) V.solid[g] = f; }
     }
-    sweepMoon(V, moonLight.position.clone().normalize());
-    const lights = stageLights(built);
+    V.fires = new Map();
+    sweepMoon(V, moonDir);
     for (const l of lights) { V.pos.set(l, l.getWorldPosition(new THREE.Vector3())); V.baked.set(l, l.intensity); addLight(V, l, l.intensity, 1); }
-    V.texA = tex(V); V.texB = tex(V);
+    V.dataA = new Uint8Array(N * 4); V.dataB = new Uint8Array(N * 4);
+    V.texA = tex(V, V.dataA); V.texB = tex(V, V.dataB);
     upload(V);
+    const old = cache.findIndex(c => c.key === key); if (old >= 0) cache.splice(old, 1);
+    cache.unshift({ key, V });
+    for (let cells = 0, i = 0; i < cache.length; i++) {
+      cells += cache[i].V.nx * cache[i].V.ny * cache[i].V.nz;
+      if (cells > B.cacheCells && i > 0) { cache.length = i; break; }
+    }
+    use(V, lights.length, t0);
+  }
+  function use(V, lights, t0) {
     vol = V;
     U.bkA.value = V.texA; U.bkB.value = V.texB;
-    U.bkOrigin.value.set(V.ox, V.oy, V.oz); U.bkInvSize.value.set(1 / (nx * cell), 1 / (ny * cell), 1 / (nz * cell));
-    V.lights = lights.length; V.ms = Math.round(performance.now() - t0);
+    U.bkOrigin.value.set(V.ox, V.oy, V.oz); U.bkInvSize.value.set(1 / (V.nx * V.cell), 1 / (V.ny * V.cell), 1 / (V.nz * V.cell));
+    V.lights = lights; V.ms = Math.round(performance.now() - t0);
+  }
+  // The volume in use, with its float arrays (a cached one set aside had them dropped): baked again in full if not.
+  function whole() {
+    if (vol && vol.compact && last) bake(last.def, last.built, true);
+    return vol;
   }
   function drop() {
     if (!vol) return;
-    vol.texA.dispose(); vol.texB.dispose(); vol = null;
+    vol.texA.dispose(); vol.texB.dispose();
+    if (cache.some(c => c.V === vol)) { vol.solid = vol.rgb = vol.dir = vol.moon = null; vol.compact = true; }
+    vol = null;
     U.bkA.value = U.bkB.value = null;
   }
 
@@ -341,13 +382,14 @@ uniform float bkMoonOn, bkGain;
     U.bkMoonOn.value = vol && !q.shadows ? 1 : 0;
     if (!vol || !stage) return;
     let changed = false;   // a bonfire lit later (`litBy`): its light joins the volume when it lights, leaves if it goes out
-    if (stage.bonfireFires) for (const f of stage.bonfireFires) {
-      const l = f.flame.light, want = f.flame.base > 0 ? f.base : 0, had = vol.baked.get(l) || 0;
+    if (stage.bonfireFires) for (let i = 0; i < stage.bonfireFires.length; i++) {
+      const f = stage.bonfireFires[i], l = f.flame.light, want = f.flame.base > 0 ? f.base : 0, had = vol.baked.get(l) || 0;
       if (!l || want === had) continue;
+      if (vol.compact) { whole(); return; }   // baked in full now, this bonfire as it stands
       if (!vol.pos.has(l)) vol.pos.set(l, l.getWorldPosition(new THREE.Vector3()));
-      addLight(vol, l, had, -1); addLight(vol, l, want, 1); vol.baked.set(l, want); changed = true;
+      addLight(vol, l, had, -1); addLight(vol, l, want, 1); vol.baked.set(l, want); vol.fires.set(i, want); changed = true;
     }
-    if (changed) upload(vol);
+    if (changed) upload(vol);   // into the arrays the cache holds too
   });
 
   return {
@@ -355,7 +397,7 @@ uniform float bkMoonOn, bkGain;
     // Tests and tools: what was baked, and the decoded light and moon at a world point (nearest cell).
     info: () => vol ? { cells: [vol.nx, vol.ny, vol.nz], cell: vol.cell, lights: vol.lights, ms: vol.ms, active: active() } : null,
     at(x, y, z) {
-      if (!vol) return null;
+      if (!whole()) return null;
       const V = vol, i = Math.floor((x - V.ox) / V.cell), j = Math.floor((y - V.oy) / V.cell), k = Math.floor((z - V.oz) / V.cell);
       if (i < 0 || j < 0 || k < 0 || i >= V.nx || j >= V.ny || k >= V.nz) return null;
       const g = (k * V.ny + j) * V.nx + i;
