@@ -1,9 +1,9 @@
 'use strict';
 // Boss Rush (v7.35.0 as The Calling), endless since pass 65 (PLAN.md track B item 5): a run of bosses drawn from its
-// seed that goes on until everyone falls. No bots (pass 52); the first fights from the easier bosses, every 5th fight
+// seed that goes on until everyone falls. No bots (pass 52); every fight from every boss, every 5th fight
 // Crowned (a pick of 4 with a legendary), two bosses at once every few fights, modifiers by name; the fallen rise for
-// the next fight; a refused opening changes nothing; the end of run counts fights won and Crowned fights. Pass 73:
-// the warm-up's bosses (RUSH.opening, at their RUSH.warmHealth share).
+// the next fight; a refused opening changes nothing; the end of run counts fights won and Crowned fights. The warm-up's
+// fights take any boss at CONFIG.endless.warmHealth's share (Aleix, 2026-11-21; it was five easier bosses, pass 73).
 const assert = require('node:assert/strict');
 const { once } = require('node:events');
 const { createServer } = require('../server/index.cjs');
@@ -51,7 +51,6 @@ async function peer(origin, name) {
       fights.forEach((g, n) => {
         const number = n + 1, met = [g.boss, ...g.partners];
         assert.equal(g.number, number); assert.equal(g.next, n + 1, 'a run never runs out of fights');
-        if (number <= E.opening) assert.ok(RUSH.opening.includes(g.boss), `fight ${number} draws from the easier bosses (${g.boss})`);
         assert.equal(g.crowned, number % E.crowned === 0, `every ${E.crowned}th fight is Crowned (fight ${number})`);
         const pair = !g.crowned && number >= E.pairFrom && (number - E.pairFrom) % E.pairEvery === 0;
         assert.equal(met.length, pair ? 2 : 1, `two bosses at once from fight ${E.pairFrom}, every ${E.pairEvery}th (fight ${number})`);
@@ -61,9 +60,9 @@ async function peer(origin, name) {
         assert.ok(g.modifiers.every(id => RUSH.modifiers.find(m => m.id === id).from <= number), 'a modifier only from its own fight');
         assert.equal(g.defeated, fights.slice(0, n).reduce((k, f) => k + 1 + f.partners.length, 0), 'defeated counts the bosses before');
       });
-      // The first round of the whole roster meets every boss before any comes back, the opening's apart.
-      const later = fights.slice(E.opening).flatMap(g => [g.boss, ...g.partners]).slice(0, bosses.length - E.opening);
-      assert.equal(new Set(later).size, later.length, 'no boss comes back before the others have come');
+      // The first round meets every boss before any comes back, from the first fight.
+      const first = fights.flatMap(g => [g.boss, ...g.partners]).slice(0, bosses.length);
+      assert.equal(new Set(first).size, bosses.length, 'every boss comes once before any comes back');
       assert.deepEqual(app.sim.calling({ seed: seed * 7919 }, 17), fights[17], 'a seed replays the same run');
     }
     const forced = app.sim.calling({ seed: 3, opening: [bosses[9], bosses[5]] }, 1);
@@ -76,25 +75,22 @@ async function peer(origin, name) {
     const press = G('CONFIG').enemy.press;   // every boss's own press (pass 90), under the modifiers
     assert.ok(boss.rest > press.rest && boss.chain > press.chain, 'Fewer pauses and Longer combos set the rests and the strings');
     assert.equal(boss.maxHp ?? boss.def.hp, hp, 'no modifier adds health');
-    app.sim.setRushFight(E.opening); assert.ok(boss.rest === press.rest && boss.chain === press.chain, 'a fight without modifiers is plain: the boss presses as it does everywhere');
-    const settleAt = E.settle[E.opening - G('CONFIG').pace.warm] ?? 1;   // empty since pass 173: whole
-    assert.equal(boss.def.hp, Math.round(hp * settleAt), 'a boss alone has its own share there (CONFIG.endless.settle), not a pair share');
-    // The warm-up (pass 73): its bosses come at their RUSH.warmHealth share; every fight after it, whole.
     const warm = G('CONFIG').pace.warm;
-    assert.ok(E.opening >= warm && RUSH.opening.length > warm, 'the warm-up draws from its own bosses, more of them than its fights');
-    for (const id of RUSH.opening) {
+    app.sim.setRushFight(warm); assert.ok(boss.rest === press.rest && boss.chain === press.chain, 'a fight without modifiers is plain: the boss presses as it does everywhere');
+    const settleAt = E.settle[0] ?? 1;   // empty since pass 173: whole
+    assert.equal(boss.def.hp, Math.round(hp * settleAt), 'a boss alone has its own share there (CONFIG.endless.settle), not a pair share');
+    // The warm-up (pass 73): a little under 1x pace, any boss at CONFIG.endless.warmHealth's share for
+    // its fight (Aleix, 2026-11-21); every boss can open a run.
+    const openers = new Set(Array.from({ length: 200 }, (_, s) => app.sim.calling({ seed: s * 104729 + 1 }, 0).boss));
+    assert.equal(openers.size, bosses.length, `any boss can open a run (${openers.size} of ${bosses.length})`);
+    for (const id of bosses.filter(b => !Object.hasOwn(RUSH.health, b))) {
       app.sim.start('arena', id, []);
       const e = app.sim.inspect().Game.enemies.find(x => x.isBoss()), whole = e.def.hp;
       app.sim.setRushFight(0);
-      assert.equal(e.def.hp, Math.round(whole * (RUSH.warmHealth[id] || 1)), `${id}: its warm-up share`);
+      assert.equal(e.def.hp, Math.round(whole * E.warmHealth[0]), `${id}: its first fight's share`);
       assert.ok(e.pace < 1, `${id}: a little under 1x in the warm-up`);
-      // Then health climbs to whole over CONFIG.endless.settle's fights (pass 168), whole from the fight after them.
-      E.settle.forEach((k, i) => {
-        app.sim.start('arena', id, []); app.sim.setRushFight(warm + i);
-        assert.equal(app.sim.inspect().Game.enemies.find(x => x.isBoss()).def.hp, Math.round(whole * k), `${id}: ${k} of its health at fight ${warm + i + 1}`);
-      });
-      app.sim.start('arena', id, []); app.sim.setRushFight(warm + E.settle.length);
-      assert.equal(app.sim.inspect().Game.enemies.find(x => x.isBoss()).def.hp, whole, `${id}: whole from fight ${warm + E.settle.length + 1}`);
+      app.sim.start('arena', id, []); app.sim.setRushFight(warm - 1);
+      assert.equal(app.sim.inspect().Game.enemies.find(x => x.isBoss()).def.hp, Math.round(whole * E.warmHealth[warm - 1]), `${id}: the last warm-up fight's share`);
     }
     assert.ok(E.settle.every((k, i) => k < 1 && (!i || k > E.settle[i - 1])), 'health climbs fight by fight after the warm-up');
     // A boss of RUSH.health (pass 73) has its share in every fight; Story and Practice keep it whole.
@@ -227,7 +223,7 @@ async function peer(origin, name) {
     assert.ok(!('roster' in end) && !('bosses' in end), 'an endless run has no length');
     // Again: a new run.
     await call({});
-    assert.equal(session.gauntlet.number, 1); assert.ok(RUSH.opening.includes(session.id), 'a new run opens on an easier boss');
-    console.log('BOSS RUSH (endless): the draw (easier first, Crowned every 5th, pairs, no repeats, modifiers, seeds replay), pace-only modifiers, the Crowned offer, refused openings, no bot, the fallen rise, restart, a Crowned fight over the wire, the wipe and its summary passed.');
+    assert.equal(session.gauntlet.number, 1); assert.ok(app.sim.catalog().bosses.some(b => b.id === session.id), 'a new run opens on any boss');
+    console.log('BOSS RUSH (endless): the draw (any boss first, Crowned every 5th, pairs, no repeats, modifiers, seeds replay), pace-only modifiers, the Crowned offer, refused openings, no bot, the fallen rise, restart, a Crowned fight over the wire, the wipe and its summary passed.');
   } finally { for (const p of peers) p.ws.terminate(); await app.close(); }
 })().catch(e => { console.error(e); process.exitCode = 1; });

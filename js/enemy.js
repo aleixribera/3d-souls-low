@@ -127,12 +127,12 @@ function rushPar(won, bosses = 1, might = 0) {
   return Math.min(S.max, Math.round(base * Math.max(1, rushPace(won) / CONFIG.pace.boss) * (1 + S.pair * (Math.max(1, bosses) - 1)) / (1 + Math.max(0, might))));
 }
 // Boss Rush's health share for boss `id`: its RUSH.health share in every fight, times CONFIG.endless.pairHealth when
-// `bosses` are fought at once, or its RUSH.warmHealth share alone in the warm-up (the first CONFIG.pace.warm fights),
-// then CONFIG.endless.settle's shares in the fights right after it (pass 168: whole health at fight 5 was a wall).
+// `bosses` are fought at once, and CONFIG.endless.settle's shares in the fights right after the warm-up (the first
+// CONFIG.pace.warm fights; pass 168); in the warm-up, CONFIG.endless.warmHealth's share for its fight, whatever boss came.
 function rushHealth(bosses, won = Infinity, id = null) {
   const own = id && Object.hasOwn(RUSH.health, id) ? RUSH.health[id] : 1, W = CONFIG.pace.warm, settle = CONFIG.endless.settle;
   if (bosses > 1) return CONFIG.endless.pairHealth * own;
-  if (won < W) return own * (id && Object.hasOwn(RUSH.warmHealth, id) ? RUSH.warmHealth[id] : 1);
+  if (won < W) return own * (CONFIG.endless.warmHealth[won] ?? 1);
   return own * (won - W < settle.length ? settle[won - W] : 1);
 }
 // A follow-up's chance at a pace (CONFIG.pace): a faster boss strings more of its moves together.

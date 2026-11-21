@@ -4049,7 +4049,7 @@
     try {
       input.suspended = false; gamepad.release(); gamepad.neutralRequired = false; gamepad.read = () => idle;
       press('PadDown'); Game.showMenu('main');   // the pad is the device
-      const bosses = [...RUSH.opening, ...Object.keys(RUSH.health)];
+      const bosses = ENEMY_DEFS.filter(isBossDef).map(d => d.id);
       multiplayer.showRunSummary({ outcome: 'wiped', key: null, id: 'calling', reached: 31, crowned: 2, time: 2400,
         times: Array.from({ length: 30 }, (_, i) => ({ bosses: [bosses[i % bosses.length]], time: 60 + i, par: 90, swift: i % 2 === 0, crowned: i % 9 === 8 })),
         players: ['Ash', 'Ember', 'Cinder', 'Soot'].map((name, i) => ({ id: 'p' + i, name, damage: 9000 - i * 1000, deaths: i })) });

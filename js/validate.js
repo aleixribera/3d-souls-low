@@ -895,18 +895,13 @@ function validateData({ visual = true } = {}) {
     'CONFIG.killMoment: slow in (0, 1], and time, embers and emberSpeed 0 or more.');
   // Endless (pass 65): CONFIG.endless and RUSH (js/data/rush.js). A modifier only ever speeds a boss up.
   const EN = CONFIG.endless, whole = (v, min) => Number.isInteger(v) && v >= min;
-  need(EN && whole(EN.opening, 0) && whole(EN.crowned, 2) && whole(EN.crownedOffer, CONFIG.abilities.offer) && EN.crownedOffer <= ABILITIES.length &&
-    whole(EN.pairFrom, EN.opening + 1) && whole(EN.pairEvery, 1) && num(EN.pairRest) && EN.pairRest > 0 && EN.pairRest <= 1 && typeof EN.pairTurns === 'boolean' && Array.isArray(EN.settle) && EN.settle.every((k, i) => num(k) && k > 0 && k <= 1 && (!i || k >= EN.settle[i - 1])) && num(EN.pairHealth) && EN.pairHealth > 0 && EN.pairHealth <= 1 && Array.isArray(EN.mods) && EN.mods.every((f, i) => whole(f, 1) && (!i || f > EN.mods[i - 1])) && whole(EN.longest, 2),
-    'CONFIG.endless: opening 0 or more, crowned 2 or more, crownedOffer from CONFIG.abilities.offer to the abilities there are, pairFrom past the opening, pairEvery 1 or more, pairRest and pairHealth in (0, 1], pairTurns true or false, settle rising shares in (0, 1], mods rising fight numbers, longest 2 or more.');
+  need(EN && Array.isArray(EN.warmHealth) && EN.warmHealth.length === PC.warm && EN.warmHealth.every((k, i) => num(k) && k > 0 && k <= 1 && (!i || k >= EN.warmHealth[i - 1])) && whole(EN.crowned, 2) && whole(EN.crownedOffer, CONFIG.abilities.offer) && EN.crownedOffer <= ABILITIES.length &&
+    whole(EN.pairFrom, PC.warm + 1) && whole(EN.pairEvery, 1) && num(EN.pairRest) && EN.pairRest > 0 && EN.pairRest <= 1 && typeof EN.pairTurns === 'boolean' && Array.isArray(EN.settle) && EN.settle.every((k, i) => num(k) && k > 0 && k <= 1 && (!i || k >= EN.settle[i - 1])) && num(EN.pairHealth) && EN.pairHealth > 0 && EN.pairHealth <= 1 && Array.isArray(EN.mods) && EN.mods.every((f, i) => whole(f, 1) && (!i || f > EN.mods[i - 1])) && whole(EN.longest, 2),
+    'CONFIG.endless: warmHealth rising shares in (0, 1], one per warm-up fight (CONFIG.pace.warm), crowned 2 or more, crownedOffer from CONFIG.abilities.offer to the abilities there are, pairFrom past the warm-up, pairEvery 1 or more, pairRest and pairHealth in (0, 1], pairTurns true or false, settle rising shares in (0, 1], mods rising fight numbers, longest 2 or more.');
   need(ABILITIES.some(b => b.rarity === 'legendary'), 'Endless: a Crowned win offers a legendary, so there must be one.');
-  need(RUSH && Array.isArray(RUSH.opening) && RUSH.opening.length >= 3 && RUSH.opening.every(id => isBossDef(ENEMY_BY_ID[id])) && new Set(RUSH.opening).size === RUSH.opening.length,
-    'RUSH.opening: three or more different boss ids (a fight draws none from the fight before).');
-  need(EN.opening >= PC.warm, 'CONFIG.endless: the opening covers the warm-up (CONFIG.pace.warm).');
   need(num(EN.mightBlows) && EN.mightBlows >= 0 && EN.mightBlows <= 2, "CONFIG.endless.mightBlows: 0 to 2, what each point of the party's might adds to a boss's blows (pass 174).");
   need(num(CONFIG.bot.counterReach) && CONFIG.bot.counterReach > 0 && CONFIG.bot.counterReach <= 1, "CONFIG.bot.counterReach: a share in (0, 1] of the counter's flash-step range (pass 174).");
   if (CONFIG.fx && CONFIG.fx.strikeShake) need(num(CONFIG.fx.strikeShake.player) && CONFIG.fx.strikeShake.player > 0, "CONFIG.fx.strikeShake.player: above 0, what a player's blow is divided by before it shakes the camera (pass 174).");
-  need(RUSH.warmHealth && Object.entries(RUSH.warmHealth).every(([id, k]) => RUSH.opening.includes(id) && num(k) && k > 0 && k <= 1),
-    'RUSH.warmHealth: a share in (0, 1] for bosses of RUSH.opening.');
   need(RUSH.health && Object.entries(RUSH.health).every(([id, k]) => Object.hasOwn(ENEMY_BY_ID, id) && isBossDef(ENEMY_BY_ID[id]) && num(k) && k > 0 && k <= 1),
     'RUSH.health: a share in (0, 1] for bosses.');
   need(Array.isArray(RUSH.modifiers) && new Set(RUSH.modifiers.map(m => m.id)).size === RUSH.modifiers.length, 'RUSH.modifiers: a list with different ids.');

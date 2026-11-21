@@ -15,8 +15,7 @@
 // HITS=1.5 scales every player attack's damage; FINISHER='{"bossMul":12}' merges into CONFIG.finisher.damage (pass 173).
 // ENEMY='{"bossDamage":1.2}' merges into CONFIG.enemy (pass 173). COUNTER=3 sets the counter's worth in lights;
 // PARRY='{"counterReel":0.6}' merges into CONFIG.parry (pass 174).
-// SHARES='{"vesper":0.7}' merges into RUSH.health, a boss's Boss Rush share of its health (pass 168); WARM the same into
-// RUSH.warmHealth, the warm-up's shares (pass 173).
+// SHARES='{"vesper":0.7}' merges into RUSH.health, a boss's Boss Rush share of its health (pass 168).
 // DUMP=file (runs mode) writes each run's fights (number, time, win, breaks, par, might) as JSON.
 // SPLIT=1 (bosses mode) prints each boss's damage by source (plain blows, counters, Finishing Blows, powers, other); the
 // TOTAL line always does (pass 173).
@@ -76,7 +75,6 @@ function setup(sim) {
   if (process.env.ENEMY) Object.assign(global(sim, 'CONFIG').enemy, JSON.parse(process.env.ENEMY));
   if (process.env.PRESS) Object.assign(global(sim, 'CONFIG').enemy.press, JSON.parse(process.env.PRESS));
   if (process.env.SHARES) Object.assign(global(sim, 'RUSH').health, JSON.parse(process.env.SHARES));
-  if (process.env.WARM) Object.assign(global(sim, 'RUSH').warmHealth, JSON.parse(process.env.WARM));
   // SKILLED also deflects at its profile's own rate (CONFIG.bot.parryChanceScale 1, the companions' 0.1): pass 173, as
   // Aleix's recorded solo fights ran 2-2.5x quicker than the skilled bot's (node tools/replays.cjs).
   if (skill !== 1) { for (const m of Object.values(global(sim, 'BOT_MOODS'))) m.slip *= skill; global(sim, 'CONFIG').bot.parryChanceScale = 1; }
