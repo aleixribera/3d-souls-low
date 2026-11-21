@@ -9,13 +9,12 @@ The iterate loop's working note (`.claude/iterate.md`). Cap: 8,000 characters.
   (`js/guard-fx.js`). Acceptance: `tests/guard-self.cjs`, in-page `guard self`; clip `docs/scorecard/now/guard-self.mp4`
   (`node tools/ability-clips.cjs self`). Next on track 2: batch 9, Guard II. Browser lock:
   `node tools/browser-lock.cjs run <pass> -- <cmd>` (docs/two-tracks.md).
-- Track 1, pass 135 (PLAN item 6, the Antlered Hunger, pass 3: cel look, in-between keys, judge): a thin ribbon on its
-  claws (`BOSS_FX.antlered`; the default band drew a pale disc over it), `via` keys on every plain move, each wind-up its
-  own shape within its first fifth (`bars-1` round: its three opened on the same crouch). Acceptance: body-check 0/27,
-  in-page `Church` 19/19, `Combat clarity`, `Boss edge tells`; strips `docs/scorecard/now/hunger-rake.jpg`,
-  `hunger-pound.jpg`, `hunger-kick.jpg`; clip `hunger-cel.mp4`. Awaiting Aleix. Ostrey's audit (`docs/bosses/ostrey.md`):
-  restyle, plus a parry on the Burning Drop's landing (noParry 4 of 14); his body check done (8 hits, now 0; in-page
-  `Moor` 7/7). Next on track 1: that parry, then Ostrey's cel look (his wind-up washes body and bar: `edgeTell`).
+- Track 1, pass 136 (PLAN item 6, Old Ostrey, pass 2: parry, cel look, in-between keys, judge): the Burning Drop's
+  landing parried (noParry 3 of 14), the tell on the bar's head (`barHead` slot, `edgeTell`) and the lantern (`tells`),
+  `via` keys on every move (`docs/bosses/ostrey.md`). Acceptance: body-check 0/27, `tests/pose-via.cjs`, in-page `Moor`
+  7/7, `Combat clarity`, `Boss edge tells`; strips `docs/scorecard/now/ostrey-gate.jpg`, `ostrey-drop.jpg`,
+  `ostrey-lantern.jpg`, `ostrey-sweep.jpg`; clip `ostrey-cel.mp4`. `bars-1`: its red-to-blue halo was the strip filming
+  an `abort` (fixed in `tools/anim-strip.cjs`). Awaiting Aleix. Next on track 1: Hale and Harrow (PLAN item 6), audit first.
 
 ## Works
 
@@ -73,6 +72,7 @@ The iterate loop's working note (`.claude/iterate.md`). Cap: 8,000 characters.
 
 ## Needs Aleix
 
+- Fight Old Ostrey too (Practice, `?style=cel`; one `bars-1` round; the Burning Drop's landing parried unless you say).
 - Fight the Antlered Hunger too (Practice, `?style=cel`; one `bars-1` round; its follow-ups parriable unless you say).
 - Fight Aldric too (Practice, `?style=cel`; the Turning Key ends on a pommel strike unless you say all blade).
 - Fight the Giant Skeleton too (Practice, `?style=cel`; tried: one `edges-1` round, the judge repeats the others' gaps).
