@@ -29,6 +29,9 @@ function validateData({ visual = true } = {}) {
       const Bd = S.body;   // (pass 118) a modelled body's own bands
       if (Bd) need(S.shade === 'bands' && Array.isArray(Bd.at) && Array.isArray(Bd.level) && Bd.at.length === Bd.level.length && Bd.at.every(n) && Bd.level.every(pos) && pos(Bd.soft)
         && Bd.at.every((a, i) => !i || a > Bd.at[i - 1]), `${at}: body bands need shade 'bands', rising \`at\`, one positive \`level\` each, and \`soft\`.`);
+      const St = S.steel;   // (pass 121) a steel slot's bands and glint
+      if (St) need(S.shade === 'bands' && Array.isArray(St.at) && Array.isArray(St.level) && St.at.length === St.level.length && St.at.every(n) && St.level.every(pos) && pos(St.soft)
+        && St.at.every((a, i) => !i || a > St.at[i - 1]) && pos(St.glint) && n(St.glintLevel) && St.glintLevel >= 0, `${at}: steel needs shade 'bands', rising \`at\`, one positive \`level\` each, \`soft\`, a positive \`glint\` and \`glintLevel\` 0 or more.`);
       if (S.shade === 'soft') need(pos(S.knee), `${at}: a soft shade needs a positive knee.`);
       need((S.hitFlash === undefined || n(S.hitFlash) && S.hitFlash >= 0 && S.hitFlash <= 1) && [undefined, true].includes(S.tintFromSkin), `${at}: hitFlash is 0 to 1; tintFromSkin only true.`);
       if (S.flat) need(pos(S.flat.bias) && n(S.flat.keep) && S.flat.keep >= 0 && S.flat.keep <= 1, `${at}: flat needs a positive mip bias and keep 0 to 1.`);
@@ -835,8 +838,9 @@ function validateData({ visual = true } = {}) {
   }
   // Boss effects (js/data/boss-fx.js, the Ultra preset): known elements, impacts, bosses, phases and attacks.
   const isCol = v => Number.isInteger(v) && v >= 0 && v <= 0xffffff;
-  const trailOk = t => !!t && typeof t === 'object' && Object.keys(t).every(k => k === 'edge' || k === 'life')
-    && num(t.edge) && t.edge > 0 && t.edge <= 1 && num(t.life) && t.life > 0 && t.life <= 1;
+  const trailOk = t => !!t && typeof t === 'object' && Object.keys(t).every(k => k === 'edge' || k === 'life' || k === 'smear')
+    && num(t.edge) && t.edge > 0 && t.edge <= 1 && num(t.life) && t.life > 0 && t.life <= 1
+    && (t.smear === undefined || num(t.smear) && t.smear > 0 && t.smear <= 1);   // (pass 121) smear: the share of the blade from its tip smeared
   for (const [n, E] of Object.entries(FX_ELEMENTS))
     need(['core', 'glow', 'mote', 'trail'].every(k => isCol(E[k])) && E.sparks in CONFIG.VISUALS.ultra.sparks.colors && BOSS_FX_IMPACTS.includes(E.impact)
       && (E.smoke === undefined || isCol(E.smoke)), `FX_ELEMENTS.${n}: core, glow, mote and trail colours, sparks (a spark palette) and an impact (${BOSS_FX_IMPACTS.join(', ')}).`);
@@ -846,7 +850,7 @@ function validateData({ visual = true } = {}) {
     if (!d) continue;
     need(B.element in FX_ELEMENTS, `${w}: unknown element "${B.element}".`);
     if ('aura' in B) need(isCol(B.aura), `${w}: aura must be a colour.`);
-    if ('trail' in B) need(trailOk(B.trail), `${w}: trail is { edge (0 to 1), life (s, above 0, at most 1) }.`);
+    if ('trail' in B) need(trailOk(B.trail), `${w}: trail is { edge (0 to 1), life (s, above 0, at most 1), smear (0 to 1, optional) }.`);
     for (const [ph, el] of Object.entries(B.phases || {}))
       need(!!(d.phases && d.phases[ph]) && el in FX_ELEMENTS, `${w}.phases.${ph}: needs a phase of "${id}" and a known element ("${el}").`);
     const ids = new Set([...(d.attacks || []), ...Object.values(d.phases || {}).flatMap(P => P.attacks || [])].filter(a => a && typeof a === 'object').map(a => a.id));
@@ -856,7 +860,7 @@ function validateData({ visual = true } = {}) {
       if (A.impact !== undefined) need(BOSS_FX_IMPACTS.includes(A.impact), `${w}.attacks.${aid}: unknown impact "${A.impact}".`);
       if (A.windup !== undefined) need(['gather', 'none'].includes(A.windup), `${w}.attacks.${aid}: windup is "gather" or "none".`);
       if (A.aura !== undefined) need(isCol(A.aura), `${w}.attacks.${aid}: aura must be a colour.`);
-      if (A.trail !== undefined) need(trailOk(A.trail), `${w}.attacks.${aid}: trail is { edge (0 to 1), life (s, above 0, at most 1) }.`);
+      if (A.trail !== undefined) need(trailOk(A.trail), `${w}.attacks.${aid}: trail is { edge (0 to 1), life (s, above 0, at most 1), smear (0 to 1, optional) }.`);
     }
   }
   // Story mode (js/data/story.js): each campaign's chapters name a real level, once each, with a title and

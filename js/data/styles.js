@@ -8,6 +8,10 @@
 //   body (pass 118, with 'bands'): the bands a modelled body takes instead, `at` and `level` as above, and no `keep` (its
 //     glows are emissive, added after the bands): the scene's full light on a dark body passed for a glow, and the
 //     Captain's black plate drew white.
+//   steel (pass 121, with 'bands'): how a modelled body's `steel: true` slots take light (a blade): the diffuse light
+//     alone in bands (`at`, `level`, `soft`, darker than a body's), and the specular light as one hard glint: white at
+//     `glintLevel` where it passes `glint`. In body bands a light steel blade drew flat white, a paper cutout beside the
+//     banded plate (boss judge round 5).
 //   flat: textures flattened toward their average colour: read at mip `bias` above the sharp one, `keep` of the sharp read
 //     left in (null: unchanged).
 //   post: the screen pass after the scene (null: none), at `prepass` of the screen for its depth and normals.
@@ -26,6 +30,7 @@ const STYLE_DEFS = [
   { id: 'control', name: "Today's look", shade: null, post: null },
   { id: 'cel', name: 'Cel-shaded anime', shade: 'bands', hitFlash: 0.6, tintFromSkin: true,
     bands: { at: [0, 0.1, 0.38], level: [0.4, 0.8, 1.25], keep: 1.6, soft: 0.03 }, body: { at: [0, 0.5, 1.4, 3.2], level: [0.5, 1.1, 1.9, 3.0], soft: 0.06 },
+    steel: { at: [0, 0.45, 1.3], level: [0.22, 0.45, 0.75], soft: 0.03, glint: 0.15, glintLevel: 1.2 },
     flat: { bias: 6, keep: 0.15 },
     post: { prepass: 1, ink: { depth: 0.04, fold: 0.35, width: 1.6, color: 0.05, fade: 45 }, exposure: 1.4, tint: [0.8, 0.78, 1.0], sat: 1.4 } },
   { id: 'dark', name: 'Stylized dark', shade: 'soft', knee: 0.45, flat: { bias: 3, keep: 0.35 },

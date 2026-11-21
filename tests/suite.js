@@ -2549,6 +2549,24 @@
     const at = steps * STEP;
     expect.ok(Math.abs(at - h.impact.at * h.active) <= STEP + 1e-6, `the burst ${at.toFixed(3)} s in (${(h.impact.at * h.active).toFixed(3)} s)`);
   });
+  // Pass 121 (the judge's round 5: the bill a flat white cutout, no smear on the swing): the cleave smears the blade's head
+  // for a few frames as it falls (BOSS_FX trail.smear), and the smear is gone soon after; drawing only.
+  test('Pillager Captain: the cleave smears the bill as it falls, and the smear clears', () => {
+    try {
+      A.visuals.setQuality('normal'); Game.startFight('pillagerCaptain'); Game.loading = 0; sim.begin(); sturdy(Game.player);
+      const e = Game.duel, a = e.def.attacks.find(x => x.id === 'captainOverhead'), h = a.hits[0], hp = e.hp;
+      e.update = function () {};
+      e.attack = a; e.hitIndex = 0; e.holdLeft = 0; e.setState(ES.WINDUP); e.stateTime = h.startup;
+      e.strike(Game.player);
+      let seen = 0;
+      for (let i = 0; i < 6; i++) { e.stateTime += STEP; Game.render(1, STEP); seen = Math.max(seen, ultraFx.info().smears); }
+      expect.ok(seen === 1, `one smear follows the falling bill (${seen})`);
+      e.hitbox = null; e.setState(ES.RECOVER);
+      for (let i = 0; i < 20; i++) Game.render(1, STEP);
+      expect.ok(ultraFx.info().smears === 0, 'the smear clears once the blow is over');
+      expect.ok(e.hp === hp, 'drawing changed nothing');
+    } finally { applySettings.graphics = undefined; applySettings(); }
+  });
   // Pass 100 (PLAN.md "Next, small" 2): the Finishing Blow, played through. Each deflected string leaves the Captain open;
   // the counter cracks its guard; the third counter is the Finishing Blow.
   test('Finishing Blow: each counter on the Pillager Captain cracks its guard, and the third is the Finishing Blow', () => {

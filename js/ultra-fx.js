@@ -234,7 +234,9 @@ void main() {
 
   // ---- weapon ribbons -----------------------------------------------------------------------------------------------------
   const T = U.trails, SEG = (T.samples - 1) * T.sub + 1;
-  function makeRibbon() {
+  // smear (pass 121): a boss's swing smear, the blade's head dragged over its last few frames in flat steel (normal
+  // blending, not a glow): the anime smear frame. Its colour and opacity are T.smear's.
+  function makeRibbon(smear = false) {
     const pos = new Float32Array(SEG * 6), aT = new Float32Array(SEG * 2), aS = new Float32Array(SEG * 2), idx = [];
     for (let i = 0; i < SEG; i++) { aS[i * 2] = 0; aS[i * 2 + 1] = 1; }
     for (let i = 0; i < SEG - 1; i++) { const a = i * 2; idx.push(a, a + 1, a + 2, a + 1, a + 3, a + 2); }
@@ -243,19 +245,25 @@ void main() {
     geo.setAttribute('aT', new THREE.BufferAttribute(aT, 1).setUsage(THREE.DynamicDrawUsage));
     geo.setAttribute('aS', new THREE.BufferAttribute(aS, 1)); geo.setIndex(idx);
     const mat = new THREE.ShaderMaterial({
-      uniforms: { uColor: { value: new THREE.Color() }, uOpacity: { value: T.opacity } },
-      transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, side: THREE.DoubleSide,
+      uniforms: { uColor: { value: new THREE.Color() }, uOpacity: { value: smear ? T.smear.opacity : T.opacity } },
+      transparent: true, depthWrite: false, blending: smear ? THREE.NormalBlending : THREE.AdditiveBlending, side: THREE.DoubleSide,
       vertexShader: 'attribute float aT; attribute float aS; varying float vT; varying float vS; void main() { vT = aT; vS = aS; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }',
-      fragmentShader: `uniform vec3 uColor; uniform float uOpacity; varying float vT; varying float vS;
+      fragmentShader: (smear ? '#define SMEAR\n' : '') + `uniform vec3 uColor; uniform float uOpacity; varying float vT; varying float vS;
 void main() {
+#ifdef SMEAR
+  float a = (1.0 - vT) * (0.35 + 0.65 * vS) * uOpacity;   // densest at the tip and the blade's last place
+  if (a < 0.01) discard;
+  gl_FragColor = vec4(uColor, a);
+#else
   float fade = pow(clamp(1.0 - vT, 0.0, 1.0), 1.7);
   float body = smoothstep(0.0, 0.55, vS) * (0.3 + 0.7 * vS), edge = smoothstep(0.82, 1.0, vS) * 1.6;
   float a = (body + edge) * fade * uOpacity;
   if (a < 0.003) discard;
   gl_FragColor = vec4(uColor * (1.0 + edge * fade), a);
+#endif
 }` });
     const mesh = new THREE.Mesh(geo, mat);
-    mesh.frustumCulled = false; mesh.visible = false; mesh.renderOrder = 5; scene.add(mesh); pooledFx.push(mesh);
+    mesh.frustumCulled = false; mesh.visible = false; mesh.renderOrder = smear ? 4 : 5; scene.add(mesh); pooledFx.push(mesh);   // a smear under the glowing ribbon
     const pts = [], spare = [];   // reuse samples and their vectors across swings
     const put = (i, b, t) => {
       const o = i * 6;
@@ -306,7 +314,8 @@ void main() {
   }
   // The ribbons age on the effect clock (pass 116): a strip or clip stepped by hand ages them a frame a step, as the game
   // does at 60 fps, not by the wall clock (which left a band hanging over the whole swing in every filmed strip).
-  const ribbons = Array.from({ length: T.max }, makeRibbon), ribbonOf = new Map(); let ribbonClock = 0;
+  const ribbons = Array.from({ length: T.max }, () => makeRibbon()), ribbonOf = new Map(); let ribbonClock = 0;
+  const smears = Array.from({ length: T.smear.max }, () => makeRibbon(true)), smearOf = new Map();
   function trailColor(b) {
     if (b instanceof Player) return (hooks.playerTrail && hooks.playerTrail(b)) || [T.player, T.playerBoost];
     const a = b.attack, own = hooks.trail && hooks.trail(b);
@@ -602,7 +611,8 @@ void main() {
     for (const p of [sparks, drops, motes, puffs]) p.clear();
     chunks.length = grinding.length = 0;
     for (const r of ribbons) r.clear();
-    ribbonOf.clear(); emission.clear();
+    for (const r of smears) r.clear();
+    ribbonOf.clear(); smearOf.clear(); emission.clear();
     for (const l of flashes) l.intensity = 0;
     for (const f of flares) f.s.visible = false;
     for (const m of marks) m.m.visible = false;
@@ -621,9 +631,10 @@ void main() {
     for (const m of fogged) m.uniforms.uFogC.value.copy(fogC);
     const cam = camera.position;
     ribbonClock += real;
-    if (ribbonOf.size) {   // ribbons of bodies no longer in the game (one Set of the living, not a search per ribbon)
+    if (ribbonOf.size || smearOf.size) {   // ribbons of bodies no longer in the game (one Set of the living, not a search per ribbon)
       inGame.clear(); for (const b of game.allies()) inGame.add(b); for (const b of game.enemies) inGame.add(b);
       for (const [b, r] of ribbonOf) if (!inGame.has(b)) { r.clear(); ribbonOf.delete(b); }
+      for (const [b, r] of smearOf) if (!inGame.has(b)) { r.clear(); smearOf.delete(b); }
       inGame.clear();
     }
     // the old ribbons and cones stay hidden; ours follow every blade that can hit
@@ -641,6 +652,11 @@ void main() {
         const life = counter ? T.life * K.life : shape ? shape.life : T.life, from = shape ? 1.2 - 0.95 * shape.edge : 0.25;
         if (!r.update(act, b.rig, ribbonClock, own ? own[0] : K.color, own ? own[1] : K.boost, life, from)) { r.owner = null; ribbonOf.delete(b); }
       }
+      // (pass 121) a boss's `trail.smear`: the blade's head (that share of it from the tip) smeared over its last frames
+      const sm = isP || !hooks.trailShape ? null : (hooks.trailShape(b) || null), sw = sm && sm.smear ? sm.smear : 0;
+      let q = smearOf.get(b);
+      if (!q && act && sw && budget().ribbons) { q = smears.find(x => !x.owner); if (q) { q.owner = b; smearOf.set(b, q); } }
+      if (q && !q.update(act && sw > 0, b.rig, ribbonClock, T.smear.color, 1, T.smear.life, 1.2 - 0.95 * (sw || 1))) { q.owner = null; smearOf.delete(b); }
     }
     // living bosses: an aura of motes; burning phases shed embers; big bodies kick up dust; dying bodies crumble to ash
     for (const [b] of placed) {
@@ -731,7 +747,7 @@ void main() {
     on, count, hooks, isBoss, chest, dirOf, groundBelow, auraColor,
     sparkBurst, bloodSpray, moteBurst, puff, dustRing, flashAt, flare, mark, chunkBurst, motes, sparks, drops, fireMat, fireGeo,
     info: () => ({ sparks: sparks.count(), drops: drops.count(), motes: motes.count(), puffs: puffs.count(), chunks: chunks.length,
-                   ribbons: ribbons.filter(r => r.owner).length, flashes: flashes.map(l => l.intensity),
+                   ribbons: ribbons.filter(r => r.owner).length, smears: smears.filter(r => r.owner && r.mesh.visible).length, flashes: flashes.map(l => l.intensity),
                    fires: flames.filter(f => f.ultraFire && f.ultraFire.visible).length }),
     // For tuning in the console: spark, blood and soul bursts at the player's chest.
     test(kind = 'parry') { const c = chest(Game.player); if (kind === 'blood') bloodSpray(c, [1, 0, 0], 40, 1.2); else if (kind === 'souls') moteBurst(c, 200, 0xffd27a, { swirl: 2, lift: 2 }); else sparkBurst(c, 120, kind); },

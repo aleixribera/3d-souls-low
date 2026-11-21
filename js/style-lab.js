@@ -22,15 +22,27 @@ const styleLab = (() => {
   // strongest channel. The new level replaces L and keeps the light's hue.
   if (S.shade) {
     let level;
+    const steps = T => `float b = ${f(T.level[0])};\n` + T.at.slice(1).map((a, i) =>
+      `  b = mix(b, ${f(T.level[i + 1])}, smoothstep(${f(a - T.soft)}, ${f(a + T.soft)}, L));`).join('\n');
     if (S.shade === 'bands') {
       const B = S.bands, D = S.body;
-      const steps = T => `float b = ${f(T.level[0])};\n` + T.at.slice(1).map((a, i) =>
-        `  b = mix(b, ${f(T.level[i + 1])}, smoothstep(${f(a - T.soft)}, ${f(a + T.soft)}, L));`).join('\n');
       // (pass 118) A modelled body (ART_BODY, js/bodykit.js) takes `body`'s bands and no `keep`: its glows are emissive,
       // added after the bands, and the scene's full light on a dark body passed for a glow (the Captain's black plate drew white).
       level = (D ? `#ifdef ART_BODY\n  ${steps(D)}\n#else\n  ` : '') + steps(B) +
         `\n  b = mix(b, L, smoothstep(${f(B.keep)}, ${f(B.keep + 0.3)}, L));   // glows stay glows` + (D ? '\n#endif' : '');
     } else level = `float b = L / (L + ${f(S.knee)}) * ${f(1 + S.knee)};`;
+    // (pass 121) A steel slot (ART_STEEL, a model material's `steel: true`): its diffuse light in the style's `steel`
+    // bands on the surface's own colour, its specular light one hard glint. Lit as a body, a light blade drew flat white.
+    const St = S.shade === 'bands' && S.steel;
+    if (St) THREE.ShaderChunk.common += `
+vec3 artSteel(vec3 diff, vec3 spec, vec3 albedo, float metal) {
+  vec3 light = diff / max(albedo * (1.0 - metal), vec3(0.04));
+  float L = max(max(light.r, light.g), light.b);
+  ${steps(St)}
+  float s = max(max(spec.r, spec.g), spec.b);
+  return albedo * light * (b / max(L, 1e-4)) + vec3(${f(St.glintLevel)}) * smoothstep(${f(St.glint - St.soft)}, ${f(St.glint + St.soft)}, s);
+}
+`;
     THREE.ShaderChunk.common += `
 vec3 artShade(vec3 o, vec3 albedo) {
   vec3 light = o / max(albedo, vec3(0.04));
@@ -41,7 +53,9 @@ vec3 artShade(vec3 o, vec3 albedo) {
 `;
     // The glow (emissive: a hit flash, a tint) is added after the bands, as it is: divided by a dark surface's colour it
     // read as light far above `keep`, and a struck body went flat white (Aleix, pass 114).
-    THREE.ShaderChunk.opaque_fragment = `#if defined( STANDARD ) || defined( LAMBERT ) || defined( PHONG )
+    THREE.ShaderChunk.opaque_fragment = `#if defined( ART_STEEL ) && defined( STANDARD )
+outgoingLight = artSteel(outgoingLight - totalEmissiveRadiance - totalSpecular, totalSpecular, diffuseColor.rgb, metalnessFactor) + totalEmissiveRadiance;
+#elif defined( STANDARD ) || defined( LAMBERT ) || defined( PHONG )
 outgoingLight = artShade(outgoingLight - totalEmissiveRadiance, diffuseColor.rgb) + totalEmissiveRadiance;
 #endif
 ` + THREE.ShaderChunk.opaque_fragment;

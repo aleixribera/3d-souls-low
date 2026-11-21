@@ -999,7 +999,9 @@ const CONFIG = {
       // Weapon trails: a smooth ribbon (Catmull-Rom, `sub` points between samples) that fades over `life` s; HDR so bloom
       // catches it. Enemy trails take their boss colour from `trailColors` (by enemy id), else `enemy` / roll-only blue.
       trails: { samples: 26, sub: 4, life: 0.16, player: 0xfff0d0, playerBoost: 1.8, enemy: 0xff9a6a, enemyBoost: 1.5, rollOnly: 0x6ac0ff, opacity: 0.85,
-                max: 8 },
+                max: 8,
+                // (pass 121) a boss's swing smear (BOSS_FX `trail.smear`): flat steel over the blade's last `life` s, `opacity` at most
+                smear: { color: 0x9aa0a8, opacity: 0.85, life: 0.07, max: 3 } },
       trailColors: { varn: 0xff7a3a },
       // Boss auras: motes per second round a living boss, in its colour (`auraColors` by enemy id, else `aura`); a burning
       // (`ignite`) phase adds rising embers. `stepDust`: big bodies (scale >= `from`) kick dust as they move fast.

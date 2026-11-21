@@ -62,7 +62,9 @@ On impact, signature moments and the phase change only (`js/data/boss-fx.js`, th
 slot (red: parry it; blue: roll it), puts a small halo at `along` of the weapon, grows it through a heavy's wind-up, and
 never tints the body. A ground blow's burst waits for the drawn blade (`impact.at`: the share of the hit's active when it
 lands; the hitbox still opens on time). A heavy swing's ribbon is a thin arc at the blade's edge (`BOSS_FX` `trail: { edge,
-life }`), not a band over the swing. Check: the attack's strip shows the boss's body clearly through every wind-up frame,
+life }`), not a band over the swing; `smear` (0 to 1, the share of the blade from its tip) drags the blade's head in flat
+steel over its last few frames, the anime smear. In cel, a blade is a model material with `steel: true`: banded darker than
+a body, with one hard glint (a light blade lit as a body drew flat white). Check: the attack's strip shows the boss's body clearly through every wind-up frame,
 and the burst in the frame where the blade is down.
 
 ## 5. Data and in game
@@ -86,7 +88,7 @@ stopped telling us anything. A flat judge is replaced, not fixed against again: 
   and we are now cel-shaded. "Which is ours" against another render style can't move.
 - **Judge `edges-1`**, the fresh one: every strip, ours and the references alike, goes through the same ffmpeg filter
   (`format=gray,edgedetect=low=0.08:high=0.2,negate`; lower both until the dark Sekiro figures read, the same values
-  for every strip), so the judge compares line drawings of the motion and the
+  for every strip; `node tools/edge-strip.cjs <clip> <start> <span> <out>` cuts one at 0.05/0.12), so the judge compares line drawings of the motion and the
   render style is out of the comparison. Use at least three references (`.scratch/ref-clips`: both Sekiro clips and
   `stellar-dodge.mp4`) and two of our attacks, so one guess is not the whole verdict. Its question is motion and
   readability; spectacle and the look wait for a judge against cel-shaded references (clips not yet in `ref-clips`).

@@ -1706,6 +1706,7 @@ const KIT = (() => {
       bad('marks lists glow slots of the figure (not burn or storm), one lit for each attack the boss has learned (see an attack `learns`).');   // (pass 77)
     for (const [k, v] of Object.entries(M.materials)) if ('storm' in v && !(v.storm === true && 'glow' in v && !v.burn)) bad(`material "${k}": storm must be true, on a glow slot that does not burn.`);
     for (const [k, v] of Object.entries(M.materials)) if ('rim' in v && !(typeof v.rim === 'number' && v.rim >= 0 && v.rim <= 2)) bad(`material "${k}": rim must be a number from 0 to 2.`);
+    for (const [k, v] of Object.entries(M.materials)) if ('steel' in v && !(v.steel === true && !('glow' in v))) bad(`material "${k}": steel must be true, on a textured slot.`);   // (pass 121)
   }
 
   function buildModelRig(rig, id, variant) {
@@ -1725,6 +1726,7 @@ const KIT = (() => {
         m = TEXLIB.material(spec.tex, { tint: spec.tint, decay: spec.decay, size: texSize(spec) }).clone();
         m.side = spec.double ? THREE.DoubleSide : THREE.FrontSide; addDissolve(m, rim * (spec.rim ?? 1), rig.dissolve);   // `rim`: a broad sheet seen edge-on would take the whole rim light
         if (typeof styleLab !== 'undefined' && styleLab.def && styleLab.def.body) m.defines = { ...m.defines, ART_BODY: '' };   // (pass 118) the style's body bands (js/style-lab.js)
+        if (spec.steel && typeof styleLab !== 'undefined' && styleLab.def && styleLab.def.steel) m.defines = { ...m.defines, ART_STEEL: '' };   // (pass 121) a blade's steel bands and glint
       }
       if (!built.soft) rigidSkinning(m);   // (pass 118) a model with `softJoints` blends two bones at its joints: full skinning
       rig.mats.push(m);

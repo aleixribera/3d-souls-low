@@ -8,11 +8,11 @@ The iterate loop's working note (`.claude/iterate.md`). Cap: 8,000 characters.
   all eleven drawn in blue by `js/rare-fx.js`. Acceptance: `tests/rare-perks.cjs`, in-page `kept rares`; clip
   `docs/scorecard/now/rare-perks.mp4`. Not drawn yet: Static Edge's blade crackle count, Bastion's arm line.
   Browser lock: `node tools/browser-lock.cjs run <pass> -- <cmd>` (docs/two-tracks.md). Next on track 2: batch 5.
-- Track 1, pass 120, the retro: `node tools/boss-judge.cjs` plots the boss judge and prints `FLAT`; judge `sekiro-1`
-  is flat (caught 9/10 six rounds, motion 3 to 5). Next on track 1 (pass 121, item 5 pass 2 of the cel model): shade
-  the bill's steel in cel and smear the swing (round 5's giveaway; clip `docs/scorecard/now/`), then one round with
-  the fresh judge `edges-1` (`docs/bosses/system.md` section 6). Then the Captain is "awaiting Aleix" and track 1
-  starts the second boss through the system, item 5's real check.
+- Track 1, pass 121, PLAN item 5 (the cel model, pass 2 of 2), done: the bill in banded steel (a material's `steel: true`,
+  the cel style's `steel`), a smear on his swings (`BOSS_FX` `trail.smear`), in-page `cleave smears`; clip
+  `docs/scorecard/now/captain-swing.mp4`. Fresh judge `edges-1` round 6: motion 5, read 7, spectacle 6, caught 9/10;
+  giveaway: an upright body while only the arms sweep. **The Captain is awaiting Aleix.** Next on track 1: the second
+  boss through the system (item 5's real check), from its one-page design.
 
 ## Works
 
@@ -68,4 +68,6 @@ The iterate loop's working note (`.claude/iterate.md`). Cap: 8,000 characters.
 
 ## Needs Aleix
 
+- Fight the Pillager Captain (PLAN item 5's last gate; tried: six judge rounds, nothing left a judge can settle). Practice,
+  with `?style=cel` in the address (cel is not yet every player's default); say what feels off or unfair.
 Answered: the art style is cel-shaded anime, for the whole game (Aleix, 2026-11-20; item 4 done). The home server's `/souls/` address is PUBLIC (Aleix, 2026-11-20).

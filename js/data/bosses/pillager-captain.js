@@ -43,7 +43,7 @@
     void: { tex: 'ashSoot', tint: 0x0a0908, decay: 0.9 },
     // the bill
     wood: { tex: 'paviseWood', tint: 0x6a5444, decay: 0.6 },
-    blade: { tex: 'dentedSteel', tint: 0x8a8480, decay: 0.7, size: 512, rim: 0.5 },
+    blade: { tex: 'dentedSteel', tint: 0x8a8480, decay: 0.7, size: 512, rim: 0.5, steel: true },   // (pass 121) in cel: banded steel and a hard glint, not a body's light (it drew flat white)
     pitch: { tex: 'ashSoot', tint: 0x2a221c, decay: 0.9 },
     burn: { glow: 0xff6a20 },
     eye: { glow: 0xff7a30 },
