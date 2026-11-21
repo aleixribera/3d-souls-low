@@ -27,7 +27,8 @@ function addDissolve(mat, rim, uniform) {
     sh.vertexShader = 'varying vec3 vDPos;\n' + sh.vertexShader.replace('#include <begin_vertex>', '#include <begin_vertex>\n vDPos = position;');
     sh.fragmentShader = 'uniform float uDissolve; varying vec3 vDPos;\n' + DISSOLVE_NOISE + sh.fragmentShader
       .replace('#include <clipping_planes_fragment>', '#include <clipping_planes_fragment>\n float dThr = uDissolve * 1.2 - 0.1; float dn = 1.0; if (uDissolve > 0.001) { dn = dissolveNoise(vDPos * 14.0); if (dn < dThr) discard; }')
-      .replace('#include <opaque_fragment>', 'if (uDissolve > 0.001) outgoingLight += vec3(1.6, 0.55, 0.12) * smoothstep(dThr + 0.1, dThr, dn) * 2.2;\n#include <opaque_fragment>');
+      .replace('#include <opaque_fragment>', // the ember edge is a glow: counted as emissive too, so a style's bands (js/style-lab.js) leave it as it is (pass 118)
+        'if (uDissolve > 0.001) { vec3 dEmber = vec3(1.6, 0.55, 0.12) * smoothstep(dThr + 0.1, dThr, dn) * 2.2; outgoingLight += dEmber; totalEmissiveRadiance += dEmber; }\n#include <opaque_fragment>');
   };
   mat.customProgramCacheKey = () => 'rimDissolve2';
   return mat;
@@ -1599,6 +1600,28 @@ const KIT = (() => {
     const spec = boneSpec(M), index = {}, bind = {};
     spec.forEach((b, i) => { index[b.name] = i; const t = new THREE.Matrix4().makeTranslation(...b.at); bind[b.name] = b.parent ? bind[b.parent].clone().multiply(t) : t; });
     const weaponBox = new THREE.Box3();
+    // (pass 118, opt-in) `softJoints: { <bone>: r }`: round that bone's joint (its pivot at rest), a vertex within r m of
+    // it is shared with the bone across the joint, half and half at the pivot and nothing at r, on both sides: the body
+    // bends there as one piece instead of hinging like a doll's parts (the judge's "moves as rigid parts").
+    const soft = M.softJoints || null, parentOf = Object.fromEntries(spec.map(b => [b.name, b.parent]));
+    const pivot = soft && Object.fromEntries(spec.map(b => [b.name, new V3().setFromMatrixPosition(bind[b.name])]));
+    const fall = t => t >= 1 ? 0 : 0.5 * (1 - t * t * (3 - 2 * t));
+    function softWeights(bone, pos, si, sw) {
+      const across = [];   // [the other bone, the joint's pivot, r]
+      if (soft[bone] && parentOf[bone] && parentOf[bone] !== 'tip') across.push([parentOf[bone], pivot[bone], soft[bone]]);
+      for (const c of Object.keys(soft)) if (parentOf[c] === bone) across.push([c, pivot[c], soft[c]]);
+      if (!across.length) return;
+      const v = new V3(), got = [];
+      for (let i = 0; i < pos.count; i++) {
+        v.fromBufferAttribute(pos, i); got.length = 0;
+        for (const [b, p, r] of across) { const w = fall(v.distanceTo(p) / r); if (w > 0) got.push([b, w]); }
+        if (!got.length) continue;
+        got.sort((a, b) => b[1] - a[1]); got.length = Math.min(got.length, 3);
+        const own = Math.max(0.1, 1 - got.reduce((a, g) => a + g[1], 0)), k = 1 / (own + got.reduce((a, g) => a + g[1], 0));
+        sw[i * 4] = own * k;
+        got.forEach(([b, w], j) => { si[i * 4 + 1 + j] = index[b]; sw[i * 4 + 1 + j] = w * k; });
+      }
+    }
     // The weapon's pieces merge apart from the body's, even where they share a material slot, so the weapon gets its
     // own material: its wind-up glow and hit flash light the weapon only, never the armour.
     const push = (bone, slot, geo, weapon = false) => {
@@ -1607,6 +1630,7 @@ const KIT = (() => {
       geo.applyMatrix4(bind[bone]);
       const n = geo.attributes.position.count, si = new Uint16Array(n * 4), sw = new Float32Array(n * 4);
       for (let i = 0; i < n; i++) { si[i * 4] = index[bone]; sw[i * 4] = 1; }
+      if (soft && !weapon) softWeights(bone, geo.attributes.position, si, sw);
       geo.setAttribute('skinIndex', new THREE.BufferAttribute(si, 4)); geo.setAttribute('skinWeight', new THREE.BufferAttribute(sw, 4));
       const key = weapon ? 'weapon:' + slot : slot;
       (groups.get(key) || groups.set(key, { slot, weapon, list: [] }).get(key)).list.push(geo);
@@ -1626,7 +1650,7 @@ const KIT = (() => {
     }
     const budget = MS.triBudget[M.budget] * (variant ? 1.25 : 1) * geoK * geoK;   // a stronger variant may carry a quarter more; Ultra's detail its square
     if (tris > budget && geoK === 1) console.warn(`Model "${id}" has ${Math.round(tris)} triangles; the ${M.budget} budget is ${budget}.`);
-    m = { parts, tris: Math.round(tris), meshes: parts.length, spec, weaponBox: weaponBox.isEmpty() ? null : weaponBox, id, variant, ckey, users: 0, eyeGeo: null };
+    m = { parts, tris: Math.round(tris), meshes: parts.length, spec, weaponBox: weaponBox.isEmpty() ? null : weaponBox, id, variant, ckey, users: 0, eyeGeo: null, soft: !!soft };
     modelCache.set(ckey, m);
     return m;
   }
@@ -1649,6 +1673,8 @@ const KIT = (() => {
       if (!(T && typeof T.slot === 'string' && M.parts.some(o => o.weapon && o.slot === T.slot) && !(M.hidden || []).includes(T.slot) && typeof T.size === 'number' && T.size > 0 && T.size <= 1.5 && typeof T.along === 'number' && T.along >= 0 && T.along <= 1))
         bad('edgeTell needs slot (a weapon: true part\'s material slot, not a hidden one), size (the halo, m, above 0, up to 1.5) and along (where on the weapon it sits, 0 the hilt to 1 the tip).');
     }
+    if ('softJoints' in M && !(M.softJoints && Object.entries(M.softJoints).every(([b, r]) => known(b) && b !== 'weapon' && b !== 'spin' && typeof r === 'number' && r > 0 && r <= 0.5)))
+      bad('softJoints maps bones (not the weapon, not spin: the root has no joint above it) to a radius above 0, up to 0.5 m.');   // pass 118
     if ('hum' in M && !(M.hum && known(M.hum.bone) && Array.isArray(M.hum.at) && M.hum.at.length === 3 && Number.isInteger(M.hum.color) && M.hum.size > 0))
       bad('hum needs a bone, at [x, y, z], a color and a size above 0.');   // pass 68
     for (const c of M.anim?.cloth || []) if (!known(c.bone)) bad(`anim.cloth names unknown bone "${c.bone}" (a model's own \`bones\` replace the ones it extends).`);
@@ -1698,8 +1724,10 @@ const KIT = (() => {
       else {
         m = TEXLIB.material(spec.tex, { tint: spec.tint, decay: spec.decay, size: texSize(spec) }).clone();
         m.side = spec.double ? THREE.DoubleSide : THREE.FrontSide; addDissolve(m, rim * (spec.rim ?? 1), rig.dissolve);   // `rim`: a broad sheet seen edge-on would take the whole rim light
+        if (typeof styleLab !== 'undefined' && styleLab.def && styleLab.def.body) m.defines = { ...m.defines, ART_BODY: '' };   // (pass 118) the style's body bands (js/style-lab.js)
       }
-      rigidSkinning(m); rig.mats.push(m);
+      if (!built.soft) rigidSkinning(m);   // (pass 118) a model with `softJoints` blends two bones at its joints: full skinning
+      rig.mats.push(m);
       if ('glow' in spec) rig.fadeMats.push(m);   // eyes are plain materials: they fade instead of dissolving
       return m;
     };

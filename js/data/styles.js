@@ -5,6 +5,9 @@
 //   shade: how lit surfaces take their light. 'bands': cel bands, each light level snapped to the nearest step of
 //     `bands` (`at`: the light where a band starts, `level`: the light it draws; light above `keep` stays as it is, so
 //     glows still glow); 'soft': a soft shoulder (light / (light + knee) * (1 + knee)), lifted shadows; null: unchanged.
+//   body (pass 118, with 'bands'): the bands a modelled body takes instead, `at` and `level` as above, and no `keep` (its
+//     glows are emissive, added after the bands): the scene's full light on a dark body passed for a glow, and the
+//     Captain's black plate drew white.
 //   flat: textures flattened toward their average colour: read at mip `bias` above the sharp one, `keep` of the sharp read
 //     left in (null: unchanged).
 //   post: the screen pass after the scene (null: none), at `prepass` of the screen for its depth and normals.
@@ -22,7 +25,8 @@
 const STYLE_DEFS = [
   { id: 'control', name: "Today's look", shade: null, post: null },
   { id: 'cel', name: 'Cel-shaded anime', shade: 'bands', hitFlash: 0.6, tintFromSkin: true,
-    bands: { at: [0, 0.1, 0.38], level: [0.4, 0.8, 1.25], keep: 1.6, soft: 0.03 }, flat: { bias: 6, keep: 0.15 },
+    bands: { at: [0, 0.1, 0.38], level: [0.4, 0.8, 1.25], keep: 1.6, soft: 0.03 }, body: { at: [0, 0.5, 1.4, 3.2], level: [0.5, 1.1, 1.9, 3.0], soft: 0.06 },
+    flat: { bias: 6, keep: 0.15 },
     post: { prepass: 1, ink: { depth: 0.04, fold: 0.35, width: 1.6, color: 0.05, fade: 45 }, exposure: 1.4, tint: [0.8, 0.78, 1.0], sat: 1.4 } },
   { id: 'dark', name: 'Stylized dark', shade: 'soft', knee: 0.45, flat: { bias: 3, keep: 0.35 },
     post: { prepass: 0.5, haze: { from: 14, to: 42, color: [0.2, 0.17, 0.15], amount: 0.85 },

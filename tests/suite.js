@@ -4306,17 +4306,25 @@
     for (let i = 0; i < packed.length; i += 4) if (packed[i] !== raw.bump[i] || packed[i + 1] !== raw.rough[i + 1]) { same = false; break; }
     expect.ok(same, 'Three reads the exact original height from red and roughness from green');
   });
-  test('Low performance: every model vertex uses exactly one bone', () => {
+  test('Low performance: every model vertex uses exactly one bone, but at a soft joint (pass 118)', () => {
     const was = KIT.detail();
     try {
       KIT.setDetail({ geo: 1, tex: 1 });
       for (const id of Object.keys(MODEL_DEFS)) {
-        let valid = true;
-        for (const p of KIT.modelParts(id).parts) {
+        let valid = true, shared = 0;
+        const built = KIT.modelParts(id);
+        for (const p of built.parts) {
           const weights = p.geo.attributes.skinWeight.array;
-          for (let i = 0; i < weights.length; i += 4) if (weights[i] !== 1 || weights[i + 1] || weights[i + 2] || weights[i + 3]) { valid = false; break; }
+          for (let i = 0; i < weights.length; i += 4) {
+            if (built.soft) {   // `softJoints`: full skinning, two to four bones near a joint, the weights summing to 1
+              const sum = weights[i] + weights[i + 1] + weights[i + 2] + weights[i + 3];
+              if (Math.abs(sum - 1) > 1e-4 || weights[i] <= 0) { valid = false; break; }
+              if (weights[i] < 1) shared++;
+            } else if (weights[i] !== 1 || weights[i + 1] || weights[i + 2] || weights[i + 3]) { valid = false; break; }
+          }
         }
-        expect.ok(valid, `${id}: rigid shader matches its skin weights`);
+        expect.ok(valid, `${id}: its shader matches its skin weights`);
+        expect.ok(!!built.soft === !!KIT.resolve(id).softJoints && (!built.soft || shared > 0), `${id}: soft joints share vertices only where asked (${shared})`);
       }
     } finally { KIT.setDetail(was); }
   });

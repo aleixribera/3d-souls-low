@@ -141,7 +141,7 @@
  "Lore: one press plays the whole dialogue while the player keeps full control": 2.8,
  "Lore: the bars of her cell keep the player out, and she cannot be struck": 0.7,
  "Low loading: enemies, later phases and projectile pools are prepared before gameplay": 6.7,
- "Low performance: every model vertex uses exactly one bone": 0.2,
+ "Low performance: every model vertex uses exactly one bone, but at a soft joint (pass 118)": 0.2,
  "Low performance: native resolution and dormant post targets stay small": 0.1,
  "Low performance: packed surface channels preserve height and roughness across tints": 2.6,
  "Menus: the gamepad alone walks the title, Practice, Options, Controls, the changelog and pause": 0.1,

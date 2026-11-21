@@ -25,6 +25,12 @@ Check: the page exists and every attack in the data file is on it.
 The style is cel-shaded anime (Aleix, 2026-11-20; `?style=cel`, `js/data/styles.js`). A real Blender model on the
 shared skeleton (`tools/blender/<name>.py` from the closest finished figure, `js/bodykit.js` boneSpec): `.claude/iterate.md`
 "Build". Check: Model Lab front, back, side and silhouette (`MODELLAB.open('<id>')`), and a frame in a fight.
+- **In cel** (pass 118): a body takes the style's `body` bands (flat light steps, no glow passthrough), so its colour is
+  its texture's: a material's `tint` sets hue only, so a dark armour needs a dark texture (`wardenPlate`,
+  `knightMail`), not a dark tint. Big flat shapes read; small rounded stacks read as a toy.
+- **Soft joints** (pass 118): `softJoints: { <bone>: r }` on the model shares the vertices within r m of a joint with
+  the bone across it, so knees, elbows, waist and cloak bend as one body instead of hinging as rigid parts.
+- Film it in cel: `STYLE=cel node tools/anim-strip.cjs boss:<attackId> <out.jpg> 14 2 1.9` (Model Lab draws no style).
 
 ## 3. Animation
 

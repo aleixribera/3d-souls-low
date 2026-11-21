@@ -23,10 +23,13 @@ const styleLab = (() => {
   if (S.shade) {
     let level;
     if (S.shade === 'bands') {
-      const B = S.bands;
-      level = `float b = ${f(B.level[0])};\n` + B.at.slice(1).map((a, i) =>
-        `  b = mix(b, ${f(B.level[i + 1])}, smoothstep(${f(a - B.soft)}, ${f(a + B.soft)}, L));`).join('\n') +
-        `\n  b = mix(b, L, smoothstep(${f(B.keep)}, ${f(B.keep + 0.3)}, L));   // glows stay glows`;
+      const B = S.bands, D = S.body;
+      const steps = T => `float b = ${f(T.level[0])};\n` + T.at.slice(1).map((a, i) =>
+        `  b = mix(b, ${f(T.level[i + 1])}, smoothstep(${f(a - T.soft)}, ${f(a + T.soft)}, L));`).join('\n');
+      // (pass 118) A modelled body (ART_BODY, js/bodykit.js) takes `body`'s bands and no `keep`: its glows are emissive,
+      // added after the bands, and the scene's full light on a dark body passed for a glow (the Captain's black plate drew white).
+      level = (D ? `#ifdef ART_BODY\n  ${steps(D)}\n#else\n  ` : '') + steps(B) +
+        `\n  b = mix(b, L, smoothstep(${f(B.keep)}, ${f(B.keep + 0.3)}, L));   // glows stay glows` + (D ? '\n#endif' : '');
     } else level = `float b = L / (L + ${f(S.knee)}) * ${f(1 + S.knee)};`;
     THREE.ShaderChunk.common += `
 vec3 artShade(vec3 o, vec3 albedo) {

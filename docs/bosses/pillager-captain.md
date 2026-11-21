@@ -1,7 +1,7 @@
 # The Pillager Captain, Torch of Corvel
 
 The first boss through the system (`system.md`). Data: `js/data/bosses/pillager-captain.js`; model:
-`tools/blender/captain.py`. Status: design and animation pipeline done (pass 111); the cel model and effects next.
+`tools/blender/captain.py`. Status: design and animation pipeline done (pass 111); the cel model pass 1 (pass 118: black plate, flared pauldrons, soft joints); effects next.
 
 ## Idea
 

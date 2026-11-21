@@ -26,6 +26,9 @@ function validateData({ visual = true } = {}) {
       need([null, 'bands', 'soft'].includes(S.shade), `${at}: shade is null, 'bands' or 'soft'.`);
       if (S.shade === 'bands') need(B && Array.isArray(B.at) && Array.isArray(B.level) && B.at.length === B.level.length && B.at.every(n) && B.level.every(pos) && pos(B.keep) && pos(B.soft)
         && B.at.every((a, i) => !i || a > B.at[i - 1]), `${at}: bands need rising \`at\`, one positive \`level\` each, \`keep\` and \`soft\`.`);
+      const Bd = S.body;   // (pass 118) a modelled body's own bands
+      if (Bd) need(S.shade === 'bands' && Array.isArray(Bd.at) && Array.isArray(Bd.level) && Bd.at.length === Bd.level.length && Bd.at.every(n) && Bd.level.every(pos) && pos(Bd.soft)
+        && Bd.at.every((a, i) => !i || a > Bd.at[i - 1]), `${at}: body bands need shade 'bands', rising \`at\`, one positive \`level\` each, and \`soft\`.`);
       if (S.shade === 'soft') need(pos(S.knee), `${at}: a soft shade needs a positive knee.`);
       need((S.hitFlash === undefined || n(S.hitFlash) && S.hitFlash >= 0 && S.hitFlash <= 1) && [undefined, true].includes(S.tintFromSkin), `${at}: hitFlash is 0 to 1; tintFromSkin only true.`);
       if (S.flat) need(pos(S.flat.bias) && n(S.flat.keep) && S.flat.keep >= 0 && S.flat.keep <= 1, `${at}: flat needs a positive mip bias and keep 0 to 1.`);

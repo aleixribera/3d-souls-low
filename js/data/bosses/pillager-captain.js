@@ -32,14 +32,14 @@
 {
   const MATS = {
     skin: { tex: 'paleSkin', tint: 0x6a5e58, decay: 0.85 },
-    mail: { tex: 'dentedSteel', tint: 0x3e3c3a, decay: 0.9, size: 512 },
+    mail: { tex: 'knightMail', tint: 0x2c2b2e, decay: 0.9, size: 512 },
     iron: { tex: 'rustedIron', tint: 0x6a5e58, decay: 0.8 },
-    plate: { tex: 'dentedSteel', tint: 0x3a3634, decay: 0.85, size: 512 },   // blackened (v7.41.0: 0x4a4644 read silver in the burning town)
-    cloak: { tex: 'rottenCloth', tint: 0x4a3a36, decay: 0.8, size: 512, double: true, rim: 0.15 },   // broad sheets: edge-on they take the rim as white
-    cloakHem: { tex: 'tatteredFabric', tint: 0x4a3a36, decay: 0.85, size: 512, double: true, rim: 0.15 },
+    plate: { tex: 'wardenPlate', tint: 0x222128, decay: 0.85, size: 512 },   // blackened (v7.41.0: 0x4a4644 read silver in the burning town; pass 118: dentedSteel read light grey in cel, a tint sets hue only)
+    cloak: { tex: 'rottenCloth', tint: 0x3a2828, decay: 0.8, size: 512, double: true, rim: 0.15 },   // broad sheets: edge-on they take the rim as white
+    cloakHem: { tex: 'tatteredFabric', tint: 0x3a2828, decay: 0.85, size: 512, double: true, rim: 0.15 },
     scorch: { tex: 'rottenCloth', tint: 0x7a3a2c, decay: 0.85, double: true },
     sash: { tex: 'rottenCloth', tint: 0xb03a22, decay: 0.5, double: true },
-    leather: { tex: 'crackedLeather', tint: 0x56585a, decay: 0.8 },
+    leather: { tex: 'crackedLeather', tint: 0x3a3a3c, decay: 0.8 },
     void: { tex: 'ashSoot', tint: 0x0a0908, decay: 0.9 },
     // the bill
     wood: { tex: 'paviseWood', tint: 0x6a5444, decay: 0.6 },
@@ -70,6 +70,9 @@
       weapon: ['wood', 'blade', 'iron', 'pitch', 'burn'],
     }).flatMap(([bone, list]) => list.map(s => ({ use: 'baked', mesh: `captain:${bone}__${s}`, bone, slot: s.split('.')[0], tile: 0.42,
       ...(bone === 'weapon' ? { weapon: true } : {}) }))),
+    // (pass 118) his joints bend as one body: waist, neck, shoulders, elbows, hips, knees, the loincloths, the cloak's chain
+    softJoints: { chest: 0.16, neck: 0.08, armL: 0.13, armR: 0.13, elbowL: 0.1, elbowR: 0.1, legL: 0.14, legR: 0.14, kneeL: 0.1, kneeR: 0.1,
+                  loinF: 0.12, loinB: 0.12, capeB: 0.22, capeC: 0.22, capeD: 0.18 },
     weapon: null,          // the bill is part of the figure (the `weapon: true` pieces above)
     edgeTell: { slot: 'blade', size: 0.55, along: 0.9 },   // (pass 113) his wind-ups glow on the bill's edge, not over his hands and body
     hidden: ['burn'],      // the lit edge and the fire in the rags: shown by the lit phase's `reveal`

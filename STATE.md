@@ -8,13 +8,13 @@ The iterate loop's working note (`.claude/iterate.md`). Cap: 8,000 characters.
   against the shots it fired (`shotsFired`), and bots turn bolts in `flyBolts`. Acceptance: the bolt turns, is drawn
   and heard, and the shooter is struck: `tests/mirror-shard.cjs`, in-page `mirror shard`; clip
   `docs/scorecard/now/mirror-shard.mp4`. Batch 3 is done (pass 114: the other eleven). Next on track 2: batch 4.
-- Track 1, pass 116: item 5 (the cleave's strike, pass 3 of the judge's motion gap), the Captain: the floor burst waits
-  for the bill to land (`impact.at`), his swing leaves a thin arc at the bill's edge (`BOSS_FX` `trail`), and weapon
-  ribbons age on the effect clock (filmed strips had shown them as a band over the whole swing). Acceptance:
-  `HOLD=0.8 node tools/anim-strip.cjs boss:captainOverhead` shows the burst with the bill down and the arc of the swing
-  (`docs/scorecard/now/captain-cleave.jpg`, `.mp4`); in-page `floor burst`. Judge round 4: motion 4, readability 7,
-  spectacle 4, caught 9/10; giveaway: the body moves as rigid parts, no weight shift or smear on the swing. Next: the
-  Captain's cel model (`docs/bosses/system.md`), which the judge's "blocky, toy-like" points at too.
+- Track 1, pass 118: item 5, the Captain's cel model (pass 1 of 2). In cel he drew near-white (a dark body's light
+  passed `keep` as a glow; a `tint` sets hue only): now the style's `body` bands (`ART_BODY`), black plate textures,
+  flared pauldrons (`captain.py`), and `softJoints` (knees, elbows, waist, cloak bend as one body). Acceptance:
+  `STYLE=cel` strips show black banded plate and unbroken joints (`docs/scorecard/now/captain-cel-{cuts,wheel}.jpg`,
+  `captain-cel.mp4`, `captain-cleave.jpg`); in-page `model`, `Pillager Captain`. Judge round 5: motion 5, readability
+  7, spectacle 5 (from 4, 7, 4), caught 9/10; giveaway: the bill's blade a flat white paper cutout. Next (pass 2):
+  shade the bill's steel in cel and smear the swing.
 - Pass 110, the retro (track 2 slot): v7.163.0's CI green (run 44830197524), its container published, and players
   are on it at last (they had v7.159.0 until now). Item 1 done: `PLAY-LINK.txt` is https://aleix.tailfef0f7.ts.net/souls/,
   Pages unpublished (old address 404). Step 1 of every pass: `node tools/live-check.cjs`. Items 1-3 done.

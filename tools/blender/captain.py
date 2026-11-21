@@ -15,6 +15,7 @@
 # loincloths front and back, a red rag of sash over the front one; cuisses, knee cops, keeled greaves, sabatons; a dark
 # cloak from the shoulders, worn through and torn into strips below the knee. Boss budget: 14,000 triangles with the
 # bill. Pass 63: his own weapon, a pillager's bill (below), held in both hands (MODEL_DEFS `grip`), and breaths in the bevor.
+# Pass 118 (the cel model): the pauldrons flare up and out into a hard lip over two flaring lames (three stacked rings read as a toy).
 import sys, math, random
 sys.path.insert(0, r"C:/Users/Aleix/Documents/CLAUDE/3d-souls-low/tools/blender")
 import importlib, snow_lib, figure_lib; importlib.reload(snow_lib); importlib.reload(figure_lib)
@@ -178,12 +179,16 @@ for s, n in ((1, 'L'), (-1, 'R')):
     x = s * SX; cx = s * .37
     hard(f'arm{n}__mail', lambda bm, x=x: loft(bm, [(1.62, x, 0, .085, .085), (1.42, x, 0, .08, .08), (EL + .03, x, 0, .072, .072)], 8, cap=True))
     def pauldron(bm, x=x, s=s, cx=cx):
-        shell(bm, (cx, PY, -.01), PR, .13, PR * .95, 0, math.pi / 2, 0, math.tau, nu=14, nv=4,
-              warp=lambda p, a, e, cx=cx, s=s: (p.x, p.y - .06 * max(0, (p.x - cx) * s) / PR, p.z))
+        # (pass 118, the cel model) the cap's outer rim sweeps up and out into a flared lip, a hard wing in the silhouette
+        # instead of a round dome, and two lames flaring under it in place of three stacked rings (the judge: "toy-like")
+        def flare(p, a, e, cx=cx, s=s):
+            t = max(0, (p.x - cx) * s) / PR
+            return (p.x + s * .035 * t * t, p.y + .075 * t ** 3 - .03 * t, p.z)
+        shell(bm, (cx, PY, -.01), PR, .12, PR * .95, 0, math.pi / 2, 0, math.tau, nu=16, nv=4, warp=flare)
         side = s * math.pi / 2
-        for k, (y0, y1, r) in enumerate(((1.57, 1.49, .19), (1.5, 1.42, .17), (1.43, 1.36, .15))):   # three lames stepping down
-            loft(bm, [(y0, x + s * .02, -.01, r * .82, r * .86), (y1, x + s * .03, -.01, r * .9, r * .94)], 8, cap=False,
-                 a0=side - 1.95, a1=side + 1.95)
+        for k, (y0, y1, r) in enumerate(((1.555, 1.46, .18), (1.47, 1.37, .16))):   # two lames, each flaring out at its hem
+            loft(bm, [(y0, x + s * .02, -.01, r * .8, r * .84), (y1, x + s * .045, -.01, r * 1.0, r * 1.02)], 8, cap=False,
+                 a0=side - 1.9, a1=side + 1.9)
     hard(f'arm{n}__plate', pauldron, thick=.016)
     def spikes(bm, x=x, s=s, cx=cx):   # a row of spikes along the pauldron's crown, front to back, raking outward
         for k, z in enumerate((.09, .0, -.09)):
