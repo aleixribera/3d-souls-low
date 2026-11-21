@@ -11,9 +11,10 @@ const { createServer } = require('../server/index.cjs');
     args: process.env.ARENA_SOFTWARE_GL ? ['--use-angle=swiftshader', '--enable-unsafe-swiftshader'] : [] });
   const messages = [];
   try {
-    // 640x360: a quarter of 720p's pixels, so a run weighs little on the GPU (and on the CPU under software WebGL).
-    // ARENA_VIEWPORT=WxH picks another size.
-    const [width, height] = (process.env.ARENA_VIEWPORT || '640x360').split('x').map(Number);
+    // 320x180: a sixteenth of 720p's pixels. Under software WebGL (CI, the Linux test laptop) the suite waits mostly on
+    // SwiftShader filling pixels (the duel regressions: 520 of 597 s), so a small frame is the cheapest way to draw every
+    // frame the tests draw. ARENA_VIEWPORT=WxH picks another size.
+    const [width, height] = (process.env.ARENA_VIEWPORT || '320x180').split('x').map(Number);
     if (!(width > 0 && height > 0)) throw new Error(`ARENA_VIEWPORT must be WxH, not "${process.env.ARENA_VIEWPORT}"`);
     const page = await browser.newPage({ viewport: { width, height } });
     page.on('console', m => { if (['error', 'warning'].includes(m.type())) messages.push(m.text()); });
