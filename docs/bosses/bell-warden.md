@@ -4,7 +4,7 @@ The second boss through the system (`system.md`; PLAN item 5's real check). Data
 `tools/blender/bellwarden.py`. Status: pass 123, the design page and the cel look (dark bronze, the bell the one bright
 metal, the tell on the bell's lip, soft joints, a smear on his swings), all by data. Pass 124: the moveset audit (below),
 a second cold string, and in-between keys on seven attacks. Pass 125: the `edges-1` judge (rounds 7 and 8), one fix
-(his weight sinks after the blow lands). Awaiting Aleix.
+(his weight sinks after the blow lands). Pass 132: every follow-through carries the body on past the strike (`tools/body-check.cjs`, none flagged). Awaiting Aleix.
 
 ## Idea
 

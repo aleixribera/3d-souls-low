@@ -3,7 +3,7 @@
 The third boss through the system (`system.md`; PLAN item 6, the roster in the order players meet them). Data:
 `js/data/bosses/giant-skeleton.js`; model: `tools/blender/giant.py`. Status: pass 125, the moveset audit (below) and a
 second string for the gaol phase, Claw and Taking. Pass 127: the cel look (black iron, the club's tell on its skull,
-smaller claw and foot halos, a soft spine), in-between keys, the `edges-1` judge (round 9) and its one fix. Awaiting Aleix.
+smaller claw and foot halos, a soft spine), in-between keys, the `edges-1` judge (round 9) and its one fix. Pass 132: every follow-through carries the body on past the strike (`tools/body-check.cjs`, none flagged). Awaiting Aleix.
 
 ## Moveset audit (pass 125): restyle, plus one string
 

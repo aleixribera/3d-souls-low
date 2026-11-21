@@ -7,7 +7,7 @@
 //   twist  the torso's turn through the hit (rad, feet + hips + chest yaw, range over wind-up to follow)
 //   drop   how far the hips sink in the strike and follow-through below their highest in the wind-up (m, crouch)
 //   over   the follow-through carries the torso on past the strike, in the strike's direction (rad: its turn, or its
-//          forward bend for a chop or a thrust)
+//          forward bend for a chop or a thrust), at its peak (pass 132: a grab may lift after carrying on)
 //   arm    the weapon arm's and haft's travel through the strike (rad)
 //   body   (twist + lean change + chest pitch change) / arm: the share of the swing the body carries
 // A hit is flagged `ARM ONLY` when the arm travels far (arm > 1) and the body carries little of it (body < 0.35),
@@ -57,16 +57,18 @@ function measure(G, a) {
     const [w0, wl] = G.phaseSpan(a, 'windup', i), [s0, sl] = G.phaseSpan(a, 'active', i), [f0, fl] = G.phaseSpan(a, 'follow', i);
     const end = f0 + fl, step = 1 / 60, eps = 1e-4;
     const start = at(a, w0 + eps), W = at(a, s0 - eps), S = at(a, s0 + sl - eps), F = at(a, end - eps);
-    let yMin = Infinity, yMax = -Infinity, cMin = Infinity, cMax = -Infinity, armPath = 0, prev = null;
+    const dir = Math.sign(S.yaw - W.yaw), bend = q => q.lean + q.pitch, bendCh = bend(S) - bend(W);   // a chop's or a thrust's blow is a forward bend
+    const bendDir = Math.abs(bendCh) > 0.3 ? Math.sign(bendCh) : 0;   // a blow's bend only: a lift back up is not a chop's overshoot
+    const past = q => Math.max(0, (q.yaw - S.yaw) * dir, (bend(q) - bend(S)) * bendDir);
+    let yMin = Infinity, yMax = -Infinity, cMin = Infinity, cMax = -Infinity, armPath = 0, prev = null, over = fl > 0 ? past(F) : 0;
     for (let t = w0 + eps; t <= end; t += step) {
       const q = at(a, t);
       yMin = Math.min(yMin, q.yaw); yMax = Math.max(yMax, q.yaw);
       if (t < s0) cMin = Math.min(cMin, q.crouch); else cMax = Math.max(cMax, q.crouch);
       if (t >= s0 - step && t <= s0 + sl + step) { if (prev) armPath += dist(q.arm, prev.arm); prev = q; }
+      if (t > s0 + sl && fl > 0) over = Math.max(over, past(q));   // its peak: a grab's lift or a wrench may come back after carrying on
     }
-    const twist = yMax - yMin, drop = Math.max(0, cMax - cMin), dir = Math.sign(S.yaw - W.yaw);
-    const bend = q => q.lean + q.pitch, bendCh = bend(S) - bend(W);   // a chop's or a thrust's blow is a forward bend
-    const over = fl > 0 ? Math.max(0, (F.yaw - S.yaw) * dir, (bend(F) - bend(S)) * Math.sign(bendCh)) : 0;
+    const twist = yMax - yMin, drop = Math.max(0, cMax - cMin);
     const leanCh = Math.max(Math.abs(S.lean - W.lean), Math.abs(W.lean - start.lean)), pitchCh = Math.abs(S.pitch - W.pitch);
     const arm = Math.max(armPath, dist(S.arm, W.arm)), body = arm > 0 ? (twist + leanCh + pitchCh) / arm : 9;
     const flags = [];

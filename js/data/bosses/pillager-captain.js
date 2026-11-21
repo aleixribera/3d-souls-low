@@ -93,6 +93,7 @@
 // ---- key poses (js/data/attack-poses.js format) -------------------------------------------------------------------------
 {
   const swing = { windup: 'inOutCubic', active: 'outExpo', follow: 'outCubic', recovery: 'inOutCubic' };
+  // (pass 132, tools/body-check.cjs) Follow-throughs below carry the body on past the strike (followOn, js/data/pose-library.js).
 
   // Dashing Thrust: the haft levelled low at his hip and drawn back, his weight on the back foot; he dashes and drives the
   // spike out at full reach.
@@ -103,7 +104,7 @@
   const driven = { crouch: 0.2, lean: 0.28, legL: [-0.85, 0, 0], kneeL: [0.55, 0, 0], legR: [0.6, 0, 0], spin: [0, 0.55, 0], chest: [0.05, 0.15, 0], neck: [0, -0.3, 0], head: [-0.1, -0.3, 0],
     armR: [-1.5, 0, 0.15], elbowR: [-0.05, 0, 0], haft: [-0.08, 0.12, 1.6], armL: [-1.45, 0, -0.25], elbowL: [-0.15, 0, 0] };
   ATTACK_POSES.pillagerThrust = { ease: { windup: 'inOutSine', active: 'outExpo', follow: 'outQuad', recovery: 'inOutCubic' }, lag: { weapon: 0.06 },
-    hits: [{ windup: hip, strike: driven, follow: { ...driven, lean: 0.32, legR: [0.65, 0, 0] } }] };
+    hits: [{ windup: hip, strike: driven, follow: followOn(hip, driven, { legR: [0.65, 0, 0] }) }] };
 
   // Three Cuts: the bill raised high over his right shoulder; cut down across to his left knee, back up across to his
   // right shoulder, then heaved overhead and brought straight down.
@@ -120,8 +121,8 @@
   const chopped = { crouch: 0.16, lean: 0.04, legL: [-0.6, 0, -0.12], legR: [0.45, 0, 0.12], chest: [0.08, 0, 0], neck: [-0.1, 0, 0], head: [0.05, 0, 0],
     armR: [-1.05, 0, 0.05], elbowR: [-0.1, 0, 0], haft: [0.26, 0, 3.14], armL: [-0.95, 0, -0.05], elbowL: [-0.3, 0, 0] };
   ATTACK_POSES.pillagerThreeCuts = { ease: swing, lag: { weapon: 0.08, armR: 0.03 },
-    hits: [{ windup: highRight, strike: lowLeft, follow: lowLeft }, { windup: { ...lowLeft, crouch: 0.2 }, strike: upRight, follow: upRight },
-      { windup: heave, strike: chopped, follow: { ...chopped, crouch: 0.2 } }] };
+    hits: [{ windup: highRight, strike: lowLeft, follow: followOn(highRight, lowLeft) }, { windup: { ...lowLeft, crouch: 0.2 }, strike: upRight, follow: followOn(lowLeft, upRight, { crouch: 0.22 }) },
+      { windup: heave, strike: chopped, follow: followOn(heave, chopped, { crouch: 0.2 }) }] };
 
   // Overhead Cleave: the bill heaved up and back behind his head, his back arched, held; brought down into the floor
   // ahead with all his weight.
@@ -163,7 +164,10 @@
   const hookChop = { crouch: 0.2, lean: 0.12, legL: [-0.5, 0, 0], legR: [0.55, 0, 0], kneeR: [0.2, 0, 0], spin: [0, -0.3, 0], chest: [0.2, -0.15, 0], head: [0.1, 0.2, 0],
     armR: [-1.15, 0, -0.25], elbowR: [-0.6, 0, 0], haft: [0.66, -0.3, 3.14], armL: [-0.95, 0, 0.1], elbowL: [-1.0, 0, 0] };
   ATTACK_POSES.pillagerHook = { ease: swing, lag: { weapon: 0.1 },
-    hits: [{ windup: laidOut, strike: hooked, follow: hauledIn }, { windup: shortUp, strike: hookChop, follow: { ...hookChop, crouch: 0.24 } }] };
+    hits: [{ windup: laidOut, strike: hooked, follow: hauledIn, via: {
+      // (pass 132) the sweep carries him on round to his left before he hauls back
+      follow: [{ t: 0.2, rel: true, crouch: 0.03, spin: [0, 0.3, 0], chest: [0.05, 0.15, 0] }] } },
+      { windup: shortUp, strike: hookChop, follow: followOn(shortUp, hookChop, { crouch: 0.24 }) }] };
 
   // The Reaping Wheel: wound right round, his back half to you, looking over his left shoulder; he turns full round with
   // the bill at full reach, and back the other way, low.
@@ -187,7 +191,7 @@
   const risen = { crouch: 0.08, lean: -0.15, legL: [-0.5, 0, 0], legR: [0.4, 0, 0], spin: [0, 0.2, 0], chest: [-0.2, 0.1, 0], head: [-0.15, 0, 0],
     armR: [-2.6, 0, 0.1], elbowR: [-0.2, 0, 0], haft: [-1.3, 0.05, 0], armL: [-2.2, 0, -0.1], elbowL: [-0.4, 0, 0] };
   ATTACK_POSES.pillagerFurrow = { ease: { windup: 'inOutSine', active: 'inQuad', follow: 'outCubic', recovery: 'inOutCubic' }, lag: { weapon: 0.1 },
-    hits: [{ windup: dragged, strike: scraped, follow: scraped }, { windup: { ...scraped, crouch: 0.5 }, strike: risen, follow: risen }] };
+    hits: [{ windup: dragged, strike: scraped, follow: followOn(dragged, scraped) }, { windup: { ...scraped, crouch: 0.5 }, strike: risen, follow: followOn({ ...scraped, crouch: 0.5 }, risen) }] };
 
   // Haft Back: you are behind him; the haft gripped short in front of him, a look back over his right shoulder; the iron
   // shoe driven back into you.
@@ -197,7 +201,7 @@
   const rammed = { crouch: 0.03, lean: -0.22, legL: [-0.05, 0, -0.05], legR: [0.12, 0, 0.05], spin: [0, -0.7, 0], chest: [-0.15, -0.35, 0], neck: [0, -0.6, 0], head: [0, -1.0, 0],
     armR: [0.5, 0, -0.25], elbowR: [-1.3, 0, 0], haft: [0.15, 0.1, 3.14], armL: [0.3, 0, -0.1], elbowL: [-1.4, 0, 0] };
   ATTACK_POSES.pillagerHaftBack = { ease: { windup: 'inOutSine', active: 'outExpo', follow: 'outQuad', recovery: 'inOutCubic' }, lag: { weapon: 0.05 },
-    hits: [{ windup: gathered, strike: rammed, follow: rammed }] };
+    hits: [{ windup: gathered, strike: rammed, follow: followOn(gathered, rammed) }] };
 
   // ---- lit (second phase) ----
   // Kindling (the phase opener): the bill raised to the sky in both hands, the rags catching; driven down head-first at
@@ -205,9 +209,10 @@
   const skyward = { crouch: 0.25, lean: -0.15, legL: [-0.35, 0, 0], legR: [0.35, 0, 0], chest: [-0.3, 0, 0], neck: [-0.3, 0, 0], head: [-0.55, 0, 0],
     armR: [-3.0, 0, 0.15], elbowR: [-0.2, 0, 0], haft: [-1.6, 0, 3.14], armL: [-2.9, 0, -0.15], elbowL: [-0.3, 0, 0] };
   // (pass 66) He ends on one knee, the bill planted head-first at his feet like a stake, his head bowed over it.
-  const grounded = { crouch: 0.6, lean: 0.15, legL: [-1.25, 0, 0], kneeL: [1.2, 0, 0], legR: [0.35, 0, 0], kneeR: [1.4, 0, 0], chest: [0.25, 0, 0], neck: [0.2, 0, 0], head: [0.35, 0, 0],
+  // (pass 132) his whole back folds down over the stake with the blow, not only his arms
+  const grounded = { crouch: 0.6, lean: 0.4, legL: [-1.25, 0, 0], kneeL: [1.2, 0, 0], legR: [0.35, 0, 0], kneeR: [1.4, 0, 0], chest: [0.45, 0, 0], neck: [0.2, 0, 0], head: [0.35, 0, 0],
     armR: [-1.7, 0, 0], elbowR: [-1.2, 0, 0], haft: [1.25, 0, 3.14], armL: [-1.75, 0, -0.1], elbowL: [-1.25, 0, 0] };
-  ATTACK_POSES.pillagerKindling = { ease: { windup: 'inOutSine', active: 'outExpo', follow: 'outCubic', recovery: 'inOutCubic' }, hits: [{ windup: skyward, strike: grounded, follow: grounded }] };
+  ATTACK_POSES.pillagerKindling = { ease: { windup: 'inOutSine', active: 'outExpo', follow: 'outCubic', recovery: 'inOutCubic' }, hits: [{ windup: skyward, strike: grounded, follow: followOn(skyward, grounded) }] };
 
   // The Firebrand: the burning bill swung back low on his right; a wide sweep across in front of him that leaves a crescent
   // of fire, then the haft levelled and the spike driven through it at you.
@@ -222,7 +227,7 @@
   const stabbed = { crouch: 0.2, lean: 0.25, legL: [-0.85, 0, 0], kneeL: [0.45, 0, 0], legR: [0.55, 0, 0], spin: [0, 0.35, 0], chest: [0.25, 0.15, 0], head: [0.15, -0.15, 0],
     armR: [-1.35, 0, 0.1], elbowR: [-0.1, 0, 0], haft: [0.2, 0.06, 1.6], armL: [-0.95, 0, -0.1], elbowL: [-0.35, 0, 0] };
   ATTACK_POSES.pillagerFirebrand = { ease: swing, lag: { weapon: 0.1, armR: 0.04 },
-    hits: [{ windup: brandBack, strike: brandAcross, follow: { ...brandAcross, spin: [0, 1.5, 0] } }, { windup: overhand, strike: stabbed, follow: { ...stabbed, crouch: 0.24 } }] };
+    hits: [{ windup: brandBack, strike: brandAcross, follow: { ...brandAcross, spin: [0, 1.5, 0] } }, { windup: overhand, strike: stabbed, follow: followOn(overhand, stabbed, { crouch: 0.24 }) }] };
 }
 
 // ---- the boss -----------------------------------------------------------------------------------------------------------

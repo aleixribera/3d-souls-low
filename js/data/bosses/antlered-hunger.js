@@ -64,6 +64,7 @@
   const mirror = P => Object.fromEntries(Object.entries(P).map(([k, v]) => [SWAP[k] || k, Array.isArray(v) ? [v[0], -v[1], -v[2]] : v]));
   const claw = { windup: 'inOutCubic', active: 'outCubic', follow: 'outQuad', recovery: 'inOutCubic' };   // a swipe: drawn, then torn through
   const heavy = { windup: 'inOutSine', active: 'inQuad', follow: 'outCubic', recovery: 'inOutCubic' };   // a weight that gathers, then falls
+  // (pass 132, tools/body-check.cjs) Follow-throughs below carry the body on past the strike (followOn, js/data/pose-library.js).
 
   // Claw Rake: rearing back with the right claw raised high beside its skull, its body turned right, the left fist planted;
   // torn down and across before it to its left. Then the left, the same the other way.
@@ -81,7 +82,7 @@
     armR: [0.45, 0, -1.35], elbowR: [-0.5, 0, 0], armL: [0.45, 0, 1.35], elbowL: [-0.5, 0, 0] };
   const scissorDown = { crouch: 0.3, lean: 0.3, legL: [-0.6, 0, 0], legR: [0.4, 0, 0], chest: [0.25, 0, 0], neck: [0, 0, 0], head: [-0.05, 0, 0],
     armR: [-1.35, 0, 0.75], elbowR: [-0.1, 0, 0], armL: [-1.35, 0, -0.75], elbowL: [-0.1, 0, 0] };
-  const SCISSOR = { windup: scissorUp, strike: scissorDown, follow: { ...scissorDown, crouch: 0.34 } };
+  const SCISSOR = { windup: scissorUp, strike: scissorDown, follow: followOn(scissorUp, scissorDown, { crouch: 0.34 }) };
   ATTACK_POSES.hungerRakeLearned = { ease: claw, lag: { elbowR: 0.06, elbowL: 0.06 }, hits: [RAKE_R, RAKE_L, SCISSOR] };
 
   // Antler Hook: its skull dipped low and turned to its left, the antler tines raking the floor, its weight back on its
@@ -105,10 +106,11 @@
     armL: [-1.45, 0, 0.12], elbowL: [0.05, 0, 0], armR: [-1.45, 0, -0.12], elbowR: [0.05, 0, 0] };
   const pound = { crouch: 0.5, lean: 0.12, legL: [-0.7, 0, 0.2], kneeL: [0.9, 0, 0], legR: [-0.7, 0, -0.2], kneeR: [0.9, 0, 0], chest: [0.15, 0, 0], neck: [0.05, 0, 0], head: [-0.25, 0, 0],
     armL: [-0.55, 0, 0.08], elbowL: [0.1, 0, 0], armR: [-0.55, 0, -0.08], elbowR: [0.1, 0, 0] };
-  const POUND = { windup: rear, strike: pound, follow: { ...pound, crouch: 0.56, head: [-0.15, 0, 0] } };
+  const POUND = { windup: rear, strike: pound, follow: followOn(rear, pound, { crouch: 0.56, head: [-0.15, 0, 0] }) };
   ATTACK_POSES.hungerHammer = { ease: heavy, hits: [POUND] };
   // Learned: up again at once, a stride on, and down again with the floor jumping round it.
-  ATTACK_POSES.hungerHammerLearned = { ease: heavy, hits: [POUND, { windup: { ...rear, lean: -0.3, chest: [-0.9, 0, 0] }, strike: { ...pound, crouch: 0.56 }, follow: { ...pound, crouch: 0.6 } }] };
+  const rearAgain = { ...rear, lean: -0.3, chest: [-0.9, 0, 0] };
+  ATTACK_POSES.hungerHammerLearned = { ease: heavy, hits: [POUND, { windup: rearAgain, strike: { ...pound, crouch: 0.56 }, follow: followOn(rearAgain, { ...pound, crouch: 0.56 }, { crouch: 0.6 }) }] };
 
   // Antler Charge: its head down, the antlers levelled at you, its hind legs bunched and its right fist pawing back along
   // the floor; it runs you down.
@@ -128,7 +130,7 @@
     armL: [-0.6, 0, 0.25], elbowL: [0.2, 0, 0], armR: [-0.6, 0, -0.25], elbowR: [0.2, 0, 0] };
   const kicked = { crouch: 0.4, lean: 0.7, legL: [2.6, 0, 0.12], kneeL: [-0.15, 0, 0], legR: [2.6, 0, -0.12], kneeR: [-0.15, 0, 0], chest: [0.45, 0, 0], neck: [-0.1, 0, 0], head: [-0.2, 0, 0],
     armL: [-1.25, 0, 0.3], elbowL: [0.05, 0, 0], armR: [-1.25, 0, -0.3], elbowR: [0.05, 0, 0] };
-  const KICK = { windup: tucked, strike: kicked, follow: { ...kicked, lean: 0.5 } };
+  const KICK = { windup: tucked, strike: kicked, follow: followOn(tucked, kicked) };
   ATTACK_POSES.hungerKick = { ease: { windup: 'inOutSine', active: 'outExpo', follow: 'outQuad', recovery: 'inOutCubic' }, lag: { kneeL: 0.05, kneeR: 0.05 }, hits: [KICK] };
   // Learned: down off the kick it throws its right claw out wide and wheels a whole turn round.
   const wheelOut = { crouch: 0.25, lean: 0.1, spin: [0, -1.1, 0], chest: [0, -0.3, 0], neck: [0, 0.5, 0], head: [0, 0.5, 0], armR: [-1.2, 0, -1.2], elbowR: [0, 0, 0],
@@ -143,7 +145,7 @@
     armL: [-0.7, 0, 1.1], elbowL: [-0.4, 0, 0], armR: [-0.7, 0, -1.1], elbowR: [-0.4, 0, 0] };
   const screamed = { crouch: 0.35, lean: 0.1, legL: [-0.55, 0, -0.15], legR: [0.45, 0, 0.15], chest: [0.15, 0, 0], neck: [0.5, 0, 0], head: [0.35, 0, 0],
     armL: [-0.2, 0, 1.3], elbowL: [0, 0, 0], armR: [-0.2, 0, -1.3], elbowR: [0, 0, 0] };
-  ATTACK_POSES.hungerRoar = { ease: { windup: 'inOutSine', active: 'outExpo', follow: 'outQuad', recovery: 'inOutCubic' }, hits: [{ windup: throwBack, strike: screamed, follow: screamed }] };
+  ATTACK_POSES.hungerRoar = { ease: { windup: 'inOutSine', active: 'outExpo', follow: 'outQuad', recovery: 'inOutCubic' }, hits: [{ windup: throwBack, strike: screamed, follow: followOn(throwBack, screamed) }] };
 
   // The Fall: it springs (`leap`) with both fists flung up over its skull and its hind legs tucked under it, a pounce through
   // the air; down on you fists first, and the floor jumps round it.
@@ -152,7 +154,8 @@
   const landed = { crouch: 0.48, lean: 0.45, legL: [-0.8, 0, 0], kneeL: [0.6, 0, 0], legR: [0.4, 0, 0], kneeR: [0.3, 0, 0], chest: [0.35, 0, 0], neck: [-0.1, 0, 0], head: [0, 0, 0],
     armL: [-0.95, 0, 0.35], elbowL: [0.2, 0, 0], armR: [-0.95, 0, -0.35], elbowR: [0.2, 0, 0] };
   const pressed = { ...landed, crouch: 0.55, chest: [0.45, 0, 0] };
-  const LAND = { windup: pounce, strike: crash, follow: { ...crash, crouch: 0.36 } }, SHOCK = { windup: { ...crash, crouch: 0.36 }, strike: pressed, follow: pressed };
+  const landOn = followOn(pounce, crash, { crouch: 0.36 });
+  const LAND = { windup: pounce, strike: crash, follow: landOn }, SHOCK = { windup: landOn, strike: pressed, follow: followOn(landOn, pressed) };
   ATTACK_POSES.hungerLeap = { ease: { windup: 'inOutSine', active: 'inQuad', follow: 'outCubic', recovery: 'inOutCubic' }, hits: [LAND, SHOCK] };
   // Learned: landed, it springs again at once and pounces on after you.
   ATTACK_POSES.hungerLeapLearned = { ease: { windup: 'inOutSine', active: 'inQuad', follow: 'outCubic', recovery: 'inOutCubic' }, hits: [LAND, LAND, SHOCK] };
@@ -163,7 +166,7 @@
     armR: [-2.9, 0, -0.15], elbowR: [-0.25, 0, 0], armL: [-0.35, 0, 0.35], elbowL: [0.2, 0, 0] };
   const chopDown = { crouch: 0.38, lean: 0.45, legL: [-0.7, 0, 0], kneeL: [0.4, 0, 0], legR: [0.45, 0, 0], kneeR: [0.3, 0, 0], spin: [0, 0.25, 0], chest: [0.45, 0.15, 0], neck: [0.1, -0.1, 0], head: [0.1, -0.1, 0],
     armR: [-0.85, 0, 0.1], elbowR: [0.05, 0, 0], armL: [-0.35, 0, 0.45], elbowL: [0.2, 0, 0] };
-  const CHOP = { windup: chopUp, strike: chopDown, follow: { ...chopDown, crouch: 0.44, armR: [-0.6, 0, 0.15] } };
+  const CHOP = { windup: chopUp, strike: chopDown, follow: followOn(chopUp, chopDown, { crouch: 0.44, armR: [-0.6, 0, 0.15] }) };
   ATTACK_POSES.hungerFrenzy = { ease: claw, lag: { elbowR: 0.06, elbowL: 0.06 }, hits: [RAKE_R, RAKE_L, RAKE_R, CHOP] };
 }
 

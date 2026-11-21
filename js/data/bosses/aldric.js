@@ -183,7 +183,7 @@ MODEL_DEFS.varn = {
   const coiled = { crouch: 0.45, lean: 0.35, legL: [-0.9, 0, 0], kneeL: [0.6, 0, 0], legR: [0.4, 0, 0], kneeR: [0.6, 0, 0], spin: [0, -0.4, 0], chest: [0.35, -0.25, 0], neck: [-0.25, 0.2, 0], head: [-0.3, 0.25, 0],
     armR: [-2.1, 0, -0.55], elbowR: [-1.2, 0, 0], haft: [-0.4, -2.25, 3.14], armL: [-1.6, 0, -0.4], elbowL: [-1.2, 0, 0] };
   const crashed = { ...fell, crouch: 0.4, lean: 0.45, haft: [1.1, 0, 3.14] };
-  const crashedOn = { ...crashed, crouch: 0.44, lean: 0.52, chest: [0.48, 0, 0] };
+  const crashedOn = { ...crashed, crouch: 0.44, lean: 0.52, spin: [0, 0.12, 0], chest: [0.48, 0.06, 0] };   // (pass 132) the coil's unwinding turns on too
   ATTACK_POSES.aldricLeap = { ease: heavy, lag: { weapon: 0.08 }, hits: [{ windup: coiled, strike: crashed, follow: crashedOn }] };
 
   // Tolling Chain (burning): four cuts through four of his guards: over his right shoulder and down left; from low left up

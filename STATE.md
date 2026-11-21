@@ -9,12 +9,12 @@ The iterate loop's working note (`.claude/iterate.md`). Cap: 8,000 characters.
   Fire Burst's lotus and Wind Blade's crescent (`js/strike-fx.js`). Acceptance: `tests/strike-shapes.cjs`, in-page
   `strike shapes`; clip `docs/scorecard/now/strike-shapes.mp4` (`node tools/ability-clips.cjs strikes`). Next on track 2:
   batch 7, Strike II. Browser lock: `node tools/browser-lock.cjs run <pass> -- <cmd>` (docs/two-tracks.md).
-- Track 1, pass 130 (retro, then PLAN item 6, Aldric pass 2 of 2): `tools/body-check.cjs` reads each boss hit's key
-  poses (torso turn, hips' drop, follow-through past the strike) and flags ARM ONLY / NO WEIGHT / NO OVERSHOOT, the
-  judges' repeated giveaway; Aldric's follow-throughs now carry on past every strike (23 flagged, then 0). Acceptance:
-  `tests/body-check.cjs`; in-page `Aldric`, `Story boss moves`, `Boss edge tells` (16/16); clip
-  `docs/scorecard/now/aldric-follow.mp4`. Aldric awaits Aleix. Next on track 1: the Antlered Hunger's step-0 audit
-  (`docs/bosses/system.md`), cleared by the body check before its strips.
+- Track 1, pass 132 (PLAN item 6; the loop chat's call: before Aleix fights them): the Captain, the Bell Warden and the
+  Giant now carry every follow-through on past the strike (`followOn`, `js/data/pose-library.js`; body check 40 hits
+  flagged, then 0), and so does the Antlered Hunger (11, then 0). The Hunger's step-0 audit (`docs/bosses/antlered-hunger.md`):
+  a restyle, plus parries on the Hammerfall, the Antler Charge and the Hind Kick (`noParry` on 5 of 8) and a name of its
+  own for the Hammerfall (the Warden's). Acceptance: `tests/body-check.cjs` (all five bosses); in-page bosses 30/30 and
+  39/39; clip `docs/scorecard/now/follow-through.mp4`. Next on track 1: the Hunger's parries and name, then its cel look.
 
 ## Works
 
@@ -58,7 +58,7 @@ The iterate loop's working note (`.claude/iterate.md`). Cap: 8,000 characters.
 - The Finishing Blow (pass 100-103, `js/finisher.js`, `js/finisher-fx.js`): the 3rd counter; its look is "Later".
 - Art styles (pass 108): `?style=cel|dark|paint`, `js/data/styles.js`, `js/style-lab.js`; `tests/style-browser.cjs`;
   retake `node tools/style-frames.cjs [styles] [still,fight,clip,time]`.
-- Body check (retro 130): `tools/body-check.cjs [bossId]`; `tests/body-check.cjs` holds Aldric.
+- Body check (retro 130): `tools/body-check.cjs [bossId]`; `tests/body-check.cjs` holds every boss with a page; `followOn` (pass 132).
 - Scorecard frames: `tools/scorecard-frames.cjs`; current frames `docs/scorecard/now/` (`tools/now-frames.cjs`).
 
 ## Broken

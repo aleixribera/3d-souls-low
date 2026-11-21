@@ -22,3 +22,19 @@ const POSE_LIBRARY = {
     ],
   },
 };
+
+// A follow-through that carries the body on past its strike (pass 132, tools/body-check.cjs): the strike's pose, with the
+// torso turned on further the way the blow turned it and bent on further the way it bent, and the hips sunk a little,
+// so the weight goes on after the weapon stops instead of freezing on the strike ("only the weapon travels", the boss
+// judges' giveaway in 6 of 10 rounds). The carry is a share of the blow's own travel: a full wheel turns on more than a
+// short chop. `extra` sets other channels of the follow (it should leave spin, chest and lean to the carry).
+function followOn(windup, strike, extra = {}) {
+  const ch = (p, b, i) => (p[b] ? p[b][i] : 0), cap = (x, lo, hi) => Math.sign(x) * Math.min(hi, Math.max(lo, Math.abs(x)));
+  const yaw = p => ch(p, 'tip', 1) + ch(p, 'spin', 1) + ch(p, 'chest', 1), bend = p => (p.lean || 0) + ch(p, 'chest', 0) + ch(p, 'spin', 0);
+  const dy = yaw(strike) - yaw(windup), db = bend(strike) - bend(windup);
+  const spin = [...(strike.spin || [0, 0, 0])], chest = [...(strike.chest || [0, 0, 0])];
+  let lean = strike.lean || 0;
+  if (Math.abs(dy) > 0.3) { const t = cap(dy * 0.15, 0.12, 0.35); spin[1] += t * 0.6; chest[1] += t * 0.4; }
+  if (Math.abs(db) > 0.3) { const t = cap(db * 0.15, 0.08, 0.2); lean += t * 0.4; chest[0] += t * 0.6; }
+  return { ...strike, crouch: (strike.crouch || 0) + 0.03, lean, spin, chest, ...extra };
+}

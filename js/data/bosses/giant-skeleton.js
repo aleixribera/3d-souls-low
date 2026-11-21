@@ -82,6 +82,7 @@ MODEL_DEFS.giantSkeleton = {
 {
   const heavy = { windup: 'inOutSine', active: 'inQuad', follow: 'outCubic', recovery: 'inOutCubic' };   // a weight that gathers, then falls
   const swing = { windup: 'inOutCubic', active: 'outCubic', follow: 'outQuad', recovery: 'inOutCubic' };
+  // (pass 132, tools/body-check.cjs) Follow-throughs below carry the body on past the strike (followOn, js/data/pose-library.js).
   // In-between keys (pass 127, docs/bosses/system.md "Animation"; `via`, js/attack-anim.js). His weight leads the club and
   // the claw: the hips and chest turn or drop first, the arm and the club trail a beat, then whip through; on a blow into
   // the floor his bones keep sinking a moment. Every key is `rel`: an offset from the straight blend between his poses.
@@ -114,7 +115,7 @@ MODEL_DEFS.giantSkeleton = {
   const stamped = { crouch: 0.16, lean: 0.06, legL: [-0.45, 0, 0], kneeL: [0.25, 0, 0], legR: [0.3, 0, 0], chest: [0.05, 0, 0], neck: [0.1, 0, 0], head: [0.2, 0, 0],
     armR: [-0.3, 0, -0.5], elbowR: [-0.2, 0, 0], weapon: [0.5, 0, 0], armL: [-0.3, 0, 0.5], elbowL: [-0.2, 0, 0] };
   ATTACK_POSES.giantStomp = { ease: { windup: 'inOutSine', active: 'outExpo', follow: 'outQuad', recovery: 'inOutCubic' },
-    hits: [{ windup: footUp, strike: stamped, follow: { ...stamped, crouch: 0.2 } }] };
+    hits: [{ windup: footUp, strike: stamped, follow: followOn(footUp, stamped, { crouch: 0.2 }) }] };
 
   // The Long Claw: the claw drawn up over its left shoulder, fingers spread, its body turned to its left; raked down and
   // across before it to its right knee.
@@ -151,16 +152,18 @@ MODEL_DEFS.giantSkeleton = {
     armL: [-0.95, 0, -0.15], elbowL: [-0.1, 0, 0], armR: [-0.4, 0, -0.5], elbowR: [-0.4, 0, 0], weapon: [0.6, 0, 0] };
   const lifted = { crouch: 0.12, lean: -0.05, legL: [-0.3, 0, -0.08], legR: [0.25, 0, 0.08], spin: [0, 0.1, 0], chest: [-0.35, 0.05, 0], neck: [-0.15, 0, 0], head: [0.2, -0.1, 0],
     armL: [-1.45, 0, -0.3], elbowL: [-0.6, 0, 0], armR: [-0.5, 0, -0.45], elbowR: [-0.6, 0, 0], weapon: [0.5, 0, 0] };
+  // (pass 132) the scoop carries on across to its right a beat before it straightens and lifts you
+  const scoopOn = [{ t: 0.2, rel: true, crouch: 0.04, spin: [0, -0.25, 0], chest: [0.08, -0.12, 0] }];
   ATTACK_POSES.giantTaking = { ease: { windup: 'inOutSine', active: 'outCubic', follow: 'outExpo', recovery: 'inOutCubic' }, lag: { armL: 0.04, elbowL: 0.06 },
-    hits: [{ windup: reachBack, strike: scooped, follow: lifted }] };
+    hits: [{ windup: reachBack, strike: scooped, follow: lifted, via: { follow: scoopOn } }] };
 
   // Claw and Taking (pass 125, the moveset audit: its gaol phase had one string): the Long Claw, and where the rake ends,
   // low at its right knee, the hand stays open and comes straight back along the floor for you. Parry the rake, then roll:
   // a second parry is a hand closing on you.
   const clawLow = { ...reachBack, spin: [0, -0.55, 0], chest: [0.15, -0.3, 0], neck: [0, 0.3, 0], head: [0.1, 0.35, 0], armL: [-0.55, 0, -0.85], elbowL: [-0.25, 0, 0] };
   ATTACK_POSES.giantClawTaking = { ease: swing, lag: { armL: 0.04, elbowL: 0.08 },
-    hits: [{ ...ATTACK_POSES.giantClaw.hits[0], follow: { ...raked, crouch: 0.32, armL: [-0.5, 0, -0.85] } },
-      { windup: clawLow, strike: scooped, follow: lifted }] };
+    hits: [{ ...ATTACK_POSES.giantClaw.hits[0], follow: followOn(clawUp, raked, { crouch: 0.32, armL: [-0.5, 0, -0.85] }) },
+      { windup: clawLow, strike: scooped, follow: lifted }] };   // coming from its right, the lift itself carries on
 
   // Club and Claw: the club cocked across its chest to its left; a backhand out to its right (parry it); the claw raked
   // across from its left (parry it); then the club high over its right shoulder and down (roll it).
@@ -169,8 +172,8 @@ MODEL_DEFS.giantSkeleton = {
   const backhanded = { crouch: 0.22, lean: 0.12, legL: [-0.45, 0, 0], legR: [0.35, 0, 0], spin: [0, -0.8, 0], chest: [0.05, -0.45, 0], neck: [0, 0.35, 0], head: [0, 0.4, 0],
     armR: [-1.4, 0, -0.9], elbowR: [0, 0, 0], weapon: [1.3, 0, 0.3], armL: [-0.6, 0, 0.6], elbowL: [-0.5, 0, 0] };
   ATTACK_POSES.giantClubClaw = { ease: swing, lag: { weapon: 0.08, armL: 0.03 },
-    hits: [{ windup: cocked, strike: backhanded, follow: backhanded },
-      { windup: { ...clawUp, spin: [0, 0.2, 0] }, strike: raked, follow: raked },
+    hits: [{ windup: cocked, strike: backhanded, follow: followOn(cocked, backhanded) },
+      { windup: { ...clawUp, spin: [0, 0.2, 0] }, strike: raked, follow: followOn({ ...clawUp, spin: [0, 0.2, 0] }, raked) },
       { windup: clubHigh, strike: slammed, follow: slamLanded, via: { windup: loadUp, active: clubDown, follow: sinkOn } }] };
 
   // ---- gathered (second phase) ----
@@ -181,7 +184,7 @@ MODEL_DEFS.giantSkeleton = {
   const driven = { crouch: 0.55, lean: 0.55, legL: [-0.7, 0, -0.15], kneeL: [0.7, 0, 0], legR: [0.5, 0, 0.15], kneeR: [0.6, 0, 0], chest: [0.45, 0, 0], neck: [-0.2, 0, 0], head: [-0.15, 0, 0],
     armR: [-1.0, 0, -0.2], elbowR: [0, 0, 0], weapon: [1.2, 0, 0], armL: [-0.75, 0, 0.2], elbowL: [0, 0, 0] };
   ATTACK_POSES.giantGathering = { ease: heavy, lag: { weapon: 0.08 },
-    hits: [{ windup: handsHigh, strike: driven, follow: { ...driven, crouch: 0.6 } }] };
+    hits: [{ windup: handsHigh, strike: driven, follow: followOn(handsHigh, driven, { crouch: 0.6 }) }] };
 
   // The Reaching Hand: crouched on its haunches, the claw stretched back behind it; it leaps and comes down hand first on
   // you, closes it, and lifts you up as in the taking.
@@ -198,9 +201,10 @@ MODEL_DEFS.giantSkeleton = {
     armL: [-0.6, 0, 0.9], elbowL: [-0.3, 0, 0] };
   const whirled = { crouch: 0.28, lean: 0.1, spin: [0, 2.5, 0], chest: [-0.1, 0.3, 0], neck: [0, -0.2, 0], head: [0, -0.2, 0], armR: [-1.45, 0, -1.25], elbowR: [0, 0, 0], weapon: [0.9, 0, 0],
     armL: [-0.6, 0, 0.95], elbowL: [-0.3, 0, 0] };
-  const whirled2 = { ...whirled, spin: [0, 5.6, 0] };
+  const whirled2 = { ...whirled, crouch: 0.36, spin: [0, 5.6, 0] };   // (pass 132) the second turn sinks lower, its weight in it
+  const whirledOn = followOn(coiled, whirled);   // the second turn winds up from where the first carried on to, never back
   ATTACK_POSES.giantWheel = { ease: { windup: 'inOutCubic', active: 'linear', follow: 'outCubic', recovery: 'inOutSine' }, lag: { weapon: 0.04, armR: 0.03 },
-    hits: [{ windup: coiled, strike: whirled, follow: whirled }, { windup: whirled, strike: whirled2, follow: { ...whirled2, spin: [0, 6.1, 0] } }] };
+    hits: [{ windup: coiled, strike: whirled, follow: whirledOn }, { windup: whirledOn, strike: whirled2, follow: { ...whirled2, spin: [0, 6.1, 0] } }] };
 
   // Pit Stomps: a march, not a stomp. It hunches toward you with its skull up and its club dragged behind, and walks you
   // down right, left, right; the third stamp with both arms flung down. Stomp alone stands tall on its left foot.
@@ -209,11 +213,12 @@ MODEL_DEFS.giantSkeleton = {
   const marchedR = { ...marchR, crouch: 0.2, lean: 0.4, legL: [0.35, 0, 0], kneeL: [0.2, 0, 0], legR: [-0.5, 0, 0], kneeR: [0.3, 0, 0], head: [-0.15, 0, 0] };
   const marchL = { ...marchR, legR: [0.2, 0, 0.08], kneeR: [0.15, 0, 0], legL: [-1.7, 0, 0.1], kneeL: [1.7, 0, 0] };
   const marchedL = { ...marchedR, legR: [0.35, 0, 0], kneeR: [0.2, 0, 0], legL: [-0.5, 0, 0], kneeL: [0.3, 0, 0] };
+  // (pass 132) the third stamp rears back with the arms, then its whole back comes down with them
+  const stampUp = { ...marchR, lean: 0.05, chest: [-0.2, 0, 0], armR: [-2.4, 0, -0.6], armL: [-2.4, 0, 0.6], weapon: [0.3, 0, 0.2], head: [-0.2, 0, 0] };
+  const stampDown = { ...marchedR, crouch: 0.32, lean: 0.4, chest: [0.45, 0, 0], armR: [-0.4, 0, -0.3], armL: [-0.4, 0, 0.3], weapon: [0.5, 0, 0] };
   ATTACK_POSES.giantPitStomps = { ease: { windup: 'inOutSine', active: 'outExpo', follow: 'outQuad', recovery: 'inOutCubic' },
     hits: [{ windup: marchR, strike: marchedR, follow: marchedR }, { windup: marchL, strike: marchedL, follow: marchedL },
-      { windup: { ...marchR, lean: 0.2, armR: [-2.4, 0, -0.6], armL: [-2.4, 0, 0.6], weapon: [0.3, 0, 0.2], head: [-0.2, 0, 0] },
-        strike: { ...marchedR, crouch: 0.32, lean: 0.25, chest: [0.3, 0, 0], armR: [-0.4, 0, -0.3], armL: [-0.4, 0, 0.3], weapon: [0.5, 0, 0] },
-        follow: { ...marchedR, crouch: 0.34, lean: 0.25, chest: [0.3, 0, 0], armR: [-0.4, 0, -0.3], armL: [-0.4, 0, 0.3], weapon: [0.5, 0, 0] } }] };
+      { windup: stampUp, strike: stampDown, follow: followOn(stampUp, stampDown, { crouch: 0.36 }) }] };
 }
 
 // ---- the boss -----------------------------------------------------------------------------------------------------------
