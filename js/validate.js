@@ -1258,13 +1258,32 @@ function validateShowcase(S, need) {
     }
   }
   const shots = S.shots || {};
-  for (const [id, s] of Object.entries(shots))
+  for (const [id, s] of Object.entries(shots)) if (s.fit !== undefined)
+    need(num(s.fit) && s.fit > 0 && s.fit <= 1 && ['boss', 'player'].includes(s.on) && num(s.turn) && num(s.up) && num(s.lookUp) && num(s.fov) && s.fov >= 15 && s.fov <= 90
+      && (s.push === undefined || num(s.push)), `${tag}: card shot "${id}": fit 0-1 of the frame, on boss or player, turn (degrees), up and lookUp (shares of its height), fov 15-90.`);
+  else
     need(['at', 'look', 'lookUp'].every(k => num(s[k]) && s[k] >= 0 && s[k] <= 1) && ['back', 'side', 'up'].every(k => num(s[k])) && num(s.fov) && s.fov >= 15 && s.fov <= 90
       && ['push', 'orbit'].every(k => s[k] === undefined || num(s[k])), `${tag}: shot "${id}": at, look, lookUp 0-1; back, side, up in m; fov 15-90.`);
   const cuts = S.cuts || [];
   need(cuts.length > 0 && cuts[0].at === 0 && cuts.every((c, i) => c.shot in shots && num(c.at) && c.at < len && (i === 0 || c.at > cuts[i - 1].at)), `${tag}: cuts start at beat 0, in order, each naming a shot.`);
   for (const k of S.keys || []) need((S.beats || []).some(b => b.kind === 'ability' && b.key === k.key && b.at === k.at) && num(k.for) && k.for > 0, `${tag}: the key cap at beat ${k.at} must match an ability beat.`);
   need(!!S.title && num(S.title.at) && S.title.at < len && S.title.at % 4 === 0, `${tag}: the title comes before the end, on a bar line (a multiple of 4 beats: the music holds its chord from there).`);
+  // The anime opening's ink (pass 160): a name card's accent per fight, freezes no beat lands in, impacts under 3 Hz.
+  for (const f of fights) need(typeof f.ink === 'string' && /^#[0-9a-f]{6}$/i.test(f.ink), `${tag}: ${f.boss}'s ink is its card's accent, a #rrggbb colour.`);
+  const freezes = Array.isArray(S.freezes) ? S.freezes : [];
+  need(Array.isArray(S.freezes), `${tag}: freezes is a list (may be empty).`);
+  freezes.forEach((f, i) => {
+    const t = `${tag}: freeze at beat ${f.at}`;
+    need(num(f.at) && f.at > 0 && num(f.for) && f.for > 0 && f.at + f.for <= len + 1e-9 && (i === 0 || f.at >= freezes[i - 1].at + freezes[i - 1].for), `${t}: at > 0, for > 0, inside the show, after the freeze before it ends.`);
+    need(f.card === undefined || f.card === 'boss' || f.card === 'title', `${t}: card is 'boss' or 'title'.`);
+    need(f.shot === undefined || (f.shot in shots && cuts.some(c => c.at === f.at && c.shot === f.shot)), `${t}: its shot "${f.shot}" is a known shot, cut to on its beat.`);
+    need(f.card !== 'title' || (!!S.title && f.at === S.title.at && f.at + f.for === len), `${t}: the title's card runs from the title to the end.`);
+    for (const b of S.beats || []) need(!(b.at >= f.at && b.at < f.at + f.for), `${t}: beat "${b.id}" lands inside it (the game stands still there).`);
+  });
+  const impacts = Array.isArray(S.impacts) ? S.impacts : [];
+  need(Array.isArray(S.impacts) && impacts.every((b, i) => num(b) && b >= 0 && b < len && (i === 0 || (b - impacts[i - 1]) * 60 / S.bpm >= 3)), `${tag}: impacts are beats in order, at least 3 s apart (white frames stay well under 3 Hz).`);
+  need(num(S.bars) && S.bars >= 0 && S.bars < len, `${tag}: bars is the beat the cold open's letterbox opens on.`);
+  need(!!S.skip && ['from', 'for', 'again'].every(k => num(S.skip[k]) && S.skip[k] >= 0), `${tag}: skip needs from, for and again (s).`);
 }
 const GATE_STYLES = ['portcullis', 'barricade'];
 const HOUSE_KINDS = ['house', 'tower'];

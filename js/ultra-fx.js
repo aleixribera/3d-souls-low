@@ -744,7 +744,7 @@ void main() {
   Game.renderHooks.push(frameUpdate);
 
   return {
-    on, count, hooks, isBoss, chest, dirOf, groundBelow, auraColor,
+    on, count, hooks, isBoss, chest, dirOf, groundBelow, auraColor, clear: clearEffects,
     sparkBurst, bloodSpray, moteBurst, puff, dustRing, flashAt, flare, mark, chunkBurst, motes, sparks, drops, fireMat, fireGeo,
     info: () => ({ sparks: sparks.count(), drops: drops.count(), motes: motes.count(), puffs: puffs.count(), chunks: chunks.length,
                    ribbons: ribbons.filter(r => r.owner).length, smears: smears.filter(r => r.owner && r.mesh.visible).length, flashes: flashes.map(l => l.intensity),

@@ -37,18 +37,80 @@
     sim.begin();
     const first = watch().marks;
     sim.begin();
-    expect.ok(showcase.play({ manual: true, toMenu: false }), 'it starts again');
+    expect.ok(showcase.play({ manual: true, toMenu: false, skippable: false }), 'it starts again, as a first showing');
     try {
       for (let n = 0; n < 90; n++) showcase.frame(STEP, { render: false });
       const was = Game.mode;
       for (const code of ['Escape', 'Enter', 'Space', 'KeyR', 'KeyP']) window.dispatchEvent(new KeyboardEvent('keydown', { code, key: code, bubbles: true, cancelable: true }));
-      Game.pause(false);
-      expect.ok(showcase.running && Game.mode === was && $('menu').classList.contains('hidden'), 'no key, pause or restart stops it');
+      Game.pause(false); showcase.pad(['PadStart', 'PadB']);
+      expect.ok(showcase.running && Game.mode === was && $('menu').classList.contains('hidden'), 'no key, button, pause or restart stops a first showing');
+      expect.ok(!showcase.skip() && showcase.running, 'nor can it be skipped');
+      showcase.frame(STEP, { render: true });
+      expect.ok(document.querySelector('#showcase .sc-skip').style.opacity === '0', 'a first showing shows no skip cap');
     } finally { showcase.stop(); }
     const second = watch().marks;
     expect.ok(first.length > 25 && first.join(';') === second.join(';'), `two runs differ: ${first.find((m, i) => m !== second[i])} / ${second.find((m, i) => m !== first[i])}`);
     Game.showMenu('main');
     expect.ok(Game.menuItems.some(it => it.name === 'Tutorial (Recommended)'), 'the title\'s Tutorial plays it again');
+  });
+  // Aleix (2026-11-21): skippable after the first showing; Esc skips, a small cap says so.
+  test('Showcase: a later showing shows the skip cap and Esc ends it; a key brings the cap back', () => {
+    sim.begin();
+    expect.ok(showcase.play({ manual: true, toMenu: false }), 'it starts (skippable unless told otherwise)');
+    const cap = document.querySelector('#showcase .sc-skip');
+    try {
+      expect.ok(showcase.skippable, 'it may be skipped');
+      for (let n = 0; n < 60; n++) showcase.frame(STEP, { render: true });
+      expect.ok(cap.style.opacity === '1' && /Skip/.test(cap.textContent) && /Esc/.test(cap.textContent), `the cap reads "Esc Skip" in its first seconds (${cap.style.opacity}, "${cap.textContent}")`);
+      for (let n = 0; n < 60 * 5; n++) showcase.frame(STEP, { render: n % 30 === 0 });
+      showcase.frame(STEP, { render: true });
+      expect.ok(cap.style.opacity === '0', 'then it goes');
+      window.dispatchEvent(new KeyboardEvent('keydown', { code: 'KeyJ', key: 'j', bubbles: true, cancelable: true }));
+      showcase.frame(STEP, { render: true });
+      expect.ok(showcase.running && cap.style.opacity === '1', 'another key brings it back, and skips nothing');
+      let ended = 0;
+      // Skipped inside a card's freeze, its ink up, so the test sees the ink go.
+      const B = 60 / SHOWCASE.bpm, fz = SHOWCASE.freezes.find(f => f.at * B > showcase.time);
+      while (showcase.running && showcase.time < (fz.at + 0.5) * B) showcase.frame(STEP, { render: true });
+      expect.ok(showcase.frozen && !document.getElementById('scDuo').classList.contains('hidden'), 'in a freeze, its ink up');
+      let leaked = 0; const spy = ev => { if (ev.code === 'Escape') leaked++; };
+      window.addEventListener('keydown', spy);
+      window.dispatchEvent(new KeyboardEvent('keydown', { code: 'Escape', key: 'Escape', bubbles: true, cancelable: true }));
+      expect.ok(!showcase.running, 'Esc ends it at once');
+      window.dispatchEvent(new KeyboardEvent('keydown', { code: 'Escape', key: 'Escape', repeat: true, bubbles: true, cancelable: true }));
+      window.dispatchEvent(new KeyboardEvent('keyup', { code: 'Escape', key: 'Escape', bubbles: true, cancelable: true }));
+      window.removeEventListener('keydown', spy);
+      expect.ok(leaked === 0, 'the held Esc that skipped reaches nothing after it');
+      expect.ok(document.querySelector('#showcase .sc-card').style.opacity === '0' && document.getElementById('scTint').classList.contains('hidden'), 'the card and the tint are gone');
+      expect.ok(showcase.report().skipped && !showcase.report().failed, 'the report says skipped, not failed');
+      expect.ok(document.getElementById('showcase').classList.contains('hidden') && document.getElementById('scDuo').classList.contains('hidden'), 'its ink is gone');
+      expect.ok(showcase.play({ manual: true, toMenu: false, onEnd: () => ended++ }), 'again');
+      expect.ok(showcase.pad(['PadStart']) === true, 'the pad press that skips is used up, not passed to the menus');
+      expect.ok(!showcase.running && ended === 1, 'a pad Start skips it too, and what follows it runs once');
+    } finally { if (showcase.running) showcase.stop(); Game.showMenu('main'); }
+  });
+  // The opening's freezes (pass 160): the game stands still while the show's clock, the camera and the card go on.
+  test('Showcase: a freeze holds the game still, cards each boss in its ink, and the title slams in', () => {
+    sim.begin();
+    expect.ok(showcase.play({ manual: true, toMenu: false }), 'it starts');
+    const B = 60 / SHOWCASE.bpm, card = document.querySelector('#showcase .sc-card'), seen = [];
+    try {
+      for (const f of SHOWCASE.freezes) {
+        // Drawn across the freeze's first frames, where the drawn clock can lead the staging of the fight it opens.
+        while (showcase.running && showcase.time < f.at * B - 3 * STEP) showcase.frame(STEP, { render: false });
+        while (showcase.running && showcase.time < (f.at + 0.5) * B) showcase.frame(STEP, { render: true });
+        const fight = SHOWCASE.fights.filter(x => x.from <= f.at + 1e-6).pop();
+        expect.ok(card.textContent === (f.card === 'title' ? 'Combat Arena 3D' : ENEMY_BY_ID[fight.boss].name), `the card at beat ${f.at} names its own fight: ${card.textContent}`);
+        const p = Game.player, e = Game.enemies[0], at = [p.x, p.z, e.x, e.z, e.hp, e.stateTime].join(), cam = Game.cam.pos.clone();
+        for (let n = 0; n < 20; n++) showcase.frame(STEP, { render: n === 19 });
+        expect.ok(showcase.frozen && [p.x, p.z, e.x, e.z, e.hp, e.stateTime].join() === at, `the game stands still in the freeze at beat ${f.at}`);
+        expect.ok(Game.cam.pos.distanceTo(cam) > 0.001, `the camera keeps moving through it (beat ${f.at})`);
+        expect.ok(card.style.opacity === '1' && !document.getElementById('scDuo').classList.contains('hidden'), `the card and the ink are up at beat ${f.at}`);
+        seen.push(card.textContent);
+      }
+    } finally { if (showcase.running) showcase.stop(); Game.showMenu('main'); }
+    const names = SHOWCASE.fights.map(f => ENEMY_BY_ID[f.boss].name);
+    expect.ok(names.every(n => seen.includes(n)) && seen[seen.length - 1] === 'Combat Arena 3D', `a card for every boss, then the title: ${seen.join(' / ')}`);
   });
   // At launch (PLAN.md "The showcase"): each new version plays it, once in SHOWCASE.again hours at most, never into a run.
   test('Showcase: plays at launch on each new version, once a day at most, never into a run', () => {
