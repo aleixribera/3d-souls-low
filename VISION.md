@@ -28,7 +28,9 @@ side by side, and each should feel like the main event.
   sheet.
 - **Boss Rush**, with friends, the lobby's default, and alone offline, with no server (Aleix, 2026-11-14). It is the
   only mode played together, with its Weekly run on the week's seed. It has to play well and be fun and challenging. An endless run of
-  bosses: the first fights bring the easier bosses, then the whole roster opens up, and they get harder fight after
+  bosses, balanced for one player: every number is tuned for a player alone, and nothing changes when friends join;
+  the lobby stays the default, and Boss Rush alone shows when the lobby can't be reached, or through a hidden button
+  (Aleix, 2026-11-21). The first fights bring the easier bosses, then the whole roster opens up, and they get harder fight after
   fight, their modifiers shown on screen. Difficulty grows exponentially with the fights won, but subtly: fairly easy
   at first, slowly more challenging for a good while, until it becomes genuinely impossible. It depends only on how
   far the run has got, never on team size: no enemy or boss gets stronger because more players (or newer players)

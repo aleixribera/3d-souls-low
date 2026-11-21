@@ -10,66 +10,15 @@ reads it every pass and doesn't edit it: cuts and finds go to `BACKLOG.md`, asks
 - The bar is the vision's: AAA feel, runs on a toaster, anime action against fair, cunning bosses.
 - **Balance is the loop's** (Aleix, 2026-11-20: "current numbers are not final"): every number in the game and in
   this plan (damage, health, timings, windows, odds, the starter set's counts, the difficulty curve) is a starting
-  point. A pass may change one its step needs, with evidence in the commit; the full retune is the last item.
+  point. A pass may change one its step needs, with evidence in the commit; the full retune is the last item,
+  to the targets Aleix set there.
 - Work done outside the loop (other tools, other models) is a draft like any other: the loop reads it into `STATE.md`
   and judges it like its own. Nothing reaches players without green CI.
 
 ## Now
 
-### Process first (review 2026-11-20)
-
-The review found no current-frames folder (333 files in `docs/scorecard/`, newest from before the pause) and no
-reference set: its blind panel had to cut references from `.scratch/ref-clips` videos by hand. Without both, no
-judge can score PLAN 4-5 the same way twice. In the pass that does item 1 or 2, at no extra pass:
-- `.claude/iterate.md` names the current folder (`docs/scorecard/now/`, one latest frame per screen, retaken by any
-  pass that changes the screen) and the reference set (`.scratch/ref-clips`, never committed) with the panel's lineup and prompt
-  (`docs/scorecard/panel/`).
-- Seed `now/` from what exists (a Boss Rush fight, the lobby desktop and phone, a crate roll) after item 2's cuts.
-Check: the loop file names both; `now/` holds a frame per screen dated after item 2.
-
-### 1. Main green, and nothing ships red
-
-CI has failed on every push since v7.151 (textures `astralSilver`, "Ultra models" `shoulderX`, "Ultra performance",
-"High effects: delayed boss decorations"), yet the container workflow published each version.
-- Fix the failures (much of it may go with item 2's cuts; order them as is cheapest).
-- The container publishes only from a commit whose CI run is green.
-- Rewrite the changelog entries v7.140 to v7.160 in players' words (VISION: plain English): no "GLSL", "bind
-  matrices", "spark-allocation".
-- Hosting: players play on the home server. `PLAY-LINK.txt` points at its public address; GitHub Pages retires (the
-  workflow off, the page gone or redirecting). Code, CI and the container build stay on GitHub.
-Check: a green CI run on `main`; a red test blocks the container job (shown on a branch); `PLAY-LINK.txt` opens the
-game; the old Pages address no longer serves the game.
-
-### 2. Cut most of the out-of-loop work (Aleix, 2026-11-20)
-
-Built 2026-11-19/20 with other model providers, "with varying satisfaction".
-- **Cut:** the "extreme VFX" revamps v7.141 to v7.155 (each boss back to its effects before them; the shared "Extreme
-  Boss VFX engine" goes unless something kept needs it) and Boss v2 with Veyra, the Ashwing (v7.158, v7.159:
-  `js/boss-v2.js`, `js/boss-fx-v2.js`, `ashwing`, its Blender file, the `v2`/`skinnedV2` fields and their checks,
-  AGENTS.md's Boss v2 paragraph). Aleix disliked v2's model, animation, moveset and effects; the world fit was fine.
-  Engine ideas from it may be reused by item 4 on their merits, never kept by default.
-- **Keep:** the `/souls/` serving fixes (v7.156, v7.157); all of v7.160 (no intro pause, enemies wait until you move,
-  ability cards highlight then Confirm, no cap on legendaries, shorter phase transitions); Gemini, Neon High in its
-  v7.140 form, which the loop may restyle and rename freely as Boss Rush's one contrast boss (Aleix: "make all changes
-  you want to it").
-Check: the 15 bosses fight in Practice with their pre-revamp effects and no console error; Veyra and v2 absent from
-code, data and validation; v7.160's behaviours still there (in-page tests); Gemini in Boss Rush.
-
-### 3. Counters never overlap the boss's string (Aleix, 2026-11-15)
-
-From his Weekly Run (replay `2026-11-15-891a9aff71`): 11 of 20 deflects opened no counter, 24 of 62 counters landed
-mid-string.
-1. A counter breaks the string, every string, no exceptions. The boss reels about half a second (room for the
-   follow-up, not a free combo), then attacks at its usual pace; the string's remaining blows never come. One crack per
-   string follows, so the `rest` rule goes.
-2. Every deflect opens the counter, like a perfect dodge; the last-blow-only rule goes.
-3. The Finishing Blow stays the third counter (two cracks, then the blow).
-4. One cue when a counter opens, the same after a dodge or a deflect: a flash on the player's weapon and a short sound;
-   nothing when it doesn't.
-5. The light counter is the only counter, its damage raised to about today's heavy counter (36). A heavy in the window
-   is a normal heavy. The rising-cut `counterHeavy` goes, and the bot, showcase and texts follow.
-Check: in-page tests for each rule; a bot run where no counter lands during a string and every deflect opens one; a
-clip of the cue.
+Done: the frames folder and reference set, green CI with a green-only container, the out-of-loop cuts and the
+counters (items 1-3, passes 104-110). Their text: git history.
 
 ## Track 1: bosses
 
@@ -144,17 +93,42 @@ with it held.
 
 ## Later, in brief
 
-In this order once the tracks above are through or idle: the style carried to enemies and levels; Story chapters 7 to
+In this order once the tracks above are through or idle: Boss Rush alone shown only when the lobby can't be reached,
+or through a hidden button, the lobby the default (VISION, 2026-11-21); the style carried to enemies and levels; Story chapters 7 to
 14 out of rough form; the showcase's finale as the Finishing Blow (`js/showcase.js`); the Boss Rush curve as settled
 (no wall, ever: slowly harder every fight); the Finishing Blow's look (judge's last gaps in `STATE.md`).
 
 
 ### Last: one balance pass for the whole game (Aleix, 2026-11-21)
 
-Once every ability is built, the roster reworked, the player finished and the style set, one pass retunes every number
-so the game is balanced and fun; before then passes tune only what their own step needs. It includes legendaries that
-are OP and noticeable (pass 73's nerf overturned). Its design comes from a grilling with Aleix; until then this line
-is a placeholder.
+Once every ability is built, the roster reworked, the player finished and the style set; until then passes tune only
+what their own step needs. Scope: every number that changes play (player stats and damage, bosses and enemies, the
+Rush run, abilities, card and crate odds), not what the vision fixes nor anything only drawn.
+- **Alone:** tuned for one player, nothing changes when friends join (VISION). The bots set the targets
+  (`tools/rush-curve.cjs`, `bot-fights.cjs`, `story-curve.cjs`); replays and Aleix's play confirm. First fix
+  `rush-curve.cjs runs` with `KIT=strong` (crashes on `payload`, 2026-11-21).
+- **Rush, median fight reached:** a new player (the unskilled bot) 4-6; skilled with no good kit 12-15; skilled with
+  two or more legendaries 25-30, under 5% past 40. On 2026-11-21: 5, 8, unmeasured; Aleix alone reached 27-29.
+- **Story:** a new player beats a chapter boss in 2-4 tries, a skilled one in 1-2; foes kill only the careless.
+- **Fights:** one boss 45-90 s, a pair under 2 min. A full-health player falls to 3-4 clean boss hits early in a run,
+  2 late: combos kill, single hits don't. Full health and flasks each fight. The first death ends a solo run; only an
+  ability may give a second life.
+- **Attacking pays.** Today it is a wait-to-deflect game: the Finishing Blow (about 14% of a bar) dwarfs plain hits
+  (0.5-1%) (Aleix). Plain hits rise, the Finishing Blow comes down, a counter is about 2-3x a light hit; counters and
+  Finishing Blows make about a third of a skilled player's damage.
+- **Rarities:** a common is a stat felt over a fight (+10-15%); a rare a technique noticed every fight; a legendary is
+  OP and noticeable: it takes over the fight when it fires (10-20% of a mid-run boss's bar), two make a run feel broken
+  in a fun way, and the curve rises to meet them (pass 73's nerf overturned). In a great kit late in a run, abilities
+  deal about half the damage.
+- **Odds:** cards keep 3% legendary and Crowned's guarantee. Crates 70/25/5, a legendary within the first 3 crates and
+  never more than 10 apart. Starter set 6/4/2.
+- **Windows stay** (dash 0.3 s, deflect about 0.35 s); the counter's reel may grow to about 0.6 s. Movement and attack
+  speed up to +15% where a judge reads the clips as more anime; bosses keep up through the curve, never narrower windows.
+- **Then:** Aleix plays 3 solo Rush runs, a friend new to the genre 2 solo runs and a Story chapter boss, all recorded;
+  a second round fixes what those runs show against these targets.
+Check, written to `docs/balance/`: the three Rush medians inside their targets (60 runs each); `bot-fights` fight times
+inside 45-90 s; a bot pressing every opening kills faster than one that only waits to deflect; each legendary's share
+of a mid-run fight's damage; the crate odds tested over the whole pool; then "awaiting Aleix's playtest" in `STATE.md`.
 ## Scorecard rows
 
 What a 5 means, for the judge (`SCORECARD.md`):
