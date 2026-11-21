@@ -1061,6 +1061,41 @@
       expect.ok(!left.ghost && !left.slashes && !left.arcs && !left.release && !document.querySelector('#aBR .akey-over.on'), `all gone (${JSON.stringify(left)})`);
     } finally { audio.play = play; rareStrikeFx.clear(); p.grantAbilities([]); }
   });
+  // Pass 129 (PLAN.md item 8, batch 6): Strike I, each key-1 shape drawn in blue ink by js/strike-fx.js and heard; the
+  // same power fired another way (Counterflame's flare) keeps its own look.
+  test('strike shapes: each is drawn and heard', () => {
+    Game.startFight('pillagerCaptain'); Game.loading = 0; sim.begin(); strikeFx.clear(); rareStrikeFx.clear(); abilityPowers.reset();
+    const p = Game.player, e = Game.duel, R = () => strikeFx.state, played = [];
+    const play = audio.play; audio.play = (id, o) => { played.push(id); return play.call(audio, id, o); };
+    const frames = n => { for (let i = 0; i < n; i++) Game.render(1, STEP); };
+    const fire = (power, then) => { played.length = 0; events.emit('abilityPower', { power, then, holder: 'self', body: p, enemy: e, x: p.x, y: p.y, z: p.z, v: ABILITY_BY_ID[power].levels[0] }); frames(1); };
+    try {
+      sturdy(p); e.cooldown = 30; faceOff(e, p, 3);
+      fire('fire-burst', 'flare'); frames(14);
+      expect.ok(R().lotus && played.includes('abilityBloom') && played.includes('abilityFlare'), `Fire Burst: a lotus, opening and closing (${JSON.stringify(R())})`);
+      frames(12); expect.ok(R().flakes > 0, 'its embers');
+      fire('wind-blade', 'gale'); frames(10);
+      expect.ok(R().crescent && R().sweeps >= 0 && played.includes('abilityGale') && abilityFx.info().gales === 0, `Wind Blade: the ink crescent, not the old one (${JSON.stringify(R())})`);
+      fire('tidal-arc', 'wave'); frames(4);
+      expect.ok(rareStrikeFx.state.crest && R().sweeps > 0 && played.includes('abilityWave'), 'Tidal Arc: a sweep and the wave');
+      frames(40); expect.ok(R().foam || R().flakes > 0, 'its foam');
+      fire('frost-spike', 'spikes'); frames(20);
+      expect.ok(R().spikes >= 2 && R().frost && played.includes('abilitySpikes'), `Frost Spike: spikes rise along the line (${R().spikes})`);
+      fire('stone-fist', 'fist'); frames(6);
+      expect.ok(R().cracks && !R().fist && played.includes('abilityFist'), 'Stone Fist: cracks first');
+      frames(16); expect.ok(R().fist, 'then the fist');
+      fire('rising-fang', 'risingFire'); frames(20);
+      expect.ok(R().fang && played.includes('abilityFang'), 'Rising Fang: the fang');
+      fire('thunderclap', 'clap'); frames(8);
+      expect.ok(R().arcs >= 2 && played.includes('abilityClap'), `Thunderclap: sound arcs (${R().arcs})`);
+      strikeFx.clear(); fire('counterflame', 'flare');
+      expect.ok(!R().lotus, 'Counterflame keeps its own burst');
+      frames(120);
+      const left = R();
+      expect.ok(!left.lotus && !left.crescent && !left.spikes && !left.fist && !left.fang && !left.arcs && !left.flakes && !left.scorch && !left.line,
+        `all gone (${JSON.stringify(left)})`);
+    } finally { audio.play = play; strikeFx.clear(); rareStrikeFx.clear(); }
+  });
   // Pass 97 (PLAN.md 3d): the sparring scene. The player's part of each drill is the teacher's own demonstration, played
   // on the player's keys (a swing drill's steps from the moment the partner's blow begins), so a demo that cannot do
   // its drill fails here too.

@@ -48,6 +48,7 @@ function registerListeners() {
   commonFx.attach();     // the blade's commons drawn (js/common-fx.js)
   rareFx.attach();       // the rares' perks drawn (js/rare-fx.js)
   rareStrikeFx.attach(); // the rares' new triggers drawn (js/rare-strike-fx.js)
+  strikeFx.attach();     // Strike I, the key-1 shapes on the ground drawn (js/strike-fx.js)
   summonFigures.attach(); // the Stone Guardian and the Lancer of Ash drawn (js/summon-figures.js)
   registerAudioListeners();
 }

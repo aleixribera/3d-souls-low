@@ -660,9 +660,9 @@ const abilityFx = (() => {
     else if (d.then === 'twin' && d.strike && e) twinStrike(d, e);
     else if (d.then === 'twin' && d.draw) twinDraws(d);
     else if (d.then === 'twin') twin(d);
-    else if (d.then === 'gale' && e) gale(d, e);
+    else if (d.then === 'gale' && e && !strikeFx.mine(d)) gale(d, e);   // Wind Blade's press is js/strike-fx.js's
     else if (d.then === 'pyre' && e) pyre(d, e);
-    else if (d.then === 'flare' && e && d.power !== 'counterflame') flareOn(e);   // Fire Burst's; Counterflame's and Static Edge's are js/rare-fx.js's
+    else if (d.then === 'flare' && e && d.power !== 'counterflame' && !strikeFx.mine(d)) flareOn(e);   // Fire Burst's press is js/strike-fx.js's; Counterflame's js/rare-fx.js's
   });
   events.on('abilityPerk', perk);
   events.on('abilityPicked', d => {

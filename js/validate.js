@@ -258,17 +258,25 @@ function validateData({ visual = true } = {}) {
   need(CS && num(CS.reach) && CS.reach > 0 && num(CS.width) && CS.width > 0, 'CONFIG.abilities.crescent: reach and width, each above 0.');
   need(CY && num(CY.gap) && CY.gap > 0, 'CONFIG.abilities.cyclone: gap above 0.');
   need(MK && num(MK.keep) && MK.keep > 0, 'CONFIG.abilities.mark: keep above 0.');
+  const SP = BL.spikes, FI = BL.fist, RF = BL.risingFire, CL = BL.clap;
+  need(SP && num(SP.width) && SP.width > 0 && num(SP.speed) && SP.speed > 0, 'CONFIG.abilities.spikes: width and speed, each above 0.');
+  need(FI && num(FI.delay) && FI.delay >= 0 && FI.delay <= 0.6 && num(FI.radius) && FI.radius > 0, 'CONFIG.abilities.fist: delay from 0 to 0.6, radius above 0.');
+  need(RF && num(RF.delay) && RF.delay >= 0 && RF.delay <= 0.5 && num(RF.radius) && RF.radius > 0, 'CONFIG.abilities.risingFire: delay from 0 to 0.5, radius above 0.');
+  need(CL && num(CL.angle) && CL.angle > 0 && CL.angle <= 180, 'CONFIG.abilities.clap: angle above 0, up to 180.');
   const EC = BL.echo, OC = BL.overcharge;
   need(EC && num(EC.keep) && EC.keep > 0 && num(EC.delay) && EC.delay >= 0 && EC.delay <= 0.5, 'CONFIG.abilities.echo: keep above 0, delay from 0 to 0.5.');
   need(OC && num(OC.most) && OC.most > 0 && OC.most <= 2, 'CONFIG.abilities.overcharge: most above 0, at most 2.');
   const RS = CONFIG.VISUALS.abilityFx.rareStrike;   // js/rare-strike-fx.js's sizes and times
-  if (visual) need(RS && ['crest', 'moon', 'moonLift', 'cutWidth', 'waist', 'dustLife', 'burst', 'petal', 'whirl', 'shell', 'mark'].every(k => num(RS[k]) && RS[k] > 0),
-    'VIS.abilityFx.rareStrike: crest, moon, moonLift, cutWidth, waist, dustLife, burst, petal, whirl, shell and mark, each above 0.');
+  const SFX = CONFIG.VISUALS.abilityFx.strike;   // js/strike-fx.js's sizes
+  if (visual) need(SFX && ['petal', 'petalGap', 'burst', 'sweep', 'crescent', 'waist', 'cutStar', 'spike', 'fist', 'fang', 'clapStar'].every(k => num(SFX[k]) && SFX[k] > 0),
+    'VIS.abilityFx.strike: petal, petalGap, burst, sweep, crescent, waist, cutStar, spike, fist, fang and clapStar, each above 0.');
+  if (visual) need(RS && ['tide', 'crest', 'moon', 'moonLift', 'cutWidth', 'waist', 'dustLife', 'burst', 'petal', 'whirl', 'shell', 'mark'].every(k => num(RS[k]) && RS[k] > 0),
+    'VIS.abilityFx.rareStrike: tide, crest, moon, moonLift, cutWidth, waist, dustLife, burst, petal, whirl, shell and mark, each above 0.');
   for (const k of Object.keys(ABILITY_UNITS)) need(['s', 'm', 'n'].includes(ABILITY_UNITS[k]), `ABILITY_UNITS ${k}: s, m or n.`);
   const BP = BL.press, PG = BP && BP.gain;
   need(PG && ['hit', 'skill', 'deflect', 'dodge', 'finisher'].every(k => num(PG[k]) && PG[k] >= 0) && PG.hit > 0 && num(BP.range) && BP.range > 0
-    && num(BP.slack) && BP.slack >= 0 && BP.slack < 1 && num(BP.botReach) && BP.botReach > 0 && num(BP.botHeal) && BP.botHeal > 0 && BP.botHeal <= 1,
-    'CONFIG.abilities.press: gain { hit above 0; skill, deflect, dodge, finisher 0 or more }, range above 0, slack from 0 to under 1, botReach above 0, botHeal above 0 up to 1.');
+    && num(BP.slack) && BP.slack >= 0 && BP.slack < 1 && num(BP.reachSlack) && BP.reachSlack >= 0 && num(BP.botReach) && BP.botReach > 0 && num(BP.botHeal) && BP.botHeal > 0 && BP.botHeal <= 1,
+    'CONFIG.abilities.press: gain { hit above 0; skill, deflect, dodge, finisher 0 or more }, range above 0, slack from 0 to under 1, reachSlack 0 or more, botReach above 0, botHeal above 0 up to 1.');
   for (const key of ABILITY_KEYS) need(ABILITIES.some(b => b.key === key), `Abilities: key ${key} needs at least one ability to fill it.`);
   if (visual) ABILITY_KEYS.forEach((k, i) => need(Object.hasOwn(DEFAULT_ACTIONS, `ability${i + 1}`), `Key ${k}: no ability${i + 1} binding (js/input.js).`));
   // Levels and crates (js/data/crates.js): xp, levels, odds, the roll and the starter set.

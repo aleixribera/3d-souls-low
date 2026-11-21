@@ -522,7 +522,8 @@ class Player {
       if (!slot || !this.alive() || this.state === PS.HELD || this.state === PS.EXECUTE) continue;
       if (this.perk.charge[key] < slot.v.charge) { events.emit('abilityNotReady', { body: this, key }); continue; }
       const e = pressTarget(this, enemies, lock);
-      if (slot.power && ON_ENEMY.has(slot.then) && !e) { events.emit('abilityNotReady', { body: this, key }); continue; }
+      if (!pressOpen(slot, this, e)) { events.emit('abilityNotReady', { body: this, key }); continue; }
+      if (slot.power && PRESS_NEAR.has(slot.then)) this.yaw = Math.atan2(e.x - this.x, e.z - this.z);   // Thunderclap turns to its enemy
       const over = abilityOver(this.kit, this.perk, key);   // Overcharge: the share filled past full
       this.perk.charge[key] = 0;
       events.emit('abilityPress', { body: this, key, ability: slot.id, over: over > 0 ? over : undefined });

@@ -3,7 +3,7 @@
 // each fired twice, its name in the corner: docs/scorecard/now/<set>-commons.mp4. The clock is stepped by hand
 // (Game.manualClock) and every other step is a frame, so a clip plays at real speed whatever the PC's speed. With
 // `--stills`, the guard set's current frames too (guard-*.jpg, desktop; -phone for two).
-// Usage: node tools/ability-clips.cjs [blade|guard|mirror|rares|triggers|echo ...] [--stills]   (no set = all). One headless Edge; needs ffmpeg.
+// Usage: node tools/ability-clips.cjs [blade|guard|mirror|rares|triggers|echo|strikes ...] [--stills]   (no set = all). One headless Edge; needs ffmpeg.
 require('../tests/low-priority.cjs');
 const fs = require('node:fs');
 const os = require('node:os');
@@ -91,6 +91,18 @@ const SETS = {
       for (let n = 1; n <= 56; n += 2) __later(n, () => p.gainCharge(1));
       __later(66, () => { const c = p.ctl.consume; p.ctl.consume = function (a) { if (a === 'ability1') { p.ctl.consume = c; return true; } return c.call(this, a); }; }); }`, 100, 'trig-overcharge', 70],
   ] },
+  // Strike I (pass 129, batch 6): docs/scorecard/now/strike-shapes.mp4, with --stills a frame of each (strike-<id>.jpg;
+  // -phone for the first two). Each pressed through the player's own key 1, its charge full.
+  strikes: { ids: ['fire-burst', 'wind-blade', 'tidal-arc', 'frost-spike', 'stone-fist', 'rising-fang', 'thunderclap'], solo: true,
+    file: 'strike-shapes', phone: 2, crf: 30, beats: [
+    ['Fire Burst', `(p, e) => __key()`, 50, 'strike-fire-burst', 22],
+    ['Wind Blade', `(p, e) => __key()`, 44, 'strike-wind-blade', 12],
+    ['Tidal Arc', `(p, e) => __key()`, 50, 'strike-tidal-arc', 16],
+    ['Frost Spike', `(p, e) => __key()`, 56, 'strike-frost-spike', 22],
+    ['Stone Fist', `(p, e) => __key()`, 64, 'strike-stone-fist', 26],
+    ['Rising Fang', `(p, e) => __key()`, 56, 'strike-rising-fang', 22],
+    ['Thunderclap', `(p, e) => __key()`, 44, 'strike-thunderclap', 10],
+  ] },
 };
 
 (async () => {
@@ -127,13 +139,17 @@ const SETS = {
             const s = abilityStrike(p.kit, p.perk, e, { attackId: 'light', damage: 10, poise: 0, knock: 0, hitstop: 0 }); e.takeHit(s, p);
             for (const [k, perk] of [['venge', 'empower'], ['calm', 'unhurt/empower'], ['cracked', 'cracked/damage']]) if (s[k]) events.emit('abilityPerk', { body: p, perk, target: e });
           };
+          window.__key = () => {   // key 1 pressed with its charge full, through the player's own press
+            __face(); const slot = p.kit.pressed.strike; if (slot) p.perk.charge.strike = slot.v.charge;
+            const c = p.ctl.consume; p.ctl.consume = function (a) { if (a === 'ability1') { p.ctl.consume = c; return true; } return c.call(this, a); };
+          };
           window.__face = () => { p.yaw = p.pyaw = Math.atan2(e.x - p.x, e.z - p.z); };
           window.__landed = () => {   // a blow of the player's, told as js/combat.js tells it (the strike its cues listen for)
             const s = abilityStrike(p.kit, p.perk, e, { attackId: 'light', damage: 10, poise: 0, knock: 0, hitstop: 0 }); e.takeHit(s, p);
             events.emit('strike', { strike: s, attacker: p, target: e, at: { x: e.x, y: e.y + 1.2, z: e.z }, blocked: false });
           };
           window.__reset = name => {
-            commonFx.clear(); rareFx.clear(); rareStrikeFx.clear(); abilityPowers.reset(); later.length = 0; tag.textContent = name; e.cracks = 0; events.emit('guardCrack', { enemy: e, cracks: 0 });
+            commonFx.clear(); rareFx.clear(); rareStrikeFx.clear(); strikeFx.clear(); abilityPowers.reset(); later.length = 0; tag.textContent = name; e.cracks = 0; events.emit('guardCrack', { enemy: e, cracks: 0 });
             p.hp = p.maxHp; p.lastHp = p.hp; p.perk = abilityPerkState(); p.tint = 0;
             for (let i = 0; i < 30; i++) Game.update(CONFIG.step);
             e.x = e.px = p.x + Math.sin(p.yaw + 0.6) * 2.8; e.z = e.pz = p.z + Math.cos(p.yaw + 0.6) * 2.8; e.y = p.y; e.yaw = Math.atan2(p.x - e.x, p.z - e.z);

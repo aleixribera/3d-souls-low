@@ -46,7 +46,8 @@ const CONFIG = {
             powers: { blast: [4, 0.24], lightning: [1.6, 0], strike: [-1.8, 0.06], freeze: [-3.2, 0.05], blades: [-1.4, 0.04], bloodMoon: [3, 0.12],
               twin: [2.6, 0.1], echo: [-0.6, 0.02], gale: [-2.4, 0.05], pyre: [3.2, 0.16], flare: [-1.1, 0.03], spark: [-0.8, 0.02],
               hound: [1.4, 0.05], bite: [-0.5, 0.02], draw: [1.2, 0.03], guardian: [2.2, 0.1], lancer: [1.2, 0.04],
-              wave: [0.8, 0], crescent: [-1.4, 0.06], cyclone: [1.2, 0.04], petals: [1.4, 0.04] } },
+              wave: [0.8, 0], crescent: [-1.4, 0.06], cyclone: [1.2, 0.04], petals: [1.4, 0.04],
+              spikes: [-1.2, 0.04], fist: [2.4, 0.12], risingFire: [1.6, 0.05], clap: [2.0, 0.08] } },
   },
   zoom: { min: 2.6, max: 12, default: 4.6, rate: 7,
           heightRatio: 0.5 },   // camera height = distance * heightRatio
@@ -308,7 +309,7 @@ const CONFIG = {
     // strikes the locked enemy, else the nearest, within `range` m of its holder's body. The server takes a press with
     // at least 1 - `slack` of the charge it counted (a claim it refused is a point the browser still counted). A bot
     // presses a full key with its foe within `botReach` m (Guard's heal under `botHeal` of its bar, its stance at a wind-up).
-    press: { gain: { hit: 1, skill: 2, deflect: 3, dodge: 3, finisher: 6 }, range: 18, slack: 0.25, botReach: 6, botHeal: 0.6 },
+    press: { gain: { hit: 1, skill: 2, deflect: 3, dodge: 3, finisher: 6 }, range: 18, slack: 0.25, reachSlack: 1.5, botReach: 6, botHeal: 0.6 },
     rarity: { common: { levels: 4, weight: 75, grow: 0 }, rare: { levels: 3, weight: 22, grow: 1.2 }, legendary: { levels: 1, weight: 3, grow: 0.25 } },
     // A plain common (a bare number, `plain: true`) is drawn at `plainWeight` of another common's chance (PLAN.md item 6).
     plainWeight: 0.5,
@@ -330,6 +331,10 @@ const CONFIG = {
     // Echoing Blade's echoes wait `keep` s for their blows and each lands `delay` s after its blow; Overcharge's key fills
     // on past full up to `most` of its charge more.
     echo: { keep: 6, delay: 0.15 }, overcharge: { most: 1 },
+    // Batch 6's strikes: Frost Spike's line is `width` m either side, its front running at `speed` m/s; Stone Fist and
+    // Rising Fang erupt `delay` s after the press at the spot their enemy stood, wounding what is within `radius` m of it;
+    // Thunderclap's cone is `angle` degrees wide.
+    spikes: { width: 1.2, speed: 24 }, fist: { delay: 0.3, radius: 1.8 }, risingFire: { delay: 0.25, radius: 1.5 }, clap: { angle: 70 },
     // Summons (js/abilities.js summonStep): each kind stands `gap` m off its enemy's body, `flank` rad round from the
     // side away from its holder (+ toward the enemy's left), and runs there at up to `speed` m/s. It has arrived
     // `arrive` s after it is called (one that `rises` comes up where it will stand; the others run there); a hound,
@@ -778,7 +783,11 @@ const CONFIG = {
       // crescent is `moon` m tall, formed `moonLift` m up, its floor cut `cutWidth` m wide; Iron Cyclone's blades turn at
       // `waist` m, its dust ring lives `dustLife` s; Petal Storm's star is `burst` m, its petals `petal` m, whirling `whirl`
       // rad; Ironclad's shell is `shell` m across; Hunting Call's chevron `mark` m.
-      rareStrike: { crest: 1.6, moon: 3.2, moonLift: 1.6, cutWidth: 0.5, waist: 1, dustLife: 0.45, burst: 1.4, petal: 0.32, whirl: 3.5, shell: 1.9, mark: 0.75 },
+      // Strike I (js/strike-fx.js, batch 6), in m: Fire Burst's petals stand `petal` tall, `petalGap` off the boss's body, its
+      // burst `burst` across; slash arcs `sweep`; Wind Blade's crescent `crescent` across at `waist` up, a cut's star
+      // `cutStar`; Frost Spike's tallest spike `spike`; Stone Fist `fist` tall; Rising Fang `fang` tall; Thunderclap's star `clapStar`.
+      strike: { petal: 2.4, petalGap: 0.5, burst: 2.2, sweep: 2.4, crescent: 3.2, waist: 1, cutStar: 1.1, spike: 2.4, fist: 3, fang: 4, clapStar: 0.9 },
+      rareStrike: { tide: 3, crest: 1.6, moon: 3.2, moonLift: 1.6, cutWidth: 0.5, waist: 1, dustLife: 0.45, burst: 1.4, petal: 0.32, whirl: 3.5, shell: 1.9, mark: 0.75 },
       meteor: { color: 0xff7a2a, core: 0xffe6b8, column: 22, width: 1.8, glow: 1.8, fall: 0.5, ring: 0.55, crater: 3.2, shake: [0.45, 0.35],
         burst: { count: 40, speed: 9, color: 0xff8a3a } },
       storm: { color: 0xa9c9ff, core: 0xffffff, height: 16, jitter: 2.4, width: 0.14, life: 0.32, scorch: 1.6, shake: [0.18, 0.12],

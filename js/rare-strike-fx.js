@@ -138,7 +138,7 @@ const rareStrikeFx = (() => {
     for (let i = 0; i < 4; i++) pops.push({ s: sprite(STAR, 14), age: Infinity, life: 0.25, size: 1, x: 0, y: 0, z: 0 });
     for (let i = 0; i < 3; i++) rings.push({ m: mesh(disc, mat(RING), 3), age: Infinity, life: 1, from: 1, to: 2, x: 0, y: 0, z: 0 });
     for (let i = 0; i < 48; i++) flakes.push({ s: sprite(FLAKE, 13), age: Infinity, life: 1, x: 0, y: 0, z: 0, vx: 0, vy: 0, vz: 0, spin: 0, grav: 0 });
-    crest = { m: mesh(new THREE.PlaneGeometry(1, 1).translate(0, 0.5, 0), mat(WAVE), 13), age: Infinity, x: 0, y: 0, z: 0, ux: 0, uz: 1, reach: 8, width: 2 };
+    crest = { m: mesh(new THREE.PlaneGeometry(1, 1).translate(0, 0.5, 0), mat(WAVE), 13), age: Infinity, x: 0, y: 0, z: 0, ux: 0, uz: 1, reach: 8, width: 2, tall: 1 };
     moon = { s: sprite(MOON, 14), age: Infinity, x: 0, y: 0, z: 0, ux: 0, uz: 1 };
     moon.s.center.set(0.5, 0);
     cut = { m: mesh(new THREE.PlaneGeometry(1, 1).rotateX(-Math.PI / 2).translate(0, 0, 0.5), mat(CUT), 3), age: Infinity };
@@ -215,6 +215,7 @@ const rareStrikeFx = (() => {
         if (!e) return;
         const dx = e.x - d.x, dz = e.z - d.z, l = Math.hypot(dx, dz) || 1;
         Object.assign(crest, { age: 0, x: d.x, y: e.y, z: d.z, ux: dx / l, uz: dz / l, reach: v.reach || 8, width: v.width || 2 });
+        crest.tall = v.charge > 0 ? R.tide : R.crest;   // Tidal Arc's press: a whole wave, taller than Riptide's crest
         crest.m.rotation.set(0, Math.atan2(dx, dz), 0); crest.m.material.opacity = 1; crest.m.visible = true;
         break;
       }
@@ -305,7 +306,7 @@ const rareStrikeFx = (() => {
       else {
         const dist = 0.6 + (crest.reach - 0.6) * ease, x = crest.x + crest.ux * dist, z = crest.z + crest.uz * dist;
         const rise = Math.min(1, crest.age / 0.06), grow = 1 + 0.3 * ease;
-        crest.m.position.set(x, crest.y, z); crest.m.scale.set(crest.width * 2 * grow, R.crest * rise * (1 - 0.8 * out), 1); crest.m.material.opacity = 1 - out * out;
+        crest.m.position.set(x, crest.y, z); crest.m.scale.set(crest.width * 2 * grow, crest.tall * rise * (1 - 0.8 * out), 1); crest.m.material.opacity = 1 - out * out;
         for (const t of SPRAY_AT) if (was < t && crest.age >= t)   // spray off its base as it runs
           throwFlakes(x, crest.y + 0.2, z, 6, FOAM, SPRAY, (i, n) => { const s = i / n - 0.5; return { x: crest.ux, z: crest.uz, ox: -crest.uz * s * crest.width * 2, oz: crest.ux * s * crest.width * 2 }; });
         if (was < 0.4 && crest.age >= 0.4) ring(x, crest.y, z, crest.width, crest.width * 2.6, 0.35);

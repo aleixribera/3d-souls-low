@@ -58,8 +58,10 @@ class AudioManager {
     this.mood_f = c.createBiquadFilter(); this.mood_f.type = 'lowpass'; this.mood_f.frequency.value = A.muffle.open; this.mood_f.Q.value = 0.5;
     this.mix = g();
     // A soft clip last of all: transparent below 0.6, then it rounds off whatever the limiter lets through instead of clipping.
+    // It tops out at 0.95, not 1: the 2x oversampling's filter rings a little past the curve on a hard-driven burst (Moonfall
+    // Cut's crack reached 1.014 on CI, v7.177.0), and that headroom keeps the ringing under full scale.
     const clip = c.createWaveShaper(), curve = new Float32Array(2049);
-    for (let i = 0; i < curve.length; i++) { const x = i / 1024 - 1, m = Math.abs(x); curve[i] = m < 0.6 ? x : Math.sign(x) * (0.6 + 0.4 * Math.tanh((m - 0.6) / 0.4)); }
+    for (let i = 0; i < curve.length; i++) { const x = i / 1024 - 1, m = Math.abs(x); curve[i] = m < 0.6 ? x : Math.sign(x) * (0.6 + 0.35 * Math.tanh((m - 0.6) / 0.35)); }
     clip.curve = curve; clip.oversample = '2x';
     this.mix.connect(this.mood_f); this.mood_f.connect(comp); comp.connect(limiter); limiter.connect(this.master); this.master.connect(clip); clip.connect(c.destination);
     this.buses = {};
@@ -386,14 +388,15 @@ const AUDIO_CUES = ['hitFlesh', 'hitHurt', 'hitBlock', 'riposteBoom', 'parry', '
   'abilityHeal', 'abilityCharge', 'abilityHound', 'abilityBite', 'abilityHowl', 'abilityTaunt', 'abilityGuardian', 'abilityBash', 'abilityChallenge',
   'abilityLancer', 'abilityThrust', 'crateOpen', 'crateTick', 'crateLand', 'counterOpen', 'cutOpen',
   'abilityClank', 'abilityChime', 'abilityGulp', 'abilityFrost', 'abilityInk', 'abilitySizzle', 'abilityWhirl', 'abilityMirror',
-  'abilityWave', 'abilityMoonfall', 'abilityCyclone', 'abilityPetals', 'abilityGhostBlade', 'abilityOvercharge'];
+  'abilityWave', 'abilityMoonfall', 'abilityCyclone', 'abilityPetals', 'abilityGhostBlade', 'abilityOvercharge',
+  'abilityBloom', 'abilitySpikes', 'abilityFist', 'abilityFang', 'abilityClap'];
 // A power's sound by its `then`, its later blows' (`strike`: a lightning bolt, a twin's echo, a hound's bite) by
 // STRIKE_SOUNDS, a summon drawing the boss's eye (`draw`) by DRAW_SOUNDS; a rare's perk its own (ABILITY_PERK_SOUNDS,
 // at a pitch), a pick's pitch by its rarity.
 const ABILITY_SOUNDS = { blast: 'abilityBlast', lightning: 'abilityDragon', freeze: 'abilityFreeze', blades: 'abilityBlades', bloodMoon: 'abilityMoon',
   twin: 'abilityTwin', gale: 'abilityGale', pyre: 'abilityPyre', flare: 'abilityFlare', spark: 'abilitySpark', hound: 'abilityHound',
   guardian: 'abilityGuardian', lancer: 'abilityLancer', wave: 'abilityWave', crescent: 'abilityMoonfall', cyclone: 'abilityCyclone', petals: 'abilityPetals',
-  ghostBlade: 'abilityChime' };   // Echoing Blade armed: a soft chime (each echo: ABILITY_STRIKE_SOUNDS)
+  ghostBlade: 'abilityChime', spikes: 'abilitySpikes', fist: 'abilityFist', risingFire: 'abilityFang', clap: 'abilityClap' };   // Echoing Blade armed: a soft chime (each echo: ABILITY_STRIKE_SOUNDS)
 const ABILITY_STRIKE_SOUNDS = { lightning: 'abilityThunder', twin: 'abilityEcho', hound: 'abilityBite', guardian: 'abilityBash', lancer: 'abilityThrust',
   ghostBlade: 'abilityGhostBlade' };
 const ABILITY_DRAW_SOUNDS = { twin: 'abilityTaunt', hound: 'abilityHowl', guardian: 'abilityChallenge', lancer: 'abilityChallenge' };
@@ -511,7 +514,9 @@ function registerAudioListeners() {
     if (!id) return;
     // A summon's howl or taunt comes from the summon (`x`, `z`), never from its holder's ears.
     const mine = d.body === Game.player, pos = d.draw ? spot(d) : mine && !d.strike ? null : d.enemy && d.then !== 'blast' ? chest(d.enemy) : spot(d);
-    audio.play(id, { pos, vel: 1 });
+    const lotus = d.then === 'flare' && d.v && d.v.charge > 0 && !d.strike;   // Fire Burst's press: the lotus opens, its close bursts 0.35 s on
+    if (lotus) audio.play('abilityBloom', { pos });
+    audio.play(id, lotus ? { pos, vel: 1, delay: 0.35 } : { pos, vel: 1 });
     if (d.then === 'blades' && d.enemy && d.v) for (let i = rains.length - 1; i >= 0; i--) if (rains[i].e === d.enemy) rains.splice(i, 1);   // a new rain on it replaces the old
     if (d.then === 'blades' && d.enemy && d.v && rains.length < 4) rains.push({ e: d.enemy, left: Math.round(d.v.time / d.v.every), next: d.v.every, every: d.v.every });
   });

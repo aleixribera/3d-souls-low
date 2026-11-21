@@ -73,6 +73,12 @@ const ABILITY_ICONS = {
   // The pressed ones (pass 87, keys 1-4).
   'fire-burst': '<path d="M24 6 C28 14 34 16 34 26 A10 10 0 0 1 14 26 C14 19 19 17 20 11 C22 15 24 15 24 6 Z"/><path d="M5 24 H10 M38 24 H43 M10 10 L13 13 M38 10 L35 13 M10 38 L13 35 M38 38 L35 35"/>',
   'wind-blade': '<path d="M8 38 C18 31 30 19 40 8 C37 23 26 35 8 38 Z"/><path d="M5 20 H17 M4 27 H13 M22 43 H37" stroke-dasharray="3 2"/>',
+  // Batch 6 strikes (design/abilities: each card's icon line)
+  'tidal-arc': '<path d="M6 40 C10 24 22 12 34 12 C42 12 44 20 38 24 C36 19 30 19 28 23 C33 24 34 30 30 32"/><path d="M34 12 L37 7 M39 15 L44 12 M40 21 L45 21"/><path d="M4 44 H44"/>',
+  'frost-spike': '<path d="M4 42 H44"/><path d="M6 42 L9 34 L12 42"/><path d="M14 42 L18 28 L22 42"/><path d="M24 42 L29 20 L34 42"/><path d="M34 42 L40 10 L45 42"/>',
+  'stone-fist': '<path d="M4 40 H16 M32 40 H44"/><path d="M16 40 V22 C16 18 19 16 22 16 H30 C33 16 34 19 34 22 V40"/><path d="M20 16 V22 M25 16 V22 M30 16 V22"/><path d="M8 44 L12 40 M40 44 L36 40 M6 36 L10 40 M42 36 L38 40"/>',
+  'rising-fang': '<path d="M6 42 H42"/><path d="M22 42 C20 30 24 16 34 4 C32 18 32 30 30 42"/><path d="M10 40 C14 36 18 34 22 34"/>',
+  'thunderclap': '<path d="M12 10 C6 18 6 30 12 38 C14 30 14 18 12 10 Z"/><path d="M22 16 C26 21 26 27 22 32"/><path d="M29 11 C35 18 35 30 29 37"/><path d="M36 6 C44 16 44 32 36 42"/>',
   'mending': '<path d="M24 41 C10 31 6 24 6 17 A8.5 8.5 0 0 1 24 13 A8.5 8.5 0 0 1 42 17 C42 24 38 31 24 41 Z"/><path d="M24 19 V31 M18 25 H30"/>',
   'iron-stance': '<path d="M24 5 L39 11 V23 C39 33 32 39 24 43 C16 39 9 33 9 23 V11 Z"/><path d="M16 23 L24 16 L32 23 M16 31 L24 24 L32 31"/>',
   'thunder-call': '<path d="M16 4 L9 18 H15 L10 30"/><path d="M30 8 L22 23 H29 L23 38"/><path d="M41 4 L36 14 H40 L37 22"/><path d="M6 44 H42"/>',

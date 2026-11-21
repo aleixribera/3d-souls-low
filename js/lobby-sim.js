@@ -408,7 +408,7 @@ globalThis.host = (() => {
       if (!slot || st.charge[msg.key] < slot.v.charge * (1 - CONFIG.abilities.press.slack) - 1e-9) return false;
       const live = Game.enemies.filter(e => !e.invulnerable()), aim = enemy(msg.enemy);   // their lock, if in reach; else the nearest
       const e = slot.power ? pressTarget(p, live, aim && live.includes(aim) ? aim : null) : null;
-      if (slot.power && ON_ENEMY.has(slot.then) && !e) return false;
+      if (!pressOpen(slot, p, e, CONFIG.abilities.press.reachSlack)) return false;   // no enemy for it, or not near enough (Thunderclap)
       const over = abilityOver(kit, st, msg.key);   // Overcharge, by this server's own count
       st.charge[msg.key] = 0;
       abilityPowers.trigger(id, body, kit, 'press', { key: msg.key, enemy: e, over });

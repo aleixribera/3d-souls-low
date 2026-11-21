@@ -535,6 +535,41 @@ const AUDIO = {
       { wave: 'sawtooth', freq: 110, filter: { type: 'lowpass', freq: 600 }, a: 0.003, d: 0.25, gain: 0.35, drive: 2 },
       { noise: 'white', filter: { type: 'bandpass', freq: 2400, q: 2 }, at: 0.03, a: 0.001, d: 0.05, gain: 0.3 },
     ] },
+    // Strike I (batch 6). Fire Burst's opening: a soft rising rush of flame under the lotus (its close is abilityFlare).
+    abilityBloom: { bus: 'sfx', priority: 2, cooldown: 0.2, max: 1, verb: 0.35, heat: 0.2, jitter: 40, layers: [
+      { noise: 'pink', filter: { type: 'bandpass', freq: 400, to: 1200, q: 0.9 }, a: 0.2, d: 0.12, gain: 0.55 },
+    ] },
+    // Frost Spike: a hard ice crack, a crunching run of cracks each lower, a cold glassy shimmer.
+    abilitySpikes: { bus: 'sfx', priority: 3, cooldown: 0.25, max: 2, verb: 0.5, heat: 0.35, jitter: 40, layers: [
+      { noise: 'white', filter: { type: 'highpass', freq: 3500 }, a: 0.0005, d: 0.02, gain: 0.7, drive: 3 },
+      { wave: 'sine', freq: 900, to: 500, glide: 0.5, a: 0.002, d: 0.5, gain: 0.12 },
+      { noise: 'white', filter: { type: 'bandpass', freq: 2400, to: 1200, q: 3 }, at: 0.05, a: 0.002, d: 0.06, gain: 0.4 },
+      { noise: 'white', filter: { type: 'bandpass', freq: 2000, to: 1000, q: 3 }, at: 0.17, a: 0.002, d: 0.06, gain: 0.35 },
+      { noise: 'white', filter: { type: 'bandpass', freq: 1700, to: 800, q: 3 }, at: 0.3, a: 0.002, d: 0.06, gain: 0.3 },
+      { wave: 'sine', freq: 2400, partials: [[1, 1, 1], [2.1, 0.4, 0.6], [3.4, 0.2, 0.4]], at: 0.1, a: 0.02, d: 0.6, gain: 0.07 },
+    ] },
+    // Stone Fist: a fist on stone, stone grinding as the cracks run, then a deep boom and a crash of rubble, grit falling.
+    abilityFist: { bus: 'sfx', priority: 3, cooldown: 0.3, max: 2, verb: 0.55, heat: 0.5, jitter: 30, layers: [
+      { wave: 'sine', freq: 90, to: 45, a: 0.002, d: 0.15, gain: 0.7, drive: 2 },
+      { noise: 'brown', filter: { type: 'lowpass', freq: 600, to: 250 }, a: 0.03, d: 0.27, gain: 0.6 },
+      { wave: 'sine', freq: 50, to: 30, at: 0.3, a: 0.003, d: 0.5, gain: 1, drive: 3 },
+      { noise: 'brown', filter: { type: 'lowpass', freq: 1400, to: 500 }, at: 0.3, a: 0.005, d: 0.5, gain: 0.8 },
+      { noise: 'white', filter: { type: 'highpass', freq: 2000 }, at: 0.45, a: 0.05, d: 0.45, gain: 0.15 },
+    ] },
+    // Rising Fang: a sharp upward slice, a crackle as the fire runs, a roaring eruption with a low thump, hissing embers.
+    abilityFang: { bus: 'sfx', priority: 3, cooldown: 0.25, max: 2, verb: 0.45, heat: 0.4, jitter: 40, layers: [
+      { noise: 'white', filter: { type: 'bandpass', freq: 2000, to: 5000, q: 2 }, a: 0.002, d: 0.04, gain: 0.6 },
+      { noise: 'white', filter: { type: 'bandpass', freq: 3000, q: 4 }, at: 0.04, a: 0.01, d: 0.18, gain: 0.25 },
+      { noise: 'brown', filter: { type: 'lowpass', freq: 900, to: 300 }, at: 0.25, a: 0.01, d: 0.5, gain: 0.9, drive: 2 },
+      { wave: 'sine', freq: 65, to: 40, at: 0.25, a: 0.003, d: 0.25, gain: 0.8 },
+      { noise: 'white', filter: { type: 'highpass', freq: 4500 }, at: 0.4, a: 0.05, d: 0.4, gain: 0.12 },
+    ] },
+    // Thunderclap: a huge flat metal clap with a ring, a rolling thunder rumble, a long room echo.
+    abilityClap: { bus: 'sfx', priority: 3, cooldown: 0.25, max: 2, verb: 0.85, heat: 0.55, jitter: 30, layers: [
+      { noise: 'white', filter: { type: 'highpass', freq: 1500 }, a: 0.0005, d: 0.015, gain: 0.9, drive: 5 },
+      { wave: 'sine', freq: 700, partials: [[1, 1, 1], [2.3, 0.4, 0.5]], a: 0.001, d: 0.35, gain: 0.15 },
+      { noise: 'brown', filter: { type: 'lowpass', freq: 400, to: 120 }, at: 0.02, a: 0.03, h: 0.1, d: 0.7, gain: 0.9, drive: 2 },
+    ] },
     // Dust Devil: a gritty scrape, then a short spinning whoosh that swells twice.
     abilityWhirl: { bus: 'sfx', priority: 2, cooldown: 0.2, max: 1, verb: 0.2, heat: 0.1, jitter: 50, layers: [
       { noise: 'white', filter: { type: 'bandpass', freq: 2000, q: 2 }, a: 0.0005, d: 0.02, gain: 0.5, drive: 2 },
