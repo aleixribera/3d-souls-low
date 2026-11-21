@@ -33,7 +33,7 @@ const netView = {
     // An attack id this release no longer has plays as no attack (an old replay), never as an error.
     e.attack = s.attack ? e.baseDef.attacks.find(x => x.id === s.attack) || null : null;
     if (s.attack && !e.attack && (e.state === ES.WINDUP || e.state === ES.ACTIVE || e.state === ES.RECOVER || e.state === ES.PARRIED)) e.state = ES.CHASE;
-    e.hitIndex = s.hitIndex; e.netSerial = s.serial; e.attackNo = s.serial; e.netTarget = s.target; e.grounded = s.grounded;
+    e.hitIndex = s.hitIndex; e.netSerial = s.serial; e.attackNo = s.serial; e.netTarget = s.target; e.netLure = s.lure || null; e.grounded = s.grounded;
     e.walkPhase = s.walkPhase; e.leaping = s.leaping; e.asleep = false;
     // A bolt's mark (pass 48): noted from the target the snapshot names, as the server notes it from the same body.
     const wh = e.state === ES.WINDUP && e.attack && e.attack.hits[e.hitIndex];

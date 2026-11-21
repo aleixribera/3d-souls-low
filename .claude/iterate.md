@@ -1,7 +1,7 @@
 # Iterate: Combat Arena 3D
 
 Model: opus, effort medium
-Skill synced: 86c263a
+Skill synced: 646f0cf
 Parts: judge (panel: `docs/scorecard/panel/`), review (weekly, from 2026-11-20), incidents (the game is played online).
 
 ## Vision and plan
@@ -41,9 +41,9 @@ node tools/pack-baked.cjs <stem>
 
 - Serve: `python -m http.server 8123 --bind 127.0.0.1`, open
   `combat-arena-3d.html#dev`, then `MODELLAB.open('<modelId>')` (F9): front, back, side and silhouette.
-- If the built-in browser refuses localhost, drive headless Edge over CDP (`--headless=new --use-angle=swiftshader`,
-  fresh `--user-data-dir`) and `Page.captureScreenshot`. Close Edge right after.
 - Check it in a level too: a frame with the enemy in play (e.g. Level 2 or 3 for the bowman).
+- A drawing that reads simulation state the snapshot lacks (`abilityPowers`) gets an online path, and its in-page test
+  empties the page's copy (why: Ash Husk's ring showed only in Practice, pass 137's review, retro 140).
 - **Current frames:** `docs/scorecard/now/`. `node tools/now-frames.cjs [lobby|rush|crate]` retakes the lobby
   (desktop, phone), a Boss Rush fight and a crate roll; `node tools/scorecard-frames.cjs docs/scorecard/now fights`
   every boss fighting in Practice.

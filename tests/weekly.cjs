@@ -17,7 +17,9 @@ async function peer(origin, name) {
   const ws = new WebSocket(origin.replace('http', 'ws') + C.path, { origin }), queue = [];
   ws.on('message', data => queue.push(JSON.parse(data)));
   const next = async type => {
-    for (let i = 0; i < 500; i++) {
+    // A deadline in time, not in polls, and a long one: the server's run plays in real time, and a PC busy with another
+    // pass's browser slowed it past the old 10 s once (a flake in a parallel run, fixed in retro 140).
+    for (const end = Date.now() + 30000; Date.now() < end;) {
       const at = queue.findIndex(m => m.type === type);
       if (at >= 0) return queue.splice(at, 1)[0];
       await wait(20);

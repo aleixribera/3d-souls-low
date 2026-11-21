@@ -1195,6 +1195,14 @@
       expect.ok(!p.rewind && R().ghosts > 0 && played.includes('abilityRewindEnd'), `arrived, ghosts behind (${JSON.stringify(R())})`);
       grant('ash-husk'); abilityReport(p, 'press', { key: 'guard', enemy: e }); frames(10);
       expect.ok(R().husks && played.includes('abilityHusk'), `Ash Husk: the figure (${JSON.stringify(R())})`);
+      // Online (and Boss Rush alone, whose run is in a hidden frame) the page holds no husk: its ring reads the
+      // snapshot instead, an enemy drawn to a lure where the husk stands (retro 140).
+      const husk = [...abilityPowers.husks.values()][0]; abilityPowers.husks.delete(husk.holder);
+      e.netTarget = 'summon'; e.netLure = { x: husk.x, y: husk.y, z: husk.z }; frames(15);
+      expect.ok(R().drawing, `online, the ring while the boss is drawn (${JSON.stringify(R())})`);
+      e.netLure = { x: husk.x + 6, y: husk.y, z: husk.z }; frames(15);
+      expect.ok(!R().drawing, 'not for a lure elsewhere (a summon)');
+      e.netTarget = null; e.netLure = null; abilityPowers.husks.set(husk.holder, husk);
       played.length = 0; const hb = e.hitbox; e.hitbox = { overlaps: () => true }; abilityPowers.tick(STEP); e.hitbox = hb; frames(2);
       expect.ok(!R().husks && R().scorches && played.includes('abilityHuskBurst'), `struck: it bursts (${JSON.stringify(R())})`);
       grant('binding-seal'); abilityReport(p, 'press', { key: 'guard', enemy: e }); frames(5);

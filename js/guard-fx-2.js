@@ -361,7 +361,7 @@ const guardFx2 = (() => {
       const sink = q.end >= 0 ? clamp01((q.age - q.end) / 0.6) : 0;
       if (sink >= 1 || q.age > q.life + 4) { q.age = Infinity; q.rig.root.visible = false; q.ring.visible = false; continue; }
       q.rig.root.position.y = q.y - sink * 1.6; q.mat.opacity = clamp01(q.age / 0.15) * (1 - sink);
-      const h = abilityPowers.husks.get(q.holder), drawing = !!(h && h.drawing && h.lure);
+      const h = abilityPowers.husks.get(q.holder), drawing = h ? !!(h.drawing && h.lure) : drawnTo(q.x, q.z);
       q.draw = Math.max(0, Math.min(1, q.draw + (drawing ? real : -real) * 5));
       q.ring.visible = q.draw > 0 && sink === 0;
       if (q.ring.visible) { q.ring.position.set(q.x, q.y + 0.04, q.z); q.ring.scale.setScalar(R.huskRing * (calm ? 1 : 1 + 0.08 * Math.sin(q.age * 6))); q.ring.material.opacity = q.draw; }
@@ -482,6 +482,15 @@ const guardFx2 = (() => {
     for (const q of [...arcs, ...stars, ...flakes]) { q.age = Infinity; hide(q.s); }
   }
   const PERKS = new Set(['press/ward', 'ward/bounce', 'press/dome', 'dome/stop', 'press/wait', 'wait/answer', 'wait/end', 'press/rewind', 'rewind/end']);
+  // Online (and Boss Rush alone, its run in a hidden frame) the page holds no husk: an enemy the snapshot shows drawn to a
+  // lure where it stands is drawing a blow (`netTarget` 'summon', `netLure`, js/net-view.js).
+  function drawnTo(x, z) {
+    for (const e of Game.enemies) {
+      const l = e.netTarget === 'summon' && e.netLure;
+      if (l && e.alive() && (l.x - x) ** 2 + (l.z - z) ** 2 < 0.25) return true;
+    }
+    return false;
+  }
   const POWERS = new Set(['ward', 'answer', 'husk', 'seal']);
   const on = list => list.filter(q => q.age !== Infinity).length;
   return {
