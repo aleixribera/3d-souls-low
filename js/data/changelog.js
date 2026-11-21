@@ -6,6 +6,7 @@
 //   title    a few words
 //   text     one to three sentences, shown under the list when the entry is selected
 const CHANGELOG = [
+  { version: 'v7.180.0', title: 'Strikes on the ground', text: 'Five new rare strikes for key 1: Tidal Arc sends a wave through the line, Frost Spike runs a line of ice, Stone Fist and Rising Fang burst up under the boss a beat later, and Thunderclap claps a cone at a close enemy. Fire Burst now blooms into a lotus and Wind Blade cuts a crescent.' },
   { version: 'v7.179.0', title: 'Aldric\'s own sweep', text: 'Aldric sweeps from his left shoulder now, and a new string opens the same way: the Turning Key, two cuts and his pommel. He looks the part in the new style too.' },
   { version: 'v7.178.0', title: 'Echoes and overcharge', text: 'Two new rare abilities. Echoing Blade: fire any key and your next few blows are struck again by a ghost of your sword. Overcharge: a full key keeps filling, and pressing it overcharged hits harder or heals more.' },
   { version: 'v7.177.0', title: 'The Giant in ink', text: 'The Giant Skeleton is drawn in the new ink style: black irons, and his club\'s warning shows on the skull at its end instead of lighting his whole body. His swings and slams carry his weight, and his slams crack the floor wider.' },
