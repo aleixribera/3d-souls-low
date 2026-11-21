@@ -91,7 +91,7 @@ const finisher = (() => {
     events.emit('finisher', { player: p, enemy: e, damage: dmg, lethal: X.lethal,
       at: { x: e.x, y, z: e.z }, exit: { x: e.x + fx * e.radius, y, z: e.z + fz * e.radius } });
     const feast = p.kit && p.kit.perks['finisher/heal'];   // Grave Feast (a crate's)
-    if (feast) abilityHeal(p, feast.heal, 'finisher/heal');
+    if (feast) abilityHeal(p, feast.heal, 'finisher/heal', e);
   }
 
   // One fixed step of PS.EXECUTE (from Player.update).

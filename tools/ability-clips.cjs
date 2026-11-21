@@ -3,7 +3,7 @@
 // each fired twice, its name in the corner: docs/scorecard/now/<set>-commons.mp4. The clock is stepped by hand
 // (Game.manualClock) and every other step is a frame, so a clip plays at real speed whatever the PC's speed. With
 // `--stills`, the guard set's current frames too (guard-*.jpg, desktop; -phone for two).
-// Usage: node tools/ability-clips.cjs [blade|guard|mirror ...] [--stills]   (no set = all). One headless Edge; needs ffmpeg.
+// Usage: node tools/ability-clips.cjs [blade|guard|mirror|rares ...] [--stills]   (no set = all). One headless Edge; needs ffmpeg.
 require('../tests/low-priority.cjs');
 const fs = require('node:fs');
 const os = require('node:os');
@@ -49,6 +49,22 @@ const SETS = {
       __later(8, () => { const b = projectiles.fire(e, ENEMY_BY_ID.bowman.attacks.find(a => a.projectile), p);
         __later(Math.max(1, Math.round(Math.hypot(b.x - p.x, b.z - p.z) / Math.hypot(b.vx, b.vz) / CONFIG.step) - 4), () => { p.deflect = CONFIG.parry.arm; p.setState(PS.BLOCK); }); }); }`, 70, 'mirror-shard'],
   ] },
+  // The kept rares (pass 119, batch 4), each through its real path where a clip can reach it: docs/scorecard/now/rare-perks.mp4,
+  // and with --stills one frame of each at its peak (rare-<id>.jpg; -phone for the first two).
+  rares: { ids: ['counterstep', 'vengeance', 'bloodthirst', 'last-breath', 'opportunist', 'bastion', 'patience', 'counterflame', 'static-edge', 'grave-feast', 'iron-mercy'],
+    file: 'rare-perks', phone: 2, solo: true, crf: 32, beats: [   // solo: each beat holds only its own (ids in the beats' order)
+    ['Counterstep', `(p, e) => { e.yaw = Math.atan2(p.x - e.x, p.z - e.z); p.setState(PS.ROLL); perfectDodge(p, { owner: e, payload: { damage: 1 }, markHit() {}, dodged: false }); }`, 40, 'rare-counterstep', 4],
+    ['Vengeance', `(p, e) => { p.hp -= 1; __later(44, () => __strike()); }`, 64, 'rare-vengeance', 20],
+    ['Bloodthirst', `(p, e) => { for (let i = 0; i < 5; i++) __later(1 + i * 12, () => { __hit(); abilityLanded(p, { damage: 10 }); }); }`, 84, 'rare-bloodthirst', 46],
+    ['Last Breath', `(p, e) => { p.hp = p.lastHp = p.maxHp * 0.15; for (let i = 0; i < 3; i++) __later(14 + i * 22, () => { p.yaw += 1.2; p.startRoll({ has: false }); }); }`, 80, 'rare-last-breath', 18],
+    ['Opportunist', `(p, e) => { e.cracks = 1; events.emit('guardCrack', { enemy: e, cracks: 1 }); __later(10, () => __strike()); __later(30, () => __strike()); }`, 50, 'rare-opportunist', 12],
+    ['Bastion', `p => { p.setState(PS.BLOCK); p.perk.bastion = p.kit.perks['block/charge'].window; events.emit('abilityPerk', { body: p, perk: 'block/armed' }); }`, 44, 'rare-bastion', 24],
+    ['Patience', `p => { p.perk.calm = p.kit.perks['unhurt/empower'].after + 0.5; __later(30, () => __strike()); }`, 64, 'rare-patience', 34],
+    ['Counterflame', `(p, e) => abilityParried(p, e)`, 34, 'rare-counterflame', 6],
+    ['Static Edge', `() => { for (let i = 0; i < 5; i++) __later(1 + i * 8, () => __hit()); }`, 60, 'rare-static-edge', 36],
+    ['Grave Feast', `(p, e) => { p.hp = p.lastHp = p.maxHp * 0.5; abilityHeal(p, 0.25, 'finisher/heal', e); }`, 44, 'rare-grave-feast', 10],
+    ['Iron Mercy', `(p, e) => { p.hp = p.lastHp = p.maxHp * 0.5; abilityParried(p, e); }`, 44, 'rare-iron-mercy', 8],
+  ] },
 };
 
 (async () => {
@@ -61,6 +77,7 @@ const SETS = {
     for (const [set, S] of Object.entries(SETS)) {
       if (!want(set)) continue;
       for (const [w, h, tag] of stills && set !== 'blade' ? [[1280, 720, ''], [390, 844, '-phone']] : [[1280, 720, '']]) {
+        const beats = tag && S.phone ? S.beats.slice(0, S.phone) : S.beats;
         const page = await browser.newPage({ viewport: { width: w, height: h } });
         page.on('pageerror', e => errors.push(e.message.slice(0, 200)));
         await page.addInitScript(() => localStorage.setItem('combat-arena-3d.settings', JSON.stringify({ graphics: 'normal', volume: 0, lessons: false })));
@@ -80,8 +97,12 @@ const SETS = {
           window.__fire = when => abilityPowers.trigger('self', p, p.kit, when, { enemy: e });
           window.__hit = () => { const s = { attackId: 'light', damage: 10, poise: 0, knock: 0, hitstop: 0 }; e.takeHit(s, p); abilityPowers.trigger('self', p, p.kit, 'hits', { enemy: e, strike: s }); };
           window.__glint = () => { const s = abilityStrike(p.kit, p.perk, e, { attackId: 'light', damage: 10, poise: 0, knock: 0, hitstop: 0 }); e.takeHit(s, p); if (s.glint) events.emit('abilityPerk', { body: p, perk: 'glint/spent', target: e }); };
+          window.__strike = () => {   // a blow as js/combat.js lands it, with the rares' cues it tells
+            const s = abilityStrike(p.kit, p.perk, e, { attackId: 'light', damage: 10, poise: 0, knock: 0, hitstop: 0 }); e.takeHit(s, p);
+            for (const [k, perk] of [['venge', 'empower'], ['calm', 'unhurt/empower'], ['cracked', 'cracked/damage']]) if (s[k]) events.emit('abilityPerk', { body: p, perk, target: e });
+          };
           window.__reset = name => {
-            commonFx.clear(); abilityPowers.reset(); later.length = 0; tag.textContent = name;
+            commonFx.clear(); rareFx.clear(); abilityPowers.reset(); later.length = 0; tag.textContent = name; e.cracks = 0; events.emit('guardCrack', { enemy: e, cracks: 0 });
             p.hp = p.maxHp; p.lastHp = p.hp; p.perk = abilityPerkState(); p.tint = 0;
             for (let i = 0; i < 30; i++) Game.update(CONFIG.step);
             e.x = e.px = p.x + Math.sin(p.yaw + 0.6) * 2.8; e.z = e.pz = p.z + Math.cos(p.yaw + 0.6) * 2.8; e.y = p.y; e.yaw = Math.atan2(p.x - e.x, p.z - e.z);
@@ -98,20 +119,20 @@ const SETS = {
         const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'clip-'));
         let frame = 0;
         const grab = async () => page.screenshot({ path: path.join(dir, `f${String(frame++).padStart(5, '0')}.jpg`), type: 'jpeg', quality: 85 });
-        for (const [name, setup, steps, still] of S.beats) {
+        for (const [b, [name, setup, steps, still, stillAt]] of beats.entries()) {
           for (let round = 0; round < (tag ? 1 : 2); round++) {
-            await page.evaluate(([setup, name]) => { __reset(name); eval(setup)(Game.player, Game.duel); }, [setup, name]);
+            await page.evaluate(([setup, name, only]) => { if (only) Game.player.grantAbilities([only]); __reset(name); eval(setup)(Game.player, Game.duel); }, [setup, name, S.solo ? S.ids[b] : null]);
             for (let s = 0; s < steps; s += EVERY) {
               await page.evaluate(n => __steps(n), EVERY);
               if (!tag) await grab();
-              if (stills && still && round === 0 && s === (S.stillAt || EVERY * 3)) await page.screenshot({ path: path.join(out, `${S.file ? '' : 'guard-'}${still}${tag}.jpg`), type: 'jpeg', quality: 70 });
+              if (stills && still && round === 0 && s === (stillAt ?? S.stillAt ?? EVERY * 3)) await page.screenshot({ path: path.join(out, `${S.file ? '' : 'guard-'}${still}${tag}.jpg`), type: 'jpeg', quality: 70 });
             }
           }
         }
         if (!tag) {
           const mp4 = path.join(out, `${S.file || set + '-commons'}.mp4`);
           execFileSync(ffmpeg, ['-y', '-loglevel', 'error', '-framerate', String(FPS), '-i', path.join(dir, 'f%05d.jpg'),
-            '-c:v', 'libx264', '-pix_fmt', 'yuv420p', '-crf', '26', '-preset', 'veryfast', mp4]);
+            '-c:v', 'libx264', '-pix_fmt', 'yuv420p', '-crf', String(S.crf || 26), '-preset', 'veryfast', mp4]);
           console.log(set, frame, 'frames ->', path.relative(process.cwd(), mp4));
         }
         fs.rmSync(dir, { recursive: true, force: true });

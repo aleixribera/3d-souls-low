@@ -248,6 +248,8 @@ const finisherFx = (() => {
   const PLACES = [[0, 0], [0.32, -0.2], [-0.28, 0.16]];   // each crack's spot on the body: across, up (shares of its height)
   function drawCracks(real, t) {
     const K = S().crack, calm = reducedMotion();
+    // Opportunist's holder sees cracks in the rares' blue (rare-fx), everyone else in the crack's amber.
+    const tone = Game.player && Game.player.kit && Game.player.kit.perks['cracked/damage'] ? VIS.abilityFx.rare.crack : K.color;
     for (const set of sets) {
       const e = set.foe;
       if (!e) continue;
@@ -274,7 +276,7 @@ const finisherFx = (() => {
         const size = K.size * big * lvl * grow * (set.burst !== Infinity ? 1 + 0.9 * (1 - outK) : 1);
         v.copy(toCam).multiplyScalar(radius * K.depth).add(chest).addScaledVector(right, P[0] * radius * 1.6).addScaledVector(up, P[1] * h * 0.5);
         s.position.copy(v); s.scale.set(size, size, 1); s.material.rotation = i * 2.1 + 0.4;
-        col.setHex(K.color).lerp(col2.setHex(K.hot), Math.min(1, hot + set.flare));
+        col.setHex(tone).lerp(col2.setHex(K.hot), Math.min(1, hot + set.flare));
         const bright = K.boost * breath * (1 + 1.6 * hot + 0.8 * set.flare) * outK;
         s.material.color.copy(col).multiplyScalar(bright); s.material.opacity = Math.min(1, outK * 1.2);
         s.visible = true;

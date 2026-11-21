@@ -64,7 +64,7 @@ const cameraFeel = (() => {
     const k = isPlayer(d.body) ? 1 : clamp(1 - Math.hypot(p.x - d.x, p.z - d.z) / F.powerNear, 0, 1);
     if (k > 0) { kick('fov', P[0] * k); kick('y', -P[1] * k); }
   });
-  events.on('abilityPerk', d => { if (isPlayer(d.body) && !COMMON_PERKS.has(d.perk)) kick('fov', F.perkFov); });   // a rare acting: a small punch in (a common is drawn alone)
+  events.on('abilityPerk', d => { if (isPlayer(d.body) && !COMMON_PERKS.has(d.perk) && !RARE_QUIET_PERKS.has(d.perk)) kick('fov', F.perkFov); });   // a rare acting: a small punch in (a common is drawn alone)
 
   Game.renderHooks.unshift((game) => {   // first of the hooks: effects drawn after it see the moved camera
     const dt = game.renderDt;

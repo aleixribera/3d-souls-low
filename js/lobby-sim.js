@@ -33,7 +33,7 @@ globalThis.host = (() => {
   // Boss Rush's abilities (CONFIG.abilities, js/abilities.js), kept across a run's fights: ids held (one per pick,
   // repeated by upgrades) and the open offer, by player id; each one's kit (kitOf); and, for people (a bot's body keeps
   // its own), the perk clocks and their last health (abilityHurt) and their last accepted perfect dodge (Counterstep).
-  const owned = new Map(), offers = new Map(), gear = new Map(), kits = new Map(), perks = new Map(), lastDodge = new Map(), pendingClaims = [];
+  const owned = new Map(), offers = new Map(), gear = new Map(), kits = new Map(), perks = new Map(), lastDodge = new Map(), stepDodge = new Map(), pendingClaims = [];
   const trails = new Map();   // person id -> their recent poses' places and states: [{ t, x, y, z, state }]
   const DASH_ATTACKS = new Set(Object.values(PLAYER_DEF.moveset.dash));   // Petal Cut's dash attacks
   const AIRBORNE = new Set([PS.JUMP, PS.JUMP_ATTACK]);   // a jump's, not a fall off a ledge
@@ -243,7 +243,7 @@ globalThis.host = (() => {
     hitBudget.clear(); lastParry.clear(); spentOpening.clear(); defended.clear(); sleeping = false; settleCheck = 0;
     wipeOnly = isBossDef(d);
     if (!keepAbilities) { owned.clear(); offers.clear(); }
-    kits.clear(); perks.clear(); lastDodge.clear(); pendingClaims.length = 0;
+    kits.clear(); perks.clear(); lastDodge.clear(); stepDodge.clear(); pendingClaims.length = 0;
     let index = 0;
     for (const b of bots.values()) { registerPlayer(b.id, b.name); spawnBot(b, index++); }
     return { epoch, kind, id, ...(partners.length ? { partners: [...partners] } : {}), spawn: checkpoint, teamWipeOnly: isBossDef(d) };
@@ -731,14 +731,19 @@ globalThis.host = (() => {
     if (!within(p, e, reachOf(a.box), [a.box.y - a.box.h / 2, a.box.y + a.box.h / 2])) return false;
     // A riposte (a counter) follows only this player's own recently accepted opening deflect (as the Player's riposte
     // timer) or perfect dodge, and only one counter an opening (pass 100: each cracks the guard).
-    const kit = kitOf(id), step = kit.perks['dodge/riposte'], longer = 1 + (kit.mods.counterWindow || 0);   // Breaker
-    // Pass 85: every perfect dodge opens a counter (CONFIG.player.counterTime), Counterstep's window if longer.
+    const kit = kitOf(id), longer = 1 + (kit.mods.counterWindow || 0);   // Breaker
+    // Pass 85: every perfect dodge opens a counter (CONFIG.player.counterTime), Counterstep's window if longer (a dodge
+    // its step came off cooldown for: stepDodge).
     // The window is the latest opening's own; a counter swing that reaches several foes counts on each (one `swing`).
     const parried = lastParry.get(id) ?? -Infinity, dodgedAt = lastDodge.get(id) ?? -Infinity, opening = Math.max(parried, dodgedAt);
     const spent = spentOpening.get(id), swing = typeof msg.swing === 'string' || Number.isSafeInteger(msg.swing) ? msg.swing : null;
     const fresh = !spent || opening > spent.opening || (swing !== null && spent.opening === opening && spent.swing === swing && !spent.enemies.has(e.netId));
-    const span = opening === dodgedAt ? Math.max(CONFIG.player.counterTime * longer, step ? step.window : 0) : CONFIG.parry.riposteTime * longer;
-    const riposte = a.id === PLAYER_DEF.moveset.counter.light && msg.riposte === true && fresh && time - opening <= span + C.riposteSlack;
+    // Counterstep's window runs from its own step dodge, as the client's `riposte` keeps the longer of the two (a later
+    // perfect dodge inside it never shortens it), while no deflect has opened a newer counter since.
+    const fb = kit.perks['dodge/flashBehind'], stepAt = stepDodge.get(id) ?? -Infinity;
+    const stepOpen = !!fb && stepAt >= parried && time - stepAt <= fb.window + C.riposteSlack;
+    const span = opening === dodgedAt ? CONFIG.player.counterTime * longer : CONFIG.parry.riposteTime * longer;
+    const riposte = a.id === PLAYER_DEF.moveset.counter.light && msg.riposte === true && fresh && (time - opening <= span + C.riposteSlack || stepOpen);
     const base = makeStrike(a, riposte, msg.charge);
     if (!Number.isFinite(base.damage) || !Number.isFinite(base.poise) || e.invulnerable() || !spendHit(id, e)) return false;
     const strike = abilityStrike(kit, perkOf(id), e, base);   // the kit's bonus, from what the server knows of them
@@ -818,6 +823,8 @@ globalThis.host = (() => {
     }
     if (!firstDefence('dodge', id, msg, hit)) return false;
     lastDodge.set(id, time); gainCharge(id, CONFIG.abilities.press.gain.dodge);
+    const fb = kitOf(id).perks['dodge/flashBehind'], st = perkOf(id);   // Counterstep: its window, once a cooldown
+    if (fb && st.step <= C.riposteSlack) { st.step = fb.cooldown; stepDodge.set(id, time); }   // the slack: the client's clock started at its dodge
     const e = enemy(msg.enemy);   // still that attack: a boss recovers longer from a blow dashed through (CONFIG.bossMove.dodged)
     if (e && e.netAttack === msg.serial && e.in('attacking')) e.dashedThroughBy();
     return true;

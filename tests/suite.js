@@ -942,6 +942,42 @@
       expect.ok(loose(4) > 0, 'without Mirror Shard a bolt is never deflected');
     } finally { audio.play = play; commonFx.clear(); p.grantAbilities([]); }
   });
+  // Pass 119 (PLAN.md item 8, batch 4): the kept rares, each drawn in blue ink by js/rare-fx.js and heard.
+  test('kept rares: each is drawn and heard', () => {
+    Game.startFight('pillagerCaptain'); Game.loading = 0; sim.begin(); rareFx.clear(); abilityPowers.reset();
+    const p = Game.player, e = Game.duel, R = () => rareFx.state, played = [], tell = (perk, more) => events.emit('abilityPerk', { body: p, perk, target: e, ...more });
+    const play = audio.play; audio.play = (id, o) => { played.push(id); return play.call(audio, id, o); };
+    try {
+      p.grantAbilities(['counterstep', 'vengeance', 'bloodthirst', 'bastion']);
+      sturdy(p); e.cooldown = 30; faceOff(e, p, 2); e.yaw = Math.atan2(p.x - e.x, p.z - e.z);
+      perfectDodge(p, { owner: e, payload: { damage: 1 }, markHit() {}, dodged: false });
+      Game.render(1, STEP);
+      expect.ok(p.blink && R().ribbon && played.includes('abilityStep'), `Counterstep: a ribbon round the boss (${JSON.stringify(R())})`);
+      for (let i = 0; i < 20; i++) { Game.update(STEP); Game.render(1, STEP); }
+      expect.ok(!p.blink && Math.hypot(p.x - e.x, p.z - e.z) > e.radius && R().rings > 0, 'it lands behind, a ring at its feet');
+      abilityHurt(p.kit, p.perk, p); Game.render(1, STEP);
+      expect.ok(R().blade === 'flame', `Vengeance: the blade in flame (${R().blade})`);
+      p.perk.vengeance = 0; p.perk.bastion = 1; Game.render(1, STEP);
+      expect.ok(R().blade === 'edge', 'Bastion: the blade hums');
+      p.perk.bastion = 0;
+      abilityLanded(p, { damage: 1 }); abilityLanded(p, { damage: 1 }); Game.render(1, STEP);
+      expect.ok(R().motes === 2 && played.includes('abilityChime'), `Bloodthirst: a mote a blow (${R().motes})`);
+      tell('cracked/damage'); Game.render(1, STEP);
+      expect.ok(R().pops > 0 && played.includes('abilityClank'), 'Opportunist: a chip and splinters');
+      tell('unhurt/empower'); Game.render(1, STEP);
+      expect.ok(R().stroke && played.includes('abilityInk'), 'Patience: a brush stroke');
+      events.emit('abilityPower', { power: 'counterflame', then: 'flare', body: p, enemy: e, x: e.x, y: e.y, z: e.z, v: {} }); Game.render(1, STEP);
+      expect.ok(R().tongues === 5, 'Counterflame: five tongues');
+      events.emit('abilityPower', { power: 'static-edge', then: 'spark', body: p, enemy: e, x: e.x, y: e.y, z: e.z, v: {} }); Game.render(1, STEP);
+      expect.ok(R().bolt, 'Static Edge: a bolt off the blade');
+      tell('finisher/heal'); tell('parry/heal'); Game.render(1, STEP);
+      expect.ok(played.filter(id => id === 'abilityHeal').length >= 2, 'Grave Feast and Iron Mercy heard');
+      p.grantAbilities([]); p.perk = abilityPerkState();
+      for (let i = 0; i < 90; i++) Game.render(1, STEP);
+      const left = R();
+      expect.ok(!left.ribbon && !left.bolt && !left.stroke && !left.tongues && !left.pops && !left.flakes && !left.motes && !left.blade, `all gone (${JSON.stringify(left)})`);
+    } finally { audio.play = play; rareFx.clear(); p.grantAbilities([]); }
+  });
   // Pass 97 (PLAN.md 3d): the sparring scene. The player's part of each drill is the teacher's own demonstration, played
   // on the player's keys (a swing drill's steps from the moment the partner's blow begins), so a demo that cannot do
   // its drill fails here too.

@@ -14,11 +14,14 @@ const ABILITY_MODS = { damage: 'more', maxHp: 'more', counterWindow: 'more',
   parryWindow: 'more', dashRefill: 'more', rollIFrames: 'more', flaskSpeed: 'more', chargeSpeed: 'more', riposte: 'more',
   finisher: 'more' };
 // The rares' perks, as `when/then`, and the numbers each level of one gives:
-//   dodge/riposte:    a perfect dodge (a roll's i-frames take a blow) opens a riposte for `window` s, as a parry does.
+//   dodge/flashBehind: a perfect dodge (a roll's i-frames take a blow) flash-steps its holder behind the attacker
+//                     (Player.flashBehind, CONFIG.abilities.flashBehind) and opens the counter for `window` s; once every
+//                     `cooldown` s (a dodge inside it opens the plain counter). No step to a wall or a drop, the window all the same
+//                     (the server can't see the step: js/lobby-sim.js stepDodge).
 //   hurt/empower:     losing health makes the next landed blow within `window` s do `damage` more.
 //   streak/heal:      `hits` landed blows without losing health heal `heal` of the bar.
 //   low/freeDash:     at or under `below` of the bar, dashes take no charge (pass 85: nothing else costs anything).
-//   open/damage:      blows on a boss that is off balance (abilityOpen) do `damage` more.
+//   cracked/damage:   blows on an enemy whose guard shows a crack (`e.cracks` > 0) do `damage` more.
 //   block/charge:     a blocked blow makes the next heavy within `window` s come out fully charged at once.
 //   unhurt/empower:   `after` s without losing health make the next landed blow do `damage` more.
 //   finisher/heal:    a Finishing Blow heals `heal` of the bar (a crate's).
@@ -35,8 +38,8 @@ const ABILITY_MODS = { damage: 'more', maxHp: 'more', counterWindow: 'more',
 //   fightStart/freeDash: the fight begins (the holder first moves or acts): dashes cost no charge for `time` s.
 //   revive/reviveHeal:   a friend this holder revives rises with `heal` more of their bar (the server's, a party's only).
 const ABILITY_PERKS = {
-  'dodge/riposte': ['window'], 'hurt/empower': ['window', 'damage'], 'streak/heal': ['hits', 'heal'],
-  'low/freeDash': ['below'], 'open/damage': ['damage'], 'block/charge': ['window'], 'unhurt/empower': ['after', 'damage'],
+  'dodge/flashBehind': ['window', 'cooldown'], 'hurt/empower': ['window', 'damage'], 'streak/heal': ['hits', 'heal'],
+  'low/freeDash': ['below'], 'cracked/damage': ['damage'], 'block/charge': ['window'], 'unhurt/empower': ['after', 'damage'],
   'finisher/heal': ['heal'], 'parry/heal': ['heal', 'cooldown'], 'press/heal': ['charge', 'heal'], 'press/stance': ['charge', 'time'],
   'parry/freeDash': ['cooldown'], 'low/veil': ['below', 'cut'], 'hurt/ironSkin': ['cut', 'time'], 'parry/keys': ['charge'],
   'finisher/keys': ['charge'], 'ready/empower': ['damage'], 'fightStart/freeDash': ['time'], 'revive/reviveHeal': ['heal'],
@@ -44,13 +47,16 @@ const ABILITY_PERKS = {
 // The `abilityPerk` cues of the commons' perks: drawn in bone ink (js/common-fx.js), never a camera kick (camera-feel.js).
 const COMMON_PERKS = new Set(['parry/freeDash', 'freeDash/spent', 'low/veil', 'veil/spent', 'hurt/ironSkin', 'ironSkin/glance',
   'parry/keys', 'finisher/keys', 'ready/empower', 'glint/spent', 'fightStart/freeDash']);
+// The rares' state cues (batch 4: a mote, a lit blade, a breath), drawn by js/rare-fx.js but too frequent or too quiet
+// for the rares' camera kick (camera-feel.js).
+const RARE_QUIET_PERKS = new Set(['streak/step', 'streak/lost', 'hurt/armed', 'unhurt/ready', 'low/freeDash', 'block/armed', 'cracked/damage']);
 // A key's extra points from a commons' `<when>/keys` perk (Kindling's deflect, Tithe's Finishing Blow).
 const abilityKeysFor = (kit, when) => (kit.perks[when + '/keys'] || {}).charge || 0;
-// A heal of `share` of the bar from a perk (Grave Feast, Iron Mercy), told as that perk.
-function abilityHeal(p, share, perk) {
+// A heal of `share` of the bar from a perk (Grave Feast, Iron Mercy), told as that perk (`target`: the enemy it came from).
+function abilityHeal(p, share, perk, target = null) {
   if (!p.alive()) return;
   p.hp = Math.min(p.hpCap(), p.hp + p.maxHp * share);
-  events.emit('abilityPerk', { body: p, perk });
+  events.emit('abilityPerk', { body: p, perk, target });
 }
 // The legendaries' powers, as `when/then`, and the numbers each level needs (abilityPowers runs them):
 //   land/blast:          a jump attack (of the air attack `action` names) lands as a blast: `damage` to every
@@ -257,20 +263,20 @@ function kitMight(held) {
 // Blood Moon's s left with its level's numbers, Iron Mercy's s until it heals again, the deflecting stance's s left,
 // each number key's charge (points), and the commons': Ringing Steel's banked dash (`bank`, 0 or 1) and s until it may
 // bank again (`ring`), Ash Veil's state (`veil`: 0 idle, 1 on, 2 spent), Grit's s left (`iron`), Hunter's Pace's s
-// left (`hunt`), Glint's waiting blow (`glint`, 0 or 1), Bitter Draught's burning blows left with its level (`burn`, `burnV`).
+// left (`hunt`), Glint's waiting blow (`glint`, 0 or 1), Bitter Draught's burning blows left with its level (`burn`, `burnV`),
+// Counterstep's s until it may step again (`step`).
 const abilityPerkState = () => ({ calm: 0, vengeance: 0, bastion: 0, streak: 0, moon: 0, moonV: null, mercy: 0, stance: 0,
-  charge: { strike: 0, guard: 0, summon: 0, ultimate: 0 }, bank: 0, ring: 0, veil: 0, iron: 0, hunt: 0, glint: 0, burn: 0, burnV: null });
-// Off balance, for Opportunist: reeling, opened by a parry, or stopped in time.
-const ABILITY_OPEN = new Set([ES.STAGGER, ES.PARRIED, ES.HURT]);
-const abilityOpen = e => e.frozen > 0 || ABILITY_OPEN.has(e.state);
-// Losing health (any blow, a burn, a fall): the perks that wait for it.
-function abilityHurt(kit, st) {
+  charge: { strike: 0, guard: 0, summon: 0, ultimate: 0 }, bank: 0, ring: 0, veil: 0, iron: 0, hunt: 0, glint: 0, burn: 0, burnV: null, step: 0 });
+// Losing health (any blow, a burn, a fall): the perks that wait for it. With the `body` (its owner's), the rares' cues:
+// Vengeance's blade lit (`hurt/armed`), Bloodthirst's motes scattered (`streak/lost`).
+function abilityHurt(kit, st, body) {
+  if (body && st.streak > 0 && kit.perks['streak/heal']) events.emit('abilityPerk', { body, perk: 'streak/lost' });
   st.calm = 0; st.streak = 0;
   const v = kit.perks['hurt/empower'];
-  if (v) st.vengeance = v.window;
+  if (v) { st.vengeance = v.window; if (body) events.emit('abilityPerk', { body, perk: 'hurt/armed' }); }
 }
 function abilityClocks(st, dt) {
-  st.calm += dt; st.vengeance = Math.max(0, st.vengeance - dt); st.bastion = Math.max(0, st.bastion - dt); st.moon = Math.max(0, st.moon - dt); st.mercy = Math.max(0, st.mercy - dt);
+  st.step = Math.max(0, st.step - dt); st.calm += dt; st.vengeance = Math.max(0, st.vengeance - dt); st.bastion = Math.max(0, st.bastion - dt); st.moon = Math.max(0, st.moon - dt); st.mercy = Math.max(0, st.mercy - dt);
   st.stance = Math.max(0, st.stance - dt); st.ring = Math.max(0, st.ring - dt); st.iron = Math.max(0, st.iron - dt); st.hunt = Math.max(0, st.hunt - dt);
 }
 // A deflect, on the deflecting body (js/combat.js; a bot's on the server): Iron Mercy's heal, Ringing Steel's bank,
@@ -278,30 +284,35 @@ function abilityClocks(st, dt) {
 function abilityParried(p, target) {
   const P = p.kit.perks, st = p.perk;
   const mercy = P['parry/heal'];   // Iron Mercy (a crate's)
-  if (mercy && st.mercy <= 0) { st.mercy = mercy.cooldown; abilityHeal(p, mercy.heal, 'parry/heal'); }
+  if (mercy && st.mercy <= 0) { st.mercy = mercy.cooldown; abilityHeal(p, mercy.heal, 'parry/heal', target); }
   const ring = P['parry/freeDash'];   // Ringing Steel
   if (ring && st.ring <= 0) { st.ring = ring.cooldown; st.bank = 1; events.emit('abilityPerk', { body: p, perk: 'parry/freeDash', target }); }
   if (P['parry/keys'] && Object.keys(p.kit.pressed).length) events.emit('abilityPerk', { body: p, perk: 'parry/keys', target });
 }
 // The blow a body lands on `e`, with its kit: damage raised, and the one-shot perks it carries spent.
-// Returns `strike` itself when nothing changes it. `strike.riposte` (a parry's or Counterstep's) adds Cold Riposte.
+// Returns `strike` itself when nothing changes it. `strike.riposte` (a counter) adds Cold Riposte. The raised blow says
+// which rares raised it, for their cues: `venge` (Vengeance), `calm` (Patience), `cracked` (Opportunist).
 function abilityStrike(kit, st, e, strike) {
   if (kit === NO_KIT && !(st && st.moon > 0)) return strike;
   const m = kit.mods, P = kit.perks;
-  let more = m.damage + (strike.riposte ? m.riposte : 0), spent = 0, glint = false;
-  if (P['open/damage'] && abilityOpen(e)) more += P['open/damage'].damage;
+  let more = m.damage + (strike.riposte ? m.riposte : 0), spent = 0, glint = false, venge = false, calmed = false, cracked = false;
+  if (P['cracked/damage'] && e.cracks > 0) { more += P['cracked/damage'].damage; cracked = true; }
   if (st) {
     const hurt = P['hurt/empower'], calm = P['unhurt/empower'];
-    if (hurt && st.vengeance > 0) { more += hurt.damage; st.vengeance = 0; spent++; }
-    if (calm && st.calm >= calm.after) { more += calm.damage; st.calm = 0; spent++; }
+    if (hurt && st.vengeance > 0) { more += hurt.damage; st.vengeance = 0; spent++; venge = true; }
+    if (calm && st.calm >= calm.after) { more += calm.damage; st.calm = 0; spent++; calmed = true; }
     if (st.moon > 0 && st.moonV) more += st.moonV.damage;
     const g = P['ready/empower'];   // Glint: a key filled since the last blow
     if (g && st.glint) { more += g.damage; st.glint = 0; spent++; glint = true; }
   }
   if (!more) return strike;
   // Glint's own spend is told as its own cue (common-fx), not as the rares' empower.
-  return glint ? { ...strike, damage: strike.damage * (1 + more), empowered: spent > 1, glint }
-    : { ...strike, damage: strike.damage * (1 + more), empowered: spent > 0 };
+  const out = { ...strike, damage: strike.damage * (1 + more), empowered: spent > (glint ? 1 : 0) };
+  if (glint) out.glint = true;
+  if (venge) out.venge = true;
+  if (calmed) out.calm = true;
+  if (cracked) out.cracked = true;
+  return out;
 }
 // A blow this body landed (not blocked): Bloodthirst's count, and the Blood Moon's drink. Returns the health it healed.
 function abilityLanded(p, strike) {
@@ -309,6 +320,7 @@ function abilityLanded(p, strike) {
   let heal = 0;
   if (st.moon > 0 && st.moonV) heal += strike.damage * st.moonV.drain;
   if (v && ++st.streak >= v.hits) { st.streak = 0; heal += p.maxHp * v.heal; events.emit('abilityPerk', { body: p, perk: 'streak/heal' }); }
+  else if (v) events.emit('abilityPerk', { body: p, perk: 'streak/step', n: st.streak });   // a mote for each blow of the streak
   if (heal > 0 && p.alive()) p.hp = Math.min(p.hpCap(), p.hp + heal);
   return heal;
 }

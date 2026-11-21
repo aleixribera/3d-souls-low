@@ -319,6 +319,9 @@ const CONFIG = {
     // a cracked guard's shards cut `shardDelay` s after the crack (Shatter Guard).
     // Mirror Shard: a deflected bolt's way back takes its distance / its speed, at most `reflectMax` s.
     commons: { pastGap: 1.2, lateCut: 0.35, imageDelay: 0.15, imageReach: 2.8, whirlRadius: 2.4, thornReach: 3.5, shardDelay: 0.12, reflectMax: 1.5 },
+    // Counterstep (Player.flashBehind): a perfect dodge of an attacker within `range` m of its body steps its holder to
+    // `gap` m behind that body, round it in `time` s, untouchable.
+    flashBehind: { range: 6, gap: 1.2, time: 0.12 },
     // Summons (js/abilities.js summonStep): each kind stands `gap` m off its enemy's body, `flank` rad round from the
     // side away from its holder (+ toward the enemy's left), and runs there at up to `speed` m/s. It has arrived
     // `arrive` s after it is called (one that `rises` comes up where it will stand; the others run there); a hound,
@@ -750,6 +753,18 @@ const CONFIG = {
         // (each living `shardLife` s), a `star` m across at the clash and on the shooter.
         mirror: { length: 1.2, width: 0.1, ink: 1.6, shards: 14, shardLife: 0.5, star: 0.6 },
         motes: 10, burn: 6, iron: 0.35,   // `iron`: Grit's grey on the body (emissive)
+      },
+      // The rares' perks (js/rare-fx.js, design/abilities batch 4), in blue cel ink, each in s and m. `crack`: a cracked
+      // guard's glow on an Opportunist holder's screen (js/finisher-fx.js). Counterstep's ribbon is `band` m tall and
+      // `draw`s on, its ring waits `land` s; the blade's light (Vengeance's flame, Bastion's hum, Patience's still edge) is
+      // `width` m across and dims over the last `dim` s; Bloodthirst's motes orbit `orbit` m out, spiral in over `spiral`
+      // s; Last Breath breathes every `breath` s; Patience's stroke is `stroke` m long; Grave Feast's droplets fly `feed` s.
+      rare: {
+        crack: 0x8fb8dc, band: 0.32, draw: 0.12, land: 0.12, ribbonLife: 0.45, flakes: 10,
+        width: 0.2, dim: 0.5, orbit: 0.6, spin: 2.4, spiral: 0.4, breath: 1.2, puff: 0.6,
+        answer: 1.2, chip: 0.5, star: 0.9, glint: 0.6, stroke: 4, strokeLife: 0.6, tongue: 1.4, flameLife: 0.5, feed: 0.5,
+        ring: { from: 0.5, to: 1.6, life: 0.5 },
+        afterimage: 0x8fb8dc,   // Counterstep's step and a dash in Last Breath's band leave blue copies (js/afterimage.js)
       },
       meteor: { color: 0xff7a2a, core: 0xffe6b8, column: 22, width: 1.8, glow: 1.8, fall: 0.5, ring: 0.55, crater: 3.2, shake: [0.45, 0.35],
         burst: { count: 40, speed: 9, color: 0xff8a3a } },

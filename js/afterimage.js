@@ -7,7 +7,7 @@
 // Drawing only: a render hook reads where the body is and copies its bones onto pooled figures made at load (warmed
 // with the other bodies), so nothing is allocated per frame and no game state changes. Reduced motion: one per dash.
 const afterimage = (() => {
-  const pool = [];
+  const pool = [], hooks = { tint: null };
   let wasDash = false, wasFlash = false, fresh = false, stepArmed = false, stepping = false, made = 0, lastX = 0, lastZ = 0, dodgeArmed = false, perfect = false;
   function makePool() {
     if (pool.length) return;
@@ -50,7 +50,8 @@ const afterimage = (() => {
     if (!b || a.length !== b.length) return;
     g.rig.root.position.copy(src.root.position); g.rig.root.quaternion.copy(src.root.quaternion); g.rig.root.scale.copy(src.root.scale);
     for (let i = 0; i < a.length; i++) { b[i].position.copy(a[i].position); b[i].quaternion.copy(a[i].quaternion); b[i].scale.copy(a[i].scale); }
-    g.mat.color.setHex(style.color); g.peak = style.opacity * (reducedMotion() ? 0.7 : 1);
+    const tint = hooks.tint && hooks.tint(Game.player);   // a rare's blue copies (js/rare-fx.js)
+    g.mat.color.setHex(tint ?? style.color); g.peak = style.opacity * (reducedMotion() ? 0.7 : 1);
     g.age = 0; g.life = style.life; g.mat.opacity = 0; g.rig.root.visible = true;
   }
   // Never in the way of the body: a copy still inside it fades in as the body leaves (so the dash's first frames show the
@@ -104,7 +105,7 @@ const afterimage = (() => {
       events.on('finisherStep', d => { if (d.player === Game.player) { fresh = true; stepArmed = true; } });
       events.on('dodge', d => { if (d.player === Game.player && d.player.state === PS.ROLL) dodgeArmed = true; });
     },
-    clear,
+    clear, hooks,
     get showing() { let n = 0; for (const g of pool) if (g.rig.root.visible) n++; return n; },
   };
 })();

@@ -395,8 +395,12 @@ const ABILITY_SOUNDS = { blast: 'abilityBlast', lightning: 'abilityDragon', free
 const ABILITY_STRIKE_SOUNDS = { lightning: 'abilityThunder', twin: 'abilityEcho', hound: 'abilityBite', guardian: 'abilityBash', lancer: 'abilityThrust' };
 const ABILITY_DRAW_SOUNDS = { twin: 'abilityTaunt', hound: 'abilityHowl', guardian: 'abilityChallenge', lancer: 'abilityChallenge' };
 const ABILITY_PERK_SOUNDS = { empower: ['abilityEmpower', 1], 'streak/heal': ['abilityHeal', 1],
-  'dodge/riposte': ['abilityStep', 1], 'block/charge': ['abilityCharge', 1],
-  'execute/heal': ['abilityHeal', 0.8], 'parry/heal': ['abilityHeal', 1.2], 'press/heal': ['abilityHeal', 0.9], 'press/stance': ['abilityCharge', 0.8],
+  'dodge/flashBehind': ['abilityStep', 1.15], 'block/charge': ['abilityCharge', 1],
+  'finisher/heal': ['abilityHeal', 0.8],
+  // batch 4's (js/rare-fx.js): [sound, pitch, vel]; Bloodthirst's mote rises in pitch with each blow (`n`)
+  'streak/step': ['abilityChime', 1.1, 0.35], 'streak/lost': ['abilityInk', 0.9, 0.5], 'hurt/armed': ['abilityFlare', 0.7, 0.5],
+  'unhurt/ready': ['abilityChime', 1.8, 0.3], 'unhurt/empower': ['abilityInk', 0.75, 0.9], 'low/freeDash': ['abilityFrost', 1.1, 0.55],
+  'cracked/damage': ['abilityClank', 1.3, 0.45], 'block/armed': ['abilityCharge', 1.25, 0.5], 'parry/heal': ['abilityHeal', 1.2], 'press/heal': ['abilityHeal', 0.9], 'press/stance': ['abilityCharge', 0.8],
   // the commons' (batch 3): quiet ones, from sounds the plain commons already use
   'parry/freeDash': ['abilityChime', 1.25], 'freeDash/spent': ['abilityChime', 1.6], 'fightStart/freeDash': ['abilityStep', 1.1],
   'low/veil': ['abilityFrost', 0.8], 'veil/spent': ['abilityInk', 1], 'hurt/ironSkin': ['abilityClank', 1], 'ironSkin/glance': ['abilityClank', 1.35],
@@ -506,7 +510,7 @@ function registerAudioListeners() {
     if (d.then === 'blades' && d.enemy && d.v && rains.length < 4) rains.push({ e: d.enemy, left: Math.round(d.v.time / d.v.every), next: d.v.every, every: d.v.every });
   });
   on('shotDeflected', d => { if (d.player === Game.player) audio.play('abilityMirror', { vel: 0.7 }); });   // Mirror Shard, its holder's own
-  on('abilityPerk', d => { if (d.body === Game.player) { const [id, pitch] = ABILITY_PERK_SOUNDS[d.perk] || ['abilityPerk', 1]; audio.play(id, { pitch }); } });
+  on('abilityPerk', d => { if (d.body === Game.player) { const [id, pitch, vel] = ABILITY_PERK_SOUNDS[d.perk] || ['abilityPerk', 1]; audio.play(id, { pitch: pitch * (1 + 0.08 * (d.n || 0)), vel }); } });
   on('abilityPicked', d => audio.play('abilityPick', { pitch: ABILITY_PICK_PITCH[d.rarity] || 1, vel: d.rarity === 'common' ? 0.6 : 0.9 }));
   // The plain commons' touches (js/ability-touch.js): the holder's own, quiet, each on its moment.
   const held = (p, mod) => p && p === Game.player && p.kit && p.kit.mods[mod] > 0;

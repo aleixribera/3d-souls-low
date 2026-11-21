@@ -249,6 +249,8 @@ function validateData({ visual = true } = {}) {
   const BC = BL.commons;
   need(BC && ['pastGap', 'lateCut', 'imageDelay', 'imageReach', 'whirlRadius', 'thornReach', 'shardDelay'].every(k => num(BC[k]) && BC[k] > 0),
     'CONFIG.abilities.commons: pastGap, lateCut, imageDelay, imageReach, whirlRadius, thornReach and shardDelay, each above 0.');
+  const FB = BL.flashBehind;
+  need(FB && ['range', 'gap', 'time'].every(k => num(FB[k]) && FB[k] > 0), 'CONFIG.abilities.flashBehind: range, gap and time, each above 0.');
   for (const k of Object.keys(ABILITY_UNITS)) need(['s', 'm', 'n'].includes(ABILITY_UNITS[k]), `ABILITY_UNITS ${k}: s, m or n.`);
   const BP = BL.press, PG = BP && BP.gain;
   need(PG && ['hit', 'skill', 'deflect', 'dodge', 'finisher'].every(k => num(PG[k]) && PG[k] >= 0) && PG.hit > 0 && num(BP.range) && BP.range > 0

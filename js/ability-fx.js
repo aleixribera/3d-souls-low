@@ -16,8 +16,8 @@
 //                  the boss's far side; each blow it echoes cuts an ember slash. Burns away when its time is up.
 //   Gale Crescent  a crescent of wind as tall as a house flies from the holder through the boss.
 //   Pyre           a pillar of fire stands under the broken boss for its time.
-// The rares' powers, smaller: Counterflame's burst of fire, Static Edge's spark (a short bolt).
-// The rares' small cues (event `abilityPerk`, the local player's): a flare, motes or a ring. Every mesh is pooled and
+// Fire Burst's burst of fire, smaller. The kept rares' cues and powers (Counterflame, Static Edge) are js/rare-fx.js's;
+// the guard key legendaries' small cues (event `abilityPerk`, the local player's): motes and a ring. Every mesh is pooled and
 // made at load (warmed by visuals.warmUp); nothing is allocated per frame. Flashes stay under 3 Hz. Tuning:
 // VIS.abilityFx.
 const abilityFx = (() => {
@@ -643,13 +643,8 @@ const abilityFx = (() => {
     const p = d.body;
     if (!p || p !== Game.player) return;
     const c = chestOf(p), P = F.perks;
-    if (d.perk === 'empower' && d.target) { const at = chestOf(d.target); ultraFx.flare(at, P.empower, 2.2); spawnBurst(at, P.empowerBurst); }
-    else if (d.perk === 'execute/heal') { ultraFx.moteBurst(c, 34, P.heal, { r: 0.6, speed: 1, lift: 1.9, life: [0.8, 1.4] }); groundFx.ring(p.x, p.z, 2, P.heal, 0.6, p.y); }
-    else if (d.perk === 'parry/heal') { ultraFx.moteBurst(c, 14, P.heal, { r: 0.4, speed: 0.7, lift: 1.2, life: [0.5, 0.9] }); groundFx.ring(p.x, p.z, 1.3, P.heal, 0.45, p.y); }
-    else if (d.perk === 'streak/heal') { ultraFx.moteBurst(c, 26, P.heal, { r: 0.5, speed: 0.8, lift: 1.6, life: [0.7, 1.3] }); groundFx.ring(p.x, p.z, 1.6, P.heal, 0.5, p.y); }
-    else if (d.perk === 'dodge/riposte') groundFx.ring(p.x, p.z, 1.5, P.riposte, 0.5, p.y);
-    else if (d.perk === 'block/charge') { ultraFx.sparkBurst(c, 16, 'gold', null, 0, 0.7); groundFx.ring(p.x, p.z, 1.4, P.charge, 0.5, p.y); }
-    else if (d.perk === 'press/heal') { ultraFx.moteBurst(c, 30, P.heal, { r: 0.6, speed: 0.9, lift: 1.8, life: [0.8, 1.3] }); groundFx.ring(p.x, p.z, 1.9, P.heal, 0.6, p.y); }
+    // the kept rares' (batch 4) are js/rare-fx.js's; these are the guard keys' legendaries'
+    if (d.perk === 'press/heal') { ultraFx.moteBurst(c, 30, P.heal, { r: 0.6, speed: 0.9, lift: 1.8, life: [0.8, 1.3] }); groundFx.ring(p.x, p.z, 1.9, P.heal, 0.6, p.y); }
     else if (d.perk === 'press/stance') { ultraFx.sparkBurst(c, 22, 'gold', null, 0, 0.9); groundFx.ring(p.x, p.z, 2.2, P.charge, 0.7, p.y); }
   }
 
@@ -667,8 +662,7 @@ const abilityFx = (() => {
     else if (d.then === 'twin') twin(d);
     else if (d.then === 'gale' && e) gale(d, e);
     else if (d.then === 'pyre' && e) pyre(d, e);
-    else if (d.then === 'flare' && e) flareOn(e);
-    else if (d.then === 'spark' && e) bolt(d, e, true);
+    else if (d.then === 'flare' && e && d.power !== 'counterflame') flareOn(e);   // Fire Burst's; Counterflame's and Static Edge's are js/rare-fx.js's
   });
   events.on('abilityPerk', perk);
   events.on('abilityPicked', d => {

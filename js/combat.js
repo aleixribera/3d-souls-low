@@ -127,8 +127,10 @@ function perfectDodge(p, hb) {
   if (p.dodgeGainBy !== hb.owner || p.dodgeGainNo !== no) { p.dodgeGainBy = hb.owner; p.dodgeGainNo = no; p.gainCharge(CONFIG.abilities.press.gain.dodge); }
   events.emit('dodge', { attacker: hb.owner, strike: hb.payload, player: p });
   if (typeof multiplayer !== 'undefined' && multiplayer.active()) multiplayer.dodged(hb.owner);   // the server allows the counter (still mid-dash)
-  const step = p.kit.perks['dodge/riposte'];   // Counterstep: a longer counter window
-  if (step) { p.riposte = Math.max(p.riposte, step.window); events.emit('abilityPerk', { body: p, perk: 'dodge/riposte' }); }
+  // Counterstep: once a cooldown, the counter longer (as the server grants it: js/lobby-sim.js stepDodge) and a step
+  // round the attacker's back where there is room for one.
+  const step = p.kit.perks['dodge/flashBehind'];
+  if (step && p.perk.step <= 0) { p.perk.step = step.cooldown; p.riposte = Math.max(p.riposte, step.window); p.flashBehind(hb.owner); }
   abilityReport(p, 'dodge', { enemy: hb.owner });
 }
 
@@ -173,7 +175,9 @@ function resolveCombat(game) {
       for (let i = enemyHits.length - 1; i >= 0; i--) if (enemyHits[i].owner === e) enemyHits.splice(i, 1);
     game.hitstop = Math.max(game.hitstop, res.blocked ? CONFIG.block.hitstop : strike.hitstop);
     events.emit('strike', { strike, attacker: p, target: e, at: contact(p.hitbox, e), blocked: !!res.blocked });
-    if (strike.empowered) events.emit('abilityPerk', { body: p, perk: 'empower', target: e });
+    if (strike.venge) events.emit('abilityPerk', { body: p, perk: 'empower', target: e });   // Vengeance
+    if (strike.calm) events.emit('abilityPerk', { body: p, perk: 'unhurt/empower', target: e });   // Patience
+    if (strike.cracked && !res.blocked) events.emit('abilityPerk', { body: p, perk: 'cracked/damage', target: e });   // Opportunist
     if (strike.glint) events.emit('abilityPerk', { body: p, perk: 'glint/spent', target: e });   // Glint (a common's: no camera kick)
     if (!res.blocked && p.kit !== NO_KIT) {
       p.gainCharge(pressGain(strike));
@@ -194,8 +198,8 @@ function resolveCombat(game) {
     const db = p.deflectedBlow;
     if (db && db.enemy === hb.owner && db.key === blowKey(hb.owner)) { hb.markHit(p); continue; }   // turned aside by a deflect
     if (p.invulnerable()) {   // dashed through: the hitbox stays live (it can catch the end of the dash)
-      // Weighed once, on the first frame they meet. A Finishing Blow's untouchable time is no dodge.
-      if (p.state === PS.ROLL && hb.weighed !== p.dashNo) { hb.weighed = p.dashNo; if (dashOutlasts(p, hb)) perfectDodge(p, hb); }
+      // Weighed once, on the first frame they meet. A Finishing Blow's untouchable time, or Counterstep's step, is no dodge.
+      if (p.state === PS.ROLL && !p.blink && hb.weighed !== p.dashNo) { hb.weighed = p.dashNo; if (dashOutlasts(p, hb)) perfectDodge(p, hb); }
       continue;
     }
     hb.markHit(p);   // (a blow dodged is marked too, so the counter out of it is never caught by it: perfectDodge)

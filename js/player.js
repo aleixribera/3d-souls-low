@@ -3,6 +3,8 @@
 // 5. Player
 // ============================================================================
 // Inventory: { itemId: { count, max } }, created from the player definition.
+// Counterstep's probe of the spot behind a foe (Player.flashBehind): one body, reused.
+const FLASH_PROBE = { x: 0, y: 0, z: 0, px: 0, pz: 0, radius: 0.5, height: 1.8, grounded: true };
 const makeInventory = list => Object.fromEntries(list.map(it => [it.item, { count: it.count, max: it.max }]));
 
 class Player {
@@ -36,6 +38,7 @@ class Player {
     // Boss Rush's abilities (js/abilities.js): the kit they make, its perks' clocks, and who settles its powers (a
     // server bot's own; unset, abilityReport finds it). lastHp: the health last step, so losing any is noticed.
     this.kit = NO_KIT; this.perk = abilityPerkState(); this.onAbility = null; this.lastHp = this.hp; this.lowReported = false;
+    this.blink = null; this.breathLow = false;   // Counterstep's step under way; Last Breath's band entered
     this.savePrev();
   }
   // Boss Rush's abilities (ABILITIES): the kit of the ids held (one per pick, repeated by upgrades), with the health
@@ -67,7 +70,7 @@ class Player {
     const doom = this.doomTime > 0 ? CONFIG.bossPowers.destined.cut : 0;
     return this.maxHp * Math.max(0.05, 1 - doom);
   }
-  invulnerable() { return this.iFramesLeft() > 0 || this.state === PS.EXECUTE || this.execGrace > 0; }
+  invulnerable() { return this.iFramesLeft() > 0 || this.state === PS.EXECUTE || this.execGrace > 0 || !!this.blink; }
   // Seconds of the dash's i-frames still to come (0 out of a dash; never past the dash's end, however long Long Shadow
   // makes them).
   iFramesLeft() {
@@ -159,6 +162,33 @@ class Player {
     this.dashNo = (this.dashNo || 0) + 1;   // which dash this is: a blow is weighed for a perfect dodge once per dash (js/combat.js)
     this.dashFromX = this.x; this.dashFromZ = this.z;   // where it began (Spark Step's path)
     events.emit('dash', { player: this });
+  }
+  // Counterstep (`dodge/flashBehind`): from the perfect dodge of `e`'s blow, a step round its body to `gap` m behind
+  // it (CONFIG.abilities.flashBehind), in `time` s along an arc round it, untouchable, then facing its back. No step
+  // (false) when `e` is out of `range`, or the spot behind is a wall, a drop or out of the arena: the plain counter.
+  flashBehind(e) {
+    const F = CONFIG.abilities.flashBehind, H = CONFIG.height, r0 = Math.hypot(this.x - e.x, this.z - e.z);
+    if (!e.alive() || r0 - (e.radius || 0) > F.range) return false;
+    const back = (e.yaw || 0) + Math.PI, r1 = (e.radius || 0.6) + F.gap + this.radius;
+    const tx = e.x + Math.sin(back) * r1, tz = e.z + Math.cos(back) * r1, floor = world.groundAt(tx, tz, this.y);
+    if (!(floor >= this.y - H.stepDown && floor <= this.y + H.stepUp)) return false;
+    const probe = FLASH_PROBE; probe.x = probe.px = tx; probe.z = probe.pz = tz; probe.y = floor; probe.radius = this.radius; probe.height = this.height; probe.grounded = true;
+    clampToWorld(probe);
+    if (Math.hypot(probe.x - tx, probe.z - tz) > 0.05) return false;
+    const a0 = Math.atan2(this.x - e.x, this.z - e.z), turn = angDiff(back, a0);
+    this.blink = { cx: e.x, cz: e.z, a0, turn, r0: Math.max(r0, (e.radius || 0.6) + this.radius), r1, y: floor, t: 0, time: F.time, foe: e };
+    this.vx = this.vz = 0; this.hitbox = null;
+    events.emit('abilityPerk', { body: this, perk: 'dodge/flashBehind', target: e, from: { x: this.x, y: this.y, z: this.z }, to: { x: tx, y: floor, z: tz } });
+    return true;
+  }
+  // One step of the flash step: along the arc, facing the foe's centre; at its end the dash is over and the counter waits.
+  blinkStep(dt) {
+    const B = this.blink;
+    B.t = Math.min(B.time, B.t + dt);
+    const k = B.t / B.time, s = k * k * (3 - 2 * k), a = B.a0 + B.turn * s, r = lerp(B.r0, B.r1, s);
+    this.x = B.cx + Math.sin(a) * r; this.z = B.cz + Math.cos(a) * r; this.vx = this.vz = this.kx = this.kz = 0;
+    this.yaw = Math.atan2(B.cx - this.x, B.cz - this.z);
+    if (k >= 1) { this.y = B.y; this.vy = 0; this.grounded = true; this.blink = null; this.setState(PS.IDLE); }
   }
   // A dash that went past an enemy (Spark Step's `dashPast`, js/abilities.js dashPastOf): told once, as it ends.
   dashEnded(enemies) {
@@ -282,6 +312,7 @@ class Player {
     if ((this.comboTimer -= dt) <= 0) this.comboFrom = null;
     this.bufferInputs();
     this.refillDashes(dt);
+    if (this.blink && this.alive()) { if (this.kit !== NO_KIT) this.abilityStep(dt); this.blinkStep(dt); return; }   // Counterstep's step: nothing else moves the body
     if (this.kit !== NO_KIT) { this.abilityStep(dt); this.pressAbilities(enemies, lock); }
     const fx = Math.sin(this.yaw), fz = Math.cos(this.yaw);
     const face = lock ? Math.atan2(lock.x - this.x, lock.z - this.z) : null;
@@ -455,10 +486,16 @@ class Player {
   abilityStep(dt) {
     const st = this.perk;
     const hurt = this.hp < this.lastHp - 1e-9, P = this.kit.perks;
-    if (hurt) abilityHurt(this.kit, st);
+    if (hurt) abilityHurt(this.kit, st, this);
     this.lastHp = this.hp;
+    const calmWas = st.calm;
     abilityClocks(st, dt);
     if (!this.alive()) return;
+    const calm = P['unhurt/empower'];   // Patience: the blade stills as the calm comes due
+    if (calm && calmWas < calm.after && st.calm >= calm.after) events.emit('abilityPerk', { body: this, perk: 'unhurt/ready' });
+    const breath = P['low/freeDash'], low = !!breath && this.hp > 0 && this.hp <= this.maxHp * breath.below;   // Last Breath's band
+    if (low && !this.breathLow) events.emit('abilityPerk', { body: this, perk: 'low/freeDash' });
+    this.breathLow = low;
     const grit = P['hurt/ironSkin'];   // Grit: losing health sets the skin to iron (not renewed while it holds)
     if (grit && hurt && st.iron <= 0) { st.iron = grit.time; events.emit('abilityPerk', { body: this, perk: 'hurt/ironSkin' }); }
     const veil = P['low/veil'];   // Ash Veil: once a fight, this low
@@ -511,7 +548,7 @@ class Player {
   }
   // Every way of dying ends here (blows, falls, pits, Destined Death's drain, hazard floors): no health, no hitbox,
   // the death state. The mode that owns this body notices the change (Game.update: onPlayerDeath).
-  die() { if (this.exec) finisher.abandon(this); if (this.held) this.releaseHold(false); this.hp = 0; this.hitbox = null; this.setState(PS.DEAD); }
+  die() { if (this.exec) finisher.abandon(this); if (this.held) this.releaseHold(false); this.blink = null; this.hp = 0; this.hitbox = null; this.setState(PS.DEAD); }
   // After moving: death in a pit, or damage from a hard landing (a brief stumble if it doesn't kill).
   checkFall() {
     if (!this.alive()) return;
@@ -625,7 +662,7 @@ class Player {
     }
     if (blocked) {
       const bastion = this.kit.perks['block/charge'];
-      if (bastion) this.perk.bastion = bastion.window;
+      if (bastion) { this.perk.bastion = bastion.window; events.emit('abilityPerk', { body: this, perk: 'block/armed' }); }   // Bastion armed
       return { blocked: true };
     }
     if (strike.heavy || !this.isCommitted()) {   // a jump attack still in its air wind-up is cancelled too

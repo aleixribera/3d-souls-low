@@ -50,7 +50,7 @@ const realm = sim => name => sim.inspect().Game.update.constructor('return ' + n
   assert.ok(early(['keen-eye']) > CONFIG.parry.lead, 'Keen Eye parries it');
   e.state = ES.IDLE; e.attack = null;
 
-  // A blow's bonus: Keen Edge, Cold Riposte (a riposte only), Opportunist (a boss off balance), Headsman. Breaker
+  // A blow's bonus: Keen Edge, Cold Riposte (a riposte only), Opportunist (a cracked guard), Headsman. Breaker
   // (pass 100) makes the counter window longer.
   const attack = PLAYER_DEF.moveset.attacks.light;
   const base = g('makeStrike')(attack, false, 0), riposte = g('makeStrike')(attack, true, 0);
@@ -59,11 +59,13 @@ const realm = sim => name => sim.inspect().Game.update.constructor('return ' + n
   near(kitOf(['breaker']).mods.counterWindow, at('breaker', 1).counterWindow, 'Breaker: a longer counter window');
   assert.equal(strikeWith(kitOf(['cold-riposte']), perkState(), e, base), base, 'Cold Riposte: nothing on a plain blow');
   near(strikeWith(kitOf(['cold-riposte']), perkState(), e, riposte).damage, riposte.damage * (1 + at('cold-riposte', 1).riposte), 'Cold Riposte');
-  assert.equal(strikeWith(kitOf(['opportunist']), perkState(), e, base), base, 'Opportunist: the boss on its feet');
+  assert.equal(strikeWith(kitOf(['opportunist']), perkState(), e, base), base, 'Opportunist: the guard whole');
   e.state = ES.PARRIED;
-  near(strikeWith(kitOf(['opportunist']), perkState(), e, base).damage, base.damage * (1 + at('opportunist', 1).damage), 'Opportunist, the boss open');
-  e.state = ES.IDLE; e.frozen = 1;
-  assert.notEqual(strikeWith(kitOf(['opportunist']), perkState(), e, base), base, 'Opportunist, the boss stopped in time'); e.frozen = 0;
+  assert.equal(strikeWith(kitOf(['opportunist']), perkState(), e, base), base, 'Opportunist: off balance is not cracked (batch 4)');
+  e.state = ES.IDLE; e.cracks = 1;
+  const opp = strikeWith(kitOf(['opportunist']), perkState(), e, base);
+  near(opp.damage, base.damage * (1 + at('opportunist', 1).damage), 'Opportunist, the guard cracked'); assert.equal(opp.cracked, true);
+  e.cracks = 0;
   near(g('finisher').damageFor(e, at('headsman', 1).finisher) / g('finisher').damageFor(e), 1 + at('headsman', 1).finisher, 'Headsman');
 
   // Vengeance: hurt, the next blow within its window is stronger, once. Patience: unhurt long enough, the next blow double.
