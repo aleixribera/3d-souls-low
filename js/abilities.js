@@ -133,6 +133,22 @@ function abilityHeal(p, share, perk, target = null) {
 //   press/clap:          the holder turns to that enemy, which must be within `reach` m (else the key keeps its charge:
 //                        pressOpen): every enemy within `reach` m and CONFIG.abilities.clap.angle degrees round that
 //                        way is wounded at once.
+// Batch 7 (Strike II: the flashy ones), key 1, aimed at the press's enemy; drawn by js/strike-fx-2.js. A held strike
+// (flurry, iai) roots its holder (Player.root); here it ends when the holder moves more than CONFIG.abilities.rootSlip
+// m from where it pressed, or loses health: a dash out or a blow taken cuts it short (told as `end`).
+//   press/flurry:        the enemy within CONFIG.abilities.flurry.reach m (pressOpen): `hits` thrusts spread over
+//                        `flurry.time` s, each wounding it while it is still in reach (told as a `strike`).
+//   press/drill:         CONFIG.abilities.drill.lead s on, it grinds the enemy `time` / `every` times, `every` s apart.
+//   press/stitch:        `hits` stabs from the enemy's shadow, the first `stitch.lead` s on, then every `stitch.every`
+//                        s (each told as a `strike`).
+//   press/boomerang:     a blade flies from the holder through the enemy to `boomerang.past` m beyond it and back, in
+//                        `boomerang.time` s: `hits` passes, each wounding every enemy within `boomerang.width` m of
+//                        its path once as it goes by. It returns to where the holder pressed.
+//   press/clones:        `clones.lead` s on, the enemy is wounded `hits` times at once (the clones are only drawn).
+//   press/iai:           a stance of `iai.stance` s (cut short, the key gets its charge back: `end: 'cancel'`); then
+//                        the draw (`strike` 1, with its `path`): every enemy within `iai.width` m of a line `reach` m
+//                        from the holder toward the enemy is marked, and `iai.beat` s later each still alive is
+//                        wounded (`strike` 2).
 // A summon (CONFIG.abilities.summons) stands at its own place round the enemy, worked out here, where the enemies are
 // owned. Once it has arrived it draws that enemy's eye for `draw` s: the enemy fights it instead of anyone (it can't be
 // hurt), and an attack begun on it is finished on it. One summon a holder at a time: another kind's call waits until
@@ -158,6 +174,8 @@ const ABILITY_POWERS = {
   'finisher/petals': ['damage', 'radius'], 'cast/ghostBlade': ['hits', 'damage'],
   'press/wave': ['charge', 'damage', 'reach', 'width'], 'press/spikes': ['charge', 'damage', 'reach'], 'press/fist': ['charge', 'damage'],
   'press/risingFire': ['charge', 'damage'], 'press/clap': ['charge', 'damage', 'reach'],
+  'press/flurry': ['charge', 'hits', 'damage'], 'press/drill': ['charge', 'time', 'every', 'damage'], 'press/stitch': ['charge', 'hits', 'damage'],
+  'press/boomerang': ['charge', 'damage', 'hits'], 'press/clones': ['charge', 'hits', 'damage'], 'press/iai': ['charge', 'damage', 'reach'],
 };
 // The heavies that end a light string: every attack some attack's `next.heavy` leads to (Iron Cyclone's `comboHeavy`).
 let comboHeavies = null;
@@ -264,15 +282,19 @@ function pressTarget(body, enemies, lock) {
   for (const e of enemies) if (open(e) && dist(e) <= near) { near = dist(e); best = e; }
   return best;
 }
-// The pressed powers whose enemy must stand within the level's `reach` m of the holder (Thunderclap's cone).
-const PRESS_NEAR = new Set(['clap', 'spikes']);
+// The pressed powers whose enemy must stand within reach of the holder: the level's `reach` m (Thunderclap's cone), else
+// CONFIG.abilities.<then>.reach (Sparrow Flurry's). Their holder turns to that enemy as it presses, as Quick Draw's does.
+const PRESS_NEAR = new Set(['clap', 'spikes', 'flurry']);
+const PRESS_TURN = new Set([...PRESS_NEAR, 'iai']);
+// The s a pressed power roots its holder in place (Player.root): its flurry, its stance; 0 for the rest.
+const pressRoot = then => then === 'flurry' ? CONFIG.abilities.flurry.time : then === 'iai' ? CONFIG.abilities.iai.stance : 0;
 // Whether key `slot` may fire now at enemy `e` (pressTarget's): a power needing an enemy has one, and one that needs it
 // near has it within `reach` m. Else the key keeps its charge (the browser's press and the server's claim alike). The
 // server passes `slack` m more: its pose of the player lags the browser's, and a press the browser spent must not be lost.
 function pressOpen(slot, body, e, slack = 0) {
   if (!slot.power) return true;
   if (ON_ENEMY.has(slot.then) && !e) return false;
-  return !PRESS_NEAR.has(slot.then) || (!!e && Math.hypot(e.x - body.x, e.z - body.z) - (e.radius || 0) <= slot.v.reach + slack);
+  return !PRESS_NEAR.has(slot.then) || (!!e && Math.hypot(e.x - body.x, e.z - body.z) - (e.radius || 0) <= (slot.v.reach ?? CONFIG.abilities[slot.then].reach) + slack);
 }
 // The input actions of the four keys, in ABILITY_KEYS order (js/input.js binds them).
 const ABILITY_ACTIONS = ['ability1', 'ability2', 'ability3', 'ability4'];
@@ -418,17 +440,25 @@ function abilityReport(body, when, ctx) {
 const ECHO_DELAY = 0.06;   // s from its holder's blow to the twin's: the two land as one
 // The powers that need a live enemy to strike (the one parried, struck, broken or dodged).
 const ON_ENEMY = new Set(['lightning', 'blades', 'flare', 'spark', 'gale', 'pyre', 'hound', 'lancer', 'lick', 'molten', 'lateCut', 'afterimage',
-  'thorns', 'shards', 'reflect', 'wave', 'spikes', 'fist', 'risingFire', 'clap']);
+  'thorns', 'shards', 'reflect', 'wave', 'spikes', 'fist', 'risingFire', 'clap',
+  'flurry', 'drill', 'stitch', 'boomerang', 'clones', 'iai']);
 // The powers whose blow lands a beat after they fire: each tells every browser again as it lands (`strike`).
-const DELAYED = new Set(['lightning', 'lateCut', 'afterimage', 'shards', 'reflect', 'ghostBlade']);
+const DELAYED = new Set(['lightning', 'lateCut', 'afterimage', 'shards', 'reflect', 'ghostBlade', 'flurry', 'stitch']);
 const abilityPowers = (() => {
   // The powers still striking (lightning, blades, a pyre, a twin's echo): { pw, holder, enemy, left, next, n }, an echo
   // with its own `damage` and `twin`.
   const running = [];
   // Batch 6's strikes still on their way to the ground: a line of spikes running out { pw, holder, x, y, z, ux, uz,
   // reach, width, speed, front, damage, hit (the enemies it has wounded) }, or a marked spot { pw, holder, x, y, z,
-  // radius, next, damage }.
+  // radius, next, damage }. Batch 7's: a thrown blade { pw, holder, x, y, z, ux, uz, len, t, time, width, passes, damage,
+  // hit (a set a pass) }, or a stance { pw, holder, body, enemy, key, hold, stance, damage, reach, beat, marked (once drawn) }.
   const ahead = [];
+  // A held strike's holder still standing where it pressed, unhurt (`hold`: its { x, z, hp } then).
+  function holding(holder, body, hold) {
+    const b = (api.bodyOf && api.bodyOf(holder)) || body;
+    if (!b || (b.alive && !b.alive()) || (b.hp ?? hold.hp) < hold.hp - 1e-6) return false;
+    return Math.hypot(b.x - hold.x, b.z - hold.z) <= CONFIG.abilities.rootSlip;
+  }
   const ready = new Map();   // holder + '/' + ability id -> the clock time it may fire again (Infinity: once, spent)
   const waiting = new Map();   // holder + '/' + ability id -> { holder, pw, body }: a low-health summon kept out by another
   const counts = new Map();   // holder + '/' + ability id -> blows landed toward a `hits` power
@@ -466,7 +496,9 @@ const abilityPowers = (() => {
   // { yaw } (the holder's facing, where its body carries none: the server's), { over } (a press: Overcharge's share past full).
   function trigger(holder, body, kit, when, ctx = {}) {
     if (when === 'hits') { echo(holder, body, ctx.enemy, ctx.strike); burn(holder, body, kit, ctx.enemy); ghost(holder, body, kit, ctx.enemy); }
-    if (when === 'press') cast(holder, body, kit, ctx);
+    // A press arms Echoing Blade at once; Quick Draw's only at its draw (a stance cut short gives its charge back, so
+    // arming at the press would re-arm the echoes for free).
+    if (when === 'press') { const s = kit.pressed && kit.pressed[ctx.key]; if (!(s && s.power && s.then === 'iai')) cast(holder, body, kit, ctx); }
     for (let pw of kit.powers) {
       if (pw.when !== when || (pw.action && pw.action !== ctx.action) || (pw.key && pw.key !== ctx.key)) continue;
       const key = holder + '/' + pw.id;
@@ -551,6 +583,26 @@ const abilityPowers = (() => {
           const off = d > 1e-6 ? Math.acos(clamp((ox * dx + oz * dz) / (d * len), -1, 1)) : 0;
           if (off <= half + Math.atan2(r, Math.max(d, 1e-6))) wound(o, v.damage, holder, pw.id);
         }
+        break;
+      }
+      case 'flurry': {   // `hits` thrusts over the flurry's time, while the holder stands
+        const T = CONFIG.abilities.flurry.time / v.hits, from = body || e;
+        running.push({ pw, holder, body, enemy: e, left: v.hits, next: T, every: T, n: 0, hold: { x: from.x, z: from.z, hp: from.hp }, reach: CONFIG.abilities.flurry.reach });
+        break;
+      }
+      case 'drill': running.push({ pw, holder, body, enemy: e, left: Math.round(v.time / v.every), next: CONFIG.abilities.drill.lead, n: 0 }); break;
+      case 'stitch': { const S = CONFIG.abilities.stitch; running.push({ pw, holder, body, enemy: e, left: v.hits, next: S.lead, every: S.every, n: 0 }); break; }
+      case 'clones': running.push({ pw, holder, body, enemy: e, left: 1, next: CONFIG.abilities.clones.lead, n: 0, times: v.hits }); break;
+      case 'boomerang': {   // out through the enemy and past it, then back to where it was thrown
+        const from = body || e, dx = e.x - from.x, dz = e.z - from.z, l = Math.hypot(dx, dz) || 1, B = CONFIG.abilities.boomerang;
+        ahead.push({ pw, holder, x: from.x, y: from.y, z: from.z, ux: dx / l, uz: dz / l, len: l + B.past, t: 0, time: B.time, width: B.width,
+          passes: v.hits, damage: v.damage, hit: Array.from({ length: v.hits }, () => new Set()) });
+        break;
+      }
+      case 'iai': {   // the stance now; the draw and the cut in tick
+        const from = body || e;
+        ahead.push({ pw, holder, body, kit, enemy: e, key: ctx.key || 'strike', hold: { x: from.x, y: from.y, z: from.z, hp: from.hp, yaw: ctx.yaw ?? from.yaw ?? 0 },
+          stance: CONFIG.abilities.iai.stance, damage: v.damage, reach: v.reach, beat: 0, marked: null });
         break;
       }
       case 'cyclone': case 'petals': for (const o of enemies) if (near(o, x, y, z, v.radius)) wound(o, v.damage, holder, pw.id); break;
@@ -667,6 +719,8 @@ const abilityPowers = (() => {
     }
     for (let i = ahead.length - 1; i >= 0; i--) {
       const a = ahead[i];
+      if (a.passes) { if (bladeTick(a, dt)) ahead.splice(i, 1); continue; }
+      if (a.stance !== undefined) { if (stanceTick(a, dt)) ahead.splice(i, 1); continue; }
       if (a.speed) {   // the spikes' front: each enemy on the line it has reached, once
         a.front = Math.min(a.reach, a.front + a.speed * dt);
         for (const o of Game.enemies) {
@@ -682,15 +736,72 @@ const abilityPowers = (() => {
     }
     for (let i = running.length - 1; i >= 0; i--) {
       const r = running[i], e = r.enemy;
+      if (r.hold && !holding(r.holder, r.body, r.hold)) {   // a flurry cut short: the thrusts left are dropped
+        events.emit('abilityPower', { power: r.pw.id, then: r.pw.then, holder: r.holder, body: r.body, enemy: e, x: e.x, y: e.y, z: e.z, v: r.pw.v, end: 'cut' });
+        running.splice(i, 1); continue;
+      }
       if ((r.next -= dt) > 0) continue;
       if (!e.alive()) { running.splice(i, 1); continue; }
-      r.next += r.pw.v.every || 0; r.left--; r.n++;
+      r.next += r.every ?? r.pw.v.every ?? 0; r.left--; r.n++;
+      if (r.reach !== undefined) {   // a thrust lands only while its enemy is in reach (the server's pose of the holder lags)
+        const b = (api.bodyOf && api.bodyOf(r.holder)) || r.body;
+        if (b && Math.hypot(e.x - b.x, e.z - b.z) - (e.radius || 0) > r.reach + CONFIG.abilities.press.reachSlack) { if (r.left <= 0) running.splice(i, 1); continue; }
+      }
       // A bolt, and a twin's blow, each tell every browser (`strike`: its number): drawn and heard as it lands.
       if (DELAYED.has(r.pw.then) || r.twin) events.emit('abilityPower', { power: r.pw.id, then: r.pw.then, holder: r.holder, body: r.body, enemy: e,
         x: r.x ?? e.x, y: r.y ?? e.y, z: r.z ?? e.z, v: r.pw.v, strike: r.twin ? ++r.twin.n : r.n });
-      wound(e, r.damage ?? r.pw.v.damage, r.holder, r.pw.id);
+      for (let k = r.times || 1; k > 0; k--) wound(e, r.damage ?? r.pw.v.damage, r.holder, r.pw.id);
       if (r.left <= 0) running.splice(i, 1);
     }
+  }
+  // Spinning Blade's flight: its point `s` m along the way (out on even passes, back on odd); each enemy it goes by in a
+  // pass is wounded once. True once it is back.
+  function bladeAt(a, t) {
+    const k = Math.min(a.passes, t / (a.time / a.passes)), p = Math.min(Math.floor(k), a.passes - 1), f = k - p;
+    return [p, a.len * (p % 2 ? 1 - f : f)];
+  }
+  function bladeTick(a, dt) {
+    const [p0, s0] = bladeAt(a, a.t); a.t = Math.min(a.time, a.t + dt); const [p1, s1] = bladeAt(a, a.t);
+    for (let p = p0; p <= p1; p++) {
+      const from = p === p0 ? s0 : (p % 2 ? a.len : 0), to = p === p1 ? s1 : (p % 2 ? 0 : a.len), lo = Math.min(from, to), hi = Math.max(from, to);
+      for (const o of Game.enemies) {
+        if (a.hit[p].has(o) || !o.alive() || Math.abs(o.y - a.y) > CONFIG.height.reach) continue;
+        const along = (o.x - a.x) * a.ux + (o.z - a.z) * a.uz, off = Math.abs((o.x - a.x) * a.uz - (o.z - a.z) * a.ux), r = o.radius || 0;
+        if (along >= lo - r && along <= hi + r && off <= a.width + r) { a.hit[p].add(o); wound(o, a.damage, a.holder, a.pw.id); }
+      }
+    }
+    return a.t >= a.time;
+  }
+  // Quick Draw: the stance holds (cut short, the key gets its charge back); the draw marks the line; the beat cuts it.
+  function stanceTick(a, dt) {
+    const tell = extra => events.emit('abilityPower', { power: a.pw.id, then: 'iai', holder: a.holder, body: a.body, enemy: a.enemy,
+      x: a.hold.x, y: a.hold.y, z: a.hold.z, v: a.pw.v, ...extra });
+    if (!a.marked) {
+      if (!holding(a.holder, a.body, a.hold)) {
+        const st = (api.perkOf && api.perkOf(a.holder)) || (a.body && a.body.perk);
+        if (st && st.charge) st.charge[a.key] = Math.max(st.charge[a.key] || 0, a.pw.v.charge);
+        tell({ end: 'cancel' });
+        return true;
+      }
+      if ((a.stance -= dt) > 0) return false;
+      const b = (api.bodyOf && api.bodyOf(a.holder)) || a.body || a.hold, e = a.enemy, live = e && e.alive();
+      const face = b.yaw ?? a.hold.yaw;   // its enemy gone in the stance: along the holder's facing
+      const dx = live ? e.x - b.x : Math.sin(face), dz = live ? e.z - b.z : Math.cos(face), l = Math.hypot(dx, dz) || 1, ux = dx / l, uz = dz / l;
+      const reach = a.reach, W = CONFIG.abilities.iai.width;
+      a.marked = Game.enemies.filter(o => {
+        if (!o.alive() || Math.abs(o.y - b.y) > CONFIG.height.reach) return false;
+        const along = (o.x - b.x) * ux + (o.z - b.z) * uz, off = Math.abs((o.x - b.x) * uz - (o.z - b.z) * ux), r = o.radius || 0;
+        return along >= -r && along <= reach + r && off <= W + r;
+      });
+      a.beat = CONFIG.abilities.iai.beat;
+      if (a.kit) cast(a.holder, a.body, a.kit, { enemy: a.enemy });   // the draw arms Echoing Blade, as a press does
+      tell({ strike: 1, path: { from: { x: b.x, z: b.z }, to: { x: b.x + ux * reach, z: b.z + uz * reach } } });
+      return false;
+    }
+    if ((a.beat -= dt) > 0) return false;
+    tell({ strike: 2 });
+    for (const o of a.marked) wound(o, a.damage, a.holder, a.pw.id);
+    return true;
   }
   return api;
 })();

@@ -21,6 +21,7 @@ class Player {
     // No stamina, guard bar or poise (pass 96, PLAN.md "No hidden meters"): health and the dashes are the only meters.
     this.hp = this.maxHp;
     this.tint = 0; this.flash = 0; this.brace = 0; this.walkPhase = 0;
+    this.root = 0; this.rootKind = null; this.rootT = 0;   // a held strike's s left planted (pressRoot), which, and since when
     this.riposte = 0; this.flashDist = 0; this.phasing = false;      // riposte: timer: > 0 while the next blow is a riposte (after a deflect that opened a foe, or a perfect dodge)
     this.dashes = CONFIG.player.dashCharges;   // dash charges held (fractional while one comes back)
     // The deflect (CONFIG.parry): s left of an armed press, s of the spam lock, and the blow deflected last ({ enemy, key }):
@@ -308,6 +309,7 @@ class Player {
     this.flash = Math.max(0, this.flash - dt / CONFIG.parry.flashTime);
     this.brace = Math.max(0, this.brace - dt / C.braceTime);
     this.riposte = Math.max(0, this.riposte - dt);
+    if (this.root > 0) { this.root -= dt; this.rootT += dt; }
     this.deflect = Math.max(0, this.deflect - dt); this.deflectLock = Math.max(0, this.deflectLock - dt);
     this.execGrace = Math.max(0, this.execGrace - dt);
     if (this.doomTime > 0) this.updateDoom(dt);
@@ -322,6 +324,12 @@ class Player {
     switch (this.state) {
       case PS.IDLE:
       case PS.WALK: {
+        if (this.root > 0) {   // a held strike (pressRoot): planted, no attack; a dash cuts it short
+          if (this.wantsRoll()) { this.root = 0; this.startRoll(mv); break; }
+          approachVel(this, 0, 0, C.decel * dt);
+          if (this.state !== PS.IDLE) this.setState(PS.IDLE);
+          break;
+        }
         if (this.tryGroundAction(mv, face, enemies)) break;
         if (mv.has && face === null) this.yaw = turnToward(this.yaw, Math.atan2(mv.x, mv.z), C.turnRate * dt);
         approachVel(this, mv.x * C.walkSpeed, mv.z * C.walkSpeed, (mv.has ? C.accel : C.decel) * dt);
@@ -522,8 +530,14 @@ class Player {
       if (!slot || !this.alive() || this.state === PS.HELD || this.state === PS.EXECUTE) continue;
       if (this.perk.charge[key] < slot.v.charge) { events.emit('abilityNotReady', { body: this, key }); continue; }
       const e = pressTarget(this, enemies, lock);
-      if (!pressOpen(slot, this, e)) { events.emit('abilityNotReady', { body: this, key }); continue; }
-      if (slot.power && PRESS_NEAR.has(slot.then)) this.yaw = Math.atan2(e.x - this.x, e.z - this.z);   // Thunderclap turns to its enemy
+      // A rooting strike only from the feet: never mid-dash, mid-swing or in the air (it would be cut short at once).
+      const planted = !(slot.power && pressRoot(slot.then) > 0) || this.state === PS.IDLE || this.state === PS.WALK;
+      if (!planted || !pressOpen(slot, this, e)) { events.emit('abilityNotReady', { body: this, key }); continue; }
+      if (slot.power && PRESS_TURN.has(slot.then)) this.yaw = Math.atan2(e.x - this.x, e.z - this.z);   // Thunderclap turns to its enemy
+      if (slot.power && pressRoot(slot.then) > 0) {   // Sparrow Flurry, Quick Draw: rooted on its feet (a dash gets out)
+        this.root = pressRoot(slot.then); this.rootKind = slot.then; this.rootT = 0;
+        if (this.state === PS.WALK) this.setState(PS.IDLE);
+      }
       const over = abilityOver(this.kit, this.perk, key);   // Overcharge: the share filled past full
       this.perk.charge[key] = 0;
       events.emit('abilityPress', { body: this, key, ability: slot.id, over: over > 0 ? over : undefined });
@@ -657,6 +671,7 @@ class Player {
     if (blocked) { damage *= B.damageMul; knock *= B.knockMul; }
     else this.closeCounter();   // the counter (a dodge's or a deflect's) is lost to any blow that lands
     this.hp = Math.max(0, this.hp - damage);
+    if (damage > 0) this.root = 0;   // a blow taken ends a held strike (js/abilities.js ends its thrusts too)
     if (this.state === PS.HELD) {   // already in a grip: the blow hurts, but nothing throws you out of it
       this.tint = 1;
       if (this.hp <= 0) { this.die(); return { blocked: false, died: true }; }

@@ -47,7 +47,8 @@ const CONFIG = {
               twin: [2.6, 0.1], echo: [-0.6, 0.02], gale: [-2.4, 0.05], pyre: [3.2, 0.16], flare: [-1.1, 0.03], spark: [-0.8, 0.02],
               hound: [1.4, 0.05], bite: [-0.5, 0.02], draw: [1.2, 0.03], guardian: [2.2, 0.1], lancer: [1.2, 0.04],
               wave: [0.8, 0], crescent: [-1.4, 0.06], cyclone: [1.2, 0.04], petals: [1.4, 0.04],
-              spikes: [-1.2, 0.04], fist: [2.4, 0.12], risingFire: [1.6, 0.05], clap: [2.0, 0.08] } },
+              spikes: [-1.2, 0.04], fist: [2.4, 0.12], risingFire: [1.6, 0.05], clap: [2.0, 0.08],
+              flurry: [-0.8, 0.02], drill: [-1.0, 0.02], stitch: [-1.0, 0.03], boomerang: [-0.8, 0.02], clones: [-1.6, 0.04], iai: [-2.2, 0.05] } },
   },
   zoom: { min: 2.6, max: 12, default: 4.6, rate: 7,
           heightRatio: 0.5 },   // camera height = distance * heightRatio
@@ -335,6 +336,13 @@ const CONFIG = {
     // Rising Fang erupt `delay` s after the press at the spot their enemy stood, wounding what is within `radius` m of it;
     // Thunderclap's cone is `angle` degrees wide.
     spikes: { width: 1.2, speed: 24 }, fist: { delay: 0.3, radius: 1.8 }, risingFire: { delay: 0.25, radius: 1.5 }, clap: { angle: 70 },
+    // Batch 7's strikes: Sparrow Flurry's thrusts spread over `time` s at an enemy within `reach` m; Whirl Drill's first
+    // grind `lead` s on; Shadow Stitch's first stab `lead` s on, then every `every` s; Spinning Blade flies `past` m beyond
+    // its enemy and back in `time` s, cutting `width` m either side of its path; Three Shadows cut `lead` s on; Quick Draw's
+    // stance lasts `stance` s, its line `width` m either side opening `beat` s after the draw. A held strike (the flurry, the
+    // stance) ends when its holder moves more than `rootSlip` m from where it pressed (a dash) or is hurt.
+    flurry: { reach: 3.5, time: 1 }, drill: { lead: 0.15 }, stitch: { lead: 0.2, every: 0.15 }, boomerang: { time: 0.8, past: 2, width: 1 },
+    clones: { lead: 0.3 }, iai: { stance: 0.5, beat: 0.35, width: 1.2 }, rootSlip: 0.8,
     // Summons (js/abilities.js summonStep): each kind stands `gap` m off its enemy's body, `flank` rad round from the
     // side away from its holder (+ toward the enemy's left), and runs there at up to `speed` m/s. It has arrived
     // `arrive` s after it is called (one that `rises` comes up where it will stand; the others run there); a hound,
@@ -786,6 +794,10 @@ const CONFIG = {
       // Strike I (js/strike-fx.js, batch 6), in m: Fire Burst's petals stand `petal` tall, `petalGap` off the boss's body, its
       // burst `burst` across; slash arcs `sweep`; Wind Blade's crescent `crescent` across at `waist` up, a cut's star
       // `cutStar`; Frost Spike's tallest spike `spike`; Stone Fist `fist` tall; Rising Fang `fang` tall; Thunderclap's star `clapStar`.
+      // Strike II (js/strike-fx-2.js, batch 7), in m: the flurry's fan `fan` long; the drill's cone `drill` long; a stitch
+      // spike `spike` tall; the spinning blade's disc `disc` across at `waist` up; a clone `clone` m off the boss's body;
+      // Quick Draw's line at `waist` up.
+      strike2: { fan: 2.6, drill: 1.4, drillTurn: 0.9, drillPitch: 0.35, spike: 2.5, disc: 1.4, waist: 1.1, clone: 2.2 },
       strike: { petal: 2.4, petalGap: 0.5, burst: 2.2, sweep: 2.4, crescent: 3.2, waist: 1, cutStar: 1.1, spike: 2.4, fist: 3, fang: 4, clapStar: 0.9 },
       rareStrike: { tide: 3, crest: 1.6, moon: 3.2, moonLift: 1.6, cutWidth: 0.5, waist: 1, dustLife: 0.45, burst: 1.4, petal: 0.32, whirl: 3.5, shell: 1.9, mark: 0.75 },
       meteor: { color: 0xff7a2a, core: 0xffe6b8, column: 22, width: 1.8, glow: 1.8, fall: 0.5, ring: 0.55, crater: 3.2, shake: [0.45, 0.35],

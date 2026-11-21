@@ -49,6 +49,7 @@ function registerListeners() {
   rareFx.attach();       // the rares' perks drawn (js/rare-fx.js)
   rareStrikeFx.attach(); // the rares' new triggers drawn (js/rare-strike-fx.js)
   strikeFx.attach();     // Strike I, the key-1 shapes on the ground drawn (js/strike-fx.js)
+  strikeFx2.attach();    // Strike II, the flashy key-1 strikes drawn (js/strike-fx-2.js)
   summonFigures.attach(); // the Stone Guardian and the Lancer of Ash drawn (js/summon-figures.js)
   registerAudioListeners();
 }

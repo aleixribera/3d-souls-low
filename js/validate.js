@@ -263,11 +263,22 @@ function validateData({ visual = true } = {}) {
   need(FI && num(FI.delay) && FI.delay >= 0 && FI.delay <= 0.6 && num(FI.radius) && FI.radius > 0, 'CONFIG.abilities.fist: delay from 0 to 0.6, radius above 0.');
   need(RF && num(RF.delay) && RF.delay >= 0 && RF.delay <= 0.5 && num(RF.radius) && RF.radius > 0, 'CONFIG.abilities.risingFire: delay from 0 to 0.5, radius above 0.');
   need(CL && num(CL.angle) && CL.angle > 0 && CL.angle <= 180, 'CONFIG.abilities.clap: angle above 0, up to 180.');
+  const FL = BL.flurry, DR = BL.drill, STI = BL.stitch, BO = BL.boomerang, CN = BL.clones, IA = BL.iai, lead = v => num(v) && v >= 0 && v <= 0.5;
+  need(FL && num(FL.reach) && FL.reach > 0 && num(FL.time) && FL.time > 0, 'CONFIG.abilities.flurry: reach and time, each above 0.');
+  need(DR && lead(DR.lead), 'CONFIG.abilities.drill: lead from 0 to 0.5.');
+  need(STI && lead(STI.lead) && num(STI.every) && STI.every > 0, 'CONFIG.abilities.stitch: lead from 0 to 0.5, every above 0.');
+  need(BO && num(BO.time) && BO.time > 0 && num(BO.past) && BO.past >= 0 && num(BO.width) && BO.width > 0, 'CONFIG.abilities.boomerang: time above 0, past 0 or more, width above 0.');
+  need(CN && lead(CN.lead), 'CONFIG.abilities.clones: lead from 0 to 0.5.');
+  need(IA && num(IA.stance) && IA.stance > 0 && num(IA.beat) && IA.beat >= 0 && IA.beat <= 0.6 && num(IA.width) && IA.width > 0, 'CONFIG.abilities.iai: stance above 0, beat from 0 to 0.6, width above 0.');
+  need(num(BL.rootSlip) && BL.rootSlip > 0, 'CONFIG.abilities.rootSlip: above 0.');
   const EC = BL.echo, OC = BL.overcharge;
   need(EC && num(EC.keep) && EC.keep > 0 && num(EC.delay) && EC.delay >= 0 && EC.delay <= 0.5, 'CONFIG.abilities.echo: keep above 0, delay from 0 to 0.5.');
   need(OC && num(OC.most) && OC.most > 0 && OC.most <= 2, 'CONFIG.abilities.overcharge: most above 0, at most 2.');
   const RS = CONFIG.VISUALS.abilityFx.rareStrike;   // js/rare-strike-fx.js's sizes and times
   const SFX = CONFIG.VISUALS.abilityFx.strike;   // js/strike-fx.js's sizes
+  const SF2 = CONFIG.VISUALS.abilityFx.strike2;   // js/strike-fx-2.js's
+  if (visual) need(SF2 && ['fan', 'drill', 'spike', 'disc', 'waist', 'clone'].every(k => num(SF2[k]) && SF2[k] > 0) && num(SF2.drillTurn) && num(SF2.drillPitch) && Math.abs(SF2.drillPitch) < 1.5,
+    'VIS.abilityFx.strike2: fan, drill, spike, disc, waist and clone, each above 0; drillTurn and drillPitch (rad, the pitch under 1.5).');
   if (visual) need(SFX && ['petal', 'petalGap', 'burst', 'sweep', 'crescent', 'waist', 'cutStar', 'spike', 'fist', 'fang', 'clapStar'].every(k => num(SFX[k]) && SFX[k] > 0),
     'VIS.abilityFx.strike: petal, petalGap, burst, sweep, crescent, waist, cutStar, spike, fist, fang and clapStar, each above 0.');
   if (visual) need(RS && ['tide', 'crest', 'moon', 'moonLift', 'cutWidth', 'waist', 'dustLife', 'burst', 'petal', 'whirl', 'shell', 'mark'].every(k => num(RS[k]) && RS[k] > 0),

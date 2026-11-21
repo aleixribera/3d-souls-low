@@ -1096,6 +1096,43 @@
         `all gone (${JSON.stringify(left)})`);
     } finally { audio.play = play; strikeFx.clear(); rareStrikeFx.clear(); }
   });
+  // Pass 131 (PLAN.md item 8, batch 7): Strike II, each flashy key-1 strike drawn in blue ink by js/strike-fx-2.js and heard;
+  // a stance cut short leaves nothing behind.
+  test('strike flashy: each is drawn and heard', () => {
+    Game.startFight('pillagerCaptain'); Game.loading = 0; sim.begin(); strikeFx2.clear(); abilityPowers.reset();
+    const p = Game.player, e = Game.duel, R = () => strikeFx2.state, played = [];
+    const play = audio.play; audio.play = (id, o) => { played.push(id); return play.call(audio, id, o); };
+    const frames = n => { for (let i = 0; i < n; i++) Game.render(1, STEP); };
+    const tell = (power, then, more = {}) => events.emit('abilityPower', { power, then, holder: 'self', body: p, enemy: e, x: p.x, y: p.y, z: p.z, v: ABILITY_BY_ID[power].levels[0], ...more });
+    const fire = (power, then, more) => { played.length = 0; tell(power, then, more); frames(1); };
+    try {
+      sturdy(p); e.cooldown = 30; faceOff(e, p, 3);
+      fire('sparrow-flurry', 'flurry'); tell('sparrow-flurry', 'flurry', { strike: 1 }); frames(2);
+      expect.ok(R().fan && R().streaks && played.includes('abilityFlurry') && played.includes('abilityFlurryHit'), `Sparrow Flurry: the fan and a thrust (${JSON.stringify(R())})`);
+      tell('sparrow-flurry', 'flurry', { end: 'cut' }); frames(1); expect.ok(!R().fan, 'cut short: the fan gone');
+      fire('whirl-drill', 'drill'); frames(20);
+      expect.ok(R().drill && played.includes('abilityDrill'), `Whirl Drill: the cone in the chest (${JSON.stringify(R())})`);
+      fire('shadow-stitch', 'stitch'); frames(10); tell('shadow-stitch', 'stitch', { strike: 1 }); frames(3);
+      expect.ok(R().pool && R().spikes && played.includes('abilityStitch') && played.includes('abilityPierce'), `Shadow Stitch: the pool and a spike (${JSON.stringify(R())})`);
+      fire('spinning-blade', 'boomerang'); frames(10);
+      expect.ok(R().disc && played.includes('abilityBoomerang'), 'Spinning Blade: the disc in flight');
+      fire('three-shadows', 'clones'); frames(4);
+      expect.ok(R().figures === 3 && played.includes('abilityClones'), `Three Shadows: three figures (${R().figures})`);
+      frames(16); expect.ok(R().slashes >= 3, 'their cuts at once');
+      fire('quick-draw', 'iai'); frames(10);
+      expect.ok(R().stance && !R().line && played.includes('abilitySheathe'), 'Quick Draw: the stance');
+      tell('quick-draw', 'iai', { strike: 1, path: { from: { x: p.x, z: p.z }, to: { x: e.x, z: e.z } } }); frames(5);
+      expect.ok(R().line && played.includes('abilityIaiDraw'), 'the drawn line');
+      tell('quick-draw', 'iai', { strike: 2 }); frames(4);
+      expect.ok(R().slit && played.includes('abilityIai'), 'the split');
+      fire('quick-draw', 'iai'); played.length = 0; tell('quick-draw', 'iai', { end: 'cancel' }); frames(2);
+      expect.ok(!R().stance && !played.length, 'a stance cut short: gone, and silent');
+      frames(120);
+      const left = R();
+      expect.ok(!left.fan && !left.drill && !left.pool && !left.spikes && !left.disc && !left.figures && !left.line && !left.slit && !left.flakes,
+        `all gone (${JSON.stringify(left)})`);
+    } finally { audio.play = play; strikeFx2.clear(); }
+  });
   // Pass 97 (PLAN.md 3d): the sparring scene. The player's part of each drill is the teacher's own demonstration, played
   // on the player's keys (a swing drill's steps from the moment the partner's blow begins), so a demo that cannot do
   // its drill fails here too.

@@ -103,6 +103,17 @@ const SETS = {
     ['Rising Fang', `(p, e) => __key()`, 56, 'strike-rising-fang', 22],
     ['Thunderclap', `(p, e) => __key()`, 44, 'strike-thunderclap', 10],
   ] },
+  // Strike II (pass 131, batch 7): docs/scorecard/now/strike-flashy.mp4, with --stills a frame of each (strike-<id>.jpg;
+  // -phone for the first two). Each pressed through the player's own key 1, its charge full.
+  flashy: { ids: ['sparrow-flurry', 'whirl-drill', 'shadow-stitch', 'spinning-blade', 'three-shadows', 'quick-draw'], solo: true,
+    file: 'strike-flashy', phone: 2, crf: 30, beats: [
+    ['Sparrow Flurry', `(p, e) => __key()`, 72, 'strike-sparrow-flurry', 30],
+    ['Whirl Drill', `(p, e) => __key()`, 92, 'strike-whirl-drill', 40],
+    ['Shadow Stitch', `(p, e) => __key()`, 64, 'strike-shadow-stitch', 24],
+    ['Spinning Blade', `(p, e) => __key()`, 60, 'strike-spinning-blade', 10],
+    ['Three Shadows', `(p, e) => __key()`, 56, 'strike-three-shadows', 20],
+    ['Quick Draw', `(p, e) => __key()`, 84, 'strike-quick-draw', 54],
+  ] },
 };
 
 (async () => {
@@ -149,7 +160,7 @@ const SETS = {
             events.emit('strike', { strike: s, attacker: p, target: e, at: { x: e.x, y: e.y + 1.2, z: e.z }, blocked: false });
           };
           window.__reset = name => {
-            commonFx.clear(); rareFx.clear(); rareStrikeFx.clear(); strikeFx.clear(); abilityPowers.reset(); later.length = 0; tag.textContent = name; e.cracks = 0; events.emit('guardCrack', { enemy: e, cracks: 0 });
+            commonFx.clear(); rareFx.clear(); rareStrikeFx.clear(); strikeFx.clear(); strikeFx2.clear(); abilityPowers.reset(); later.length = 0; tag.textContent = name; e.cracks = 0; events.emit('guardCrack', { enemy: e, cracks: 0 });
             p.hp = p.maxHp; p.lastHp = p.hp; p.perk = abilityPerkState(); p.tint = 0;
             for (let i = 0; i < 30; i++) Game.update(CONFIG.step);
             e.x = e.px = p.x + Math.sin(p.yaw + 0.6) * 2.8; e.z = e.pz = p.z + Math.cos(p.yaw + 0.6) * 2.8; e.y = p.y; e.yaw = Math.atan2(p.x - e.x, p.z - e.z);

@@ -57,9 +57,14 @@ const cameraFeel = (() => {
   events.on('struggle', d => { if (isPlayer(d.body)) kick('roll', (Math.random() < 0.5 ? -1 : 1) * F.hurtRoll); });
   // A power: in full for its holder, less the further off it is for everyone else. A bolt's, a twin's or a striking summon's
   // blow kicks as itself (`strike`, `echo`, `bite`), a summon drawing the boss as `draw`.
+  const LATE_KICK = { stitch: 1, iai: 2 };
   events.on('abilityPower', d => {
     if (ABILITY_BY_ID[d.power] && ABILITY_BY_ID[d.power].rarity === 'common') return;   // commons never move the camera
-    const P = F.powers[d.draw ? 'draw' : d.strike ? (d.then === 'twin' || d.then === 'ghostBlade' ? 'echo' : SUMMON_STRIKERS.has(d.then) ? 'bite' : 'strike') : d.then], p = Game.player;
+    if (d.end || (d.then === 'flurry' && d.strike)) return;   // a flurry's thrusts are too many to kick; a cut-short power is still
+    // Shadow Stitch kicks at its first spike, Quick Draw at its split, never at the press (the stance is still).
+    const late = LATE_KICK[d.then];
+    if (late !== undefined && (d.strike || 0) !== late) return;
+    const P = F.powers[late !== undefined ? d.then : d.draw ? 'draw' : d.strike ? (d.then === 'twin' || d.then === 'ghostBlade' ? 'echo' : SUMMON_STRIKERS.has(d.then) ? 'bite' : 'strike') : d.then], p = Game.player;
     if (!P || !p) return;
     const k = isPlayer(d.body) ? 1 : clamp(1 - Math.hypot(p.x - d.x, p.z - d.z) / F.powerNear, 0, 1);
     if (k > 0) { kick('fov', P[0] * k); kick('y', -P[1] * k); }

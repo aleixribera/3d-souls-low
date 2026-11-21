@@ -570,6 +570,66 @@ const AUDIO = {
       { wave: 'sine', freq: 700, partials: [[1, 1, 1], [2.3, 0.4, 0.5]], a: 0.001, d: 0.35, gain: 0.15 },
       { noise: 'brown', filter: { type: 'lowpass', freq: 400, to: 120 }, at: 0.02, a: 0.03, h: 0.1, d: 0.7, gain: 0.9, drive: 2 },
     ] },
+    // Strike II (batch 7). Sparrow Flurry: a steady rush of air under the thrusts, a sharp sting at the end; each thrust
+    // its own whistle (abilityFlurryHit, told as it lands).
+    abilityFlurry: { bus: 'sfx', priority: 3, cooldown: 0.25, max: 2, verb: 0.3, heat: 0.3, jitter: 30, layers: [
+      { noise: 'pink', filter: { type: 'bandpass', freq: 800, to: 1600, q: 1 }, a: 0.06, h: 0.75, d: 0.2, gain: 0.4 },
+      { wave: 'sine', freq: 1600, at: 0.98, a: 0.002, d: 0.2, gain: 0.16 },
+      { noise: 'white', filter: { type: 'highpass', freq: 3500 }, at: 0.98, a: 0.0005, d: 0.03, gain: 0.3 },
+    ] },
+    abilityFlurryHit: { bus: 'sfx', priority: 2, cooldown: 0.04, max: 3, verb: 0.15, heat: 0.1, jitter: 120, layers: [
+      { noise: 'white', filter: { type: 'bandpass', freq: 3500, q: 3 }, a: 0.003, d: 0.025, gain: 0.45 },
+      { noise: 'brown', filter: { type: 'lowpass', freq: 600 }, a: 0.001, d: 0.03, gain: 0.25 },
+    ] },
+    // Whirl Drill: a sharp puncture, a shrieking grind held through it, a falling whine as it unwinds.
+    abilityDrill: { bus: 'sfx', priority: 3, cooldown: 0.25, max: 2, verb: 0.35, heat: 0.4, jitter: 30, layers: [
+      { noise: 'white', filter: { type: 'highpass', freq: 3000 }, a: 0.0005, d: 0.03, gain: 0.5 },
+      { wave: 'sawtooth', freq: 220, fm: { ratio: 1.5, index: 2, decay: 1.4 }, filter: { type: 'bandpass', freq: 2500, q: 2 }, at: 0.15, a: 0.03, h: 1.0, d: 0.15, gain: 0.3 },
+      { noise: 'white', filter: { type: 'bandpass', freq: 1800, q: 4 }, at: 0.15, a: 0.03, h: 1.0, d: 0.15, gain: 0.2 },
+      { wave: 'sine', freq: 1200, to: 400, glide: 0.3, at: 1.3, a: 0.01, d: 0.3, gain: 0.1 },
+    ] },
+    // Shadow Stitch: a soft wet stab into the floor, a dark breathy whoosh under the spikes; each spike's pierce its own.
+    abilityStitch: { bus: 'sfx', priority: 3, cooldown: 0.25, max: 2, verb: 0.45, heat: 0.3, jitter: 30, layers: [
+      { noise: 'brown', filter: { type: 'lowpass', freq: 500 }, a: 0.002, d: 0.04, gain: 0.6 },
+      { noise: 'pink', filter: { type: 'bandpass', freq: 200, to: 500, q: 1 }, at: 0.1, a: 0.1, h: 0.2, d: 0.3, gain: 0.45 },
+      { wave: 'sine', freq: 600, to: 200, glide: 0.25, at: 0.65, a: 0.01, d: 0.25, gain: 0.1 },
+    ] },
+    abilityPierce: { bus: 'sfx', priority: 3, cooldown: 0.06, max: 3, verb: 0.35, heat: 0.3, jitter: 60, layers: [
+      { noise: 'white', filter: { type: 'bandpass', freq: 2500, q: 2 }, a: 0.001, d: 0.03, gain: 0.55, drive: 2 },
+      { wave: 'sine', freq: 80, to: 50, a: 0.002, d: 0.12, gain: 0.45 },
+    ] },
+    // Spinning Blade: a release swish, a whirring hum rising as it comes back, a clean catch ring.
+    abilityBoomerang: { bus: 'sfx', priority: 3, cooldown: 0.25, max: 2, verb: 0.35, heat: 0.3, jitter: 30, layers: [
+      { noise: 'white', filter: { type: 'bandpass', freq: 3000, q: 1.5 }, a: 0.002, d: 0.05, gain: 0.45 },
+      { wave: 'sawtooth', freq: 140, to: 210, glide: 0.8, fm: { ratio: 0.086, index: 4, decay: 0.8 }, filter: { type: 'lowpass', freq: 1200 }, at: 0.04, a: 0.1, h: 0.5, d: 0.2, gain: 0.25 },
+      { wave: 'sine', freq: 1800, at: 0.38, a: 0.001, d: 0.1, gain: 0.1 },
+      { wave: 'sine', freq: 990, partials: [[1, 1, 1], [2.76, 0.3, 0.5]], at: 0.8, a: 0.002, d: 0.3, gain: 0.12 },
+    ] },
+    // Three Shadows: three quick air snaps, a held breath, one layered slice, an ink splash.
+    abilityClones: { bus: 'sfx', priority: 3, cooldown: 0.25, max: 2, verb: 0.5, heat: 0.4, jitter: 30, layers: [
+      { noise: 'white', filter: { type: 'highpass', freq: 3000 }, a: 0.0005, d: 0.015, gain: 0.4 },
+      { noise: 'white', filter: { type: 'highpass', freq: 3200 }, at: 0.03, a: 0.0005, d: 0.015, gain: 0.4 },
+      { noise: 'white', filter: { type: 'highpass', freq: 3400 }, at: 0.06, a: 0.0005, d: 0.015, gain: 0.4 },
+      { wave: 'sine', freq: 60, at: 0.06, a: 0.05, h: 0.12, d: 0.08, gain: 0.25 },
+      { noise: 'white', filter: { type: 'bandpass', freq: 4000, q: 1.5 }, at: 0.3, a: 0.001, d: 0.04, gain: 0.6, drive: 2 },
+      { wave: 'sine', freq: 1300, at: 0.3, a: 0.001, d: 0.3, gain: 0.12 },
+      { noise: 'pink', filter: { type: 'lowpass', freq: 1000 }, at: 0.32, a: 0.01, d: 0.3, gain: 0.4 },
+    ] },
+    // Quick Draw: the blade's scrape into the sheath, then near silence (the stance); at the draw a razor whistle
+    // (abilityIaiDraw); at the split a deep cleaving slash over a low boom and a long ring (abilityIai).
+    abilitySheathe: { bus: 'sfx', priority: 3, cooldown: 0.25, max: 2, verb: 0.3, heat: 0.2, jitter: 20, layers: [
+      { noise: 'white', filter: { type: 'bandpass', freq: 2000, to: 5000, q: 2 }, a: 0.02, h: 0.1, d: 0.18, gain: 0.3 },
+      { wave: 'sine', freq: 2400, at: 0.28, a: 0.001, d: 0.08, gain: 0.06 },
+    ] },
+    abilityIaiDraw: { bus: 'sfx', priority: 3, cooldown: 0.2, max: 2, verb: 0.3, heat: 0.2, jitter: 20, layers: [
+      { wave: 'sine', freq: 4000, to: 3200, glide: 0.04, a: 0.001, d: 0.04, gain: 0.15 },
+      { noise: 'white', filter: { type: 'highpass', freq: 5000 }, a: 0.0005, d: 0.04, gain: 0.35 },
+    ] },
+    abilityIai: { bus: 'sfx', priority: 3, cooldown: 0.25, max: 2, verb: 0.6, heat: 0.5, jitter: 20, layers: [
+      { noise: 'white', filter: { type: 'bandpass', freq: 600, to: 3000, q: 1.2 }, a: 0.002, d: 0.15, gain: 0.6, drive: 2 },
+      { wave: 'sine', freq: 55, to: 40, a: 0.005, d: 0.4, gain: 0.6 },
+      { wave: 'sine', freq: 880, partials: [[1, 1, 1], [2.76, 0.3, 0.5]], at: 0.02, a: 0.003, d: 1.0, gain: 0.12 },
+    ] },
     // Dust Devil: a gritty scrape, then a short spinning whoosh that swells twice.
     abilityWhirl: { bus: 'sfx', priority: 2, cooldown: 0.2, max: 1, verb: 0.2, heat: 0.1, jitter: 50, layers: [
       { noise: 'white', filter: { type: 'bandpass', freq: 2000, q: 2 }, a: 0.0005, d: 0.02, gain: 0.5, drive: 2 },

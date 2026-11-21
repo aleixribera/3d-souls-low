@@ -121,7 +121,13 @@ async function peer(origin, name) {
     const owner = () => [a, b].find(p => p.id === app.leader) || a;
     const pickAbility = async () => {
       const offers = [];
-      for (const p of [a, b]) { const o = await p.next('abilities'); offers.push(o); p.send({ type: 'pickAbility', epoch: session.epoch, id: o.offer[0] }); await p.next('abilities'); }
+      // Never a legendary: the starter pool holds two, each of one level, and a player who took both before the Crowned
+      // fight has none left for its offer (CI, v7.178.0: "one of them a legendary" failed on such a draw).
+      for (const p of [a, b]) {
+        const o = await p.next('abilities'); offers.push(o);
+        const id = o.offer.find(x => ABILITY_BY_ID[x].rarity !== 'legendary') || o.offer[0];
+        p.send({ type: 'pickAbility', epoch: session.epoch, id }); await p.next('abilities');
+      }
       return offers;
     };
     const call = async extra => {

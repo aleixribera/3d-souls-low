@@ -69,6 +69,12 @@ const netView = {
     if (!ArenaNet.own(ABILITY_BY_ID, d.power) || !d.v || typeof d.v !== 'object') return;
     const body = d.holder === ctx.self ? Game.player : ctx.bodyOf(d.holder);
     if (d.then === 'bloodMoon' && body === Game.player && ctx.self) { body.perk.moon = d.v.time; body.perk.moonV = d.v; }
+    if (d.end && body === Game.player && ctx.self) {   // a flurry or a stance the server cut short: off its feet at once
+      body.root = 0;
+      if (d.end === 'cancel' && Number.isFinite(d.v.charge)) {   // Quick Draw cut short: the key's charge back, as on the server
+        const key = ABILITY_BY_ID[d.power].key; if (key && body.perk.charge) body.perk.charge[key] = Math.max(body.perk.charge[key] || 0, d.v.charge);
+      }
+    }
     events.emit('abilityPower', { ...d, body, enemy: e });
   },
   // The events and bolts an enemy's sample carries: others' blows and parries, its own attacks' moments.
@@ -80,7 +86,7 @@ const netView = {
         if (attacker) events.emit('strike', { ...d, attacker, player: attacker, target: e });
       // A teammate's parry names its body (or id), so camera feedback for the local player's own parries stays theirs.
       } else if (d.type === 'parry' && d.player !== ctx.self && e) events.emit('parry', { target: e, player: ctx.bodyOf(d.player) || d.player });
-      else if (d.type === 'abilityPower' && e) netView.ability(d, e, ctx);
+      else if (d.type === 'abilityPower' && (e || d.end || d.then === 'iai')) netView.ability(d, e || null, ctx);   // a stance's or a cut's word, even past its enemy
       if (['attackStart', 'attackPhase', 'bossPhase', 'bossRetreat', 'bossGone', 'enemyBlink'].includes(d.type) && e) {
         const attack = sample.value.attack ? e.baseDef.attacks.find(a => a.id === sample.value.attack) : e.attack;
         events.emit(d.type, { enemy: e, actor: e, attack, phase: PHASE.ACTIVE, hitIndex: d.hitIndex, seamless: d.seamless, out: d.out });

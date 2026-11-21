@@ -25,7 +25,7 @@ const exists = name => fs.existsSync(path.join(testsDir, name + '.cjs'));
 
 // Pure Node tests (no Playwright). security-*/server-* files are picked up as other work adds them.
 const NODE = ['net-timing', 'multiplayer', 'lobby-host', 'lobby-leader', 'lobby-continuity', 'arena-wipe',
-  'boss-pace', 'counters', 'startup', 'fair-attacks', 'pose-via', 'body-check', 'boss-pages', 'rush-flow', 'boss-attention', 'calling', 'weekly', 'vesper', 'revive', 'abilities', 'blade-commons', 'guard-commons', 'mirror-shard', 'rare-perks', 'rare-triggers', 'strike-shapes', 'crates', 'bot-behavior', 'bot-temperament', 'bot', 'fight-tally', 'autoquality', 'experience',
+  'boss-pace', 'counters', 'startup', 'fair-attacks', 'pose-via', 'body-check', 'boss-pages', 'rush-flow', 'boss-attention', 'calling', 'weekly', 'vesper', 'revive', 'abilities', 'blade-commons', 'guard-commons', 'mirror-shard', 'rare-perks', 'rare-triggers', 'strike-shapes', 'strike-flashy', 'crates', 'bot-behavior', 'bot-temperament', 'bot', 'fight-tally', 'autoquality', 'experience',
   'deployment', 'network-load', 'textures', 'story-checkpoints'];
 // Playwright suites that are not named *-browser.cjs.
 const BROWSER_EXTRA = ['onboarding'];

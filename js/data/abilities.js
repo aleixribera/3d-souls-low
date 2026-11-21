@@ -148,6 +148,27 @@ const ABILITIES = [
   { id: 'thunderclap', name: 'Thunderclap', rarity: 'rare', key: 'strike', text: 'A clap of thunder blasts the front.',
     power: { when: 'press', then: 'clap' },
     levels: [{ charge: 15, damage: 70, reach: 7 }, { charge: 14, damage: 90, reach: 7.5 }, { charge: 13, damage: 110, reach: 8 }] },
+  // Strike II, the flashy ones (design/abilities batch 7), in blue ink by js/strike-fx-2.js: a flurry you stand in, a drill
+  // that grinds on its own, stabs from the boss's shadow, a blade thrown through and back, clones cutting as one, and the
+  // held draw whose line opens a beat later.
+  { id: 'sparrow-flurry', name: 'Sparrow Flurry', rarity: 'rare', key: 'strike', text: 'A flurry of {hits} thrusts.',
+    power: { when: 'press', then: 'flurry' },
+    levels: [{ charge: 15, hits: 10, damage: 9 }, { charge: 14, hits: 12, damage: 10 }, { charge: 13, hits: 14, damage: 10 }] },
+  { id: 'whirl-drill', name: 'Whirl Drill', rarity: 'rare', key: 'strike', text: 'A drill of wind grinds the boss.',
+    power: { when: 'press', then: 'drill' },
+    levels: [{ charge: 16, time: 1.2, every: 0.1, damage: 8 }, { charge: 15, time: 1.3, every: 0.1, damage: 9 }, { charge: 14, time: 1.4, every: 0.1, damage: 10 }] },
+  { id: 'shadow-stitch', name: 'Shadow Stitch', rarity: 'rare', key: 'strike', text: "The boss's own shadow stabs it.",
+    power: { when: 'press', then: 'stitch' },
+    levels: [{ charge: 14, hits: 3, damage: 24 }, { charge: 13, hits: 3, damage: 30 }, { charge: 12, hits: 4, damage: 30 }] },
+  { id: 'spinning-blade', name: 'Spinning Blade', rarity: 'rare', key: 'strike', text: 'A ghost blade cuts through the boss twice.',
+    power: { when: 'press', then: 'boomerang' },
+    levels: [{ charge: 15, damage: 45, hits: 2 }, { charge: 14, damage: 55, hits: 2 }, { charge: 13, damage: 65, hits: 2 }] },
+  { id: 'three-shadows', name: 'Three Shadows', rarity: 'rare', key: 'strike', text: 'Shadow clones strike together.',
+    power: { when: 'press', then: 'clones' },
+    levels: [{ charge: 16, hits: 3, damage: 30 }, { charge: 15, hits: 3, damage: 36 }, { charge: 14, hits: 3, damage: 42 }] },
+  { id: 'quick-draw', name: 'Quick Draw', rarity: 'rare', key: 'strike', text: 'Sheathe, then one cut splits all in front.',
+    power: { when: 'press', then: 'iai' },
+    levels: [{ charge: 18, damage: 120, reach: 10 }, { charge: 17, damage: 145, reach: 11 }, { charge: 16, damage: 170, reach: 12 }] },
   // Key 2, Guard: defence and counters.
   { id: 'mending', name: 'Mending', rarity: 'rare', key: 'guard', text: 'Heal {heal}.',
     perk: { when: 'press', then: 'heal' }, levels: [{ charge: 14, heal: 0.2 }, { charge: 13, heal: 0.25 }, { charge: 12, heal: 0.3 }] },

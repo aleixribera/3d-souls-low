@@ -389,16 +389,18 @@ const AUDIO_CUES = ['hitFlesh', 'hitHurt', 'hitBlock', 'riposteBoom', 'parry', '
   'abilityLancer', 'abilityThrust', 'crateOpen', 'crateTick', 'crateLand', 'counterOpen', 'cutOpen',
   'abilityClank', 'abilityChime', 'abilityGulp', 'abilityFrost', 'abilityInk', 'abilitySizzle', 'abilityWhirl', 'abilityMirror',
   'abilityWave', 'abilityMoonfall', 'abilityCyclone', 'abilityPetals', 'abilityGhostBlade', 'abilityOvercharge',
-  'abilityBloom', 'abilitySpikes', 'abilityFist', 'abilityFang', 'abilityClap'];
+  'abilityBloom', 'abilitySpikes', 'abilityFist', 'abilityFang', 'abilityClap', 'abilityFlurry', 'abilityFlurryHit', 'abilityDrill', 'abilityStitch',
+  'abilityPierce', 'abilityBoomerang', 'abilityClones', 'abilitySheathe', 'abilityIaiDraw', 'abilityIai'];
 // A power's sound by its `then`, its later blows' (`strike`: a lightning bolt, a twin's echo, a hound's bite) by
 // STRIKE_SOUNDS, a summon drawing the boss's eye (`draw`) by DRAW_SOUNDS; a rare's perk its own (ABILITY_PERK_SOUNDS,
 // at a pitch), a pick's pitch by its rarity.
 const ABILITY_SOUNDS = { blast: 'abilityBlast', lightning: 'abilityDragon', freeze: 'abilityFreeze', blades: 'abilityBlades', bloodMoon: 'abilityMoon',
   twin: 'abilityTwin', gale: 'abilityGale', pyre: 'abilityPyre', flare: 'abilityFlare', spark: 'abilitySpark', hound: 'abilityHound',
   guardian: 'abilityGuardian', lancer: 'abilityLancer', wave: 'abilityWave', crescent: 'abilityMoonfall', cyclone: 'abilityCyclone', petals: 'abilityPetals',
-  ghostBlade: 'abilityChime', spikes: 'abilitySpikes', fist: 'abilityFist', risingFire: 'abilityFang', clap: 'abilityClap' };   // Echoing Blade armed: a soft chime (each echo: ABILITY_STRIKE_SOUNDS)
+  ghostBlade: 'abilityChime', spikes: 'abilitySpikes', fist: 'abilityFist', risingFire: 'abilityFang', clap: 'abilityClap',
+  flurry: 'abilityFlurry', drill: 'abilityDrill', stitch: 'abilityStitch', boomerang: 'abilityBoomerang', clones: 'abilityClones', iai: 'abilitySheathe' };   // Echoing Blade armed: a soft chime (each echo: ABILITY_STRIKE_SOUNDS)
 const ABILITY_STRIKE_SOUNDS = { lightning: 'abilityThunder', twin: 'abilityEcho', hound: 'abilityBite', guardian: 'abilityBash', lancer: 'abilityThrust',
-  ghostBlade: 'abilityGhostBlade' };
+  ghostBlade: 'abilityGhostBlade', flurry: 'abilityFlurryHit', stitch: 'abilityPierce' };
 const ABILITY_DRAW_SOUNDS = { twin: 'abilityTaunt', hound: 'abilityHowl', guardian: 'abilityChallenge', lancer: 'abilityChallenge' };
 const ABILITY_PERK_SOUNDS = { empower: ['abilityEmpower', 1], 'streak/heal': ['abilityHeal', 1],
   'dodge/flashBehind': ['abilityStep', 1.15], 'block/charge': ['abilityCharge', 1],
@@ -510,7 +512,10 @@ function registerAudioListeners() {
       if (c) audio.play(c[0], { pitch: c[1], vel: c[2], pos: d.body === Game.player ? null : d.enemy && d.then !== 'whirl' ? chest(d.enemy) : spot(d) });
       return;
     }
-    const id = d.draw ? ABILITY_DRAW_SOUNDS[d.then] : d.strike ? ABILITY_STRIKE_SOUNDS[d.then] : ABILITY_SOUNDS[d.then];
+    if (d.end) return;   // a flurry or a stance cut short: its silence is the sound
+    // Quick Draw: the sheathe at the press, the draw's whistle (strike 1), the split a beat later (strike 2).
+    const id = d.draw ? ABILITY_DRAW_SOUNDS[d.then] : d.then === 'iai' && d.strike ? (d.strike === 1 ? 'abilityIaiDraw' : 'abilityIai')
+      : d.strike ? ABILITY_STRIKE_SOUNDS[d.then] : ABILITY_SOUNDS[d.then];
     if (!id) return;
     // A summon's howl or taunt comes from the summon (`x`, `z`), never from its holder's ears.
     const mine = d.body === Game.player, pos = d.draw ? spot(d) : mine && !d.strike ? null : d.enemy && d.then !== 'blast' ? chest(d.enemy) : spot(d);

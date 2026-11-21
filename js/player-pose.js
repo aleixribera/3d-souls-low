@@ -125,12 +125,28 @@ function drawCounterGlow(r, k) {
   m.color.lerp(c, 0.5 * Math.min(1, k));
 }
 
+// Rooted by a strike (Player.root): a flurry's blade thrusting again and again from a low wide stance, or Quick Draw's
+// stance, crouched with the blade drawn back low at the hip. `t`: s since the press.
+function rootPose(r, kind, t) {
+  r.crouch(0.14);
+  if (kind === 'iai') {
+    const k = clamp(t / 0.12, 0, 1);
+    r.lean(0.25 * k); r.spin.rotation.y = 0.5 * k; r.armR.rotation.set(0.5 * k, 0, -0.3 * k); r.armL.rotation.set(-0.6 * k, 0, 0.4 * k);
+    r.weapon.rotation.set(0.5 + 1.3 * k, 0, 0); r.head.rotation.y = -0.45 * k;
+    return;
+  }
+  const jab = Math.abs(Math.sin(t * Math.PI * 7)), calm = reducedMotion() ? 0.4 : 1;   // seven jabs a second, the drawing alone
+  r.lean(0.18); r.spin.rotation.y = -0.25 + 0.15 * jab * calm;
+  r.armR.rotation.set(-1.45 + 0.35 * (1 - jab) * calm, 0, 0.1); r.weapon.rotation.set(1.5, 0, 0); r.armL.rotation.set(0.3, 0, 0.25);
+}
 Player.prototype.pose = function (tt, ctx) {
   const r = this.rig, C = CONFIG.player;
   let glint = -1; this.chargeGlow = 0;   // set by a key-posed attack; -1 leaves the animator's own glint
   r.reset(); r.setOpacity(1);
   switch (this.state) {
-    case PS.IDLE: r.spin.scale.y = 1 + Math.sin(ctx.t * 1.6) * 0.012; r.armL.rotation.z = 0.04; r.weightLean(this.vx, this.vz, ctx.yaw, ctx.dt); break;
+    case PS.IDLE:
+      if (this.root > 0 && this.rootKind) { rootPose(r, this.rootKind, this.rootT); break; }   // Sparrow Flurry's thrusts, Quick Draw's stance
+      r.spin.scale.y = 1 + Math.sin(ctx.t * 1.6) * 0.012; r.armL.rotation.z = 0.04; r.weightLean(this.vx, this.vz, ctx.yaw, ctx.dt); break;
     case PS.WALK: r.walk(this.walkPhase, 0.6); r.weightLean(this.vx, this.vz, ctx.yaw, ctx.dt); break;
     case PS.JUMP: case PS.FALL:
       r.legL.rotation.x = -0.5; r.legR.rotation.x = 0.3; r.kneeL.rotation.x = 0.9; r.kneeR.rotation.x = 0.5; r.armL.rotation.x = -0.9; r.armR.rotation.x = -0.9; break;
