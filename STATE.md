@@ -6,7 +6,7 @@ The iterate loop's working note (`.claude/iterate.md`). Cap: 8,000 characters.
 - Track 2, pass 157 (PLAN item 8, batch 16, Ultimates II, pass 1 of 1): Great Wave, Sky Blade, Phoenix Dive
   (`Player.diveStart`), Black Star (`js/legend-fx-4.js`, Blender `great_wave.py`, `sky_blade.py`, `phoenix.py`).
   Acceptance: `tests/ultimates-two.cjs`, in-page `ultimates two`; clip `docs/scorecard/now/ultimates-two.mp4`.
-  Fixed: CI's audio peak (soft clip unoversampled), Cataclysm unseen online. Next: batch 17, Ultimates III.
+  Fixed: CI 2/4 (audio peak; counter test luck), Cataclysm unseen online. v7.206.0 out, CI pending. Next: batch 17, Ultimates III.
 - Track 1, pass 155 (Aleix's ask: cel the default, pass 1 of 1), v7.205.0: cel with no `?style=`, `classic` the way
   back. Acceptance: `tests/style-browser.cjs`; frames `docs/scorecard/now/cel-default-*`. Normal inks from the scene's
   depth (GPU +10%, was +90%); laptop unreachable, 60 fps there unmeasured. Track 1 has no plan item left.
