@@ -523,6 +523,18 @@ const AUDIO = {
       { noise: 'pink', filter: { type: 'bandpass', freq: 600, to: 1400, q: 1 }, a: 0.08, h: 0.3, d: 0.6, gain: 0.4 },
       { wave: 'sine', freq: 70, to: 40, a: 0.004, d: 0.3, gain: 0.5 },
     ] },
+    // Echoing Blade: each echo, a thin glassy slice, a short hollow whoosh, a faint ring.
+    abilityGhostBlade: { bus: 'sfx', priority: 2, cooldown: 0.08, max: 2, verb: 0.35, heat: 0.2, jitter: 60, layers: [
+      { noise: 'white', filter: { type: 'bandpass', freq: 5000, q: 3 }, a: 0.001, d: 0.025, gain: 0.5 },
+      { noise: 'pink', filter: { type: 'bandpass', freq: 1200, to: 2400, q: 1.2 }, a: 0.02, d: 0.12, gain: 0.4 },
+      { wave: 'sine', freq: 1500, a: 0.005, d: 0.3, gain: 0.07 },
+    ] },
+    // Overcharge: a full key's press, a sharp driven crack over the technique's own sound.
+    abilityOvercharge: { bus: 'sfx', priority: 3, cooldown: 0.2, max: 1, verb: 0.3, heat: 0.4, jitter: 40, layers: [
+      { noise: 'white', filter: { type: 'highpass', freq: 4000 }, a: 0.0005, d: 0.02, gain: 0.7, drive: 3 },
+      { wave: 'sawtooth', freq: 110, filter: { type: 'lowpass', freq: 600 }, a: 0.003, d: 0.25, gain: 0.35, drive: 2 },
+      { noise: 'white', filter: { type: 'bandpass', freq: 2400, q: 2 }, at: 0.03, a: 0.001, d: 0.05, gain: 0.3 },
+    ] },
     // Dust Devil: a gritty scrape, then a short spinning whoosh that swells twice.
     abilityWhirl: { bus: 'sfx', priority: 2, cooldown: 0.2, max: 1, verb: 0.2, heat: 0.1, jitter: 50, layers: [
       { noise: 'white', filter: { type: 'bandpass', freq: 2000, q: 2 }, a: 0.0005, d: 0.02, gain: 0.5, drive: 2 },

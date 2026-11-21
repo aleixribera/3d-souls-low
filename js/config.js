@@ -327,6 +327,9 @@ const CONFIG = {
     // the server takes Iron Cyclone's string heavy no sooner than `gap` s after the last (the shortest string); Hunting
     // Call's mark waits `keep` s for its holder's blow.
     crescent: { reach: 3.5, width: 1.2 }, cyclone: { gap: 1.2 }, mark: { keep: 4 },
+    // Echoing Blade's echoes wait `keep` s for their blows and each lands `delay` s after its blow; Overcharge's key fills
+    // on past full up to `most` of its charge more.
+    echo: { keep: 6, delay: 0.15 }, overcharge: { most: 1 },
     // Summons (js/abilities.js summonStep): each kind stands `gap` m off its enemy's body, `flank` rad round from the
     // side away from its holder (+ toward the enemy's left), and runs there at up to `speed` m/s. It has arrived
     // `arrive` s after it is called (one that `rises` comes up where it will stand; the others run there); a hound,

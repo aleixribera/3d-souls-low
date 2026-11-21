@@ -3,7 +3,7 @@
 // each fired twice, its name in the corner: docs/scorecard/now/<set>-commons.mp4. The clock is stepped by hand
 // (Game.manualClock) and every other step is a frame, so a clip plays at real speed whatever the PC's speed. With
 // `--stills`, the guard set's current frames too (guard-*.jpg, desktop; -phone for two).
-// Usage: node tools/ability-clips.cjs [blade|guard|mirror|rares|triggers ...] [--stills]   (no set = all). One headless Edge; needs ffmpeg.
+// Usage: node tools/ability-clips.cjs [blade|guard|mirror|rares|triggers|echo ...] [--stills]   (no set = all). One headless Edge; needs ffmpeg.
 require('../tests/low-priority.cjs');
 const fs = require('node:fs');
 const os = require('node:os');
@@ -77,6 +77,19 @@ const SETS = {
     ['Ironclad', `(p, e) => { p.inventory.flask.count = 4; p.useItem('flask'); for (const n of [16, 34]) __later(n, () => p.takeHit({ attackId: 'x', damage: 1, knock: 6, poise: 0, heavy: true, hitstop: 0 }, e)); }`, 56, 'trig-ironclad', 18],
     ['Hunting Call', `(p, e) => { __face(); abilityPowers.trigger('self', p, p.kit, 'press', { key: 'summon', enemy: e }); let done = false;   // the holder's blow a beat after the hound's first bite marks the boss
       for (let n = 40; n < 150; n++) __later(n, () => { if (!done && p.perk.mark) { done = true; __later(24, () => __landed()); } }); }`, 150, 'trig-hunting-call', 124],
+  ] },
+  // Batch 5's second pass (pass 126): docs/scorecard/now/echo-overcharge.mp4, with --stills trig-echoing-blade.jpg and
+  // trig-overcharge.jpg (-phone too). Echoing Blade armed by a key, then a light string swung for real into the Captain:
+  // each blow that lands is echoed. Overcharge: the Strike key filling past full (its ring on the HUD, arcs at the hand),
+  // then pressed through the player's own key path.
+  echo: { ids: [], file: 'echo-overcharge', phone: 2, crf: 30, beats: [
+    ['Echoing Blade', `(p, e) => { p.grantAbilities(['echoing-blade']); __face(); e.x = e.px = p.x + Math.sin(p.yaw) * 2.2; e.z = e.pz = p.z + Math.cos(p.yaw) * 2.2;
+      abilityPowers.trigger('self', p, p.kit, 'press', { key: 'guard' });
+      const A = PLAYER_DEF.moveset.attacks, still = { x: 0, z: 0, has: false };
+      [['light', 14], ['light2', 40], ['light3', 66]].forEach(([id, n]) => __later(n, () => { __face(); p.startAttack(A[id], still, false, Game.enemies); })); }`, 110, 'trig-echoing-blade', 36],
+    ['Overcharge', `(p, e) => { p.grantAbilities(['overcharge', 'fire-burst']); __face(); p.perk.charge.strike = 0;
+      for (let n = 1; n <= 56; n += 2) __later(n, () => p.gainCharge(1));
+      __later(66, () => { const c = p.ctl.consume; p.ctl.consume = function (a) { if (a === 'ability1') { p.ctl.consume = c; return true; } return c.call(this, a); }; }); }`, 100, 'trig-overcharge', 70],
   ] },
 };
 

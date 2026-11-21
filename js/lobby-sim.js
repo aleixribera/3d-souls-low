@@ -76,7 +76,7 @@ globalThis.host = (() => {
     if (acting && type === 'finisherStart' && d.player === acting.body) feat(acting.id).finishers++;   // a bot's Finishing Blow
     // A legendary fired or striking, for every browser to draw (js/ability-fx.js).
     if (type === 'abilityPower') eventList.push({ type, power: d.power, then: d.then, holder: d.holder, enemy: d.enemy?.netId || null,
-      x: d.x, y: d.y, z: d.z, v: d.v, strike: d.strike, draw: d.draw || undefined, path: d.path, flight: d.flight, mark: d.mark || undefined, yaw: d.yaw });
+      x: d.x, y: d.y, z: d.z, v: d.v, strike: d.strike, draw: d.draw || undefined, path: d.path, flight: d.flight, mark: d.mark || undefined, yaw: d.yaw, over: d.over });
     const e = d.enemy || d.actor;
     if (type === 'attackStart' && e) e.netAttack = ++attackSerial;
     if (['attackStart', 'attackPhase', 'bossPhase', 'bossRetreat', 'bossGone', 'enemyBlink', 'impact'].includes(type))
@@ -404,12 +404,14 @@ globalThis.host = (() => {
     sleeping = false;
     if (msg.when === 'press') {   // a number key: its ability held, its charge full by this server's own count
       const slot = ABILITY_KEYS.includes(msg.key) && kit.pressed[msg.key], st = perkOf(id);
-      if (!slot || !slot.power || st.charge[msg.key] < slot.v.charge * (1 - CONFIG.abilities.press.slack) - 1e-9) return false;
+      // A Guard's press (a perk, settled on their own body) is claimed only for Echoing Blade (`cast`): it arms the echoes.
+      if (!slot || st.charge[msg.key] < slot.v.charge * (1 - CONFIG.abilities.press.slack) - 1e-9) return false;
       const live = Game.enemies.filter(e => !e.invulnerable()), aim = enemy(msg.enemy);   // their lock, if in reach; else the nearest
-      const e = pressTarget(p, live, aim && live.includes(aim) ? aim : null);
-      if (ON_ENEMY.has(slot.then) && !e) return false;
+      const e = slot.power ? pressTarget(p, live, aim && live.includes(aim) ? aim : null) : null;
+      if (slot.power && ON_ENEMY.has(slot.then) && !e) return false;
+      const over = abilityOver(kit, st, msg.key);   // Overcharge, by this server's own count
       st.charge[msg.key] = 0;
-      abilityPowers.trigger(id, body, kit, 'press', { key: msg.key, enemy: e });
+      abilityPowers.trigger(id, body, kit, 'press', { key: msg.key, enemy: e, over });
     } else if (msg.when === 'land') {
       const a = ArenaNet.own(PLAYER_DEF.moveset.air, msg.action);
       if (!a || !['land', 'jumpAttack'].includes(p.state) || p.attack !== a) return false;

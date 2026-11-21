@@ -1032,6 +1032,35 @@
         `all gone (${JSON.stringify(left)})`);
     } finally { audio.play = play; rareStrikeFx.clear(); p.grantAbilities([]); }
   });
+  // Pass 126 (PLAN.md item 8, batch 5 pass 2): Echoing Blade's glints, ghost and cut; Overcharge's arcs, HUD ring and release.
+  test('rare triggers: Echoing Blade and Overcharge are drawn and heard', () => {
+    Game.startFight('pillagerCaptain'); Game.loading = 0; sim.begin(); rareStrikeFx.clear(); abilityPowers.reset();
+    const p = Game.player, e = Game.duel, R = () => rareStrikeFx.state, played = [];
+    const play = audio.play; audio.play = (id, o) => { played.push(id); return play.call(audio, id, o); };
+    const frames = n => { for (let i = 0; i < n; i++) Game.render(1, STEP); };
+    try {
+      p.grantAbilities(['echoing-blade', 'overcharge', 'fire-burst']);
+      sturdy(p); e.cooldown = 30; faceOff(e, p, 2);
+      abilityPowers.trigger('self', p, p.kit, 'press', { key: 'guard' }); frames(3);
+      const hits = ABILITY_BY_ID['echoing-blade'].levels[0].hits;
+      expect.ok(R().glints === hits && played.includes('abilityChime'), `Echoing Blade armed: a glint an echo (${JSON.stringify(R())})`);
+      const blow = { attackId: 'light', damage: 1, poise: 0, knock: 0, hitstop: 0 };
+      abilityPowers.trigger('self', p, p.kit, 'hits', { enemy: e, strike: blow });
+      sim.seconds(CONFIG.abilities.echo.delay + 0.05, 1); frames(1);
+      expect.ok(R().ghost && R().slashes > 0 && R().flakes > 0 && played.includes('abilityGhostBlade'), `an echo: the ghost, a cut, chips (${JSON.stringify(R())})`);
+      frames(20);
+      expect.ok(R().glints === hits - 1, `one glint spent (${R().glints})`);
+      abilityGain(p.kit, p.perk, 999); sim.step(1, 1); frames(2);
+      const ring = document.querySelector('#aBR .akey-over.on');
+      expect.ok(R().arcs >= 3 && ring && getComputedStyle(ring).getPropertyValue('--o').trim() === '1', `Overcharge: arcs at the hand, a full ring on its key (${R().arcs})`);
+      events.emit('abilityPress', { body: p, key: 'strike', ability: 'fire-burst', over: 1 }); frames(1);
+      expect.ok(R().release && played.includes('abilityOvercharge'), 'the press rings with arcs and a crack');
+      p.grantAbilities([]); p.perk = abilityPerkState(); abilityPowers.reset();
+      frames(90); sim.step(1, 1);
+      const left = R();
+      expect.ok(!left.ghost && !left.slashes && !left.arcs && !left.release && !document.querySelector('#aBR .akey-over.on'), `all gone (${JSON.stringify(left)})`);
+    } finally { audio.play = play; rareStrikeFx.clear(); p.grantAbilities([]); }
+  });
   // Pass 97 (PLAN.md 3d): the sparring scene. The player's part of each drill is the teacher's own demonstration, played
   // on the player's keys (a swing drill's steps from the moment the partner's blow begins), so a demo that cannot do
   // its drill fails here too.

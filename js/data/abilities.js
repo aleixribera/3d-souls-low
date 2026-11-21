@@ -198,5 +198,9 @@ const ABILITIES = [
     perk: { when: 'flask', then: 'unshaken' }, levels: [{ time: 3 }, { time: 4 }, { time: 5 }] },
   { id: 'hunting-call', name: 'Hunting Call', rarity: 'rare', text: 'Summon strikes: your next hit does {damage} more.',
     perk: { when: 'summonHit', then: 'empower' }, levels: [{ damage: 0.2 }, { damage: 0.3 }, { damage: 0.4 }] },
+  { id: 'echoing-blade', name: 'Echoing Blade', rarity: 'rare', text: 'After a key fires: next {hits} hits echo.',
+    power: { when: 'cast', then: 'ghostBlade' }, levels: [{ hits: 3, damage: 12 }, { hits: 4, damage: 14 }, { hits: 5, damage: 16 }] },
+  { id: 'overcharge', name: 'Overcharge', rarity: 'rare', text: 'A full key overcharges: up to {damage} stronger.',
+    perk: { when: 'ready', then: 'overcharge' }, levels: [{ damage: 0.3 }, { damage: 0.45 }, { damage: 0.6 }] },
 ];
 const ABILITY_BY_ID = Object.fromEntries(ABILITIES.map(b => [b.id, b]));

@@ -59,7 +59,7 @@ const cameraFeel = (() => {
   // blow kicks as itself (`strike`, `echo`, `bite`), a summon drawing the boss as `draw`.
   events.on('abilityPower', d => {
     if (ABILITY_BY_ID[d.power] && ABILITY_BY_ID[d.power].rarity === 'common') return;   // commons never move the camera
-    const P = F.powers[d.draw ? 'draw' : d.strike ? (d.then === 'twin' ? 'echo' : SUMMON_STRIKERS.has(d.then) ? 'bite' : 'strike') : d.then], p = Game.player;
+    const P = F.powers[d.draw ? 'draw' : d.strike ? (d.then === 'twin' || d.then === 'ghostBlade' ? 'echo' : SUMMON_STRIKERS.has(d.then) ? 'bite' : 'strike') : d.then], p = Game.player;
     if (!P || !p) return;
     const k = isPlayer(d.body) ? 1 : clamp(1 - Math.hypot(p.x - d.x, p.z - d.z) / F.powerNear, 0, 1);
     if (k > 0) { kick('fov', P[0] * k); kick('y', -P[1] * k); }

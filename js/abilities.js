@@ -43,13 +43,16 @@ const ABILITY_MODS = { damage: 'more', maxHp: 'more', counterWindow: 'more',
 //   summonHit/empower: a blow of the holder's summon that strikes on its own (SUMMON_STRIKERS) marks that enemy for
 //                     CONFIG.abilities.mark.keep s: the holder's next landed blow on it does `damage` more. A new mark
 //                     replaces the old; it never stacks. Perk clocks `mark` (the enemy) and `markT`.
+//   ready/overcharge: a full key keeps filling past full, up to CONFIG.abilities.overcharge.most of its `charge` more
+//                     (abilityGain); a press fires its technique raised by `damage` x the share filled past full
+//                     (abilityOver): a power's `damage`, a Guard's `heal`. Times, reaches and radii stay.
 const ABILITY_PERKS = {
   'dodge/flashBehind': ['window', 'cooldown'], 'hurt/empower': ['window', 'damage'], 'streak/heal': ['hits', 'heal'],
   'low/freeDash': ['below'], 'cracked/damage': ['damage'], 'block/charge': ['window'], 'unhurt/empower': ['after', 'damage'],
   'finisher/heal': ['heal'], 'parry/heal': ['heal', 'cooldown'], 'press/heal': ['charge', 'heal'], 'press/stance': ['charge', 'time'],
   'parry/freeDash': ['cooldown'], 'low/veil': ['below', 'cut'], 'hurt/ironSkin': ['cut', 'time'], 'parry/keys': ['charge'],
   'finisher/keys': ['charge'], 'ready/empower': ['damage'], 'fightStart/freeDash': ['time'], 'revive/reviveHeal': ['heal'],
-  'flask/unshaken': ['time'], 'summonHit/empower': ['damage'],
+  'flask/unshaken': ['time'], 'summonHit/empower': ['damage'], 'ready/overcharge': ['damage'],
 };
 // The `abilityPerk` cues of the commons' perks: drawn in bone ink (js/common-fx.js), never a camera kick (camera-feel.js).
 const COMMON_PERKS = new Set(['parry/freeDash', 'freeDash/spent', 'low/veil', 'veil/spent', 'hurt/ironSkin', 'ironSkin/glance',
@@ -57,7 +60,7 @@ const COMMON_PERKS = new Set(['parry/freeDash', 'freeDash/spent', 'low/veil', 'v
 // The rares' state cues (batch 4: a mote, a lit blade, a breath), drawn by js/rare-fx.js but too frequent or too quiet
 // for the rares' camera kick (camera-feel.js).
 const RARE_QUIET_PERKS = new Set(['streak/step', 'streak/lost', 'hurt/armed', 'unhurt/ready', 'low/freeDash', 'block/armed', 'cracked/damage',
-  'unshaken/glance']);
+  'unshaken/glance', 'overcharge/step']);
 // A key's extra points from a commons' `<when>/keys` perk (Kindling's deflect, Tithe's Finishing Blow).
 const abilityKeysFor = (kit, when) => (kit.perks[when + '/keys'] || {}).charge || 0;
 // A heal of `share` of the bar from a perk (Grave Feast, Iron Mercy), told as that perk (`target`: the enemy it came from).
@@ -116,6 +119,10 @@ function abilityHeal(p, share, perk, target = null) {
 //                        steel cuts every enemy within `radius` m of the holder.
 //   finisher/petals:     a Finishing Blow ends: petals cut every enemy within `radius` m of the finished one (it too,
 //                        when it lives and can be hurt).
+//   cast/ghostBlade:     any number key fires (a press, a power's or a Guard's): the holder's next `hits` landed blows
+//                        within CONFIG.abilities.echo.keep s each land again CONFIG.abilities.echo.delay s later on that
+//                        enemy, `damage` a blow. A new press re-arms it to `hits`. An echo is a power's strike: never a
+//                        blow, never echoed, never another power's trigger.
 // A summon (CONFIG.abilities.summons) stands at its own place round the enemy, worked out here, where the enemies are
 // owned. Once it has arrived it draws that enemy's eye for `draw` s: the enemy fights it instead of anyone (it can't be
 // hurt), and an attack begun on it is finished on it. One summon a holder at a time: another kind's call waits until
@@ -138,7 +145,7 @@ const ABILITY_POWERS = {
   'block/thorns': ['damage', 'cooldown'], 'flask/burnHits': ['hits', 'damage'], 'crack/shards': ['damage'],
   'parryShot/reflect': ['damage'],
   'counter/wave': ['damage', 'reach', 'width', 'cooldown'], 'land/crescent': ['damage', 'cooldown'], 'comboHeavy/cyclone': ['damage', 'radius', 'cooldown'],
-  'finisher/petals': ['damage', 'radius'],
+  'finisher/petals': ['damage', 'radius'], 'cast/ghostBlade': ['hits', 'damage'],
 };
 // The heavies that end a light string: every attack some attack's `next.heavy` leads to (Iron Cyclone's `comboHeavy`).
 let comboHeavies = null;
@@ -215,16 +222,26 @@ function pressGain(strike) {
 }
 // `n` points toward each key the kit holds, each up to its ability's `charge`.
 // Returns true when a key filled just now woke Glint (`ready/empower`, not already waiting).
+// Overcharge (`ready/overcharge`) lets a full key run on past full, up to CONFIG.abilities.overcharge.most of its charge more.
 function abilityGain(kit, st, n) {
   let filled = false;
+  const most = kit.perks['ready/overcharge'] ? 1 + CONFIG.abilities.overcharge.most : 1;
   for (const key in kit.pressed) {
     const full = kit.pressed[key].v.charge, was = st.charge[key];
-    st.charge[key] = Math.min(full, was + n);
+    st.charge[key] = Math.min(full * most, was + n);
     if (was < full && st.charge[key] >= full) filled = true;
   }
   if (!filled || !kit.perks['ready/empower'] || st.glint) return false;
   st.glint = 1; return true;
 }
+// Overcharge: the share (0 to 1) key `key` has filled past full, by `st`'s count (0 without the perk).
+function abilityOver(kit, st, key) {
+  const slot = kit.pressed[key];
+  if (!slot || !kit.perks['ready/overcharge'] || !st) return 0;
+  return Math.max(0, Math.min(1, (st.charge[key] - slot.v.charge) / (slot.v.charge * CONFIG.abilities.overcharge.most)));
+}
+// What Overcharge raises a press by: 1 + its `damage` x the share past full.
+const abilityOverBy = (kit, over) => 1 + (over > 0 && kit.perks['ready/overcharge'] ? kit.perks['ready/overcharge'].damage * over : 0);
 // The enemy a press strikes: the locked one if alive and in reach, else the nearest live one in reach (null: none).
 // One that can't be hurt now (between phases, held through a Finishing Blow) is passed over.
 function pressTarget(body, enemies, lock) {
@@ -238,8 +255,8 @@ function pressTarget(body, enemies, lock) {
 // The input actions of the four keys, in ABILITY_KEYS order (js/input.js binds them).
 const ABILITY_ACTIONS = ['ability1', 'ability2', 'ability3', 'ability4'];
 // A pressed perk on its holder's body (Guard's): a heal, or the deflecting stance.
-function abilityPressPerk(p, slot) {
-  if (slot.then === 'heal') abilityHeal(p, slot.v.heal, 'press/heal');
+function abilityPressPerk(p, slot, over = 0) {
+  if (slot.then === 'heal') abilityHeal(p, Math.min(1, slot.v.heal * abilityOverBy(p.kit, over)), 'press/heal');
   else if (slot.then === 'stance') { p.perk.stance = slot.v.time; events.emit('abilityPerk', { body: p, perk: 'press/stance' }); }
 }
 
@@ -273,6 +290,7 @@ function abilityKit(held) {
       powers.push({ id: b.id, when: b.power.when, then: b.power.then, once: !!b.power.once, action: b.power.action || null, key: b.key || null, v });
       whens.add(b.power.when);
       if (b.power.then === 'twin' || b.power.then === 'burnHits') whens.add('hits');   // the twin strikes, the burn burns, as its holder lands a blow
+      if (b.power.when === 'cast') { whens.add('press'); whens.add('hits'); }   // Echoing Blade: armed by any press, spent by landed blows
     }
   }
   for (const key of Object.keys(mods)) if (ABILITY_MODS[key] === 'less') mods[key] = Math.min(mods[key], 1);
@@ -380,7 +398,7 @@ const ECHO_DELAY = 0.06;   // s from its holder's blow to the twin's: the two la
 const ON_ENEMY = new Set(['lightning', 'blades', 'flare', 'spark', 'gale', 'pyre', 'hound', 'lancer', 'lick', 'molten', 'lateCut', 'afterimage',
   'thorns', 'shards', 'reflect', 'wave']);
 // The powers whose blow lands a beat after they fire: each tells every browser again as it lands (`strike`).
-const DELAYED = new Set(['lightning', 'lateCut', 'afterimage', 'shards', 'reflect']);
+const DELAYED = new Set(['lightning', 'lateCut', 'afterimage', 'shards', 'reflect', 'ghostBlade']);
 const abilityPowers = (() => {
   // The powers still striking (lightning, blades, a pyre, a twin's echo): { pw, holder, enemy, left, next, n }, an echo
   // with its own `damage` and `twin`.
@@ -388,6 +406,7 @@ const abilityPowers = (() => {
   const ready = new Map();   // holder + '/' + ability id -> the clock time it may fire again (Infinity: once, spent)
   const waiting = new Map();   // holder + '/' + ability id -> { holder, pw, body }: a low-health summon kept out by another
   const counts = new Map();   // holder + '/' + ability id -> blows landed toward a `hits` power
+  const ghosts = new Map();   // holder -> Echoing Blade's armed echoes: { pw, left, until }
   // holder -> a summon still out: { kind, pw, body, until, n (its blows so far), x, y, z, yaw, enemy, wait (s until it
   // has arrived), bite (s to its next bite), drew (it has drawn its enemy's eye), lure (the enemy it draws now),
   // lureUntil, decoy (what that enemy fights: its place, never hurt) }.
@@ -403,7 +422,7 @@ const abilityPowers = (() => {
   // `bodyOf(holder)`: the holder's body now (the server's, whose bodies are remade each pose); else the one it was called with.
   // `perkOf(holder)`: the holder's perk clocks where its body carries none (the server's persons: Hunting Call's mark).
   const api = { trigger, tick, reset, twinOf, summonOf, decoy, credit: null, bodyOf: null, perkOf: null, running };
-  function reset() { running.length = 0; ready.clear(); counts.clear(); summons.clear(); waiting.clear(); clock = 0; }
+  function reset() { running.length = 0; ready.clear(); counts.clear(); summons.clear(); waiting.clear(); ghosts.clear(); clock = 0; }
   // A power's blow: magic, so it comes from behind the enemy's facing (a shield never takes it). Never a counter: the
   // Finishing Blow is the holder's to earn.
   function wound(e, damage, holder, power) {
@@ -418,10 +437,11 @@ const abilityPowers = (() => {
   const near = (e, x, y, z, r) => e.alive() && Math.hypot(e.x - x, e.z - z) - e.radius <= r && Math.abs(e.y - y) <= CONFIG.height.reach;
   // `ctx`: { enemy } (the one parried, struck, broken or dodged), { x, y, z } (where), { action } (a jump attack's
   // input), { strike } (a landed blow's, for `hits`: what a twin echoes), { key } (a press: that key's power only),
-  // { yaw } (the holder's facing, where its body carries none: the server's).
+  // { yaw } (the holder's facing, where its body carries none: the server's), { over } (a press: Overcharge's share past full).
   function trigger(holder, body, kit, when, ctx = {}) {
-    if (when === 'hits') { echo(holder, body, ctx.enemy, ctx.strike); burn(holder, body, kit, ctx.enemy); }
-    for (const pw of kit.powers) {
+    if (when === 'hits') { echo(holder, body, ctx.enemy, ctx.strike); burn(holder, body, kit, ctx.enemy); ghost(holder, body, kit, ctx.enemy); }
+    if (when === 'press') cast(holder, body, kit, ctx);
+    for (let pw of kit.powers) {
       if (pw.when !== when || (pw.action && pw.action !== ctx.action) || (pw.key && pw.key !== ctx.key)) continue;
       const key = holder + '/' + pw.id;
       if ((ready.get(key) ?? -Infinity) > clock) continue;
@@ -432,6 +452,7 @@ const abilityPowers = (() => {
         if (n < pw.v.hits) continue;
       }
       if (pw.when === 'low' && !(body && body.hp > 0 && body.hp <= body.maxHp * pw.v.below)) continue;
+      if (pw.when === 'press' && ctx.over > 0) pw = overcharged(pw, kit, ctx.over);
       if (fire(pw, holder, body, ctx, kit)) { ready.set(key, pw.once ? Infinity : clock + (pw.v.cooldown || 0)); if (hits) counts.set(key, 0); }
       else if (pw.when === 'low' && SUMMONS.has(pw.then) && body) waiting.set(key, { holder, pw, body, kit });   // low is told once: it waits its turn
     }
@@ -462,7 +483,7 @@ const abilityPowers = (() => {
     const path = ctx.from && ctx.to ? { from: { x: ctx.from.x, z: ctx.from.z }, to: { x: ctx.to.x, z: ctx.to.z } } : undefined;
     // A reflected bolt flies back for `flight` s (its way back at its own speed) before it strikes.
     const flight = pw.then === 'reflect' ? clamp(ctx.flight ?? 0.3, 0.05, CONFIG.abilities.commons.reflectMax) : undefined;
-    events.emit('abilityPower', { power: pw.id, then: pw.then, holder, body, enemy: e, x, y, z, v, path, flight, yaw: ctx.yaw });
+    events.emit('abilityPower', { power: pw.id, then: pw.then, holder, body, enemy: e, x, y, z, v, path, flight, yaw: ctx.yaw, over: ctx.over > 0 ? ctx.over : undefined });
     switch (pw.then) {
       case 'blast': for (const o of enemies) if (near(o, x, y, z, v.radius)) wound(o, v.damage, holder, pw.id); break;
       case 'flare': case 'spark': case 'lick': case 'molten': case 'thorns': wound(e, v.damage, holder, pw.id); break;
@@ -513,6 +534,32 @@ const abilityPowers = (() => {
     st.burn--;
     events.emit('abilityPower', { power: pw.id, then: 'burnHits', holder, body, enemy: e, x: e.x, y: e.y, z: e.z, v, strike: v.hits - st.burn });
     wound(e, v.damage, holder, pw.id);
+  }
+  // Overcharge: a copy of pressed power `pw` with its `damage` raised by the share `over` past full (made once a press).
+  function overcharged(pw, kit, over) {
+    const by = abilityOverBy(kit, over);
+    return by > 1 && pw.v.damage ? { ...pw, v: Object.freeze({ ...pw.v, damage: pw.v.damage * by }) } : pw;
+  }
+  // Echoing Blade: a key fired arms the holder's echoes (`hits` of them, for CONFIG.abilities.echo.keep s; a new press
+  // re-arms, never adds). Told with no enemy: every browser draws the glints round its holder's hand.
+  function cast(holder, body, kit, ctx) {
+    const pw = kit.powers.find(q => q.when === 'cast' && q.then === 'ghostBlade');
+    if (!pw) return;
+    ghosts.set(holder, { pw, left: pw.v.hits, until: clock + CONFIG.abilities.echo.keep });
+    const at = body || ctx.enemy || { x: 0, y: 0, z: 0 };
+    events.emit('abilityPower', { power: pw.id, then: 'ghostBlade', holder, body, enemy: null, x: at.x, y: at.y, z: at.z, v: pw.v });
+  }
+  // A landed blow of a holder with echoes armed spends one: the same enemy is cut again `delay` s later (`strike`: its number).
+  function ghost(holder, body, kit, e) {
+    const g = ghosts.get(holder);
+    if (!g || !e || !e.alive()) return;
+    // Spent past its time, or the holder no longer has it: gone. Its numbers are the kit's now (a level-up counts).
+    const pw = kit.powers.find(q => q.when === 'cast' && q.then === 'ghostBlade');
+    if (g.until <= clock || !pw) { ghosts.delete(holder); return; }
+    g.pw = pw;
+    const n = g.pw.v.hits - g.left;   // this echo's number, from 0 (the tick counts it up)
+    if (--g.left <= 0) ghosts.delete(holder);
+    running.push({ pw: g.pw, holder, body, enemy: e, left: 1, next: CONFIG.abilities.echo.delay, n, damage: g.pw.v.damage });
   }
   // A twin out for `holder` strikes `e` as they did, a beat later: `share` of the blow, with its own event.
   function echo(holder, body, e, strike) {

@@ -13,6 +13,10 @@
 //   Petal Storm   a star at the finished boss, then a two-armed spiral of blade petals whirls out to its radius and settles.
 //   Ironclad      plates ripple over the drinker and settle into a faint shell while it holds; a blow glances off in sparks.
 //   Hunting Call  the summon's blow stamps a chevron over the boss's head; it pulses until the holder's blow bursts it.
+//   Echoing Blade a key fired: small blue glints orbit the sword hand, one for each echo armed; each echo, a translucent
+//                 ink-edged copy of the sword replays the swing a beat behind, a thin blue cut opens on the boss, chips.
+//   Overcharge    a key past full: small blue arcs crawl round the sword hand, more as it fills (and a second ring
+//                 round its key on the HUD, js/hud.js); the press rings the technique with four hard arcs and sparks.
 const rareStrikeFx = (() => {
   const K = () => VIS.abilityFx.rareStrike;
   const INK = '#0e1218', BLUE = '#8fb8dc', CORE = '#f2f6fa', PALE = '#cfe2f2', DEEP = '#2c5f8a', STEEL = '#5f86a8', PLATE = '#3d5c78';
@@ -28,7 +32,7 @@ const rareStrikeFx = (() => {
     path(); g.lineWidth = ink; g.strokeStyle = INK; g.stroke(); g.fillStyle = fill; g.fill();
     if (edge) { path(); g.lineWidth = rim; g.strokeStyle = edge; g.stroke(); }
   };
-  let WAVE, MOON, CUT, BLADES, PETAL, SCALES, CHEVRON, STAR, RING, FLAKE;
+  let WAVE, MOON, CUT, BLADES, PETAL, SCALES, CHEVRON, STAR, RING, FLAKE, GHOST, SLASH, ARC;
   function textures() {
     WAVE = canvasTex(256, 128, (g, w, h) => {   // a breaking crest: deep blue body, a blue lip, white foam claws curling forward
       const body = () => { g.beginPath(); g.moveTo(6, h - 4); g.bezierCurveTo(w * 0.12, h * 0.55, w * 0.3, h * 0.2, w * 0.5, h * 0.18);
@@ -92,6 +96,22 @@ const rareStrikeFx = (() => {
       const m = w / 2, arc = (th, c) => { g.beginPath(); g.arc(m, m, m * 0.8, 0, Math.PI * 2); g.lineWidth = th; g.strokeStyle = c; g.stroke(); };
       arc(20, INK); arc(12, BLUE); arc(4, CORE);
     });
+    GHOST = canvasTex(256, 48, (g, w, h) => {   // a flat sword along u (hilt left, point right): pale blue body, white edge, ink
+      const path = () => { g.beginPath(); g.moveTo(10, h * 0.5 - 7); g.lineTo(w * 0.82, h * 0.5 - 9); g.lineTo(w - 6, h * 0.5); g.lineTo(w * 0.82, h * 0.5 + 9); g.lineTo(10, h * 0.5 + 7); g.closePath(); };
+      inked(g, path, 'rgba(143,184,220,0.5)', BLUE, 6, 2);
+      g.strokeStyle = PALE; g.lineWidth = 1.5; g.beginPath(); g.moveTo(20, h * 0.5); g.lineTo(w * 0.8, h * 0.5); g.stroke();
+    });
+    SLASH = canvasTex(256, 32, (g, w, h) => {   // a thin cut, tapering at both ends: ink, blue edge, white core
+      for (let x = 0; x < w; x++) {
+        const k = Math.sin(Math.PI * x / w), m = h / 2;
+        for (const [half, c] of [[0.42, INK], [0.3, BLUE], [0.12, CORE]]) { g.fillStyle = c; const s = h * half * k; g.fillRect(x, m - s, 1, s * 2); }
+      }
+    });
+    ARC = canvasTex(64, 64, (g, w, h) => {   // a short hard zigzag of electricity: ink under blue, a white core
+      const path = () => { g.beginPath(); g.moveTo(6, h * 0.6); g.lineTo(w * 0.3, h * 0.3); g.lineTo(w * 0.45, h * 0.62); g.lineTo(w * 0.68, h * 0.28); g.lineTo(w * 0.8, h * 0.55); g.lineTo(w - 6, h * 0.4); };
+      g.lineJoin = 'miter'; g.lineCap = 'round';
+      for (const [lw, c] of [[11, INK], [6, BLUE], [2.5, CORE]]) { path(); g.lineWidth = lw; g.strokeStyle = c; g.stroke(); }
+    });
     FLAKE = canvasTex(32, 32, (g, w, h) => {   // a hard shard (tinted per use)
       g.beginPath(); g.moveTo(w * 0.1, h * 0.55); g.lineTo(w * 0.5, h * 0.1); g.lineTo(w * 0.9, h * 0.4); g.lineTo(w * 0.45, h * 0.9); g.closePath(); g.fillStyle = '#fff'; g.fill();
     });
@@ -107,8 +127,10 @@ const rareStrikeFx = (() => {
 
   // ---- Pools ---------------------------------------------------------------------------------------------------------
   const PETALS = 40;
-  let made = false, crest, moon, cut, cyclone, storm, shell, mark;
-  const pops = [], rings = [], flakes = [];
+  let made = false, crest, moon, cut, cyclone, storm, shell, mark, ghost, glints, sparks;
+  const pops = [], rings = [], flakes = [], slashes = [], bursts = [];
+  // The holder's sword pivot over the last HIST frames (the ghost replays it a beat behind): matrices and times, made once.
+  const HIST = 30, hist = { m: Array.from({ length: HIST }, () => new THREE.Matrix4()), t: new Float64Array(HIST).fill(-1), i: 0, clock: 0, body: null };
   function make() {
     if (made) return;
     made = true; textures();
@@ -125,6 +147,18 @@ const rareStrikeFx = (() => {
       petals: Array.from({ length: PETALS }, (_, i) => ({ s: sprite(PETAL, 14), a: rnd() * 0.6 + (i % 2) * Math.PI, r: 0.55 + rnd() * 0.45, h: rnd(), lag: rnd() * 0.15, spin: (rnd() - 0.5) * 10 })) };
     shell = { s: sprite(SCALES, 14), age: Infinity };
     mark = { s: sprite(CHEVRON, 15), age: Infinity, e: null, from: null, keep: 0 };
+    {   // Echoing Blade's ghost: two crossed planes along the weapon's local z (0.15 to 1.3 m), drawn over bodies
+      const g = new THREE.Group(), geo = new THREE.PlaneGeometry(1, 1).rotateY(-Math.PI / 2).translate(0, 0, 0.72), m = mat(GHOST, { depthTest: false });
+      const a = new THREE.Mesh(geo, m), b = new THREE.Mesh(geo, m); b.rotation.z = Math.PI / 2;
+      for (const q of [a, b]) { q.renderOrder = 15; q.frustumCulled = false; g.add(q); }
+      a.scale.set(1, 0.13, 1.15); b.scale.set(1, 0.13, 1.15);
+      g.visible = false; scene.add(g); g.userData.warmUp = true;
+      ghost = { g, m, age: Infinity, body: null };
+    }
+    for (let i = 0; i < 3; i++) { const q = { s: sprite(SLASH, 15), age: Infinity, life: 0.3 }; q.s.material.depthTest = false; slashes.push(q); }   // drawn over the boss's body
+    glints = { body: null, left: 0, until: 0, list: Array.from({ length: 5 }, () => ({ s: sprite(STAR, 15), fade: 0 })) };   // one per echo armed
+    sparks = { list: Array.from({ length: 3 }, () => sprite(ARC, 15)), k: 0 };   // Overcharge's crawl round the hand
+    for (let i = 0; i < 2; i++) bursts.push({ list: Array.from({ length: 4 }, () => sprite(ARC, 15)), age: Infinity, x: 0, y: 0, z: 0, size: 1 });
   }
   const density = () => (CONFIG.VISUALS.fxBudgets[visuals.quality().fxBudget] || { density: 1 }).density;
   const oldest = list => list.find(q => q.age === Infinity) || list.reduce((a, b) => (b.age / b.life > a.age / a.life ? b : a));
@@ -152,7 +186,22 @@ const rareStrikeFx = (() => {
     const r = oldest(rings); r.age = -wait; r.life = life; r.from = from; r.to = reducedMotion() ? from + (to - from) * 0.6 : to;
     r.x = x; r.y = y + 0.05; r.z = z; r.m.material.opacity = 0; r.m.position.set(r.x, r.y, r.z); r.m.scale.set(from, 1, from); r.m.visible = wait <= 0;
   }
-  const spot = { x: 0, y: 0, z: 0 };
+  const spot = { x: 0, y: 0, z: 0 }, hand = new THREE.Vector3(), pivotQ = new THREE.Quaternion(), pivotS = new THREE.Vector3();
+  // The sword hand of `b` (its weapon's pivot), else its chest's side.
+  function handOf(b) {
+    const w = b && b.rig && b.rig.weapon;
+    if (w) { w.updateWorldMatrix(true, false); return hand.setFromMatrixPosition(w.matrixWorld); }
+    return hand.set(b.x + Math.cos(b.yaw || 0) * 0.35, b.y + (b.height || 1.8) * 0.5, b.z - Math.sin(b.yaw || 0) * 0.35);
+  }
+  // The weapon pivot `ago` s back from the history (the newest one not newer than that), else null.
+  function pastPivot(ago) {
+    const want = hist.clock - ago;
+    for (let n = 0; n < HIST; n++) {
+      const i = (hist.i - 1 - n + HIST * 2) % HIST;
+      if (hist.t[i] >= 0 && hist.t[i] <= want + 1e-6) return hist.m[i];
+    }
+    return null;
+  }
   function flank(e, x, z, h) {   // a point on the body facing (x, z), at `h` of its height
     const dx = x - e.x, dz = z - e.z, l = Math.hypot(dx, dz) || 1, r = (e.radius || 0.6) * 0.85;
     spot.x = e.x + dx / l * r; spot.y = e.y + (e.height || 1.8) * h; spot.z = e.z + dz / l * r; return spot;
@@ -192,6 +241,23 @@ const rareStrikeFx = (() => {
         pop(d.x, d.y + h * 0.5, d.z, R.burst, 0.3);
         break;
       }
+      case 'ghostBlade': {
+        const b = d.body;
+        if (!d.strike) {   // armed: a glint for each echo (the holder's own, or the latest holder seen)
+          if (!b || (glints.body && glints.body !== b && b !== Game.player && glints.left > 0)) return;
+          glints.body = b; glints.left = Math.min(glints.list.length, v.hits || 3); glints.until = hist.clock + CONFIG.abilities.echo.keep;
+          const at = handOf(b); pop(at.x, at.y, at.z, 0.45, 0.18);
+          return;
+        }
+        if (b === glints.body) glints.left = Math.max(0, glints.left - 1);
+        if (b && b.rig && b.rig.weapon) { ghost.age = 0; ghost.body = b; }   // the copy replays the swing
+        if (!e) return;
+        const sl = oldest(slashes), at = flank(e, d.body ? d.body.x : d.x, d.body ? d.body.z : d.z, 0.55);
+        sl.age = 0; sl.s.position.set(at.x, at.y, at.z); sl.s.material.rotation = (d.strike % 2 ? 0.6 : -0.6) + (rnd() - 0.5) * 0.4;
+        sl.s.scale.set(2.2, 0.3, 1); sl.s.material.opacity = 1; sl.s.visible = true;
+        throwFlakes(at.x, at.y, at.z, 6, PALES, FALL);
+        break;
+      }
       case 'hound': case 'guardian': case 'lancer':   // Hunting Call: its holder's own summon marked the boss
         if (d.mark && d.strike && e && d.body === Game.player) {
           mark.age = 0; mark.e = e; mark.keep = CONFIG.abilities.mark.keep; mark.s.material.opacity = 1; mark.s.visible = true;
@@ -209,6 +275,17 @@ const rareStrikeFx = (() => {
       throwFlakes(at.x, at.y, at.z, 12, BLUES, FALL);
     }
   }
+  // Overcharge's release: four hard arcs ring where the technique starts (its enemy's chest, else its holder's), sized by the share.
+  function release(b, e, over) {
+    if (!(over > 0)) return;
+    const at = e || b;
+    if (!at) return;
+    const q = bursts.find(x => x.age === Infinity) || bursts[0], h = (at.height || 1.8) * 0.55;
+    q.age = 0; q.x = at.x; q.y = at.y + h; q.z = at.z; q.size = 0.6 + 0.9 * over;
+    for (const s of q.list) { s.visible = true; s.material.opacity = 1; }
+    throwFlakes(q.x, q.y, q.z, 12, BLUES, LINES);
+  }
+  function pressed(d) { if (d.body === Game.player && d.over > 0) release(d.body, null, d.over); }   // the holder's own, at once
   function strike(d) {   // Hunting Call: the holder's blow on the marked boss bursts the mark
     if (mark.age === Infinity || d.blocked || d.attacker !== Game.player || d.target !== mark.e || (d.strike && d.strike.power)) return;
     const b = Game.player, at = flank(mark.e, b.x, b.z, 0.6);
@@ -286,6 +363,63 @@ const rareStrikeFx = (() => {
         shell.s.position.set(p.x, p.y + (p.height || 1.8) * 0.55, p.z); shell.s.scale.setScalar(R.shell * (0.4 + 0.6 * k)); shell.s.material.opacity = hold;
       }
     }
+    // Echoing Blade: the holder's sword pivot each frame, for the ghost to replay
+    hist.clock += real;
+    const gb = ghost.body || glints.body, gw = gb && gb.rig && gb.rig.weapon;
+    if (gb !== hist.body) { hist.t.fill(-1); hist.body = gb; }   // one history, of one body: never replay another's sword
+    if (gw) { gw.updateWorldMatrix(true, false); hist.m[hist.i].copy(gw.matrixWorld); hist.t[hist.i] = hist.clock; hist.i = (hist.i + 1) % HIST; }
+    if (ghost.age !== Infinity) {   // the copy, a beat behind the real swing, fading over 0.3 s
+      ghost.age += real;
+      const m = ghost.age < 0.3 && pastPivot(CONFIG.abilities.echo.delay);
+      if (!m) { ghost.age = Infinity; ghost.g.visible = false; ghost.body = null; }
+      else { m.decompose(ghost.g.position, pivotQ, pivotS); ghost.g.quaternion.copy(pivotQ); ghost.m.opacity = 0.75 * (1 - clamp01((ghost.age - 0.12) / 0.18)); ghost.g.visible = true; }
+    }
+    for (const sl of slashes) {
+      if (sl.age === Infinity) continue;
+      sl.age += real;
+      if (sl.age > sl.life) { sl.age = Infinity; sl.s.visible = false; continue; }
+      const k = Math.min(1, sl.age / 0.05); sl.s.scale.set(2.2 * k, 0.3 * (1 - 0.5 * clamp01(sl.age / sl.life)), 1); sl.s.material.opacity = 1 - clamp01((sl.age - 0.15) / 0.15);
+    }
+    {   // the glints orbit the sword hand while echoes are armed; a spent one fades out
+      const b = glints.body, on = b && (!b.alive || b.alive()) && game && game.mode === 'play';
+      if (!on || hist.clock > glints.until) glints.left = 0;   // gone with its holder, or unspent past their time
+      const at = on ? handOf(b) : null, t = hist.clock;
+      let lit = false;
+      for (let i = 0; i < glints.list.length; i++) {
+        const q = glints.list[i], want = i < glints.left ? 1 : 0;
+        q.fade = want ? Math.min(1, q.fade + real * 8) : Math.max(0, q.fade - real * 5);
+        if (q.fade > 0) lit = true;
+        if (!at || q.fade <= 0) { q.s.visible = false; continue; }
+        const a = (calm ? 0 : t * 4) + i * Math.PI * 2 / Math.max(1, glints.list.length), r = 0.32;
+        q.s.position.set(at.x + Math.sin(a) * r, at.y + 0.08 * Math.sin(a * 2), at.z + Math.cos(a) * r);
+        q.s.scale.setScalar(0.22 * q.fade); q.s.material.opacity = q.fade; q.s.visible = true;
+      }
+      if (!glints.left && !lit) glints.body = null;
+    }
+    {   // Overcharge: arcs crawl round the sword hand, one for each third of the fullest key's overcharge
+      let over = 0;
+      if (live && p.kit && p.kit.perks['ready/overcharge']) for (const key in p.kit.pressed) over = Math.max(over, abilityOver(p.kit, p.perk, key));
+      const n = over > 0 ? Math.min(sparks.list.length, 1 + Math.floor(over * sparks.list.length * 0.999)) : 0, at = n ? handOf(p) : null;
+      sparks.k += real;
+      for (let i = 0; i < sparks.list.length; i++) {
+        const s = sparks.list[i];
+        if (i >= n) { s.visible = false; continue; }
+        const a = (calm ? i * 2.1 : sparks.k * (5 + i) + i * 2.1), flick = calm ? 1 : 0.6 + 0.4 * Math.abs(Math.sin(sparks.k * 23 + i * 5));
+        s.position.set(at.x + Math.sin(a) * 0.22, at.y + Math.cos(a * 1.3) * 0.15, at.z + Math.cos(a) * 0.22);
+        s.scale.setScalar(0.3 + 0.15 * over); s.material.rotation = calm ? i : a * 2; s.material.opacity = flick; s.visible = true;
+      }
+    }
+    for (const q of bursts) {   // the release: four arcs spread round its start and gone at 0.4 s
+      if (q.age === Infinity) continue;
+      q.age += real;
+      if (q.age > 0.4) { q.age = Infinity; for (const s of q.list) s.visible = false; continue; }
+      const k = 1 - (1 - Math.min(1, q.age / 0.15)) ** 2, out = clamp01((q.age - 0.2) / 0.2);
+      for (let i = 0; i < 4; i++) {
+        const s = q.list[i], a = i * Math.PI / 2 + Math.PI / 4 + (calm ? 0 : q.age * 2), r = q.size * (0.4 + 0.6 * k);
+        s.position.set(q.x + Math.sin(a) * r, q.y + Math.cos(a) * r * 0.6, q.z + Math.cos(a) * r * 0.3);
+        s.scale.setScalar(q.size * 0.7); s.material.rotation = a; s.material.opacity = 1 - out;
+      }
+    }
     if (mark.age !== Infinity) {   // stamped, then a slow pulse until it is spent or its time is up
       mark.age += real;
       const e = mark.e;
@@ -330,12 +464,21 @@ const rareStrikeFx = (() => {
     for (const q of [moon, shell, mark]) { q.age = Infinity; q.s.visible = false; }
     for (const q of storm.petals) q.s.visible = false;
     storm.age = Infinity; mark.e = null;
+    ghost.age = Infinity; ghost.g.visible = false; ghost.body = null; hist.t.fill(-1); hist.body = null;
+    for (const q of slashes) { q.age = Infinity; q.s.visible = false; }
+    glints.left = 0; glints.body = null; for (const q of glints.list) { q.fade = 0; q.s.visible = false; }
+    for (const s of sparks.list) s.visible = false;
+    for (const q of bursts) { q.age = Infinity; for (const s of q.list) s.visible = false; }
   }
-  const THENS = new Set(['wave', 'crescent', 'cyclone', 'petals', 'hound', 'guardian', 'lancer']);
+  const THENS = new Set(['wave', 'crescent', 'cyclone', 'petals', 'hound', 'guardian', 'lancer', 'ghostBlade']);
   return {
     attach() {
       make(); Game.renderHooks.push(render); visuals.hooks.stage.push(clear);
-      events.on('abilityPower', d => { if (THENS.has(d.then) && !d.draw) power(d); });
+      events.on('abilityPower', d => {
+        if (THENS.has(d.then) && !d.draw) power(d);
+        if (d.over > 0 && !d.strike && d.body !== Game.player) release(d.body, d.enemy, d.over);   // another's overcharged press (the holder's own: abilityPress)
+      });
+      events.on('abilityPress', pressed);
       events.on('abilityPerk', perk);
       events.on('strike', strike);
     },
@@ -345,7 +488,9 @@ const rareStrikeFx = (() => {
       if (!made) return {};
       return { crest: crest.age !== Infinity, moon: moon.age !== Infinity, cut: cut.age !== Infinity, cyclone: cyclone.age !== Infinity,
         petals: storm.age === Infinity ? 0 : storm.petals.filter(q => q.s.visible).length, shell: shell.age !== Infinity, mark: mark.age !== Infinity,
-        pops: pops.filter(q => q.age !== Infinity).length, rings: rings.filter(r => r.age !== Infinity).length, flakes: flakes.filter(f => f.age !== Infinity).length };
+        pops: pops.filter(q => q.age !== Infinity).length, rings: rings.filter(r => r.age !== Infinity).length, flakes: flakes.filter(f => f.age !== Infinity).length,
+        ghost: ghost.age !== Infinity, slashes: slashes.filter(q => q.age !== Infinity).length, glints: glints.list.filter(q => q.s.visible).length,
+        arcs: sparks.list.filter(s => s.visible).length, release: bursts.some(q => q.age !== Infinity) };
     },
   };
 })();

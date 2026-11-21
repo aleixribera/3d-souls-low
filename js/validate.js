@@ -258,6 +258,9 @@ function validateData({ visual = true } = {}) {
   need(CS && num(CS.reach) && CS.reach > 0 && num(CS.width) && CS.width > 0, 'CONFIG.abilities.crescent: reach and width, each above 0.');
   need(CY && num(CY.gap) && CY.gap > 0, 'CONFIG.abilities.cyclone: gap above 0.');
   need(MK && num(MK.keep) && MK.keep > 0, 'CONFIG.abilities.mark: keep above 0.');
+  const EC = BL.echo, OC = BL.overcharge;
+  need(EC && num(EC.keep) && EC.keep > 0 && num(EC.delay) && EC.delay >= 0 && EC.delay <= 0.5, 'CONFIG.abilities.echo: keep above 0, delay from 0 to 0.5.');
+  need(OC && num(OC.most) && OC.most > 0 && OC.most <= 2, 'CONFIG.abilities.overcharge: most above 0, at most 2.');
   const RS = CONFIG.VISUALS.abilityFx.rareStrike;   // js/rare-strike-fx.js's sizes and times
   if (visual) need(RS && ['crest', 'moon', 'moonLift', 'cutWidth', 'waist', 'dustLife', 'burst', 'petal', 'whirl', 'shell', 'mark'].every(k => num(RS[k]) && RS[k] > 0),
     'VIS.abilityFx.rareStrike: crest, moon, moonLift, cutWidth, waist, dustLife, burst, petal, whirl, shell and mark, each above 0.');

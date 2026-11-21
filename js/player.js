@@ -523,15 +523,24 @@ class Player {
       if (this.perk.charge[key] < slot.v.charge) { events.emit('abilityNotReady', { body: this, key }); continue; }
       const e = pressTarget(this, enemies, lock);
       if (slot.power && ON_ENEMY.has(slot.then) && !e) { events.emit('abilityNotReady', { body: this, key }); continue; }
+      const over = abilityOver(this.kit, this.perk, key);   // Overcharge: the share filled past full
       this.perk.charge[key] = 0;
-      events.emit('abilityPress', { body: this, key, ability: slot.id });
-      if (slot.power) abilityReport(this, 'press', { key, enemy: e });
-      else abilityPressPerk(this, slot);
+      events.emit('abilityPress', { body: this, key, ability: slot.id, over: over > 0 ? over : undefined });
+      if (slot.power) abilityReport(this, 'press', { key, enemy: e, over });
+      else { abilityPressPerk(this, slot, over); abilityReport(this, 'press', { key, over }); }   // a Guard's press arms Echoing Blade too
     }
   }
   // Points toward the number keys (CONFIG.abilities.press.gain): a landed blow's, a deflect's, a dodge's, a Finishing Blow's.
   gainCharge(n) {
-    if (this.kit !== NO_KIT && abilityGain(this.kit, this.perk, n)) events.emit('abilityPerk', { body: this, perk: 'ready/empower' });   // Glint wakes
+    if (this.kit === NO_KIT) return;
+    const P = this.kit.perks['ready/overcharge'], st = this.perk;
+    let was = 0;   // Overcharge: the fifths past full before, to hear each new one
+    if (P) for (const key in this.kit.pressed) was = Math.max(was, Math.floor(abilityOver(this.kit, st, key) * 5 + 1e-9));
+    if (abilityGain(this.kit, st, n)) events.emit('abilityPerk', { body: this, perk: 'ready/empower' });   // Glint wakes
+    if (!P) return;
+    let now = 0;
+    for (const key in this.kit.pressed) now = Math.max(now, Math.floor(abilityOver(this.kit, st, key) * 5 + 1e-9));
+    if (now > was) events.emit('abilityPerk', { body: this, perk: 'overcharge/step', n: now });
   }
   // Hazard floors (v7.0, a level's `hazards`: the Haligtree's scarlet rot): standing in one, on its floor, costs `dps`
   // health a second; untouchable frames (a Finishing Blow, a roll's i-frames) keep it off. `timers` (a Map per body) paces

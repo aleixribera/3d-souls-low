@@ -156,9 +156,10 @@ const hud = {
       const row = document.createElement('div'); row.className = 'anchor'; row.id = 'aBR'; row.setAttribute('aria-hidden', 'true');
       this.keySlots = ABILITY_KEYS.map(key => {
         const el = document.createElement('div'), fill = document.createElement('i'), icon = document.createElement('span'), bind = document.createElement('b');
-        el.className = 'akey empty'; el.dataset.key = key; fill.className = 'akey-fill'; icon.className = 'akey-icon'; bind.className = 'akey-bind';
-        el.append(fill, icon, bind); row.appendChild(el);
-        return { key, el, fill, icon, bind, id: null, k: -1, label: '' };
+        const over = document.createElement('u');   // Overcharge: a second ring round the cap, filling past full
+        el.className = 'akey empty'; el.dataset.key = key; fill.className = 'akey-fill'; icon.className = 'akey-icon'; bind.className = 'akey-bind'; over.className = 'akey-over';
+        el.append(fill, icon, bind); row.appendChild(el); row.appendChild(over);
+        return { key, el, fill, icon, bind, over, id: null, k: -1, o: -1, label: '' };
       });
       document.getElementById('stage').appendChild(row);
       this.keyRow = row; this.keyKit = null;
@@ -173,6 +174,12 @@ const hud = {
   .akey.empty .akey-bind{color:#6f6753}
   .akey.ready{border-color:#f0d690;box-shadow:0 0 0 1px #000000c0,0 0 10px 1px color-mix(in srgb,var(--rc) 55%,transparent)}.akey.ready .akey-icon svg{opacity:1}
   .akey.fired{animation:akeyFire .45s ease-out}.akey.denied{animation:akeyDeny .3s ease-out}
+  .akey-over{position:absolute;width:58px;height:58px;bottom:-4px;pointer-events:none;display:none;text-decoration:none;
+    background:conic-gradient(#f2f6fa 0 calc(var(--o,0)*360deg - 4deg),#8fb8dc 0 calc(var(--o,0)*360deg),transparent 0);
+    -webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);-webkit-mask-composite:xor;
+    mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);mask-composite:exclude;padding:3px;box-sizing:border-box;
+    filter:drop-shadow(0 0 1px #0e1218) drop-shadow(0 0 4px #8fb8dc)}
+  .akey-over.on{display:block}
   @keyframes akeyFire{0%{background:color-mix(in srgb,var(--rc) 60%,#0b0c10)}100%{background:#0b0c10b8}}
   @keyframes akeyDeny{0%,100%{border-color:#6e5d36}40%{border-color:#e07a5c}}
   @media (prefers-reduced-motion:reduce){.akey.fired,.akey.denied{animation:none}}`;
@@ -185,7 +192,7 @@ const hud = {
       for (const s of this.keySlots) {
         const slot = on ? kit.pressed[s.key] : null, b = slot && ABILITY_BY_ID[slot.id];
         if ((b && b.id) === s.id) continue;
-        s.id = b ? b.id : null; s.k = -1;
+        s.id = b ? b.id : null; s.k = -1; s.o = -1; s.over.classList.remove('on');
         s.el.classList.toggle('empty', !b); s.el.dataset.rarity = b ? b.rarity : '';
         s.icon.innerHTML = b ? `<svg viewBox="0 0 48 48" focusable="false">${ABILITY_ICONS[b.id] || ''}</svg>` : '';
       }
@@ -201,6 +208,12 @@ const hud = {
       const k = Math.round(clamp01(p.perk.charge[s.key] / kit.pressed[s.key].v.charge) * 40) / 40;
       if (k === s.k) continue;
       s.k = k; s.fill.style.setProperty('--k', k); s.el.classList.toggle('ready', k >= 1);
+    }
+    for (const s of this.keySlots) {   // Overcharge's ring, in fifths (written only when a fifth changes)
+      const o = s.id ? Math.ceil(abilityOver(kit, p.perk, s.key) * 5 - 1e-9) / 5 : 0;
+      if (o === s.o) continue;
+      s.o = o; s.over.style.setProperty('--o', o); s.over.classList.toggle('on', o > 0);
+      s.over.style.left = (s.el.offsetLeft - 4) + 'px';
     }
   },
   // A press of a number key: the square flashes when its ability fires, its edge reddens when not yet charged.

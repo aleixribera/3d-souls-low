@@ -386,14 +386,16 @@ const AUDIO_CUES = ['hitFlesh', 'hitHurt', 'hitBlock', 'riposteBoom', 'parry', '
   'abilityHeal', 'abilityCharge', 'abilityHound', 'abilityBite', 'abilityHowl', 'abilityTaunt', 'abilityGuardian', 'abilityBash', 'abilityChallenge',
   'abilityLancer', 'abilityThrust', 'crateOpen', 'crateTick', 'crateLand', 'counterOpen', 'cutOpen',
   'abilityClank', 'abilityChime', 'abilityGulp', 'abilityFrost', 'abilityInk', 'abilitySizzle', 'abilityWhirl', 'abilityMirror',
-  'abilityWave', 'abilityMoonfall', 'abilityCyclone', 'abilityPetals'];
+  'abilityWave', 'abilityMoonfall', 'abilityCyclone', 'abilityPetals', 'abilityGhostBlade', 'abilityOvercharge'];
 // A power's sound by its `then`, its later blows' (`strike`: a lightning bolt, a twin's echo, a hound's bite) by
 // STRIKE_SOUNDS, a summon drawing the boss's eye (`draw`) by DRAW_SOUNDS; a rare's perk its own (ABILITY_PERK_SOUNDS,
 // at a pitch), a pick's pitch by its rarity.
 const ABILITY_SOUNDS = { blast: 'abilityBlast', lightning: 'abilityDragon', freeze: 'abilityFreeze', blades: 'abilityBlades', bloodMoon: 'abilityMoon',
   twin: 'abilityTwin', gale: 'abilityGale', pyre: 'abilityPyre', flare: 'abilityFlare', spark: 'abilitySpark', hound: 'abilityHound',
-  guardian: 'abilityGuardian', lancer: 'abilityLancer', wave: 'abilityWave', crescent: 'abilityMoonfall', cyclone: 'abilityCyclone', petals: 'abilityPetals' };
-const ABILITY_STRIKE_SOUNDS = { lightning: 'abilityThunder', twin: 'abilityEcho', hound: 'abilityBite', guardian: 'abilityBash', lancer: 'abilityThrust' };
+  guardian: 'abilityGuardian', lancer: 'abilityLancer', wave: 'abilityWave', crescent: 'abilityMoonfall', cyclone: 'abilityCyclone', petals: 'abilityPetals',
+  ghostBlade: 'abilityChime' };   // Echoing Blade armed: a soft chime (each echo: ABILITY_STRIKE_SOUNDS)
+const ABILITY_STRIKE_SOUNDS = { lightning: 'abilityThunder', twin: 'abilityEcho', hound: 'abilityBite', guardian: 'abilityBash', lancer: 'abilityThrust',
+  ghostBlade: 'abilityGhostBlade' };
 const ABILITY_DRAW_SOUNDS = { twin: 'abilityTaunt', hound: 'abilityHowl', guardian: 'abilityChallenge', lancer: 'abilityChallenge' };
 const ABILITY_PERK_SOUNDS = { empower: ['abilityEmpower', 1], 'streak/heal': ['abilityHeal', 1],
   'dodge/flashBehind': ['abilityStep', 1.15], 'block/charge': ['abilityCharge', 1],
@@ -407,6 +409,7 @@ const ABILITY_PERK_SOUNDS = { empower: ['abilityEmpower', 1], 'streak/heal': ['a
   'low/veil': ['abilityFrost', 0.8], 'veil/spent': ['abilityInk', 1], 'hurt/ironSkin': ['abilityClank', 1], 'ironSkin/glance': ['abilityClank', 1.35],
   // batch 5's (js/rare-strike-fx.js): Ironclad's plates settling, a blow glancing off them
   'flask/unshaken': ['abilityClank', 0.75, 0.6], 'unshaken/glance': ['abilityClank', 1.4, 0.7],
+  'overcharge/step': ['abilitySpark', 0.7, 0.3],   // Overcharge: a quiet crackle as a key fills each fifth past full, rising
   'parry/keys': ['abilityChime', 0.9], 'finisher/keys': ['abilityChime', 0.8], 'ready/empower': ['abilityChime', 1.5], 'glint/spent': ['abilitySpark', 1.4] };
 const ABILITY_PICK_PITCH = { common: 1, rare: 0.84, legendary: 0.67 };
 // A common's power (the blade's, design/abilities batch 2): [sound, pitch, vel], lighter than a rare's of the same
@@ -514,6 +517,7 @@ function registerAudioListeners() {
   });
   // Hunting Call: its holder hears the summon's blow mark the boss, a low chime under the bite.
   on('abilityPower', d => { if (d.mark && d.strike && d.body === Game.player) audio.play('abilityChime', { pitch: 0.7, vel: 0.5, delay: 0.04 }); });
+  on('abilityPress', d => { if (d.body === Game.player && d.over > 0) audio.play('abilityOvercharge', { vel: 0.6 + 0.4 * d.over }); });   // Overcharge's crack
   on('shotDeflected', d => { if (d.player === Game.player) audio.play('abilityMirror', { vel: 0.7 }); });   // Mirror Shard, its holder's own
   on('abilityPerk', d => { if (d.body === Game.player) { const [id, pitch, vel] = ABILITY_PERK_SOUNDS[d.perk] || ['abilityPerk', 1]; audio.play(id, { pitch: pitch * (1 + 0.08 * (d.n || 0)), vel }); } });
   on('abilityPicked', d => audio.play('abilityPick', { pitch: ABILITY_PICK_PITCH[d.rarity] || 1, vel: d.rarity === 'common' ? 0.6 : 0.9 }));

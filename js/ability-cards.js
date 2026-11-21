@@ -59,6 +59,8 @@ const ABILITY_ICONS = {
   'petal-storm': '<circle cx="24" cy="24" r="2"/><path d="M24 20 C22 14 26 8 30 6 C30 12 28 17 24 20 Z"/><path d="M28 24 C34 22 40 26 42 30 C36 30 31 28 28 24 Z"/><path d="M24 28 C26 34 22 40 18 42 C18 36 20 31 24 28 Z"/><path d="M20 24 C14 26 8 22 6 18 C12 18 17 20 20 24 Z"/><path d="M27 21 C31 16 37 16 40 12" stroke-dasharray="2 2"/>',
   'ironclad': '<path d="M20 18 H28 V22 C32 24 34 28 34 32 C34 38 30 42 24 42 C18 42 14 38 14 32 C14 28 16 24 20 22 Z"/><path d="M19 12 H29 V18 H19 Z"/><path d="M36 10 C40 12 42 16 42 20 M38 24 C42 26 44 30 44 34 M6 14 C8 12 10 11 12 11"/>',
   'hunting-call': '<path d="M8 12 L24 34 L40 12"/><path d="M8 12 L6 18 M40 12 L42 18"/><path d="M16 12 L24 24 L32 12"/>',
+  'echoing-blade': '<path d="M8 40 C18 30 28 18 40 6"/><path d="M14 44 C24 34 34 22 44 12" stroke-dasharray="3 3"/><path d="M6 36 L12 42"/>',
+  'overcharge': '<rect x="14" y="14" width="20" height="20"/><path d="M10 12 L14 8 L16 12 L20 8 M28 8 L32 12 L34 8 L38 12 M38 18 L42 22 L38 26 L42 30 M10 20 L6 24 L10 28 L6 32 M16 40 L20 44 L22 40 L26 44 L28 40 L32 44"/>',
   // Legendaries
   'gale-crescent': '<path d="M12 5 C30 9 36 31 16 43 C27 30 25 15 12 5 Z"/><path d="M30 14 H42 M33 24 H46 M30 34 H41"/>',
   'pyre': '<path d="M24 4 C16 14 13 22 15 30 C16 36 32 36 33 30 C35 22 32 14 24 4 Z"/><path d="M24 18 C21 23 21 27 24 30 C27 27 27 23 24 18 Z"/><path d="M5 42 H43 M10 38 H38"/>',

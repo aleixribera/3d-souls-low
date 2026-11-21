@@ -150,4 +150,90 @@ for (const id of ['riptide', 'moonfall-cut', 'iron-cyclone', 'petal-storm', 'iro
   const petals = powersFired().filter(ev => ev.power === 'petal-storm');
   assert.equal(petals.length, 1, 'once, as the blow ends'); assert.equal(petals[0].enemy, boss.netId, 'round its foe');
 }
-console.log('RARE TRIGGERS: Riptide, Moonfall Cut, Iron Cyclone, Petal Storm, Ironclad and Hunting Call (their blows, triggers and marks), and the server\'s cyclone and petals passed.');
+
+// ---- Batch 5, pass 2 (pass 126): Echoing Blade and Overcharge ----
+{
+  for (const id of ['echoing-blade', 'overcharge']) assert.ok(BY[id] && BY[id].rarity === 'rare' && BY[id].levels.length === 3, id);
+  const E = CONFIG.abilities.echo, ev = v('echoing-blade'), blow = { attackId: 'light', damage: 20, poise: 0, knock: 0, hitstop: 0 };
+  const hitN = (who, b, n) => { for (let i = 0; i < n; i++) powers.trigger(who, b, b.kit, 'hits', { enemy: e, strike: blow }); };
+
+  // Echoing Blade: a key fired arms `hits` echoes; each landed blow spends one, cutting the same enemy `delay` s later.
+  fresh(); const b = holder(['echoing-blade']);
+  assert.ok(b.kit.whens.has('press') && b.kit.whens.has('hits'), 'it hears presses and landed blows');
+  hitN('b', b, 2); step(0.5); assert.equal(lost(), 0, 'nothing armed: no echo');
+  powers.trigger('b', b, b.kit, 'press', { key: 'guard' });
+  const armed = fired.find(f => f.then === 'ghostBlade' && !f.strike);
+  assert.ok(armed && armed.enemy === null && armed.body === b, 'armed, told round its holder');
+  hitN('b', b, ev.hits + 2);
+  step(E.delay - 2 / 60); assert.equal(lost(), 0, 'each echo waits its beat');
+  step(4 / 60); near(lost(), ev.hits * ev.damage, `${ev.hits} echoes, no more`);
+  assert.deepEqual(fired.filter(f => f.then === 'ghostBlade' && f.strike).map(f => f.strike).sort(), Array.from({ length: ev.hits }, (_, i) => i + 1), 'each echo told, numbered');
+  // A second press re-arms to `hits`, never adds; the echoes run out after `keep` s.
+  fresh();
+  powers.trigger('b', b, b.kit, 'press', { key: 'guard' }); hitN('b', b, 1);
+  powers.trigger('b', b, b.kit, 'press', { key: 'guard' }); hitN('b', b, ev.hits + 1); step(0.5);
+  near(lost(), (ev.hits + 1) * ev.damage, 'one spent, then re-armed to its full count');
+  fresh(); powers.trigger('b', b, b.kit, 'press', { key: 'guard' }); step(E.keep + 0.1); hitN('b', b, 2); step(0.5);
+  assert.equal(lost(), 0, 'armed too long ago: gone');
+  // A Guard's press (a perk) on the body reports `press`, so it arms the echoes too.
+  const heard = [], m = holder(['echoing-blade', 'mending']), pressedKeys = new Set(['ability2']);
+  m.onAbility = (when, ctx) => heard.push([when, ctx.key]);
+  m.ctl = { consume: a => pressedKeys.delete(a) };
+  m.perk.charge.guard = m.kit.pressed.guard.v.charge; m.hp = m.maxHp * 0.5;
+  m.pressAbilities([e], null);
+  assert.deepEqual(heard, [['press', 'guard']], 'a Guard\'s press is told'); assert.ok(m.hp > m.maxHp * 0.5, 'and it heals');
+
+  // Overcharge: a full key fills on past full, to `most` of its charge more, and its press comes out stronger by the share.
+  const O = CONFIG.abilities.overcharge, ov = v('overcharge'), gain = g('abilityGain'), over = g('abilityOver');
+  const fb = BY['fire-burst'].levels[0], plainKit = holder(['fire-burst']);
+  gain(plainKit.kit, plainKit.perk, 999); assert.equal(plainKit.perk.charge.strike, fb.charge, 'without it a key stops at full');
+  assert.equal(over(plainKit.kit, plainKit.perk, 'strike'), 0, 'and has no overcharge');
+  const o = holder(['overcharge', 'fire-burst']);
+  gain(o.kit, o.perk, fb.charge); assert.equal(over(o.kit, o.perk, 'strike'), 0, 'just full: none yet');
+  gain(o.kit, o.perk, fb.charge * O.most / 2); near(over(o.kit, o.perk, 'strike'), 0.5, 'half past full');
+  gain(o.kit, o.perk, 999); near(o.perk.charge.strike, fb.charge * (1 + O.most), 'it stops at its most'); near(over(o.kit, o.perk, 'strike'), 1, 'fully over');
+  fresh(); powers.trigger('o', o, o.kit, 'press', { key: 'strike', enemy: e, over: 1 });
+  near(lost(), fb.damage * (1 + ov.damage), 'a full overcharge: the burst raised by its whole share');
+  assert.equal(fired[0].over, 1, 'told with its share'); near(fired[0].v.damage, fb.damage * (1 + ov.damage), 'and its raised numbers');
+  near(BY['fire-burst'].levels[0].damage, fb.damage, 'the data untouched');
+  fresh(); powers.reset(); powers.trigger('o', o, o.kit, 'press', { key: 'strike', enemy: e, over: 0.5 });
+  near(lost(), fb.damage * (1 + ov.damage * 0.5), 'half over, half the raise');
+  fresh(); powers.reset(); powers.trigger('p', plainKit, plainKit.kit, 'press', { key: 'strike', enemy: e, over: 1 });
+  near(lost(), fb.damage, 'no perk, no raise whatever the claim says');
+  // On the body: the press takes the share and zeroes the key; a Guard's heal is raised too, and each fifth is heard.
+  const steps = [], w = holder(['overcharge', 'mending']), keys = new Set(['ability2']);
+  g('events').on('abilityPerk', d => { if (d.body === w && d.perk === 'overcharge/step') steps.push(d.n); });
+  w.ctl = { consume: a => keys.delete(a) };
+  for (let i = 0; i < 40; i++) w.gainCharge(1);
+  assert.deepEqual(steps, [1, 2, 3, 4, 5], 'a crackle each fifth past full');
+  w.hp = w.maxHp * 0.2; const before = w.hp, heal = w.kit.pressed.guard.v.heal;
+  w.pressAbilities([e], null);
+  near(w.hp - before, w.maxHp * heal * (1 + ov.damage), 'the heal raised by the full share'); assert.equal(w.perk.charge.guard, 0, 'the key emptied');
+}
+
+// ---- Echoing Blade and Overcharge through the server ----
+{
+  const boss = sim.inspect().Game.enemies[0], S = PLAYER_DEF.stats, id = 'person2';
+  boss.hp = boss.def.hp; boss.netExec = null;
+  sim.registerPlayer(id, 'Bo');
+  const place = () => sim.setPlayers([{ id, x: boss.x, y: boss.y, z: boss.z + boss.radius + 0.5, yaw: Math.PI, hp: S.maxHp, state: 'idle', poseAge: 0 }]);
+  sim.giveAbilities(id, ['overcharge', 'fire-burst', 'echoing-blade', 'mending']); powers.reset();
+  place(); sim.tick(1 / 60); sim.frame(true);
+  const st = sim.inspect().holderOf(id).perk, fb = BY['fire-burst'].levels[0];
+  st.charge.strike = fb.charge * (1 + CONFIG.abilities.overcharge.most);
+  boss.hp = boss.def.hp;
+  assert.equal(sim.abilityClaim(id, { when: 'press', key: 'strike', enemy: boss.netId }), true, 'an overcharged press');
+  near(boss.def.hp - boss.hp, fb.damage * (1 + v('overcharge').damage), 'raised by the server\'s own count');
+  const evs = sim.frame(true).events.filter(x => x.type === 'abilityPower');
+  assert.ok(evs.some(x => x.power === 'fire-burst' && x.over === 1), 'its share told to every browser');
+  assert.ok(evs.some(x => x.power === 'echoing-blade' && !x.strike), 'the press armed the echoes');
+  assert.equal(st.charge.strike, 0, 'the count starts over');
+  // A Guard's press claimed: refused while empty, then taken (it arms the echoes) and its count starts over.
+  st.charge.guard = 0;
+  assert.equal(sim.abilityClaim(id, { when: 'press', key: 'guard' }), false, 'an empty Guard key is refused');
+  st.charge.guard = BY.mending.levels[0].charge; powers.reset();
+  assert.equal(sim.abilityClaim(id, { when: 'press', key: 'guard' }), true, 'a full Guard key is taken');
+  assert.ok(sim.frame(true).events.some(x => x.type === 'abilityPower' && x.power === 'echoing-blade'), 'and arms the echoes');
+  assert.equal(st.charge.guard, 0, 'its count starts over');
+}
+console.log('RARE TRIGGERS: Riptide, Moonfall Cut, Iron Cyclone, Petal Storm, Ironclad and Hunting Call (their blows, triggers and marks), Echoing Blade\'s echoes and Overcharge\'s raise, and the server\'s cyclone, petals and overcharged presses passed.');
