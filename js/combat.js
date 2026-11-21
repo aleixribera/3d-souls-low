@@ -91,8 +91,9 @@ function parryTiming(p, e, extra) {
   else return null;
   if (rem > P.lead * wide + extra || rem < -P.grace * wide) return null;
   if (!isInFront(p, e.x, e.z) || gateBetween(p, e)) return null;   // same front rule as blocking
+  // Its reach either way (pass 133: a kick behind, `fwd` below 0, is parried from behind).
   const b = e.attack.box;
-  if (Math.hypot(e.x - p.x, e.z - p.z) > b.fwd + b.d / 2 + p.radius + P.reach) return null;
+  if (Math.hypot(e.x - p.x, e.z - p.z) > Math.abs(b.fwd) + b.d / 2 + p.radius + P.reach) return null;
   return rem;
 }
 

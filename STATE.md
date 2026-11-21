@@ -9,12 +9,12 @@ The iterate loop's working note (`.claude/iterate.md`). Cap: 8,000 characters.
   Acceptance: `tests/strike-flashy.cjs`, in-page `strike flashy`; clip `docs/scorecard/now/strike-flashy.mp4`
   (`node tools/ability-clips.cjs flashy`). CI flake in `tests/calling.cjs` (a spent legendary offered) hardened. Next on
   track 2: batch 8, Guard I. Browser lock: `node tools/browser-lock.cjs run <pass> -- <cmd>` (docs/two-tracks.md).
-- Track 1, pass 132 (PLAN item 6; the loop chat's call: before Aleix fights them): the Captain, the Bell Warden and the
-  Giant now carry every follow-through on past the strike (`followOn`, `js/data/pose-library.js`; body check 40 hits
-  flagged, then 0), and so does the Antlered Hunger (11, then 0). The Hunger's step-0 audit (`docs/bosses/antlered-hunger.md`):
-  a restyle, plus parries on the Hammerfall, the Antler Charge and the Hind Kick (`noParry` on 5 of 8) and a name of its
-  own for the Hammerfall (the Warden's). Acceptance: `tests/body-check.cjs` (all five bosses); in-page bosses 30/30 and
-  39/39; clip `docs/scorecard/now/follow-through.mp4`. Next on track 1: the Hunger's parries and name, then its cel look.
+- Track 1, pass 133 (PLAN item 6, the Antlered Hunger, pass 2 of its rework): parries on the Rearing Pound (its own name
+  now; "The Hammerfall" is the Warden's), the Antler Charge and the Hind Kick, learned forms too but the floor ring
+  (2 of 8 roll only); a kick behind it is parried from behind (`parryTiming` reach by `abs(fwd)`); a heavy wind-up grows
+  the claw's halo instead of washing its hide orange (`tellsGrow`). Acceptance: in-page `Church` 19/19, `Combat clarity`,
+  `Boss edge tells`; strips `docs/scorecard/now/hunger-pound.jpg`, `hunger-kick.jpg`; clip `hunger-parries.mp4`. Next on
+  track 1: the Hunger's cel bands (hide, quills, antlers), in-between keys, then the `bars-1` judge.
 
 ## Works
 
@@ -59,6 +59,7 @@ The iterate loop's working note (`.claude/iterate.md`). Cap: 8,000 characters.
 - Art styles (pass 108): `?style=cel|dark|paint`, `js/data/styles.js`, `js/style-lab.js`; `tests/style-browser.cjs`;
   retake `node tools/style-frames.cjs [styles] [still,fight,clip,time]`.
 - Body check (retro 130): `tools/body-check.cjs [bossId]`; `tests/body-check.cjs` holds every boss with a page; `followOn` (pass 132).
+- Clawed bosses' tells (pass 133): `tellsGrow` on a model with `tells`; in-page `Church: a heavy wind-up`.
 - Scorecard frames: `tools/scorecard-frames.cjs`; current frames `docs/scorecard/now/` (`tools/now-frames.cjs`).
 
 ## Broken

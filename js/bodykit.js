@@ -1673,6 +1673,8 @@ const KIT = (() => {
       if (!(T && typeof T.slot === 'string' && M.parts.some(o => o.weapon && o.slot === T.slot) && !(M.hidden || []).includes(T.slot) && typeof T.size === 'number' && T.size > 0 && T.size <= 1.5 && typeof T.along === 'number' && T.along >= 0 && T.along <= 1))
         bad('edgeTell needs slot (a weapon: true part\'s material slot, not a hidden one), size (the halo, m, above 0, up to 1.5) and along (where on the weapon it sits, 0 the hilt to 1 the tip).');
     }
+    if ('tellsGrow' in M && !(M.tellsGrow === true && M.tells && Object.keys(M.tells).length && !M.edgeTell))
+      bad('tellsGrow must be true, on a model with tells and no edgeTell.');   // pass 133
     if ('softJoints' in M && !(M.softJoints && Object.entries(M.softJoints).every(([b, r]) => known(b) && b !== 'weapon' && b !== 'spin' && typeof r === 'number' && r > 0 && r <= 0.5)))
       bad('softJoints maps bones (not the weapon, not spin: the root has no joint above it) to a radius above 0, up to 0.5 m.');   // pass 118
     if ('hum' in M && !(M.hum && known(M.hum.bone) && Array.isArray(M.hum.at) && M.hum.at.length === 3 && Number.isInteger(M.hum.color) && M.hum.size > 0))
@@ -1807,9 +1809,11 @@ const KIT = (() => {
     for (const [n, T] of Object.entries({ ...(M.tells || {}), ...(M.shieldTell ? { shield: M.shieldTell } : {}) })) {
       const g = makeWarnGlow(); rig.bones[T.bone].add(g); g.position.set(...T.at);
       if (T.size) g.scale.multiplyScalar(T.size);   // (pass 77) a big figure's halo kept to the claw, not the whole body
+      g.userData.size = T.size || 1;
       (rig.tellGlows || (rig.tellGlows = {}))[n] = g;
     }
     if (rig.tellGlows && rig.tellGlows.shield) rig.shieldGlow = rig.tellGlows.shield;
+    rig.tellsGrow = !!(M.tellsGrow && rig.tellGlows);   // (pass 133, opt-in) a heavy grows the halo on its claw, hoof or antlers instead of warming the body
     // A glint of light that flashes along the weapon as a strike begins (driven by the animator): at the far end of the
     // weapon's own geometry, so every weapon gets one without data.
     const box = built.weaponBox;

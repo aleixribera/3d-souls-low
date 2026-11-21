@@ -17,15 +17,15 @@
 // Every wind-up is its own, and glows on what strikes (a claw, the antlers or a hind foot: the model's `tells`). Rearing
 // back with the right claw high beside its skull, its body turned right (the rake; the left mirrors it); its skull
 // dipped low and turned to its left, the antlers raking the floor (the hook); up on its hind legs, both claws high, the
-// skull looking down at you (the hammerfall); its head down and its right fist pawing back along the floor (the charge);
+// skull looking down at you (the rearing pound); its head down and its right fist pawing back along the floor (the charge);
 // its weight thrown on its fists and its hind legs drawn up under it, the skull low looking back between its forelegs
 // (the kick, only at someone behind it). Starving: its skull thrown back and its arms flung wide (the roar); both fists
 // flung up over its skull as it springs (the leap); and a run of rakes, right, left, right, then its right claw straight up over its
 // skull, chopped down one-handed (the frenzy). A learned form's added blow has its own wind-up too: both claws drawn back low and wide at its
 // sides (the held third rake, scissored shut at waist height), the skull dipped to its right (the hook back), the rear
 // again (the second fall), a quick crouch round on its haunches (the turn), the right claw thrown out wide (the wheel),
-// the pounce again (the second leap). Every roll-only blow strikes in its own shape: fists driven into the floor with its
-// rump thrown up (the leap), a straight-down pound, squatting upright with its skull and antlers held high (the hammerfall), head down with the antlers levelled and its arms swept back (the charge),
+// the pounce again (the second leap). Every heavy blow strikes in its own shape: fists driven into the floor with its
+// rump thrown up (the leap), a straight-down pound, squatting upright with its skull and antlers held high (the rearing pound), head down with the antlers levelled and its arms swept back (the charge),
 // both hind legs straight out behind (the kick).
 
 // ---- its figure: built in Blender (tools/blender/antlered_beast.py), one piece per bone ---------------------------------
@@ -51,6 +51,7 @@
     // Where a blow that is not the right fist's shows its wind-up glow (a hit's `tell`): each claw, the antlers, a hind foot.
     tells: { clawR: { bone: 'elbowR', at: [0, -0.72, 0.14], size: 0.5 }, clawL: { bone: 'elbowL', at: [0, -0.72, 0.14], size: 0.5 },
       antlers: { bone: 'head', at: [0, 0.5, -0.02], size: 0.45 }, hind: { bone: 'kneeR', at: [0, -0.42, 0.22], size: 0.5 } },
+    tellsGrow: true,   // (pass 133) a heavy's wind-up grows the halo on what strikes; its body is never washed orange (system.md section 4)
     eyes: { color: 0xff5a20, size: 0.022, spread: 0.1, at: [0, 0.1, 0.28] },
     anim: { idle: { breathRate: 1.1, breath: 0.03, headDrift: 0.08, sway: 0.03, twitch: 0.02 }, walk: { twist: 0.2, roll: 0.08, headNod: 0.07, elbow: 0.3, drag: 0.1 },
             flinch: { head: 0.35, chest: 0.35, arms: 0.35 }, death: { buckle: 1.2, slump: 1 } },
@@ -98,7 +99,7 @@
   ATTACK_POSES.hungerHookLearned = { ease: { ...heavy, active: 'outCubic' }, lag: { head: 0.05, neck: 0.03 },
     hits: [HOOK, { windup: mirror(hookLow), strike: hookBackUp, follow: { ...hookBackUp, spin: [0, 0.7, 0] } }] };
 
-  // Hammerfall: up on its hind legs, both claws high over it, the skull bowed to look down at you; pounded straight down
+  // Rearing Pound: up on its hind legs, both claws high over it, the skull bowed to look down at you; pounded straight down
   // before it, squatting upright, its skull and antlers held high over its fists (the Fall sprawls; this does not).
   const rear = { crouch: 0.0, lean: -0.4, legL: [-0.25, 0, 0], legR: [0.2, 0, 0], chest: [-1.05, 0, 0], neck: [-0.15, 0, 0], head: [0.75, 0, 0],
     armL: [-2.4, 0, 0.45], elbowL: [-0.8, 0, 0], armR: [-2.4, 0, -0.45], elbowR: [-0.8, 0, 0] };
@@ -201,29 +202,31 @@
   const hookLearned = { ...hook, id: 'hookLearned', name: 'Antler Hook, Learned', pose: 'hungerHookLearned', learned: true, learns: undefined,
     hits: [{ ...hook.hits[0], follow: 0.2 }, { startup: 0.6, active: 0.16, follow: 0.5, tell: 'antlers', damage: 30 }], recovery: 1.5 };
   delete hookLearned.learns;
-  // Hammerfall: up on its hind legs, both claws high; held; down onto its fists. Roll it. Learned: up again and down again
-  // a stride on, the floor jumping round it (jump that, or roll it).
-  const slam = { id: 'slam', name: 'Hammerfall', anim: 'chop', pose: 'hungerHammer', tracking: { rate: 2.2, commit: 0.55 }, noParry: true, rollOnly: true, learns: 'slamLearned', chance: 0.6,
+  // Rearing Pound: up on its hind legs, both claws high; held; down onto its fists. Parry it as the fists come (pass 133:
+  // its claws are its weapons) or roll it. Learned: up again and down again a stride on, the floor jumping round it (jump
+  // that, or roll it: no guard turns the floor).
+  const slam = { id: 'slam', name: 'Rearing Pound', anim: 'chop', pose: 'hungerHammer', tracking: { rate: 2.2, commit: 0.55 }, markers: glint(0), learns: 'slamLearned', chance: 0.6,
     hits: [{ startup: 1.25, active: 0.14, follow: 0.5, tell: 'clawR', hold: { at: 0.6, time: [0.2, 0.6], chance: 0.5 }, impact: SHATTER }], recovery: 2.0,
     damage: 44, heavy: true, poise: 80, knock: 9, lunge: 1.4, range: 3.8, box: HAMMER };
-  const slamLearned = { ...slam, id: 'slamLearned', name: 'Hammerfall, Learned', pose: 'hungerHammerLearned', learned: true, learns: undefined,
-    hits: [{ ...slam.hits[0], follow: 0.2 }, { startup: 0.85, active: 0.18, follow: 0.6, tell: 'clawR', damage: 30, box: RING(6.5, 0.2), impact: { ring: 4.2, crack: 1.4, dust: 18, shake: 0.16 } }],
+  const slamLearned = { ...slam, id: 'slamLearned', name: 'Rearing Pound, Learned', pose: 'hungerHammerLearned', learned: true, learns: undefined,
+    hits: [{ ...slam.hits[0], follow: 0.2 }, { startup: 0.85, active: 0.18, follow: 0.6, tell: 'clawR', noParry: true, damage: 30, box: RING(6.5, 0.2), impact: { ring: 4.2, crack: 1.4, dust: 18, shake: 0.16 } }],
     recovery: 2.0 };
   delete slamLearned.learns;
-  // Antler Charge: its head down, a fist pawing back; it runs you down. Step aside or roll. Learned: past you it turns on
-  // its haunches and comes again.
-  const charge = { id: 'charge', name: 'Antler Charge', anim: 'thrust', pose: 'hungerCharge', tracking: { rate: 2.4, commit: 0.6 }, noParry: true, rollOnly: true, learns: 'chargeLearned', minRange: 5, chance: 0.45,
+  // Antler Charge: its head down, a fist pawing back; it runs you down. Parry the antlers, step aside or roll. Learned:
+  // past you it turns on its haunches and comes again (parry that too).
+  const charge = { id: 'charge', name: 'Antler Charge', anim: 'thrust', pose: 'hungerCharge', tracking: { rate: 2.4, commit: 0.6 }, markers: glint(0), learns: 'chargeLearned', minRange: 5, chance: 0.45,
     dash: { speed: 13, from: 0.5 }, hits: [{ startup: 1.05, active: 0.16, follow: 0.45, tell: 'antlers' }], recovery: 1.7,
     damage: 40, heavy: true, poise: 70, knock: 10, lunge: 2.6, range: 15, box: RAM };
-  const chargeLearned = { ...charge, id: 'chargeLearned', name: 'Antler Charge, Learned', pose: 'hungerChargeLearned', learned: true, learns: undefined,
+  const chargeLearned = { ...charge, id: 'chargeLearned', name: 'Antler Charge, Learned', pose: 'hungerChargeLearned', learned: true, learns: undefined, markers: glint(0, 1),
     hits: [{ ...charge.hits[0], follow: 0.25 }, { startup: 0.85, active: 0.16, follow: 0.5, tell: 'antlers', damage: 36, step: { from: 0.4, speed: 12, side: 0 } }], recovery: 1.8 };
   delete chargeLearned.learns;
-  // Hind Kick: only at someone behind it. Its weight on its fists, its hind legs drawn up; both kicked out behind. Roll it.
-  // Learned: off the kick it wheels a whole turn round with its right claw out (roll that too, or be out of reach).
-  const hindKick = { id: 'hindKick', name: 'Hind Kick', anim: 'stomp', pose: 'hungerKick', noParry: true, rollOnly: true, when: 'behind', tracking: { rate: 1, commit: 0.3 }, learns: 'hindKickLearned', chance: 1.6,
+  // Hind Kick: only at someone behind it. Its weight on its fists, its hind legs drawn up; both kicked out behind. Parry
+  // the hooves or roll. Learned: off the kick it wheels a whole turn round with its right claw out (parry that too, roll
+  // it, or be out of reach).
+  const hindKick = { id: 'hindKick', name: 'Hind Kick', anim: 'stomp', pose: 'hungerKick', markers: glint(0), when: 'behind', tracking: { rate: 1, commit: 0.3 }, learns: 'hindKickLearned', chance: 1.6,
     hits: [{ startup: 0.9, active: 0.14, follow: 0.35, tell: 'hind' }], recovery: 1.3,
     damage: 30, poise: 50, knock: 10, lunge: 0, range: 4.2, box: KICK };
-  const hindKickLearned = { ...hindKick, id: 'hindKickLearned', name: 'Hind Kick, Learned', pose: 'hungerKickLearned', learned: true, learns: undefined, when: undefined,
+  const hindKickLearned = { ...hindKick, id: 'hindKickLearned', name: 'Hind Kick, Learned', pose: 'hungerKickLearned', learned: true, learns: undefined, when: undefined, markers: glint(0, 1),
     hits: [{ ...hindKick.hits[0], follow: 0.15 }, { startup: 0.62, active: 0.16, follow: 0.4, tell: 'clawR', damage: 26, box: WHEEL }], recovery: 1.5 };
   delete hindKickLearned.learns; delete hindKickLearned.when;
 

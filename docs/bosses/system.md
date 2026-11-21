@@ -78,7 +78,8 @@ with in-between keys where a straight blend looks stiff:
 On impact, signature moments and the phase change only (`js/data/boss-fx.js`, the phase's `revealBurst`, hits'
 `impact`). The wind-up's tell sits on the weapon's edge: the model's `edgeTell: { slot, size, along }` colours only that
 slot (red: parry it; blue: roll it), puts a small halo at `along` of the weapon, grows it through a heavy's wind-up, and
-never tints the body. A ground blow's burst waits for the drawn blade (`impact.at`: the share of the hit's active when it
+never tints the body; a boss with no weapon (claws, hooves, antlers) puts its halos on the model's `tells` and sets
+`tellsGrow: true` for the same (pass 133). A ground blow's burst waits for the drawn blade (`impact.at`: the share of the hit's active when it
 lands; the hitbox still opens on time). A heavy swing's ribbon is a thin arc at the blade's edge (`BOSS_FX` `trail: { edge,
 life }`), not a band over the swing; `smear` (0 to 1, the share of the blade from its tip) drags the blade's head in flat
 steel over its last few frames, the anime smear. In cel, a blade is a model material with `steel: true`: banded darker than

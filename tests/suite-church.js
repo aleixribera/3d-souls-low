@@ -69,6 +69,44 @@
     e.beginAttack(attack(e, 'slam'));
     expect.ok(e.attack.id === 'slam', 'and the hammerfall is plain again');
   });
+  // Pass 133: its claws, antlers and hooves are its weapons, so the Rearing Pound, the Antler Charge and the Hind Kick
+  // take a parry (and their learned forms' blows); only the Roar, the Fall and the floor rings stay roll only.
+  test('Church: the Rearing Pound, the Antler Charge and the Hind Kick are parried, from where each strikes', () => {
+    const d = A.ENEMY_BY_ID.antlered, plain = d.attacks.filter(a => !a.learned);
+    const rollOnly = plain.filter(a => !a.hits.some((h, i) => canParryHit(a, i))).map(a => a.id);
+    expect.ok(rollOnly.join() === 'roar,leap', `only the Roar and the Fall are roll only (${rollOnly.join()})`);
+    expect.ok(!d.attacks.some(a => a.name.includes('Hammerfall')) && A.ENEMY_BY_ID.bellWarden.attacks.some(a => a.name === 'The Hammerfall'), 'the Hammerfall is the Warden\'s alone');
+    for (const a of d.attacks) a.hits.forEach((h, i) => { if ((h.box || a.box).ring) expect.ok(!canParryHit(a, i), `${a.id}/${i}: a floor ring is never parried`); });
+    for (const [id, behind] of [['slam', false], ['charge', false], ['hindKick', true], ['slamLearned', false], ['chargeLearned', false], ['hindKickLearned', true]]) {
+      start(); const e = inNave(20), p = Game.player, a = attack(e, id), seen = [];
+      let listen = true; events.on('parry', x => listen && x.target === e && seen.push(e.hitIndex));
+      e.cooldown = 99; e.hp = e.maxHp = 1e6;
+      const k = behind ? -1 : 1, gap = Math.abs(a.box.fwd) + 0.6;   // where the blow lands: before it, or behind it for a kick
+      p.x = e.x + Math.sin(e.yaw) * gap * k; p.z = e.z + Math.cos(e.yaw) * gap * k; p.y = e.y; p.yaw = Math.atan2(e.x - p.x, e.z - p.z);
+      e.attack = null; e.setState(ES.IDLE); e.learned.length = 0; e.beginAttack(a);
+      const parryable = a.hits.map((h, i) => canParryHit(a, i));
+      for (let i = 0; i < a.hits.length; i++) {
+        if (!parryable[i]) continue;
+        if (sim.until(() => e.attack === a && e.hitIndex === i && e.state === ES.WINDUP && a.hits[i].startup - e.stateTime <= 0.08, 4) < 0) break;
+        p.yaw = Math.atan2(e.x - p.x, e.z - p.z); p.deflect = 0; p.deflectLock = 0; p.setState(PS.IDLE); sim.press('block');
+        sim.until(() => seen.includes(i), 0.4);
+      }
+      listen = false;
+      const want = parryable.map((ok, i) => ok ? i : -1).filter(i => i >= 0);
+      expect.ok(want.length > 0 && want.every(i => seen.includes(i)), `${id}: each parryable blow deflected (${seen.join()} of ${want.join()})`);
+    }
+  });
+  // Pass 133 (system.md section 4: nothing washes the body in a wind-up): `tellsGrow` grows a heavy's halo on what
+  // strikes (claw, antlers, hoof) instead of warming its hide orange.
+  test('Church: a heavy wind-up grows on the claw, never over the Hunger\'s body', () => {
+    Game.startFight('antlered'); Game.loading = 0; sim.begin();
+    const e = Game.duel, r = e.rig, slam = e.attackById('slam'), g = r.tellGlows[slam.hits[0].tell];
+    expect.ok(r.tellsGrow && slam.heavy, 'opted in, and the pound is a heavy');
+    const at = f => { e.attack = slam; e.hitIndex = 0; e.holdLeft = 0; e.setState(ES.WINDUP); e.stateTime = slam.hits[0].startup * f; Game.render(0, CONFIG.step); return g.scale.x; };
+    const early = at(0.2), late = at(0.95);
+    expect.ok(r.bodyMats.length > 0 && r.bodyMats.every(m => m.emissive.r + m.emissive.g + m.emissive.b < 0.01), 'no heavy tint on the body');
+    expect.ok(g.visible && late > early * 1.3, `the claw's halo grows (${early.toFixed(2)} to ${late.toFixed(2)})`);
+  });
   test('Church: learned forms are never chosen for themselves', () => {
     start(); const e = inNave(3.5), p = Game.player;
     for (let i = 0; i < 400; i++) { e.cooldown = 0; const a = e.chooseAttack(3 + (i % 12), 0, 1); expect.ok(!a || !a.learned, `${a && a.id} picked`); }
