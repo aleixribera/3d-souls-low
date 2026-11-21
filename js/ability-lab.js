@@ -149,7 +149,7 @@ const abilityLab = (() => {
     const list = make('ul');
     for (const b of ABILITIES) { const n = held.get(b.id); if (n) { const li = make('li', '', b.name); li.appendChild(make('span', '', ABILITY_LEVEL_MARK[n - 1])); list.appendChild(li); } }
     if (list.children.length) worn.appendChild(list);
-    worn.append('B  abilities');
+    worn.append(`${usingPad() ? keyLabel('PadUp') : 'B'}  abilities`);
   }
 
   function show() {
@@ -177,19 +177,20 @@ const abilityLab = (() => {
   }
   // The gamepad (js/gamepad.js), every frame: true when the list took the buttons. On the grounds D-pad up opens it;
   // open, the D-pad moves between its buttons, A presses one, X takes an ability down a level, B or Start closes it.
-  function pad(pressed) {
+  function pad(pressed, dt = CONFIG.step) {
     if (!open) {
-      if (pressed.includes('PadUp') && Game.mode === 'play' && here(Game)) { show(); return true; }
+      if (pressed.includes('PadUp') && Game.mode === 'play' && here(Game)) { show(); gamepad.holdSteps(); return true; }   // the press that opened it moves nothing
       return false;
     }
-    const buttons = [...root.querySelectorAll('button')], at = buttons.indexOf(document.activeElement);
+    const buttons = [...root.querySelectorAll('button')], at = buttons.indexOf(document.activeElement), dir = gamepad.step(dt);
     for (const c of pressed) {
       if (c === 'PadB' || c === 'PadStart') { close(); return true; }
-      const by = c === 'PadUp' || c === 'PadLeft' ? -1 : c === 'PadDown' || c === 'PadRight' ? 1 : 0;
-      if (by) buttons[(Math.max(at, 0) + by + buttons.length) % buttons.length].focus({ focusVisible: true });   // the ring shows for a pad too
-      else if (c === 'PadA' && at >= 0) buttons[at].click();
+      if (c === 'PadA' && at >= 0) buttons[at].click();
       else if (c === 'PadX' && at >= 0 && buttons[at].classList.contains('lab-pick')) buttons[at].dispatchEvent(new MouseEvent('contextmenu', { cancelable: true }));
     }
+    // The D-pad or left stick, repeating while held.
+    const by = dir === 'up' || dir === 'left' ? -1 : dir ? 1 : 0;
+    if (by) buttons[(Math.max(at, 0) + by + buttons.length) % buttons.length].focus({ focusVisible: true });   // the ring shows for a pad too
     return true;
   }
   // Every step (Game.update): the kit put back on a fresh body (a restart, a death), a power fired once the world runs.
@@ -201,5 +202,6 @@ const abilityLab = (() => {
     if (firing) fireNow(game);
   }
   events.on('pause', () => { if (worn && !open) worn.hidden = true; });
+  events.on('device', draw);   // the key that opens the list, for the device used last
   return { key, pad, update, isOpen: () => open, held };
 })();

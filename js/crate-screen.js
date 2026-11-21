@@ -401,7 +401,7 @@ const crateScreen = (() => {
   // After a roll from the end screen: the counts again, nothing earned twice.
   function runRewardsRefresh(into) {
     const crates = into.querySelector('.summary-rewards div:last-child dd'); if (crates) crates.textContent = String(progress.crates);
-    const open = into.querySelector('#runSummaryCrate'), more = progress.crates && !progress.complete; if (open) open.hidden = !more;
+    const open = document.getElementById('runSummaryCrate'), more = progress.crates && !progress.complete; if (open) open.hidden = !more;
     (more ? open : document.getElementById('runSummaryAgain'))?.focus?.({ preventScroll: true });
   }
 

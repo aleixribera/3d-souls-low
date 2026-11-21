@@ -63,7 +63,8 @@ const CONFIG = {
   // when the right stick passes `flick` sideways after resting below `flickReset`. Menus repeat a held
   // direction after `menuDelay`, then every `menuRepeat` s.
   gamepad: { deadzone: 0.2, trigger: 0.35, lookYaw: 2.6, lookPitch: 1.4, flick: 0.75, flickReset: 0.35,
-             menuStick: 0.6, menuDelay: 0.35, menuRepeat: 0.12 },
+             menuStick: 0.6, menuDelay: 0.35, menuRepeat: 0.12,
+             scroll: 900 },              // a list's scroll at full right-stick tilt (px/s)
   lock: { range: 16, breakRange: 21, lostTime: 1.0, turnRate: 12, camYawRate: 5, frame: 0.45,
           coverTime: 1.5,             // a target hidden behind cover (not a closed gate) stays locked this long
           // Always-retarget's pick (Game.retargetPick): score = distance from the middle of the screen (0 middle,

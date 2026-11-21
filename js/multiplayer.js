@@ -174,55 +174,65 @@ const multiplayer = (() => {
   // the player closes it (Escape, B, Lobby) or the leader starts the same run again for the same group.
   const runSummary = document.createElement('section'); runSummary.id = 'runSummary'; runSummary.hidden = true;
   runSummary.setAttribute('role', 'dialog'); runSummary.setAttribute('aria-modal', 'true'); runSummary.setAttribute('aria-labelledby', 'runSummaryTitle');
-  runSummary.innerHTML = '<div class="summary-panel"><h2 id="runSummaryTitle"></h2><dl class="summary-facts"><div><dt>Crowned</dt><dd id="runSummaryCrowned"></dd></div><div><dt>Time</dt><dd id="runSummaryTime"></dd></div></dl>'
-    + '<section id="runSummaryRewards" aria-label="Rewards"></section><ol id="runSummaryTimes" aria-label="Time for each boss"></ol>'
-    + '<table><thead><tr><th scope="col">Player</th><th scope="col">Damage</th><th scope="col">Deaths</th></tr></thead><tbody id="runSummaryRows"></tbody></table>'
-    + '<div class="summary-actions"><button type="button" id="runSummaryAgain" class="ui-primary">Run again</button><button type="button" id="runSummaryLobby" class="ui-text-button"><span class="ui-key" id="runSummaryLobbyKey" aria-hidden="true"></span>Lobby</button><p id="runSummaryWait"></p></div></div>';
+  runSummary.innerHTML = '<div class="summary-panel"><header class="summary-head"><h2 id="runSummaryTitle"></h2><dl class="summary-facts"><div><dt>Crowned</dt><dd id="runSummaryCrowned"></dd></div><div><dt>Time</dt><dd id="runSummaryTime"></dd></div></dl></header>'
+    + '<div class="summary-body"><div class="summary-main"><table><thead><tr><th scope="col">Player</th><th scope="col">Damage</th><th scope="col">Deaths</th></tr></thead><tbody id="runSummaryRows"></tbody></table>'
+    + '<section id="runSummaryRewards" aria-label="Rewards"></section></div>'
+    + '<section class="summary-fights"><h3 id="runSummaryFightsTitle">Bosses</h3><ol id="runSummaryTimes" aria-labelledby="runSummaryFightsTitle"></ol></section></div>'
+    + '<div class="summary-actions"><button type="button" id="runSummaryAgain" class="ui-primary">Run again</button><button type="button" id="runSummaryLobby" class="ui-text-button"><span class="ui-key" id="runSummaryLobbyKey" aria-hidden="true"></span>Lobby</button><p id="runSummaryWait"></p>'
+    + '<p class="summary-scroll ui-hints" id="runSummaryScroll" hidden><span><span class="ui-key" id="runSummaryScrollKey" aria-hidden="true"></span>Scroll</span></p></div></div>';
   document.body.appendChild(runSummary);
   // The same page as the menus (index.html's #menu): the well, the title top left in the display face, lines instead of
   // boxes, Again as the one strong action and Lobby as a quiet one with its key.
   const summaryStyle = document.createElement('style');
   summaryStyle.textContent = `#runSummary[hidden],#runSummary [hidden]{display:none}
-    #runSummary{position:fixed;inset:0;z-index:121;overflow-y:auto;overscroll-behavior:contain;box-sizing:border-box;
-      padding:max(56px,env(safe-area-inset-top)) 64px max(32px,env(safe-area-inset-bottom));background:var(--ui-well);color:var(--ui-ink);font:var(--ui-size-text)/1.5 var(--ui-text)}
-    #runSummary .summary-panel{width:min(720px,100%)}
-    @media(min-width:960px){#runSummary .summary-panel{display:grid;width:min(1000px,100%);grid-template-columns:minmax(0,1fr) minmax(0,380px);column-gap:72px;align-items:start}
-      #runSummary h2,#runSummary .summary-facts,#runSummary .summary-actions{grid-column:1/-1}
-      #runSummary table{grid-column:1;grid-row:3/5}#runSummary #runSummaryRewards{grid-column:2;grid-row:3}#runSummary #runSummaryTimes{grid-column:2;grid-row:4;margin:28px 0 0}}
-    #runSummaryRewards{margin:0 0 28px}#runSummaryRewards:empty{display:none}
-    #runSummaryRewards h3{margin:0 0 8px;font:400 var(--ui-size-row)/1.2 var(--ui-display);color:var(--ui-ink)}
+    #runSummary{position:fixed;inset:0;z-index:121;box-sizing:border-box;display:flex;justify-content:center;
+      padding:max(44px,env(safe-area-inset-top)) max(64px,env(safe-area-inset-right)) max(24px,env(safe-area-inset-bottom)) max(64px,env(safe-area-inset-left));background:var(--ui-well);color:var(--ui-ink);font:var(--ui-size-text)/1.5 var(--ui-text)}
+    #runSummary .summary-panel{display:flex;flex-direction:column;width:min(1120px,100%);min-height:0}
+    #runSummary .summary-head{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:16px 56px;padding-bottom:22px;border-bottom:1px solid var(--ui-line)}
+    #runSummary h2{margin:0;font:400 52px/1.05 var(--ui-display);color:var(--ui-ink);text-wrap:balance}
+    #runSummary.summary-wiped h2{color:var(--ui-alarm)}
+    #runSummary .summary-facts{display:flex;gap:48px;margin:0}
+    #runSummary dt{font-size:var(--ui-size-hint);color:var(--ui-muted)}
+    #runSummary dd{margin:2px 0 0;font:400 32px/1.1 var(--ui-display);font-variant-numeric:tabular-nums}
+    #runSummary .summary-body{flex:1;min-height:0;overflow-y:auto;overscroll-behavior:contain;padding:24px 0}
+    @media(min-width:900px) and (min-height:520px){#runSummary .summary-body{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);grid-template-rows:minmax(0,1fr);column-gap:64px;overflow:hidden}
+      #runSummary .summary-main{min-height:0;overflow-y:auto}
+      #runSummary .summary-fights{display:flex;flex-direction:column;min-height:0}
+      #runSummaryTimes{flex:1;min-height:0;overflow-y:auto;overscroll-behavior:contain}}
+    #runSummary h3{margin:0 0 8px;font:400 var(--ui-size-row)/1.2 var(--ui-display);color:var(--ui-ink)}
+    #runSummaryRewards{margin:28px 0 0}#runSummaryRewards:empty{display:none}
     #runSummary .summary-rewards{margin:0;border-top:1px solid var(--ui-line)}
-    #runSummary .summary-rewards div{display:flex;justify-content:space-between;gap:16px;padding:8px 0;border-bottom:1px solid var(--ui-line)}
+    #runSummary .summary-rewards div{display:flex;justify-content:space-between;gap:16px;padding:7px 0;border-bottom:1px solid var(--ui-line)}
     #runSummary .summary-rewards dt{font-size:var(--ui-size-text);color:var(--ui-muted)}#runSummary .summary-rewards dd{margin:0;font:400 19px/1.2 var(--ui-display)}
     #runSummaryRewards .crates-xp{display:block;width:100%;height:3px;margin:10px 0 0;background:var(--ui-line)}
-    #runSummaryRewards .summary-crate{margin-top:14px}
-    #runSummary h2{margin:0;font:400 var(--ui-size-title)/1.1 var(--ui-display);color:var(--ui-ink);text-wrap:balance}
-    #runSummary.summary-wiped h2{color:var(--ui-alarm)}
-    #runSummary .summary-facts{display:flex;gap:56px;margin:32px 0 28px}
-    #runSummary dt{font-size:var(--ui-size-hint);color:var(--ui-muted)}
-    #runSummary dd{margin:4px 0 0;font:400 32px/1.1 var(--ui-display);font-variant-numeric:tabular-nums}
-    #runSummaryTimes{margin:0 0 28px;padding:0;list-style:none;border-top:1px solid var(--ui-line);font-variant-numeric:tabular-nums}#runSummaryTimes:empty{display:none}
-    #runSummaryTimes li{display:flex;gap:16px;padding:9px 0;border-bottom:1px solid var(--ui-line)}
-    #runSummaryTimes li span:first-child{flex:1;min-width:0;overflow-wrap:anywhere;font:400 17px/1.3 var(--ui-display)}
-    #runSummaryTimes .par{min-width:72px;text-align:right;color:var(--ui-muted)}#runSummaryTimes .swift{color:var(--ui-accent-hi)}
+    #runSummary .summary-fights:has(#runSummaryTimes:empty){display:none}
+    #runSummary .summary-body:has(#runSummaryTimes:empty){grid-template-columns:minmax(0,640px)}
+    #runSummaryTimes{margin:0;padding:0;list-style:none;border-top:1px solid var(--ui-line);font-variant-numeric:tabular-nums}
+    #runSummaryTimes li{display:grid;grid-template-columns:minmax(0,1fr) auto 84px;align-items:baseline;gap:16px;padding:7px 0;border-bottom:1px solid var(--ui-line)}
+    #runSummaryTimes li span:first-child{min-width:0;overflow-wrap:anywhere;font:400 16px/1.3 var(--ui-display)}
+    #runSummaryTimes b{font-weight:400;color:var(--ui-accent-hi)}
+    #runSummaryTimes .par{text-align:right;color:var(--ui-muted)}#runSummaryTimes .swift{color:var(--ui-accent-hi)}#runSummaryTimes span:last-child{text-align:right}
     #runSummary table{width:100%;border-collapse:collapse;table-layout:fixed;font-variant-numeric:tabular-nums}
     #runSummary th{padding:0 8px 8px;font-size:var(--ui-size-hint);font-weight:400;color:var(--ui-muted);text-align:right}
     #runSummary th:first-child,#runSummary td:first-child{text-align:left;padding-left:0}
-    #runSummary th:nth-child(2){width:110px}#runSummary th:nth-child(3){width:80px}
-    #runSummary td{padding:10px 8px;border-top:1px solid var(--ui-line);text-align:right}#runSummary td:last-child,#runSummary th:last-child{padding-right:0}
+    #runSummary th:nth-child(2){width:100px}#runSummary th:nth-child(3){width:70px}
+    #runSummary td{padding:9px 8px;border-top:1px solid var(--ui-line);text-align:right}#runSummary td:last-child,#runSummary th:last-child{padding-right:0}
     #runSummary tbody tr:last-child td{border-bottom:1px solid var(--ui-line)}
-    #runSummary td:first-child{overflow-wrap:anywhere;font:400 17px/1.3 var(--ui-display)}#runSummary td small{margin-left:10px;color:var(--ui-muted);font:var(--ui-size-hint)/1 var(--ui-text)}
+    #runSummary td:first-child{overflow-wrap:anywhere;font:400 17px/1.3 var(--ui-display)}
     #runSummary tr[data-self=true] td:first-child{color:var(--ui-accent-hi)}
-    #runSummary .summary-title{display:block;margin-top:3px;font:var(--ui-size-hint)/1.35 var(--ui-text);color:var(--ui-muted)}#runSummary tr[data-self=true] .summary-title{color:var(--ui-ink)}
-    #runSummary .summary-actions{display:flex;flex-wrap:wrap;align-items:center;gap:12px 24px;margin-top:36px}
+    #runSummary .summary-title{display:block;margin-top:2px;font:var(--ui-size-hint)/1.35 var(--ui-text);color:var(--ui-muted)}#runSummary tr[data-self=true] .summary-title{color:var(--ui-ink)}
+    #runSummary .summary-actions{display:flex;flex-wrap:wrap;align-items:center;gap:12px 20px;padding-top:20px;border-top:1px solid var(--ui-line)}
     #runSummary #runSummaryAgain{width:auto;min-width:220px}
+    #runSummary .summary-scroll{margin-left:auto}
     #runSummary button{touch-action:manipulation;-webkit-tap-highlight-color:transparent}
     #runSummary button:focus-visible{outline:2px solid var(--ui-accent-hi);outline-offset:3px}
     #runSummaryWait{margin:0;color:var(--ui-muted)}#runSummaryWait:empty{display:none}
-    @media(max-width:640px){#runSummary{padding:max(36px,env(safe-area-inset-top)) 20px max(20px,env(safe-area-inset-bottom))}
-      #runSummary h2{font-size:32px}#runSummary .summary-facts{gap:36px;margin:24px 0 20px}#runSummary dd{font-size:26px}
+    @media(max-width:640px){#runSummary{padding:max(28px,env(safe-area-inset-top)) max(20px,env(safe-area-inset-right)) max(16px,env(safe-area-inset-bottom)) max(20px,env(safe-area-inset-left))}
+      #runSummary h2{font-size:34px}#runSummary .summary-head{padding-bottom:16px}#runSummary .summary-facts{gap:32px}#runSummary dd{font-size:26px}
+      #runSummary .summary-body{padding:16px 0}
       #runSummary th:nth-child(2){width:84px}#runSummary th:nth-child(3){width:62px}
-      #runSummary .summary-actions{margin-top:28px}#runSummary #runSummaryAgain{flex:1 1 100%}}
+      #runSummary .summary-actions{padding-top:14px}#runSummary #runSummaryAgain{flex:1 1 100%}#runSummary .summary-scroll{display:none}}
+    @media(max-width:899px),(max-height:519px){#runSummary .summary-fights{margin-top:28px}}
     @media(hover:none) and (pointer:coarse){#runSummaryLobbyKey{display:none}}`;
   document.head.appendChild(summaryStyle);
   let summary = null;   // the last run's summary while its screen is open
@@ -244,13 +254,16 @@ const multiplayer = (() => {
     const times = el('runSummaryTimes'); times.replaceChildren();
     for (const t of Array.isArray(data.times) ? data.times : []) {
       const li = document.createElement('li'), seconds = Math.max(0, Math.round(Number(t.time) || 0)), par = Math.max(0, Math.round(Number(t.par) || 0));
-      const parts = [[(t.crowned ? 'Crowned: ' : '') + (t.bosses || []).map(id => ArenaNet.own(ENEMY_BY_ID, id)?.name || id).join(' & '), ''], [runClock(seconds), t.swift ? 'swift' : ''],
+      const parts = [[(t.bosses || []).map(id => ArenaNet.own(ENEMY_BY_ID, id)?.name || id).join(' & '), ''], [runClock(seconds), t.swift ? 'swift' : ''],
         [t.swift ? 'Swift kill' : 'par ' + runClock(par), t.swift ? 'swift' : 'par']];
       for (const [text, cls] of parts) { const span = document.createElement('span'); span.textContent = text; if (cls) span.className = cls; li.appendChild(span); }
+      if (t.crowned) { const crowned = document.createElement('b'); crowned.textContent = 'Crowned: '; li.firstChild.prepend(crowned); }
       times.appendChild(li);
     }
     // This browser's xp, level and crates (js/crate-screen.js): xp only for those who played the run.
-    crateScreen.runRewards(el('runSummaryRewards'), data, (data.players || []).some(r => r.id === self));
+    el('runSummaryCrate')?.remove();
+    const crate = crateScreen.runRewards(el('runSummaryRewards'), data, (data.players || []).some(r => r.id === self));
+    if (crate) el('runSummaryLobby').before(crate);
     if (data.key) send({ type: 'runResultSeen', key: data.key });
     const rows = el('runSummaryRows'); rows.replaceChildren();
     for (const r of data.players || []) {
@@ -265,7 +278,38 @@ const multiplayer = (() => {
     panel.inert = true; runSummary.hidden = false; input.clear(); if (document.pointerLockElement) document.exitPointerLock();
     el('runSummaryLobbyKey').textContent = usingPad() ? keyLabel('PadB') : 'Esc';
     el('runSummaryLobby').lastChild.textContent = solo ? 'Title' : 'Lobby';
-    drawRunSummary(); summaryButtons()[0]?.focus({ preventScroll: true });
+    drawRunSummary();
+    el('runSummaryTimes').scrollTop = 0; runSummary.querySelector('.summary-body').scrollTop = 0;
+    focusSummary(summaryButtons()[0]); gamepad.holdSteps(); summaryScrollRest = 0;
+    requestAnimationFrame(drawSummaryScroll);
+  }
+  // The list that scrolls: the bosses' own panel on a wide screen, the whole middle on a narrow one; null when it all fits.
+  function summaryScroller() {
+    for (const node of [el('runSummaryTimes'), runSummary.querySelector('.summary-main'), runSummary.querySelector('.summary-body')])
+      if (node.scrollHeight > node.clientHeight + 1 && getComputedStyle(node).overflowY === 'auto') return node;
+    return null;
+  }
+  // The scroll key under the list only while there is more to see (the pad's D-pad; the arrow keys).
+  function drawSummaryScroll() {
+    if (!summary) return;
+    el('runSummaryScroll').hidden = !summaryScroller();
+    el('runSummaryScrollKey').textContent = usingPad() ? 'D-pad ↕' : '↑ ↓';
+  }
+  events.on('device', drawSummaryScroll); window.addEventListener('resize', drawSummaryScroll);
+  // Up and down scroll the list while it has more that way, and otherwise move between the buttons like left and right.
+  function summaryStep(direction) {
+    const sign = direction === 'up' || direction === 'left' ? -1 : 1, list = summaryScroller();
+    if (list && (direction === 'up' || direction === 'down')) {
+      const room = sign < 0 ? list.scrollTop : list.scrollHeight - list.clientHeight - list.scrollTop;
+      if (room > 1) { list.scrollBy({ top: sign * Math.max(40, list.clientHeight * 0.6), behavior: reducedMotion() ? 'auto' : 'smooth' }); return; }
+    }
+    moveSummaryFocus(sign);
+  }
+  function focusSummary(button) {
+    if (!button) return;
+    for (const node of runSummary.querySelectorAll('.pad-selected')) node.classList.remove('pad-selected');
+    if (usingPad()) button.classList.add('pad-selected');
+    button.focus({ preventScroll: true });
   }
   // Only the leader can start the run again; the others see who can.
   function drawRunSummary() {
@@ -274,7 +318,7 @@ const multiplayer = (() => {
     el('runSummaryAgain').hidden = !owner;
     el('runSummaryWait').textContent = owner || !connected ? '' : `${roster.find(p => p.id === leader)?.name || 'The leader'} can start this run again.`;
   }
-  const summaryButtons = () => [el('runSummaryCrate'), el('runSummaryAgain'), el('runSummaryLobby')].filter(b => b && !b.hidden);
+  const summaryButtons = () => [el('runSummaryAgain'), el('runSummaryCrate'), el('runSummaryLobby')].filter(b => b && !b.hidden);
   function closeRunSummary(focusLobby = true) {
     if (!summary) return;
     summary = null; runSummary.hidden = true; panel.inert = false;
@@ -283,7 +327,7 @@ const multiplayer = (() => {
   }
   function moveSummaryFocus(step) {
     const buttons = summaryButtons(), at = buttons.indexOf(document.activeElement);
-    buttons[at < 0 ? 0 : (at + step + buttons.length) % buttons.length]?.focus({ preventScroll: true });
+    focusSummary(buttons[at < 0 ? 0 : (at + step + buttons.length) % buttons.length]);
   }
   runSummary.querySelector('#runSummaryAgain').onclick = () => {
     const again = summary; closeRunSummary(false);
@@ -295,14 +339,26 @@ const multiplayer = (() => {
     if (ev.code === 'Escape') { ev.preventDefault(); ev.stopImmediatePropagation(); if (!ev.repeat) closeRunSummary(); return; }
     userActivity(ev); ev.stopImmediatePropagation();
     if (ev.code === 'Tab') { ev.preventDefault(); moveSummaryFocus(ev.shiftKey ? -1 : 1); }
-    else if (ev.code.startsWith('Arrow')) { ev.preventDefault(); moveSummaryFocus(ev.code === 'ArrowLeft' || ev.code === 'ArrowUp' ? -1 : 1); }
+    else if (ev.code.startsWith('Arrow')) { ev.preventDefault(); summaryStep(ev.code.slice(5).toLowerCase()); }
   }, true);
-  function summaryPad(pressed) {
+  // The pad on the end screen, over the lobby behind it: the D-pad or left stick moves (summaryStep), the right stick
+  // scrolls the list, A presses the focused button, B leaves.
+  let summaryScrollRest = 0;
+  function summaryPad(pressed, dt = CONFIG.step) {
     if (runSummary.hidden) return false;
-    if (pressed.includes('PadB')) closeRunSummary();
-    else if (pressed.includes('PadLeft') || pressed.includes('PadUp')) moveSummaryFocus(-1);
-    else if (pressed.includes('PadRight') || pressed.includes('PadDown')) moveSummaryFocus(1);
-    else if (pressed.includes('PadA') && summaryButtons().includes(document.activeElement)) document.activeElement.click();
+    const direction = gamepad.step(dt);
+    if (pressed.includes('PadB')) { closeRunSummary(); return true; }
+    if (pressed.includes('PadA')) {
+      const buttons = summaryButtons();
+      if (buttons.includes(document.activeElement)) document.activeElement.click(); else focusSummary(buttons[0]);
+      return true;
+    }
+    if (direction) summaryStep(direction);
+    const list = gamepad.look.y && summaryScroller();
+    if (list) {   // whole pixels, the rest kept, so a slight tilt still moves it
+      summaryScrollRest += gamepad.look.y * CONFIG.gamepad.scroll * dt;
+      const px = Math.trunc(summaryScrollRest); summaryScrollRest -= px; list.scrollTop += px;
+    }
     return true;
   }
   // Boss Rush's abilities (CONFIG.abilities): between fights the server offers each player a few; clicking a card,
@@ -364,7 +420,12 @@ const multiplayer = (() => {
   }
   function moveAbilityFocus(step, includeConfirm = true) {
     const buttons = abilityButtons(includeConfirm), at = buttons.indexOf(document.activeElement);
-    buttons[at < 0 ? 0 : (at + step + buttons.length) % buttons.length]?.focus({ preventScroll: true });
+    focusAbility(buttons[at < 0 ? 0 : (at + step + buttons.length) % buttons.length]);
+  }
+  // A long pick (many abilities held) scrolls: the focused card or Confirm is kept in view.
+  function focusAbility(button) {
+    if (!button) return;
+    button.focus({ preventScroll: true }); button.scrollIntoView({ block: 'nearest' });
   }
   function drawAbilities() {
     const visible = !!ability && active() && Game.loading <= 0 && panel.classList.contains('hidden') && Game.mode === 'play';   // the game menu covers it
@@ -386,7 +447,7 @@ const multiplayer = (() => {
     const status = ability.chosen && !ability.done && roster.filter(p => !p.bot).length > 1 ? 'Waiting for the others.' : '';
     if (el('abilityStatus').textContent !== status) el('abilityStatus').textContent = status;
     abilityScreen.classList.toggle('ability-pad', usingPad());
-    if (opening) el('abilityChoices').querySelector('button:not(:disabled)')?.focus({ preventScroll: true });
+    if (opening) { abilityScreen.scrollTop = 0; focusAbility(el('abilityChoices').querySelector('button:not(:disabled)')); }
   }
   // While the pick is open the game hears no keys: a number highlights that ability, Space/Enter on a card only
   // highlights it, arrows/Tab move between cards and the Confirm button, and Escape still opens the lobby.
@@ -395,15 +456,15 @@ const multiplayer = (() => {
     userActivity(ev); ev.stopImmediatePropagation();
     if (ev.code === 'Tab') { ev.preventDefault(); moveAbilityFocus(ev.shiftKey ? -1 : 1, true); return; }   // focus stays in the pick
     const n = /^(?:Digit|Numpad)([1-9])$/.exec(ev.code);
-    if (n) { ev.preventDefault(); const b = el('abilityChoices').children[Number(n[1]) - 1]; if (b && !b.disabled) { selectAbility(b.dataset.ability); b.focus({ preventScroll: true }); } }
+    if (n) { ev.preventDefault(); const b = el('abilityChoices').children[Number(n[1]) - 1]; if (b && !b.disabled) { selectAbility(b.dataset.ability); focusAbility(b); } }
     else if (ev.code === 'ArrowLeft' || ev.code === 'ArrowRight') { ev.preventDefault(); moveAbilityFocus(ev.code === 'ArrowLeft' ? -1 : 1, false); }
     else if (ev.code === 'ArrowDown' || ev.code === 'ArrowUp') {
       ev.preventDefault();
       const confirm = el('abilityConfirm');
-      if (ev.code === 'ArrowDown' && document.activeElement !== confirm && !confirm.disabled) confirm.focus({ preventScroll: true });
+      if (ev.code === 'ArrowDown' && document.activeElement !== confirm && !confirm.disabled) focusAbility(confirm);
       else if (ev.code === 'ArrowUp' && document.activeElement === confirm) {
         const sel = ability?.selected && [...el('abilityChoices').children].find(b => b.dataset.ability === ability.selected && !b.disabled);
-        (sel || el('abilityChoices').querySelector('button:not(:disabled)'))?.focus({ preventScroll: true });
+        focusAbility(sel || el('abilityChoices').querySelector('button:not(:disabled)'));
       } else moveAbilityFocus(ev.code === 'ArrowUp' ? -1 : 1, true);
     }
   }, true);
@@ -415,13 +476,13 @@ const multiplayer = (() => {
     if (pressed.includes('PadLeft')) moveAbilityFocus(-1, false);
     if (pressed.includes('PadRight')) moveAbilityFocus(1, false);
     if (pressed.includes('PadDown')) {
-      if (document.activeElement !== confirm && !confirm.disabled) confirm.focus({ preventScroll: true });
+      if (document.activeElement !== confirm && !confirm.disabled) focusAbility(confirm);
       else moveAbilityFocus(1, true);
     }
     if (pressed.includes('PadUp')) {
       if (document.activeElement === confirm) {
         const sel = ability?.selected && [...el('abilityChoices').children].find(b => b.dataset.ability === ability.selected && !b.disabled);
-        (sel || el('abilityChoices').querySelector('button:not(:disabled)'))?.focus({ preventScroll: true });
+        focusAbility(sel || el('abilityChoices').querySelector('button:not(:disabled)'));
       } else moveAbilityFocus(-1, true);
     }
     if (pressed.includes('PadA')) {
@@ -1334,7 +1395,6 @@ const multiplayer = (() => {
     focusLobbyControl(controls[(current + step + controls.length) % controls.length]);
   }
   function pad(pressed, dt = CONFIG.step) {
-    if (summaryPad(pressed)) return;
     const focus = ensureLobbyFocus();
     if (pressed.includes('PadB')) { lobbyBack(); return; }
     if (pressed.includes('PadStart') && active()) { hide(); return; }
@@ -1354,7 +1414,7 @@ const multiplayer = (() => {
   events.on('finisherEnd', d => { if (active() && d.player === Game.player) command('finisherEnd', { enemy: d.enemy.netId }); });
   Game.renderHooks.push(render);
   return { join, playAlone, restart: () => control('restart'), leave, show, hide, active, peek, heartbeat, activity, update, hit, parry, dodged, lifesteal, landed, pad,
-    applySpectatorView, captureView, spectatorKey, spectatorPad, lobbyBack, abilityPad, abilityClaim,
+    applySpectatorView, captureView, spectatorKey, spectatorPad, lobbyBack, abilityPad, abilityClaim, summaryPad, showRunSummary,
     get abilityOpen() { return !abilityScreen.hidden; }, get abilityPending() { return !!ability; },
     get lobby() { return { ...peekState }; },
     get waitingForTeamWipe() { return waitingForTeamWipe(); },

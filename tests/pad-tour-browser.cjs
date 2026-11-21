@@ -125,7 +125,9 @@ const B = { cross: 0, circle: 1, square: 2, triangle: 3, l1: 4, r1: 5, l2: 6, r2
     s = await stop('run-summary');
     const keys = await page.evaluate(() => document.getElementById('runSummaryLobbyKey').textContent);
     assert.equal(keys, '◯', 'Circle glyph on the summary');
-    await press('down');
+    assert.equal(await page.evaluate(() => document.activeElement.id), 'runSummaryAgain', 'the summary starts on its main action');
+    assert.ok(await page.evaluate(() => [...document.querySelectorAll('#runSummary button')].filter(b => b.offsetParent).every(b => b.getBoundingClientRect().bottom <= innerHeight)), 'every button on screen');
+    for (let i = 0; i < 3 && await page.evaluate(() => document.activeElement.id) !== 'runSummaryLobby'; i++) await press('right');
     assert.equal(await page.evaluate(() => document.activeElement.id), 'runSummaryLobby');
     await press('cross');   // online the summary's way out is the lobby
     await page.waitForFunction(() => multiplayer.panelOpen && document.getElementById('runSummary').hidden, null, { timeout: 30000 });

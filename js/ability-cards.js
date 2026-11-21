@@ -210,7 +210,7 @@ function abilityHeldList(ids) {
   const style = document.createElement('style');
   style.id = 'abilityCards';
   style.textContent = `#abilityScreen[hidden]{display:none}
-  #abilityScreen{--rare:#8fb8dc;--leg:#e59a5c;--body:#cfc8b6;position:fixed;inset:0;z-index:46;display:grid;place-items:center;padding:24px max(16px,env(safe-area-inset-right)) max(24px,env(safe-area-inset-bottom)) max(16px,env(safe-area-inset-left));
+  #abilityScreen{--rare:#8fb8dc;--leg:#e59a5c;--body:#cfc8b6;position:fixed;inset:0;z-index:46;display:grid;place-items:safe center;padding:24px max(16px,env(safe-area-inset-right)) max(24px,env(safe-area-inset-bottom)) max(16px,env(safe-area-inset-left));
     box-sizing:border-box;overflow:auto;overscroll-behavior:contain;background:#080a0cdb;color:var(--ui-ink);font:400 15px/1.45 var(--ui-text)}
   #abilityScreen .ability-panel{width:min(100%,var(--pick-w,932px))}
   #abilityScreen .ability-head{display:flex;align-items:baseline;justify-content:space-between;gap:16px;margin-bottom:12px}

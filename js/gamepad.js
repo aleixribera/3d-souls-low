@@ -15,7 +15,7 @@ const gamepad = {
   look: { x: 0, y: 0 },         // right stick after the dead zone (y down)
   flickArmed: true,
   neutralRequired: false,
-  menuDir: null, menuTimer: 0,
+  menuDir: null, menuTimer: 0, stepHeld: false,
 
   activeIndex: -1, activeId: '',   // the pad used last (Gamepad.index and id); several may be connected (Steam adds a virtual one)
   family: 'ps',                 // whose button names to show: 'ps' or 'xbox' (padFamily)
@@ -85,11 +85,12 @@ const gamepad = {
     if (typeof showcase !== 'undefined' && showcase.pad(pressed)) { input.clear(); return; }   // the showcase and its gate, over everything
     if (typeof nameAsk !== 'undefined' && nameAsk.pad(pressed, dt)) return;   // the name ask, over everything
     if (typeof crateScreen !== 'undefined' && crateScreen.pad(pressed, dt)) return;   // the Abilities page and the crate roll, over anything
+    if (typeof multiplayer !== 'undefined' && multiplayer.summaryPad(pressed, dt)) return;   // a run's end screen, over the lobby
     if (typeof multiplayer !== 'undefined' && multiplayer.runIntroActive) { input.clear(); return; }
     if (typeof multiplayer !== 'undefined' && multiplayer.panelOpen) { multiplayer.pad(pressed, dt); return; }
     if (typeof multiplayer !== 'undefined' && multiplayer.abilityPad(pressed)) return;
     if (typeof multiplayer !== 'undefined' && multiplayer.spectatorPad(pressed)) return;
-    if (typeof abilityLab !== 'undefined' && abilityLab.pad(pressed)) return;   // the ability grounds' list
+    if (typeof abilityLab !== 'undefined' && abilityLab.pad(pressed, dt)) return;   // the ability grounds' list
     if (Game.mode === 'play') this.playInput(pressed, dt);
     else this.menuInput(pressed, dt);
   },
@@ -120,20 +121,27 @@ const gamepad = {
       if (rx || ry) Game.stickLook(rx, ry, dt);
     }
   },
-  menuInput(pressed, dt) {
-    const C = CONFIG.gamepad;
-    // D-pad or left stick, one step per press, repeating while held.
-    const mx = this.move.x, my = this.move.y, S = C.menuStick;
+  // The menu direction to take this poll from the D-pad or left stick: once per press, repeating while held. One
+  // state for every screen, since only one screen reads the pad each poll.
+  step(dt) {
+    const C = CONFIG.gamepad, mx = this.move.x, my = this.move.y, S = C.menuStick;
     const dir = this.down.has(MENU_PAD.up) || my > S ? 'up' : this.down.has(MENU_PAD.down) || my < -S ? 'down'
       : this.down.has(MENU_PAD.left) || mx < -S ? 'left' : this.down.has(MENU_PAD.right) || mx > S ? 'right' : null;
+    if (this.stepHeld) { if (dir) return null; this.stepHeld = false; }   // holdSteps: nothing until let go
+    if (dir !== this.menuDir) { this.menuDir = dir; this.menuTimer = C.menuDelay; return dir; }
+    if (!dir || (this.menuTimer -= dt) > 0) return null;
+    this.menuTimer = C.menuRepeat;
+    return dir;
+  },
+  // A screen that opens under a held stick or D-pad (a run's end while running) takes no step from it until it is let go.
+  holdSteps() { this.stepHeld = true; this.menuDir = null; },
+  menuInput(pressed, dt) {
+    const dir = this.step(dt);
     for (const c of pressed) {
       if (c === MENU_PAD.confirm) Game.confirm();
       else if (c === MENU_PAD.back) Game.menuBack();
       else if (c === SYSTEM_PAD.pause) { if (Game.mode === 'pause') Game.resume(); else Game.confirm(); }
     }
-    if (dir !== this.menuDir) { this.menuDir = dir; this.menuTimer = C.menuDelay; if (dir) Game.menuStep(dir); return; }
-    if (!dir || (this.menuTimer -= dt) > 0) return;
-    this.menuTimer = C.menuRepeat;
-    Game.menuStep(dir);
+    if (dir) Game.menuStep(dir);
   },
 };

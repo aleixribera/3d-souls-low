@@ -4020,6 +4020,40 @@
       press('PadStart'); expect.ok(Game.mode === 'play', 'Start resumes');
     } finally { gamepad.read = read; gamepad.release(); multiplayer.join = multiplayerJoin; input.suspended = suspended; Game.showMenu('main'); }
   });
+  // Aleix: after a long Boss Rush run the end screen's buttons were below the list of bosses, out of the pad's reach.
+  test('Menus: the gamepad reaches every button of a long run\'s end screen, and scrolls its list', async () => {
+    const read = gamepad.read, idle = { connected: true, buttons: PAD_BUTTONS.map(() => 0), axes: [0, 0, 0, 0] }, suspended = input.suspended;
+    const press = code => {
+      const buttons = PAD_BUTTONS.map(c => c === code ? 1 : 0);
+      gamepad.read = () => ({ connected: true, buttons, axes: [0, 0, 0, 0] }); real.poll.call(gamepad, STEP);
+      gamepad.read = () => idle; real.poll.call(gamepad, STEP);
+    };
+    const screen = $('runSummary'), list = $('runSummaryTimes'), body = screen.querySelector('.summary-body');
+    try {
+      input.suspended = false; gamepad.release(); gamepad.neutralRequired = false; gamepad.read = () => idle;
+      press('PadDown'); Game.showMenu('main');   // the pad is the device
+      const bosses = [...RUSH.opening, ...Object.keys(RUSH.health)];
+      multiplayer.showRunSummary({ outcome: 'wiped', key: null, id: 'calling', reached: 31, crowned: 2, time: 2400,
+        times: Array.from({ length: 30 }, (_, i) => ({ bosses: [bosses[i % bosses.length]], time: 60 + i, par: 90, swift: i % 2 === 0, crowned: i % 9 === 8 })),
+        players: ['Ash', 'Ember', 'Cinder', 'Soot'].map((name, i) => ({ id: 'p' + i, name, damage: 9000 - i * 1000, deaths: i })) });
+      // Opened under a held stick (a run ends while running): nothing moves until it is let go.
+      const held = { connected: true, buttons: PAD_BUTTONS.map(() => 0), axes: [0, 1, 0, 0] }, opened = document.activeElement;
+      gamepad.read = () => held; for (let i = 0; i < 40; i++) real.poll.call(gamepad, STEP);
+      gamepad.read = () => idle; real.poll.call(gamepad, STEP);
+      expect.ok(document.activeElement === opened && list.scrollTop === 0 && body.scrollTop === 0, `a stick held from the fight moves nothing (${document.activeElement.id})`);
+      const buttons = [...screen.querySelectorAll('button')].filter(b => b.offsetParent);
+      expect.ok(buttons.length && buttons.every(b => { const r = b.getBoundingClientRect(); return r.top >= 0 && r.bottom <= innerHeight && r.left >= 0 && r.right <= innerWidth; }),
+        `every button is on screen at once (${buttons.map(b => b.id + ' ' + Math.round(b.getBoundingClientRect().bottom)).join(', ')}, ${innerHeight} high)`);
+      expect.ok(document.activeElement === buttons[0], `focus starts on the first button (${document.activeElement.id})`);
+      const scroller = [list, body].find(n => n.scrollHeight > n.clientHeight + 1 && getComputedStyle(n).overflowY === 'auto');
+      expect.ok(scroller, 'thirty fights do not fit: the list scrolls');
+      press('PadDown'); await new Promise(r => setTimeout(r, 700));
+      expect.ok(scroller.scrollTop > 0 && document.activeElement === buttons[0], `down scrolls the list and keeps the focus (${Math.round(scroller.scrollTop)}, ${document.activeElement.id})`);
+      for (let i = 0; i < buttons.length && document.activeElement.id !== 'runSummaryLobby'; i++) press('PadRight');
+      expect.ok(document.activeElement.id === 'runSummaryLobby', `right reaches Lobby (${document.activeElement.id})`);
+      press('PadB'); expect.ok(screen.hidden, 'B closes it');
+    } finally { gamepad.read = read; gamepad.release(); input.suspended = suspended; if (!screen.hidden) $('runSummaryLobby').click(); Game.showMenu('main'); }
+  });
   test('Story: Continue puts the player back at the rested bonfire with the beaten enemies gone and won gates open', withSave(() => {
     S().jumpTo('sunken-keep'); sim.begin();
     const z = Game.zones[0];
