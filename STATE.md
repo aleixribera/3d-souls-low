@@ -8,11 +8,10 @@ The iterate loop's working note (`.claude/iterate.md`). Cap: 8,000 characters.
   Also CI: `tests/reconnect-browser.cjs` teardown bounded (v7.193/194 browser-smoke hung). Acceptance:
   `tests/summons-two.cjs`, in-page `summons` 3/3; clip `docs/scorecard/now/summons-two.mp4`. Next on track 2:
   batch 12, Summons III. Browser lock: `node tools/browser-lock.cjs run <pass> -- <cmd>` (docs/two-tracks.md).
-- Track 1, pass 146 (PLAN item 6, Oswin, pass 2 of 2), done: `bars-1` round (10 strips): his uncrowned wind-ups
-  washed him red (the cast-off axe's effect light, `js/effect-lighting.js`): now a blow lights only as it lands, from
-  the fist; halos a size down; Empty Reign turns less. In-page `Guiding light: with the weapon cast off` (fails before);
-  clip `docs/scorecard/now/oswin-uncrowned.mp4`. Agathe's audit: restyle, parries and body check 18/24
-  (`docs/bosses/drafts/agathe.md`). Next: Agathe pass 1 (parries, body check, cel tells, page up).
+- Track 1, pass 148 (PLAN item 6, Agathe, pass 1 of 2), done: her hook's blows parried (Rend the Earth and the Furrow
+  split: blow parried, line rolled; the Gale Reap; the Hook from the Storm's landing, then a ring jumped); roll-only 2/9,
+  3/12; body check 0/27; tells on the crescent and the shoe; in-between keys; page `docs/bosses/agathe.md`; one `bars-1`
+  round. In-page `Torn Abbey` 7/7; clip `docs/scorecard/now/agathe-cel.mp4`. Next: the Kindling Tree's audit.
 
 ## Works
 
@@ -57,7 +56,7 @@ The iterate loop's working note (`.claude/iterate.md`). Cap: 8,000 characters.
 - Summons (pass 141, 144): `js/summon-beasts.js` (hound, fox), `summon-lantern.js`, `summon-figures.js` (archer), `summon-birds.js` (hawk, owl), `summon-crows.js`; `tests/summons-one.cjs`, `summons-two.cjs`, in-page `summons`; clips `node tools/ability-clips.cjs summons|summons2`.
 - Art styles (pass 108): `?style=cel|dark|paint`, `js/data/styles.js`, `js/style-lab.js`; `tests/style-browser.cjs`;
   retake `node tools/style-frames.cjs [styles] [still,fight,clip,time]`.
-- Body check (retro 130): `tools/body-check.cjs [bossId]`; `tests/body-check.cjs` holds every boss with a page; `followOn` (pass 132).
+- Body check (retro 130): `tools/body-check.cjs [bossId]`; `tests/body-check.cjs` holds every boss with a page.
 - Clawed bosses' tells (pass 133): `tellsGrow` on a model with `tells`; in-page `Church: a heavy wind-up`.
 - Scorecard frames: `tools/scorecard-frames.cjs`; current frames `docs/scorecard/now/` (`tools/now-frames.cjs`).
 
@@ -72,14 +71,15 @@ The iterate loop's working note (`.claude/iterate.md`). Cap: 8,000 characters.
 ## Needs Aleix
 
 - Fight Oswin (Practice, `?style=cel`; reworked: threefold, the leap and his hands now parried unless you say).
+- Fight Agathe (Practice, `?style=cel`; the Gale Reap and the Hook from the Storm's landing now parried unless you say).
 - Fight the Regent Hollis (Practice, `?style=cel`; the Pavane is new, and the Feast's blade is parried unless you say).
 - Fight the Ringer (Practice, `?style=cel`; her stamping foot and Over the Line's ball are parried unless you say).
 - Fight Hale and Harrow (Practice, `?style=cel`; Harrow's axe stays hidden until the whole phase unless you say).
 - Fight Old Ostrey too (Practice, `?style=cel`; one `bars-1` round; the Burning Drop's landing parried unless you say).
 - Fight the Antlered Hunger too (Practice, `?style=cel`; one `bars-1` round; its follow-ups parriable unless you say).
 - Fight Aldric too (Practice, `?style=cel`; the Turning Key ends on a pommel strike unless you say all blade).
-- Fight the Giant Skeleton too (Practice, `?style=cel`; tried: one `edges-1` round, the judge repeats the others' gaps).
-- Fight the Bell Warden too (same: Practice, `?style=cel`; tried: two `edges-1` rounds, the judge repeats the Captain's gap).
+- Fight the Giant Skeleton too (Practice, `?style=cel`).
+- Fight the Bell Warden too (Practice, `?style=cel`).
 - Fight the Pillager Captain (PLAN item 5's last gate; tried: six judge rounds, nothing left a judge can settle). Practice,
   with `?style=cel` in the address (cel is not yet every player's default); say what feels off or unfair.
 Answered: the art style is cel-shaded anime, for the whole game (Aleix, 2026-11-20; item 4 done). The home server's `/souls/` address is PUBLIC (Aleix, 2026-11-20).
