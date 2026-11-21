@@ -3,15 +3,12 @@
 The iterate loop's working note (`.claude/iterate.md`). Cap: 8,000 characters.
 
 ## Now
-- Resumed 2026-11-21: next the PLAN "Later" items in order, then the balance pass (loop file stop point).
-- Track 1, pass 172 (PLAN Later item 3, Story redone in cel, 3 of 3: DONE, v7.222.0): Sunken Keep, Tower, Saltgrave,
-  Final Castle relit with `areas`; Blender gibbets and racks (`castle_bits.py`); Root hollows and Still Mere floors;
-  Moor, Mere, Saltgrave recolours. Every PLAN Later item is through; next: the "Last" balance pass (track 2).
-  Acceptance: `docs/story/audit/*-after.jpg`; `story-redo-3.mp4`; `tools/story-audit.cjs` 14 chapters, 0 findings.
-- Track 2, pass 173 (PLAN "Last" balance, 1 of ~2): blows x1.9, counter 2.75 lights, Finishing Blow ~8%
-  of a bar, boss blows x1.25, crate pity. Acceptance: the plan's six checks (`docs/balance/README.md`). Met: kit runs,
-  counter, crates, medians new 5 / strong 27. Pass 2: skilled no kit 10 (12-15); fights 92 s (45-90);
-  counters+FB 15%; weak legendaries.
+Paused by Aleix, 2026-11-21.
+- Why: the stop point (loop file) is reached; PLAN "Last" is met or cut.
+- Awaiting Aleix's playtest: Aleix plays 3 solo Rush runs; a friend new to the genre plays 2 solo Rush runs and a
+  Story chapter boss; all recorded (replays). A second round fixes what they show (`docs/balance/README.md`).
+- Pass 174 (PLAN "Last" balance, 2 of 2): the bot takes its counter openings, Rush blows grow with the kit's might,
+  four legendaries up, Story bosses harder, CI fixed (v7.224.0). Acceptance: the plan's checks in `docs/balance/README.md`.
 
 ## Works
 
@@ -28,7 +25,8 @@ The iterate loop's working note (`.claude/iterate.md`). Cap: 8,000 characters.
 - Showcase (pass 166, v7.215.0): the player's view, a fade the only cut, the Finishing Blow its finale; in-page
   `Showcase`, clip `docs/scorecard/now/showcase.mp4`. Rush curve (pass 168): `pairTurns`, `settle`; `docs/scorecard/now/rush-curve.md`.
 - Pace: `CONFIG.pace`, `CONFIG.enemy.press`/`bossDamage`, `rushPace`; `tests/boss-pace.cjs`, `rush-flow.cjs`;
-  `tools/rush-curve.cjs bosses|runs|pairs` (`SKILLED=1`, `KIT=`, `SPLIT=1`, overrides in its header).
+  `tools/rush-curve.cjs bosses|runs|pairs` (`SKILLED=1`, `KIT=`, `SPLIT=1`, overrides in its header);
+  `CONFIG.endless.mightBlows`; `tools/story-curve.cjs` (`SKILLED=1`). Balance: `docs/balance/README.md`.
 - Bosses fight the group (v7.35.0): `CONFIG.aggro`, `bossTarget` (`js/lobby-sim.js`), `grouped` / `isAreaAttack`
   (`js/enemy.js`); `tests/boss-attention.cjs`.
 - Menus (pass 51, v7.72.0): title style everywhere, `optionsItems`, `pauseFacts`, `#runSummary`, Controls (`controlRows`); in-page `Menus:`.
