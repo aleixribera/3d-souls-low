@@ -4,8 +4,9 @@ The iterate loop's working note (`.claude/iterate.md`). Cap: 8,000 characters.
 
 ## Now
 - Resumed by Aleix, 2026-11-21: next the PLAN "Later" items in order, then the balance pass (loop file stop point).
-- Pass 160 (Aleix: redo the opening, pass 1 of 1), v7.210.0: an anime opening, Esc skips it.
-  Acceptance: `tests/suite-showcase.js` `Showcase`; clip `docs/scorecard/now/showcase.mp4`; `docs/showcase/storyboard.md`.
+- Pass 163 (Aleix: Story's broken parts, the audit, pass 1 of 1): every chapter walks clean; the abbey softlock and
+  14 floating gate lintels fixed. Acceptance: `tools/story-audit.cjs` 0 findings, `tests/story-placements.cjs`;
+  `docs/story/audit.md`.
 - Track 2, pass 162 (PLAN Later item 2, cel to enemies and levels, pass 1 of 2), v7.211.0: the duel arena in Blender
   ruins; 8 enemies recoloured with steel blades and edge tells. Left: Story-only recolours (after the Story redo), bowman,
   gargoyle, lobby scene.

@@ -6,6 +6,7 @@
 //   title    a few words
 //   text     one to three sentences, shown under the list when the entry is selected
 const CHANGELOG = [
+  { version: 'v7.213.0', title: 'The abbey\'s knight comes down', text: 'In the Torn Abbey, the Undead Knight now waits in the undercroft he guards, so dropping in early no longer shuts you in with him out of reach. Gates in open places no longer leave a stone block hanging in the air.' },
   { version: 'v7.212.0', title: 'Couch and controller', text: 'Play from the couch with a controller, start to finish: PlayStation button names (Xbox names on an Xbox pad), menus that grow on a big screen, and the pad you pick up is the one the game reads, even with several connected.' },
   { version: 'v7.211.0', title: 'Ruins and steel', text: 'The duel arena where Practice and Boss Rush are fought is now broken columns and a stone parapet. The Hollow Soldier, knights, sentinels and other common foes wear bolder colours with steel that catches the light, and their wind-ups glow on the blade\'s edge.' },
   { version: 'v7.210.0', title: 'A new opening', text: 'The opening is now cut like an anime opening: four bosses named in ink, Ash Legion as the climax, and the title slammed in at the end. After your first time, Esc skips it.' },
