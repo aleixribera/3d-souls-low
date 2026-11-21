@@ -249,7 +249,7 @@ const summonLantern = (() => {
     if (warm) { warm.age = Infinity; warm.line.visible = false; }
   }
   return {
-    attach() { if (!lanterns.length) { makeFx(); for (let i = 0; i < 4; i++) lanterns.push(make()); } Game.renderHooks.push(draw); visuals.hooks.stage.push(clear); },
+    attach() { if (!lanterns.length) { makeFx(); for (let i = 0; i < 4; i++) lanterns.push(make()); } Game.renderHooks.push(draw); visuals.hooks.clear.push(clear); },
     clear, info: () => lanterns.filter(h => h.body).map(h => ({ kind: 'lantern', x: h.x, y: h.y, z: h.z, open: h.pivots.body.scale.y, balls: balls.filter(b => b.age !== Infinity).length,
       warm: warm.age !== Infinity })),
   };

@@ -89,15 +89,18 @@ MODEL_DEFS.rampartBowman = {   // (v7.28.0 built in Blender) hunched, a bow tall
   proportions: { torsoW: 0.18, torsoD: 0.12, armR: 0.048, legR: 0.07, headR: 0.118 },
   limbs: { armL: { len: 1.08, thick: 0.9 } },
   posture: { chest: [0.36, 0, 0.04], neck: [0.3, 0, -0.08], head: [0.08, 0, 0.1], elbowL: [-0.2, 0, 0], elbowR: [-0.35, 0, 0] },
+  // (pass 165) three values, as the Hollow Soldier has since pass 162: the hood and its mantle near-black teal, the tunic
+  // a cold slate blue, pale wraps and skin, a light bow; it drew as one ochre shape the colour of the arena's stone
+  // (audit frame, pass 165). Low decay keeps the fills flat in cel.
   materials: {
-    skin: { tex: 'paleSkin', tint: 0xa39d8f, decay: 0.7 },
-    cloth: { tex: 'archerCanvas', decay: 0.55, double: true },
-    metal: { tex: 'dentedSteel', tint: 0xa5a79e, decay: 0.6 },
-    hood: { tex: 'archerCanvas', tint: 0x87917e, decay: 0.7, double: true },
-    wrap: { ...HOLLOWED_CLOTH, tint: 0xb0a690, decay: 0.9 },
-    leather: { tex: 'crackedLeather', tint: 0x66705e, decay: 0.65 },
-    wood: { tex: 'barkMoss', tint: 0x8a7a6a, decay: 0.2 },
-    eye: { glow: 0xd89a50 },
+    skin: { tex: 'paleSkin', tint: 0xc4bcaa, decay: 0.4 },
+    cloth: { tex: 'archerCanvas', tint: 0x52687a, decay: 0.35, double: true },
+    metal: { tex: 'dentedSteel', tint: 0xb4b8be, decay: 0.35, steel: true },
+    hood: { tex: 'rogueHood', tint: 0x2a4448, decay: 0.4, double: true },
+    wrap: { tex: 'bone', tint: 0xd8cfb8, decay: 0.4, double: true },
+    leather: { tex: 'crackedLeather', tint: 0x2e221a, decay: 0.4 },
+    wood: { tex: 'barkMoss', tint: 0xc09a68, decay: 0.2 },
+    eye: { glow: 0xffb050 },
   },
   body: { torso: null, pelvis: null, arms: null, legs: null, head: null, neck: null, hands: null, feet: null },
   bones: { loinF: { parent: 'spin', at: [0.02, -0.02, 0.13] }, loinB: { parent: 'spin', at: [-0.03, -0.02, -0.13] } },
@@ -109,6 +112,8 @@ MODEL_DEFS.rampartBowman = {   // (v7.28.0 built in Blender) hunched, a bow tall
     kneeL: ['wrap', 'leather'], kneeR: ['wrap', 'leather'],
   }).flatMap(([bone, list]) => list.map(s => ({ use: 'baked', mesh: `bowman:${bone}__${s}`, bone, slot: s.split('.')[0], tile: 0.42 }))),
   weapon: { use: 'bow', slots: { limb: 'wood', string: 'wrap' } },
+  eyes: { color: 0xffb050, size: 0.011, spread: 0.044, at: [0, 0.095, 0.1] },   // (pass 165) a glint under the hood, as the Hollow Soldier's
+  softJoints: { chest: 0.12, neck: 0.06, armL: 0.1, armR: 0.1, elbowL: 0.08, elbowR: 0.08, legL: 0.11, legR: 0.11, kneeL: 0.08, kneeR: 0.08 },
   anim: { cloth: [{ bone: 'loinF', gain: 0.16, k: 60, damp: 5, flutter: 0.05 }, { bone: 'loinB', gain: 0.2, k: 50, damp: 4.5, flutter: 0.07 }] },
 };
 
@@ -455,14 +460,17 @@ MODEL_DEFS.gargoyle = {
     armR: [0.06, 0, -0.56], elbowR: [-0.28, 0, -0.12],
     wingL: [-0.42, -0.12, -0.05], wingR: [-0.42, 0.12, 0.05],
   },
+  // (pass 165, the cel restyle) cool slate in three values, so it reads against the warm ruins and the castle's fire: pale
+  // carving (head, chest, plates, coverts), mid stone limbs, a dark membrane; bright verdigris; low decay, so the grime
+  // no longer breaks the flat fills into mud. The Ember that woke it burns in the throat and the eyes (STORY.md).
   materials: {
-    stone: { tex: 'gargoyleStone', tint: 0x948e88, decay: 0.65 },
-    carved: { tex: 'gargoyleCarved', tint: 0x8c8680, decay: 0.68 },
-    wing: { tex: 'gargoyleStone', tint: 0x8a847e, decay: 0.7, double: true, rim: 0.15 },
-    bronze: { tex: 'gargoyleBronze', tint: 0x9ab4a6, decay: 0.55 },
-    teeth: { tex: 'bone', tint: 0x9a9288, decay: 0.6 },
-    void: { tex: 'ashSoot', tint: 0x0c0b0a, decay: 0.9 },
-    eye: { glow: 0x6a7870 },
+    stone: { tex: 'gargoyleStone', tint: 0x7a8794, decay: 0.4 },
+    carved: { tex: 'gargoyleCarved', tint: 0xb4bcc4, decay: 0.35 },
+    wing: { tex: 'gargoyleMembrane', tint: 0x404852, decay: 0.45, double: true, rim: 0.15 },
+    bronze: { tex: 'gargoyleBronze', tint: 0x4cc4a0, decay: 0.35 },
+    teeth: { tex: 'bone', tint: 0xe2dac8, decay: 0.35 },
+    ember: { glow: 0xff7a2a },
+    eye: { glow: 0xffa040 },
   },
   body: { torso: null, pelvis: null, arms: null, legs: null, head: null, neck: null, hands: null, feet: null },
   bones: {
@@ -472,14 +480,14 @@ MODEL_DEFS.gargoyle = {
   },
   // v7.37.0: built in Blender (tools/blender/gargoyle.py), one piece per bone
   parts: Object.entries({
-    head: ['carved', 'carved.1', 'void', 'teeth', 'stone', 'stone.1', 'bronze'], neck: ['carved'],
+    head: ['carved', 'carved.1', 'ember', 'teeth', 'stone', 'stone.1', 'bronze'], neck: ['carved'],
     chest: ['carved', 'bronze', 'bronze.1', 'stone'], spin: ['stone', 'carved'], tail: ['stone', 'carved'],
     armL: ['stone'], armR: ['stone'], elbowL: ['stone', 'carved', 'stone.1', 'carved.1'], elbowR: ['stone', 'carved', 'stone.1', 'carved.1'],
     legL: ['stone'], legR: ['stone'], kneeL: ['stone', 'carved', 'carved.1'], kneeR: ['stone', 'carved', 'carved.1'],
     wingL: ['wing', 'stone', 'carved'], wingR: ['wing', 'stone', 'carved'],
   }).flatMap(([bone, list]) => list.map(s => ({ use: 'baked', mesh: `gargoyle:${bone}__${s}`, bone, slot: s.split('.')[0], tile: 0.42 }))),
   weapon: null,
-  eyes: { color: 0x6a7870, size: 0.008, spread: 0.05, at: [0, 0.13, 0.1] },
+  eyes: { color: 0xffa040, size: 0.012, spread: 0.05, at: [0, 0.13, 0.1] },
   anim: {
     attackMul: 1,
     idle: { breathRate: 0.4, breath: 0.005, headDrift: 0.12, sway: 0.01, twitch: 0.6 },

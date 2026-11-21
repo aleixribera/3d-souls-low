@@ -238,7 +238,7 @@ const summonBrutes = (() => {
   return {
     attach() {
       if (!brutes.length) for (const k of KINDS) for (let i = 0; i < 4; i++) brutes.push(make(k));
-      Game.renderHooks.push(draw); visuals.hooks.stage.push(clear);
+      Game.renderHooks.push(draw); visuals.hooks.clear.push(clear);
     },
     clear, info: () => brutes.filter(h => h.body).map(h => ({ kind: h.kind, x: h.x, z: h.z, speed: h.speed, rear: h.rear !== Infinity,
       swipe: h.swipe !== Infinity, cut: h.cut !== Infinity, cry: h.cry !== Infinity, see: h.see })),

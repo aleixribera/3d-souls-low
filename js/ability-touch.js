@@ -218,7 +218,7 @@ const abilityTouch = (() => {
     ringFoe = null; ringKey = -1; ringWait = 0;
   }
   return {
-    attach() { make(); Game.renderHooks.push(render); visuals.hooks.stage.push(clear); },
+    attach() { make(); Game.renderHooks.push(render); visuals.hooks.clear.push(clear); },
     clear,
     // tests: what shows now
     get state() {

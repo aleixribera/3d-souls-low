@@ -792,7 +792,7 @@ const abilityFx = (() => {
   }
   const moonTrail = [MO.color, CONFIG.VISUALS.ultra.trails.playerBoost * MO.trail];   // the holder's blade trail runs red
   function trail(b) { for (const m of moons) if (m.body === b && m.left > 0) return moonTrail; return null; }
-  return { attach() { makeTwins(); Game.renderHooks.push(render); ultraFx.hooks.playerTrail = trail; visuals.hooks.stage.push(clear); }, clear, info: () => ({
+  return { attach() { makeTwins(); Game.renderHooks.push(render); ultraFx.hooks.playerTrail = trail; visuals.hooks.clear.push(clear); }, clear, info: () => ({
     twins: twins.filter(t => t.body).length, cages: cages.filter(c => c.e).length, crowns: crowns.filter(c => c.t !== Infinity).length, pyres: pyres.filter(s => s.e).length,
     meteors: meteors.filter(s => s.t !== Infinity).length, bolts: bolts.filter(b => b.t !== Infinity).length, standing: bolts.filter(b => b.crown).length, inked: bolts.filter(b => b.ink.visible).length,
     bubbles: bubbles.filter(b => b.e).length, rains: rains.filter(r => r.e).length, swords: swords.filter(s => s.t !== Infinity).length,

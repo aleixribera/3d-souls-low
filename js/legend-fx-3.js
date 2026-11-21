@@ -599,7 +599,7 @@ const legendFx3 = (() => {
   const shown = list => list.filter(m => m.visible).length;
   return {
     attach() {
-      make(); Game.renderHooks.push(render); visuals.hooks.stage.push(clear);
+      make(); Game.renderHooks.push(render); visuals.hooks.clear.push(clear);
       events.on('abilityPower', d => { if (POWERS.has(d.then)) power(d); });
     },
     clear,

@@ -12,6 +12,10 @@
 # raptor feet; a stone tail with a spade tip; great gothic stone wings rising from the back, an inward-curling volute at
 # each wing's root, a hooked horn at its wrist, four fingers fanning a scalloped stone membrane, two tiers of carved
 # covert feathers along its arm. Enemy budget: 3,000 triangles (no weapon).
+# (pass 165, the cel restyle) cool slate stone in three values (pale carving, mid stone, dark membrane) so it reads
+# against the warm arenas; verdigris bronze; heavier arms and legs (it read spindly); one tier of five broad coverts
+# instead of fourteen small ones (their outlines drew as scribble); the throat lit from inside by the Ember (`ember`,
+# a glow slot), as the eyes are.
 import sys, math, random
 sys.path.insert(0, r"C:/Users/Aleix/Documents/CLAUDE/3d-souls-low/tools/blender")
 import importlib, snow_lib, figure_lib; importlib.reload(snow_lib); importlib.reload(figure_lib)
@@ -20,8 +24,8 @@ from figure_lib import *
 import bpy, bmesh
 from mathutils import Vector
 
-begin({'stone': (0.3, 0.29, 0.28), 'carved': (0.36, 0.35, 0.33), 'wing': (0.26, 0.25, 0.24), 'bronze': (0.3, 0.45, 0.38),
-       'teeth': (0.62, 0.58, 0.52), 'void': (0.03, 0.03, 0.03)}, prefix='gargoyle:')
+begin({'stone': (0.42, 0.46, 0.5), 'carved': (0.7, 0.73, 0.76), 'wing': (0.2, 0.22, 0.26), 'bronze': (0.3, 0.75, 0.62),
+       'teeth': (0.85, 0.82, 0.74), 'ember': (1.0, 0.55, 0.2)}, prefix='gargoyle:')
 
 SX, EL, WR = .35, 1.178, .812
 EYES = [(s * .05, 1.82, .1) for s in (-1, 1)]   # MODEL_DEFS.gargoyle.eyes: head + (0, .13, .1), spread .05
@@ -66,7 +70,7 @@ def jaw(bm):   # the lower jaw dropped open in a roar
     blob(bm, (0, 1.688, .15), .04, (1.0, .45, 1.1), 1)
     for s in (-1, 1): blob(bm, (s * .06, 1.725, .04), .03, (.7, 1.2, 1.0), 1)
 soft('head__carved.1', jaw, 60, voxel=.006, noise=.002)
-hard('head__void', lambda bm: blob(bm, (0, 1.735, .12), .046, (.85, .5, 1.45), 1))   # the throat's dark inside
+hard('head__ember', lambda bm: blob(bm, (0, 1.735, .12), .046, (.85, .5, 1.45), 1))   # the throat, lit by the Ember's heat inside (a glow slot)
 def fangs(bm):
     for s in (-1, 1):
         cone(bm, (s * .034, 1.758, .19), (s * .03, 1.704, .197), .009)     # upper canines
@@ -159,14 +163,14 @@ hard('tail__carved', spade, smooth=False)
 for s, n in ((1, 'L'), (-1, 'R')):
     x = s * SX
     def upper(bm, x=x, s=s):
-        loft(bm, [(1.57, x - s * .01, -.005, .082, .082), (1.46, x, 0, .072, .074), (1.34, x, .005, .06, .062),
-                  (1.24, x, 0, .052, .054), (EL, x, 0, .05, .05)], 8)
+        loft(bm, [(1.57, x - s * .01, -.005, .09, .09), (1.46, x, 0, .084, .086), (1.34, x, .005, .071, .073),
+                  (1.24, x, 0, .061, .063), (EL, x, 0, .058, .058)], 8)
         blob(bm, (x - s * .005, 1.51, 0), .068, (1.05, 1.15, 1), 1)              # the deltoid
         blob(bm, (x, 1.37, .03), .045, (.9, 1.6, .9), 1); blob(bm, (x, 1.39, -.03), .045, (.9, 1.6, .9), 1)
     soft(f'arm{n}__stone', upper, 70, voxel=.008, noise=.003)
     def fore(bm, x=x):
-        loft(bm, [(EL + .03, x, 0, .052, .052), (EL - .08, x, -.005, .062, .064), (EL - .22, x, 0, .05, .052), (WR + .03, x, .005, .038, .04)], 8)
-        blob(bm, (x, EL, 0), .055, (1, 1, 1), 1)
+        loft(bm, [(EL + .03, x, 0, .06, .06), (EL - .08, x, -.005, .074, .076), (EL - .22, x, 0, .06, .062), (WR + .03, x, .005, .045, .047)], 8)
+        blob(bm, (x, EL, 0), .062, (1, 1, 1), 1)
     soft(f'elbow{n}__stone', fore, 60, voxel=.008, noise=.003)
     def plates(bm, x=x, s=s):   # two carved stone plates on the forearm's outer face, a spur at the elbow
         for y0, y1 in ((EL - .04, WR + .04),):
@@ -190,11 +194,11 @@ for s, n in ((1, 'L'), (-1, 'R')):
 for s, n in ((1, 'L'), (-1, 'R')):
     hx = s * .15
     def thigh(bm, hx=hx):
-        loft(bm, [(1.0, hx * .75, -.01, .105, .105), (.88, hx, 0, .112, .112), (.7, hx * 1.02, .01, .095, .098), (.55, hx, 0, .074, .076), (.46, hx, 0, .064, .066)], 8)
+        loft(bm, [(1.0, hx * .75, -.01, .11, .11), (.88, hx, 0, .122, .122), (.7, hx * 1.02, .01, .105, .108), (.55, hx, 0, .082, .084), (.46, hx, 0, .07, .072)], 8)
         blob(bm, (hx, .74, .05), .06, (.9, 1.6, .8), 1)
     soft(f'leg{n}__stone', thigh, 70, noise=.004)
     def shin(bm, hx=hx):   # back from the knee to a raised hock, then down and forward to the foot
-        tube(bm, [(hx, .48, .01), (hx, .36, -.035), (hx, .22, -.08), (hx, .12, -.04), (hx, .06, .03)], [.068, .06, .048, .042, .045], 8)
+        tube(bm, [(hx, .48, .01), (hx, .36, -.035), (hx, .22, -.08), (hx, .12, -.04), (hx, .06, .03)], [.074, .066, .054, .047, .048], 8)
         blob(bm, (hx, .46, .01), .066, (1, 1, 1), 1)
         blob(bm, (hx, .38, -.05), .055, (1, 1.6, .9), 1)                  # the calf
     soft(f'knee{n}__stone', shin, 70, voxel=.008, noise=.004)
@@ -253,14 +257,14 @@ for s, n in ((1, 'L'), (-1, 'R')):
             pts.append(W((.07 + math.cos(a) * r, .36 + math.sin(a) * r, -.05)))
         tube(bm, pts, [.034 * (1 - .55 * k / 6) for k in range(7)], 4)
     hard(f'wing{n}__stone', bones)
-    def coverts(bm, W=W):   # two tiers of carved stone feathers hanging off the arm over the membrane
-        for tier, (n_, off, ln) in enumerate(((8, .02, .17), (6, .14, .15))):
-            for k in range(n_):
-                t = .12 + .82 * (k + .5 * tier) / n_
-                a = Vector(RAYS[0][2]).lerp(Vector(WRIST), t)
-                lay = Vector((.62, -.78, -.05)); base = a + lay * off + Vector((0, 0, .03 + .012 * tier))
-                g0, g1 = W(base), W(base + lay * ln)
-                wedge(bm, g0, Vector((0, 0, 1)), g1 - g0, ln * (1 + rnd.uniform(-.1, .1)), .058)
+    def coverts(bm, W=W):   # (pass 165) one tier of five broad carved feathers off the arm: the fourteen small ones drew as ink scribble in cel
+        for k in range(5):
+            t = .14 + .8 * k / 4.4
+            a = Vector(RAYS[0][2]).lerp(Vector(WRIST), t)
+            lay = Vector((.62, -.78, -.05)); base = a + lay * .02 + Vector((0, 0, .03))
+            ln = .24 - .02 * k
+            g0, g1 = W(base), W(base + lay * ln)
+            wedge(bm, g0, Vector((0, 0, 1)), g1 - g0, ln, .085)
     hard(f'wing{n}__carved', coverts, smooth=False)
 
 result = tally()

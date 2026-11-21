@@ -32,7 +32,7 @@ const effectLighting = (() => {
     const p = pulses.reduce((a, b) => a.intensity < b.intensity ? a : b);
     Object.assign(p, { x: at.x, y: at.y, z: at.z, color: tint, intensity, range });
   }
-  visuals.hooks.stage.push(clear); visuals.hooks.quality.push(quality);
+  visuals.hooks.clear.push(clear); visuals.hooks.quality.push(quality);
   // When the pool has no effect to draw, lend its slots back to nearby ambient sources.
   visuals.hooks.beforeDraw.push(() => {
     if (player !== Game.player) { clear(); player = Game.player; }

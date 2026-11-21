@@ -211,7 +211,7 @@ function frame(now) {
   multiplayer.heartbeat(now);
   if (Game.mode === 'pause') Game.tickPause();   // online, pause's run clock goes on (redrawn once a second)
   document.body.classList.toggle('no-cursor', !bootReplay?.enabled && !multiplayer.panelOpen && !multiplayer.spectatorMode && !multiplayer.abilityOpen && (Game.mode === 'play' || input.device === 'pad'));   // spectator controls also accept clicks
-  if ((Game.mode !== 'play' && !(multiplayer.active() && (Game.mode === 'ending' || Game.mode === 'pause' && !multiplayer.alone))) || Game.manualClock) { accumulator = 0; return; }   // online menus/credits keep the shared stream running; alone, pause holds
+  if ((Game.mode !== 'play' && !(multiplayer.active() && (Game.mode === 'ending' || Game.mode === 'pause' && !multiplayer.alone))) || Game.manualClock) { accumulator = 0; lobbyScene.frame(frameDt); return; }   // online menus/credits keep the shared stream running; alone, pause holds. The lobby's scene draws itself (js/lobby-scene.js)
   if (Game.loading > 0) { Game.tickLoading(frameDt); accumulator = 0; Game.render(0, frameDt); return; }   // the loading screen holds the world
   accumulator += frameDt * Game.timeScale * dodgeMoment.scale(frameDt);   // timeScale < 1: the F6 slow motion of developer builds; a perfect dodge's beat (js/dodge-moment.js)
   let steps = 0;

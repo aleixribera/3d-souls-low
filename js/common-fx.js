@@ -447,7 +447,7 @@ const commonFx = (() => {
   }
   return {
     attach() {
-      make(); Game.renderHooks.push(render); visuals.hooks.stage.push(clear);
+      make(); Game.renderHooks.push(render); visuals.hooks.clear.push(clear);
       events.on('abilityPower', d => { if (isCommon(d)) fire(d); });
       events.on('abilityPerk', perk);
       events.on('shotDeflected', d => reflect(d.enemy, d.x, d.y, d.z, d.flight));

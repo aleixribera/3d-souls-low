@@ -635,6 +635,14 @@ const CONFIG = {
     // Reduced motion (the Camera motion option off, or the OS asking for less motion): full-screen flash and hurt pulses
     // are scaled to these shares (a subtle cue stays), refraction shockwaves stop and the lightning flash is capped here.
     reducedMotion: { flash: 0.3, hurt: 0.45, lightning: 0.35 },
+    // The lobby's scene (js/lobby-scene.js): the party in the duel arena, drawn at `fps` behind the lobby on screens at least
+    // `minWidth` px wide (narrower, its columns leave no room between them). The camera stands `distance` m from `at` (x, z)
+    // towards `facing` (rad, 0 = +z; the sunset behind the party), `height` m up, looking at `lookHeight`, and swings round
+    // by up to `drift.angle` rad over `drift.period` s. `slots`: each wanderer's place, m (to the camera's right, away
+    // from it), you first, each turned `turn` rad off facing the camera, alternately.
+    lobbyScene: { fps: 30, minWidth: 1100, at: [-1, -1], facing: -2.19, distance: 6.2, height: 1.55, lookHeight: 1.05,
+                  slots: [[0, 0], [-1.3, 0.9], [1.3, 0.9], [-2.4, 1.9], [2.4, 1.9], [0, 2.4]], turn: 0.25,
+                  drift: { angle: 0.1, period: 40 } },
     // The one frame clock of drawn effects (js/effect-slots.js): the render delta capped at `maxDt` s (a test's hand-stepped
     // frame is one fixed step), slowed to `hitstop` of itself through a blow's hit-pause.
     effectClock: { maxDt: 0.1, hitstop: 0.12 },

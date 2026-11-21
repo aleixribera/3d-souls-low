@@ -187,7 +187,7 @@ const summonCrows = (() => {
     mesh.instanceMatrix.needsUpdate = true; mesh.visible = outline.visible = eyes.visible = false;
   }
   return {
-    attach() { if (!mesh) build(); Game.renderHooks.push(draw); visuals.hooks.stage.push(clear); },
+    attach() { if (!mesh) build(); Game.renderHooks.push(draw); visuals.hooks.clear.push(clear); },
     clear, info: () => swarms.filter(w => w.body).map(w => ({ crows: w.crows.length, darting: w.crows.filter(c => c.dart !== Infinity).length, x: w.x, z: w.z })),
   };
 })();

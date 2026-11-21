@@ -522,7 +522,7 @@ const legendFx4 = (() => {
   const on = list => list.filter(q => q.age !== Infinity).length;
   return {
     attach() {
-      make(); Game.renderHooks.push(render); visuals.hooks.stage.push(clear);
+      make(); Game.renderHooks.push(render); visuals.hooks.clear.push(clear);
       events.on('abilityPower', d => { if (POWERS.has(d.then)) power(d); });
       // This browser's own dive starts as its body takes off (Player.diveStart), not a round trip later with the server's word.
       events.on('abilityPress', d => {

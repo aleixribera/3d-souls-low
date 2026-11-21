@@ -39,7 +39,8 @@ const TEXTURE_DEFS = [
   { id: 'gaolerPlate', kind: 'plate', base: 0x434a54, alt: 0x7c858d, accent: 0x6c5741, rough: [0.26, 0.6], metal: 0.7, bump: 0.65, scratch: 42, stain: 0x292b30, contrast: 0.4 },
   { id: 'oathLinen', kind: 'cloth', base: 0xaaa79c, alt: 0xccc7b7, accent: 0x706c61, rough: [0.85, 1], metal: 0, bump: 0.55, scratch: 3, stain: 0x666058, cavity: 0.3, contrast: 0.22 },
   { id: 'duelistVelvet', kind: 'cloth', base: 0x4e2333, alt: 0x793b4e, accent: 0x291c26, rough: [0.8, 0.97], metal: 0, bump: 0.45, scratch: 2, stain: 0x2d2026, cavity: 0.3, contrast: 0.25 },
-  { id: 'archerCanvas', kind: 'cloth', base: 0x626953, alt: 0x92947a, accent: 0x3e4635, rough: [0.87, 1], metal: 0, bump: 0.75, scratch: 5, stain: 0x3b3d30, cavity: 0.4, contrast: 0.3 },
+  // (pass 165) a neutral mid grey, so the Bowman's tint sets its tunic's hue (a tint sets hue only; the value is the base's)
+  { id: 'archerCanvas', kind: 'cloth', base: 0x7e8082, alt: 0x9a9c9e, accent: 0x4a4c4e, rough: [0.87, 1], metal: 0, bump: 0.75, scratch: 5, stain: 0x3a3c3e, cavity: 0.4, contrast: 0.3 },
   { id: 'paviseWood', kind: 'bark', base: 0x45494b, alt: 0x747c7c, accent: 0x333735, rough: [0.65, 0.9], metal: 0, bump: 1, scratch: 14, stain: 0x292b27, contrast: 0.4 },
   { id: 'rustedIron', kind: 'rust', base: 0x4a4540, alt: 0x6a625a, accent: 0x8a4a22, rough: [0.45, 0.95], metal: 0.3, bump: 1.4, scratch: 30, stain: 0x2a1c12 },
   { id: 'dentedSteel', kind: 'steel', base: 0x7d8189, alt: 0x9ca0a6, accent: 0x6a4a30, rough: [0.3, 0.7], metal: 0.4, bump: 0.9, scratch: 90, stain: 0x2c2823, contrast: 0.5 },
@@ -91,9 +92,12 @@ const TEXTURE_DEFS = [
   { id: 'glaiveSteel', kind: 'steel', base: 0x686a6e, alt: 0xa6aab0, accent: 0x4a2c18, rough: [0.26, 0.68], metal: 0.68, bump: 1.25, scratch: 95, stain: 0x2a1a10, cavity: 0.75, contrast: 0.88 },
   // The Gargoyle (v5.5, after the reference art): dark soot-stained obsidian/basalt stone with specular worn edges,
   // deep carved stone relief with black crevices, layered stone wing feathers, and verdigris-patinated dark bronze brow filigree.
-  { id: 'gargoyleStone', kind: 'stone', base: 0x1e1c1a, alt: 0x423e3a, accent: 0x0a0908, rough: [0.38, 0.82], metal: 0.28, bump: 1.5, scratch: 26, stain: 0x0c0b0a, cavity: 0.9, contrast: 0.95 },
-  { id: 'gargoyleCarved', kind: 'plate', base: 0x1a1816, alt: 0x3e3a36, accent: 0x080706, rough: [0.35, 0.78], metal: 0.32, bump: 1.6, scratch: 32, stain: 0x0a0908, cavity: 0.95, contrast: 1.0 },
-  { id: 'gargoyleBronze', kind: 'rust', base: 0x242822, alt: 0x46584c, accent: 0x527868, rough: [0.35, 0.75], metal: 0.45, bump: 1.4, scratch: 22, stain: 0x121614, cavity: 0.85, contrast: 0.9 },
+  // (pass 165, the Gargoyle's cel restyle) three neutral values for the model's tints to colour (a tint sets hue only): mid
+  // stone, pale carving, a dark membrane; matte, no longer metallic (the warm sky's reflection drew it brown).
+  { id: 'gargoyleStone', kind: 'stone', base: 0x6a6c6e, alt: 0x86888a, accent: 0x3a3c3e, rough: [0.6, 0.9], metal: 0.04, bump: 1.3, scratch: 18, stain: 0x2e3032, cavity: 0.6, contrast: 0.55 },
+  { id: 'gargoyleCarved', kind: 'plate', base: 0x8e9092, alt: 0xa8aaac, accent: 0x5a5c5e, rough: [0.55, 0.85], metal: 0.04, bump: 1.4, scratch: 22, stain: 0x46484a, cavity: 0.7, contrast: 0.6 },
+  { id: 'gargoyleMembrane', kind: 'stone', base: 0x2e3034, alt: 0x3e4044, accent: 0x18191b, rough: [0.7, 0.95], metal: 0, bump: 1.0, scratch: 8, stain: 0x141516, cavity: 0.5, contrast: 0.45 },
+  { id: 'gargoyleBronze', kind: 'rust', base: 0x6c6e6a, alt: 0x9a9c98, accent: 0xb4b8b2, rough: [0.35, 0.75], metal: 0.3, bump: 1.2, scratch: 18, stain: 0x3a3c3a, cavity: 0.6, contrast: 0.6 },
   // The Toll Wisp (v5.5, after the reference art): deep espresso-black weathered felt hat, warm chestnut-brown shoulder
   // mantle and laced sleeves, cream-gold damask brocade front robe, burnt-amber embroidered trim, and dark olive-charcoal outer coat.
   { id: 'wispHat', kind: 'leather', base: 0x18120e, alt: 0x2e2218, accent: 0x090604, rough: [0.75, 0.96], metal: 0, bump: 1.15, scratch: 14, stain: 0x080604, cavity: 0.85, contrast: 0.85 },

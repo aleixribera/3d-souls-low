@@ -286,7 +286,7 @@ const summonBirds = (() => {
   return {
     attach() {
       if (!birds.length) { makeMarks(); for (const k of KINDS) for (let i = 0; i < 4; i++) birds.push(make(k)); }
-      Game.renderHooks.push(draw); visuals.hooks.stage.push(clear);
+      Game.renderHooks.push(draw); visuals.hooks.clear.push(clear);
     },
     clear, info: () => ({ birds: birds.filter(h => h.body).map(h => ({ kind: h.kind, x: h.px, y: h.py, z: h.pz, diving: h.dive !== Infinity, climbing: h.climb !== Infinity })),
       runes: runes.filter(q => q.age !== Infinity).length, bursting: runes.filter(q => q.burst !== Infinity).length }),

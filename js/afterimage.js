@@ -99,7 +99,7 @@ const afterimage = (() => {
     attach() {
       makePool();
       Game.renderHooks.push(render);
-      visuals.hooks.stage.push(clear);
+      visuals.hooks.clear.push(clear);
       events.on('dash', d => { if (d.player === Game.player) fresh = true; });   // a dash straight out of the last one starts afresh
       // Pass 103: each flash step of a Finishing Blow starts afresh with the bright copies, a trail of them through the foe
       events.on('finisherStep', d => { if (d.player === Game.player) { fresh = true; stepArmed = true; } });

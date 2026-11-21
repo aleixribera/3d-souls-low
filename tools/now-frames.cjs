@@ -12,6 +12,8 @@
 //   story-given-desktop / -phone  Story: Scarlet Draw given on the road, its toast and story-coloured key (pass 159)
 //   cel-default-desktop / -phone  the default look (cel, no ?style=) in a Practice fight; cel-default-fight.mp4: 10 s of it
 //   cel-enemy-<id>, cel-enemies.mp4  `enemies` (pass 162): four restyled enemies fought in the arena's ruins, 6 s each
+//   cel-enemy-bowman / -gargoyle, lobby-scene-wide, cel-lobby-enemies.mp4  `cel2` (pass 165): the Bowman, the Gargoyle and
+//                                 the lobby's scene (js/lobby-scene.js) with a party of three
 require('../tests/low-priority.cjs');
 const fs = require('node:fs');
 const path = require('node:path');
@@ -125,6 +127,48 @@ const shot = (page, name, clip) => page.screenshot({ path: path.join(out, name +
         '-pix_fmt', 'yuv420p', '-crf', '30', '-preset', 'slow', '-movflags', '+faststart', path.join(out, 'cel-enemies.mp4')]);
       fs.rmSync(dir, { recursive: true, force: true });
       console.log('enemies clip');
+    }
+    if (want('cel2')) {
+      // (pass 165) the cel look's second pass: a bot fights the Rampart Bowman and the restyled Gargoyle in the arena, 6 s
+      // each (stills cel-enemy-bowman / -gargoyle), then the lobby's scene with a party of three (its count stood in for
+      // other players: the scene draws one wanderer per roster entry), 6 s, as cel-lobby-enemies.mp4; and the lobby's
+      // scene still at 1920 x 1080 as lobby-scene-wide.
+      const ids = ['bowman', 'gargoyle'];
+      const dir = path.join(out, '.video'), t0 = Date.now(), cuts = [];
+      const context = await browser.newContext({ viewport: { width: 1280, height: 720 }, recordVideo: { dir, size: { width: 1280, height: 720 } } });
+      const page = await context.newPage();
+      page.on('pageerror', e => errors.push(e.message.slice(0, 200)));
+      await page.addInitScript(() => { localStorage.setItem('combat-arena-3d.settings', JSON.stringify({ graphics: 'normal', volume: 0, lessons: false })); localStorage.setItem('combatArena.onlineName', 'Wanderer'); });
+      await page.goto(url); await page.waitForFunction(() => window.__arenaReady, null, { timeout: 120000 });
+      for (const id of ids) {
+        await page.evaluate(async id => {
+          Game.startFight(id);
+          while (!(Game.player && Game.loading <= 0 && !Game.pendingLoad)) await new Promise(r => setTimeout(r, 100));
+          document.getElementById('publicLobby')?.classList.add('hidden');
+          const p = Game.player; p.maxHp = p.hp = 1e7; Game.worldWaiting = false; Game.setLock?.(Game.enemies[0]);
+          const brain = bot.create(BOT_PROFILES[0]); p.ctl = brain.hands;
+          Game.moveInput = () => brain.think(CONFIG.step, p, Game.enemies.filter(e => e.alive()), [], projectiles.live(), null).mv;
+          for (const e of Game.enemies) e.hp = 1e6;   // the fight lasts the clip
+        }, id);
+        await page.waitForTimeout(1200); cuts.push((Date.now() - t0) / 1000);
+        await page.waitForTimeout(3000); await shot(page, `cel-enemy-${id}`);
+        await page.waitForTimeout(3000); cuts.push((Date.now() - t0) / 1000);
+        console.log('enemy clip', id);
+      }
+      await page.evaluate(() => { Game.clearActors(); Game.showMenu('main'); Object.defineProperty(multiplayer, 'partySize', { get: () => 3 }); });
+      await joinLobby(page);
+      await page.waitForFunction(() => lobbyScene.active && lobbyScene.bodies === 3, null, { timeout: 10000 });
+      cuts.push((Date.now() - t0) / 1000); await page.waitForTimeout(6000); cuts.push((Date.now() - t0) / 1000);
+      await page.setViewportSize({ width: 1920, height: 1080 }); await page.waitForTimeout(800); await shot(page, 'lobby-scene-wide');
+      console.log('lobby scene');
+      const video = page.video(); await context.close();
+      const raw = await video.path(), parts = [], n = cuts.length / 2;
+      for (let i = 0; i < cuts.length; i += 2) parts.push(`[0:v]trim=${cuts[i].toFixed(2)}:${cuts[i + 1].toFixed(2)},setpts=PTS-STARTPTS[v${i / 2}]`);
+      require('node:child_process').execFileSync('ffmpeg', ['-y', '-loglevel', 'error', '-i', raw, '-filter_complex',
+        parts.join(';') + ';' + Array.from({ length: n }, (_, i) => `[v${i}]`).join('') + `concat=n=${n}:v=1:a=0[o]`, '-map', '[o]', '-an', '-c:v', 'libx264',
+        '-pix_fmt', 'yuv420p', '-crf', '30', '-preset', 'slow', '-movflags', '+faststart', path.join(out, 'cel-lobby-enemies.mp4')]);
+      fs.rmSync(dir, { recursive: true, force: true });
+      console.log('cel2 clip');
     }
     if (want('rush')) {
       const page = await open(1280, 720); await joinLobby(page);

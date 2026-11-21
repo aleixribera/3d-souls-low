@@ -188,7 +188,7 @@ const counterFx = (() => {
     dim = 0; if (dimEl) dimEl.style.opacity = shownDim = '0';
   }
   return {
-    attach() { make(); Game.renderHooks.push(render); visuals.hooks.stage.push(clear); },
+    attach() { make(); Game.renderHooks.push(render); visuals.hooks.clear.push(clear); },
     clear,
     get lastCut() { return last; },
     // tests: what shows now

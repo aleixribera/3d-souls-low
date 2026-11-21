@@ -362,7 +362,7 @@ const summonBeasts = (() => {
   return {
     attach() {
       if (!beasts.length) { makeMarks(); for (const k of KINDS) for (let i = 0; i < 4; i++) beasts.push(make(k)); }
-      Game.renderHooks.push(draw); visuals.hooks.stage.push(clear);
+      Game.renderHooks.push(draw); visuals.hooks.clear.push(clear);
     },
     clear, cel, see, info: () => beasts.filter(h => h.body).map(h => ({ kind: h.kind, x: h.x, z: h.z, speed: h.speed, lunge: h.lunge !== Infinity, howl: h.howl !== Infinity,
       tongues: h.F.ring ? tongues.filter(q => q.age !== Infinity).length : 0 })),

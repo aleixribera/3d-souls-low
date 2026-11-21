@@ -402,7 +402,7 @@ const guardFx = (() => {
   const on = list => list.filter(q => q.age !== Infinity).length;
   return {
     attach() {
-      make(); Game.renderHooks.push(render); visuals.hooks.stage.push(clear);
+      make(); Game.renderHooks.push(render); visuals.hooks.clear.push(clear);
       events.on('abilityPerk', d => { if (PERKS.has(d.perk)) perk(d); });
     },
     clear,

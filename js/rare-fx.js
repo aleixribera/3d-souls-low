@@ -413,7 +413,7 @@ const rareFx = (() => {
   }
   return {
     attach() {
-      make(); Game.renderHooks.push(render); visuals.hooks.stage.push(clear);
+      make(); Game.renderHooks.push(render); visuals.hooks.clear.push(clear);
       afterimage.hooks.tint = tint;
       events.on('abilityPerk', perk);
       events.on('abilityPower', d => { if (d.power === 'counterflame' || d.power === 'static-edge') power(d); });

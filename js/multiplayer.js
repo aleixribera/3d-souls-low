@@ -67,6 +67,10 @@ const multiplayer = (() => {
   style.textContent = `#publicLobby,#onlineParty,#onlineSpectator,.online-name{--mp-gold:#dcbb74;--mp-gold-hi:#f3dca3;--mp-ink:#ece4d1;--mp-muted:#a9a798;--mp-faint:#7f7d72;--mp-line:#c9a96a2e;--mp-line-hi:#c9a96a66;--mp-panel:#14181af2;--mp-well:#0a0d0fb3;--mp-good:#a9cf8e;--mp-bad:#d89383}
     #publicLobby{position:fixed;inset:0;z-index:90;background:var(--ui-veil);color:var(--ui-ink);font:var(--ui-size-text)/1.5 var(--ui-text);overflow:auto;box-sizing:border-box;color-scheme:dark;scrollbar-width:thin;scrollbar-color:#6b5c3f transparent;overscroll-behavior:contain}
     #publicLobby .lobby-adventure :is(.ui-row,select){scroll-margin-bottom:96px}
+    #publicLobby[data-scene=true]{--lobby-l:calc(max(16px,5vw) + 420px);--lobby-r:calc(100% - max(16px,5vw) - 380px);--lobby-foot:calc(max(16px,3.5vh) + 76px);
+      background:linear-gradient(0deg,#080a0cd9 var(--lobby-foot),#080a0c00 calc(var(--lobby-foot) + 28px)),
+        linear-gradient(90deg,#080a0cd9 calc(var(--lobby-l) + 12px),#080a0c1a calc(var(--lobby-l) + 60px),#080a0c1a calc(var(--lobby-r) - 60px),#080a0cd9 calc(var(--lobby-r) - 12px))}
+    #publicLobby[data-scene=true] .lobby-primary{background:none}
     #publicLobby.hidden,#publicLobby [hidden]{display:none!important}#publicLobby *{box-sizing:border-box}
     #publicLobby .lobby-card{min-height:100%;display:grid;grid-template-columns:minmax(0,420px) minmax(24px,1fr) minmax(0,380px);grid-template-rows:auto auto 1fr auto;
       grid-template-areas:"head head head" "status status status" "setup . party" "foot foot foot";
@@ -1370,6 +1374,7 @@ const multiplayer = (() => {
       return rushView;
     },
     get connected() { return connected; }, get alone() { return solo; }, get grantedEnemy() { return grantedEnemy; }, get panelOpen() { return !panel.classList.contains('hidden'); },
+    get partySize() { return connected ? roster.length : 1; },   // the lobby's scene draws one wanderer each (js/lobby-scene.js)
     get info() { return { self, leader, connected, ready, session, players: roster, ping, playback, spectatorTarget,
       frames: Math.max(0, ...[...tracks.values()].map(t => t.samples.length)), receivedFrames, remotes: remotes.size,
       playbackDelayMs: latestFrame && playback !== null ? Math.max(0, (latestFrame.time - playback) * 1000) : 0, server: latestFrame?.server }; },

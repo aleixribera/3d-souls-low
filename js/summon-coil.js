@@ -140,7 +140,7 @@ const summonCoil = (() => {
   return {
     attach() {
       if (!coils.length) { geos(); for (let i = 0; i < 4; i++) coils.push(make()); }
-      Game.renderHooks.push(draw); visuals.hooks.stage.push(clear);
+      Game.renderHooks.push(draw); visuals.hooks.clear.push(clear);
     },
     clear, info: () => coils.filter(c => c.body).map(c => ({ x: c.x, z: c.z, r: c.r, squeeze: c.squeeze !== Infinity, hiss: c.hiss !== Infinity })),
   };

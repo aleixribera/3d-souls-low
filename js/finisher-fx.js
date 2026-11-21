@@ -404,7 +404,7 @@ const finisherFx = (() => {
     graded = false;
   }
   return {
-    attach() { make(); Game.renderHooks.push(render); visuals.hooks.stage.push(clear); },
+    attach() { make(); Game.renderHooks.push(render); visuals.hooks.clear.push(clear); },
     clear, hold, view,
     // tests: what shows now
     get state() {

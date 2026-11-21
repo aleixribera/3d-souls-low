@@ -475,7 +475,7 @@ const rareStrikeFx = (() => {
   const THENS = new Set(['wave', 'crescent', 'cyclone', 'petals', 'hound', 'guardian', 'lancer', 'fox', 'lantern', 'crows', 'archer', 'hawk', 'ronin', 'serpent', 'puppet', 'bear', 'mantis', 'ghostBlade']);
   return {
     attach() {
-      make(); Game.renderHooks.push(render); visuals.hooks.stage.push(clear);
+      make(); Game.renderHooks.push(render); visuals.hooks.clear.push(clear);
       events.on('abilityPower', d => {
         if (THENS.has(d.then) && !d.draw) power(d);
         if (d.over > 0 && !d.strike && d.body !== Game.player) release(d.body, d.enemy, d.over);   // another's overcharged press (the holder's own: abilityPress)

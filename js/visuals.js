@@ -1080,7 +1080,9 @@ const visuals = (() => {
   }
   // Extensions (the Ultra preset, js/ultra-post.js): called on a quality change, after a stage is dressed, around each draw
   // and on a resize (with the drawn size in pixels).
-  const hooks = { quality: [], stage: [], beforeDraw: [], afterDraw: [], resize: [] };
+  // clear: an effect module's "hide everything I drew", run on each stage build and when the lobby's scene opens on a
+  // stage a fight just left (clearMarks); stage: builders that dress a new stage, called with (def, built).
+  const hooks = { quality: [], clear: [], stage: [], beforeDraw: [], afterDraw: [], resize: [] };
   let look = null, interiorK = 0;   // the interior blend's two ends and where it stands (setInterior)
 
   function applyCounts() {
@@ -1402,6 +1404,7 @@ const visuals = (() => {
     hooks, composer, passes: { bloom, grade },
     quality: () => quality,
     lowHealth: () => lowHp,
+    clearMarks() { decals.clear(); debris.clear(); for (const h of hooks.clear) h(); },   // a fight's marks and effects off a stage that stays (the lobby's scene)
     lights: () => st.lights,   // the point lights quality.lights limits (visible ones are lit this frame)
     lightSources: () => (stage && stage.lightSources) || st.lights,   // every fixed light source of the stage, drawn or not
     look: () => A,
@@ -1523,6 +1526,7 @@ const visuals = (() => {
       mergeStatic(G, new Set([...built.gates.map(g => g.mesh), ...(built.traps || []).map(t => t.group), ...flames.filter(f => f.group === G).map(f => f.mesh),
                               ...st.bonfires.map(b => b.core), ...(st.sky ? [st.sky] : []), ...(st.landmark ? [st.landmark] : [])]));
       applyLook();
+      for (const h of hooks.clear) h();
       for (const h of hooks.stage) h(d, built);
     },
     render(game, t, dt) {

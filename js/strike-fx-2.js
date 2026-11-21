@@ -459,7 +459,7 @@ const strikeFx2 = (() => {
   const on = list => list.filter(q => q.age !== Infinity).length;
   return {
     attach() {
-      make(); Game.renderHooks.push(render); visuals.hooks.stage.push(clear);
+      make(); Game.renderHooks.push(render); visuals.hooks.clear.push(clear);
       events.on('abilityPower', d => { if (!mine(d)) return; if (d.end) end(d); else if (d.strike) strike(d); else power(d); });
     },
     clear, mine,

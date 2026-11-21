@@ -391,7 +391,7 @@ const summonFigures = (() => {
     for (const o of STAR || []) { o.age = Infinity; o.s.visible = false; }
   }
   return {
-    attach() { if (!pool.length) { makeArrows(); for (const k of KINDS) for (let i = 0; i < 4; i++) pool.push(make(k)); } Game.renderHooks.push(draw); visuals.hooks.stage.push(clear); },
+    attach() { if (!pool.length) { makeArrows(); for (const k of KINDS) for (let i = 0; i < 4; i++) pool.push(make(k)); } Game.renderHooks.push(draw); visuals.hooks.clear.push(clear); },
     // The model lab's view (js/model-lab.js): `kind`'s move i, t s into it (past its end, standing guard). Returns its hop.
     poseAt(r, kind, i, t, now) {
       const F = VIS.abilityFx[kind], m = timed(F.moves[i]), f = { F, m, ac: t < m.end ? t : Infinity };
