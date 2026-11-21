@@ -41,7 +41,7 @@ MODEL_DEFS.motherAgathe = {
     iron: { tex: 'rustedIron', tint: 0x6a6460, decay: 0.75, rim: 0.4 },
     rope: { tex: 'crackedLeather', tint: 0x9a9080, decay: 0.6 },
     wood: { tex: 'paviseWood', tint: 0x8a7258, decay: 0.6 },
-    steel: { tex: 'glaiveSteel', tint: 0xc0c4ca, decay: 0.45, rim: 0.5 },
+    steel: { tex: 'glaiveSteel', tint: 0xc0c4ca, decay: 0.45, rim: 0.5, steel: true },   // (pass 148) the crescent banded as steel in cel
     wrap: { tex: 'sentinelRags', tint: 0xc8bea8, decay: 0.4, double: true },
     leather: { tex: 'rogueLeather', tint: 0x3a3028, decay: 0.7 },
     storm: { glow: 0xb8d4ff, storm: true },
@@ -63,6 +63,12 @@ MODEL_DEFS.motherAgathe = {
   weapon: null,          // the great hook is part of the figure (the `weapon: true` pieces above)
   grip: { span: [-0.75, 1.15], rest: [-1.45, 0, 3.14] },
   weaponRest: -1.0,   // where views that don't hold the haft (the codex, the finale) stand it   // at rest the haft stands upright at her side like a shepherd's crook, the hook over her head
+  // (pass 148, docs/bosses/system.md 4) the wind-up's tell sits on what strikes, never over her body: the crescent (the hook
+  // runs -0.9 to 2.1 m along the weapon bone, the crescent's middle at 1.8), or the iron shoe at the butt for the
+  // Correction's raps (a hit's `tell`). A heavy's halo grows there instead of washing her whole figure.
+  edgeTell: { slot: 'steel', size: 0.6, along: 0.88 },
+  tells: { shoe: { bone: 'weapon', at: [0, -0.045, -0.85], size: 0.5 } },
+  tellsGrow: true,
   eyes: { color: 0x5a6478, size: 0.005, spread: 0.031, at: [0, 0.126, 0.047], halo: 0 },   // a dull gleam deep in their sockets
   anim: {
     idle: { breathRate: 0.6, breath: 0.012, headDrift: 0.025, sway: 0.01, twitch: 0 }, walk: { twist: 0.05, roll: 0.03, headNod: 0.02, elbow: 0.08, drag: 0.08 },
@@ -130,13 +136,17 @@ MODEL_DEFS.motherAgathe = {
     armR: [-2.4, 0, 0.7], elbowR: [-0.5, 0, 0], haft: [-1.2, 0.1, 3.14], armL: [-2.0, 0, 0.5], elbowL: [-0.8, 0, 0] };
   const furrow = { crouch: 0.45, lean: 0.55, legL: [-0.85, 0, 0], kneeL: [0.4, 0, 0], legR: [0.5, 0, 0], spin: [0, 0.1, 0], chest: [0.4, 0, 0], head: [0.15, 0, 0],
     armR: [-0.8, 0, 0.1], elbowR: [0, 0, 0], haft: [0.25, 0, 3.14], armL: [-0.75, 0, -0.05], elbowL: [-0.15, 0, 0] };
-  ATTACK_POSES.agatheRendEarth = { ease: { windup: 'inOutSine', active: 'inQuad', follow: 'outCubic', recovery: 'inOutCubic' }, lag: { weapon: 0.08 },
-    hits: [{ windup: raisedLeft, strike: furrow, follow: { ...furrow, crouch: 0.48 } }] };
+  // (pass 148) ... the hook's blow comes down before her (parry it), then she tears it on through the floor and the line of
+  // shockwaves runs out ahead (roll or jump it): her weight hauled back and round as the crescent rips free.
+  const ripped = { crouch: 0.52, lean: 0.3, legL: [-0.8, 0, 0], kneeL: [0.5, 0, 0], legR: [0.55, 0, 0], spin: [0, -0.45, 0], chest: [0.2, -0.3, 0], head: [0.1, 0.2, 0],
+    armR: [-1.35, 0, -0.35], elbowR: [-0.2, 0, 0], haft: [-0.45, -0.3, 3.14], armL: [-1.2, 0, -0.3], elbowL: [-0.5, 0, 0] };
+  const rend = [{ windup: raisedLeft, strike: furrow, follow: { ...furrow, crouch: 0.48 } }, { windup: { ...furrow, crouch: 0.47 }, strike: ripped, follow: { ...ripped, spin: [0, -0.6, 0] } }];
+  ATTACK_POSES.agatheRendEarth = { ease: { windup: 'inOutSine', active: 'inQuad', follow: 'outCubic', recovery: 'inOutCubic' }, lag: { weapon: 0.08 }, hits: rend };
   // ... in the storm: and then the hook pointed at you, her left hand up to the clouds: the storm falls where you stand.
   const pointing = { crouch: 0.15, lean: 0.05, legL: [-0.5, 0, 0], legR: [0.4, 0, 0], chest: [-0.05, 0, 0], head: [-0.25, 0, 0],
     armR: [-1.6, 0, 0], elbowR: [0, 0, 0], haft: [-0.35, 0.1, 3.14], grip: false, armL: [-2.7, 0, 0.45], elbowL: [-0.1, 0, 0] };
   ATTACK_POSES.agatheStormFurrow = { ease: { windup: 'inOutSine', active: 'inQuad', follow: 'outCubic', recovery: 'inOutCubic' }, lag: { weapon: 0.08 },
-    hits: [{ windup: raisedLeft, strike: furrow, follow: furrow }, { windup: pointing, strike: { ...pointing, armL: [-2.2, 0, 0.6] }, follow: pointing }] };
+    hits: [...rend, { windup: pointing, strike: { ...pointing, lean: 0.2, chest: [0.1, 0, 0], armL: [-2.2, 0, 0.6] }, follow: pointing }] };
 
   // Torn Stones: crouched low, the hook dragged behind her left through the rubble, her eyes on you; the stones flung up
   // and out across to her right.
@@ -148,9 +158,9 @@ MODEL_DEFS.motherAgathe = {
 
   // The Cornerstone: the hook driven into the floor before her, both hands hauling back on it, her whole weight leaning;
   // a slab of the abbey tears up, and she hurls it.
-  const haul = { crouch: 0.3, lean: -0.35, legL: [-0.7, 0, 0], kneeL: [0.4, 0, 0], legR: [0.5, 0, 0], chest: [-0.3, 0, 0], head: [0.1, 0, 0],
+  const haul = { crouch: 0.3, lean: -0.35, legL: [-0.7, 0, 0], kneeL: [0.4, 0, 0], legR: [0.5, 0, 0], spin: [0, 0.45, 0], chest: [-0.3, 0.2, 0], head: [0.1, -0.3, 0],   // (pass 148) turned into the haul
     armR: [-0.9, 0, 0.1], elbowR: [-1.0, 0, 0], haft: [1.0, 0.1, 3.14], armL: [-0.9, 0, -0.1], elbowL: [-1.1, 0, 0] };
-  const hurl = { crouch: 0.1, lean: 0.3, legL: [-0.6, 0, 0], legR: [0.45, 0, 0], chest: [0.3, 0, 0], head: [-0.1, 0, 0],
+  const hurl = { crouch: 0.1, lean: 0.3, legL: [-0.6, 0, 0], legR: [0.45, 0, 0], spin: [0, -0.25, 0], chest: [0.3, -0.15, 0], head: [-0.1, 0.1, 0],   // ... and uncoiled through the throw
     armR: [-2.6, 0, 0.1], elbowR: [-0.3, 0, 0], haft: [-2.2, 0, 3.14], armL: [-2.5, 0, -0.1], elbowL: [-0.3, 0, 0] };
   ATTACK_POSES.agatheCornerstone = { ease: { windup: 'inOutSine', active: 'outExpo', follow: 'outCubic', recovery: 'inOutCubic' }, lag: { weapon: 0.08 },
     hits: [{ windup: haul, strike: hurl, follow: hurl }] };
@@ -193,13 +203,46 @@ MODEL_DEFS.motherAgathe = {
 
   // The Hook from the Storm: a deep crouch, the hook trailing, and she springs: aloft, the hook up over her head in both
   // hands, driven down hook-first where you stood, and the storm strikes it.
-  const aloft = { crouch: 0.1, lean: -0.1, legL: [-0.9, 0, 0], kneeL: [1.0, 0, 0], legR: [-0.3, 0, 0], kneeR: [1.1, 0, 0], chest: [-0.2, 0, 0], head: [-0.15, 0, 0],
+  const aloft = { crouch: 0.1, lean: -0.3, legL: [-0.9, 0, 0], kneeL: [1.0, 0, 0], legR: [-0.3, 0, 0], kneeR: [1.1, 0, 0], chest: [-0.4, 0, 0], head: [-0.15, 0, 0],   // (pass 148) arched back aloft, so the whole body drives the hook down
     armR: [-2.8, 0, 0.1], elbowR: [-1.0, 0, 0], haft: [-2.6, 0, 3.14], armL: [-2.7, 0, -0.1], elbowL: [-1.0, 0, 0] };
   const planted = { crouch: 0.5, lean: 0.5, legL: [-1.0, 0, 0], kneeL: [1.2, 0, 0], legR: [0.4, 0, 0], kneeR: [1.3, 0, 0], chest: [0.35, 0, 0], head: [0.15, 0, 0],
     armR: [-0.85, 0, 0], elbowR: [-0.2, 0, 0], haft: [0.25, 0, 3.14], armL: [-0.85, 0, -0.1], elbowL: [-0.25, 0, 0] };
   ATTACK_POSES.agatheStormLeap = { ease: { windup: 'inOutCubic', active: 'inQuad', follow: 'outCubic', recovery: 'inOutCubic' }, lag: { weapon: 0.06 },
-    hits: [{ windup: aloft, strike: planted, follow: planted }] };
+    // (pass 148) the hook driven down where you stood (parry it), and then the storm strikes it: she leans on the haft as the
+    // ring of lightning runs out along the floor (jump or roll it).
+    hits: [{ windup: aloft, strike: planted, follow: { ...planted, crouch: 0.55, lean: 0.6, chest: [0.45, 0, 0] } },
+      { windup: { ...planted, crouch: 0.45, lean: 0.4, chest: [0.3, 0, 0], head: [-0.2, 0, 0] }, strike: { ...planted, crouch: 0.56, lean: 0.62, chest: [0.48, 0, 0] },
+        follow: { ...planted, crouch: 0.6, lean: 0.68, chest: [0.55, 0, 0] } }] };
 
+  // (pass 148, tools/body-check.cjs; as Oswin's, pass 145) every follow-through carries her weight on past the blow: a fifth
+  // again of the wind-up-to-strike change in her lean, her bend and her turn, where the pose written does not already go further.
+  const get = (q, ch, i) => (i == null ? q[ch] || 0 : (q[ch] || [0, 0, 0])[i]);
+  const carry = h => {
+    const F = { ...h.follow };
+    for (const [ch, i] of [['lean'], ['chest', 0], ['chest', 1], ['spin', 1]]) {
+      const d = get(h.strike, ch, i) - get(h.windup, ch, i), want = get(h.strike, ch, i) + 0.2 * d;
+      if (Math.abs(d) < 0.05 || (get(F, ch, i) - want) * Math.sign(d) >= 0) continue;
+      if (i == null) F[ch] = want; else { const v = [...(F[ch] || [0, 0, 0])]; v[i] = want; F[ch] = v; }
+    }
+    return { ...h, follow: F };
+  };
+  // In-between keys (pass 148, docs/bosses/system.md 3; `via`, js/attack-anim.js), every one `rel`, from each hit's own key
+  // poses (as the Ringer's and Oswin's): a last hand's breadth of wind before the blow; her hips and chest lead while the
+  // hook and her arms trail a beat behind and then whip through (the crescent's weight); her weight goes on after it.
+  // `toward(a, b, k)`: k of the way from pose a to pose b, per channel, each at most 0.45 rad. Every wind-up reaches its pose
+  // fast and then gathers (outCubic), so no two of her moves share their first frames.
+  const BODY = ['spin', 'chest'], LIMB = ['armR', 'elbowR', 'armL', 'elbowL', 'haft', 'legL', 'legR', 'kneeL', 'kneeR'];
+  const toward = (a, b, k, names) => Object.fromEntries(names.filter(n => a[n] && b[n])
+    .map(n => [n, a[n].map((v, i) => Math.max(-0.45, Math.min(0.45, k * (b[n][i] - v))))]));
+  const inBetween = h => ({
+    windup: [{ t: 0.8, rel: true, crouch: 0.02, ...toward(h.strike, h.windup, 0.08, [...BODY, ...LIMB]) }],
+    active: [{ t: 0.6, rel: true, crouch: 0.04, lean: 0.03, ...toward(h.windup, h.strike, 0.3, BODY), ...toward(h.windup, h.strike, -0.25, LIMB) }],
+    follow: [{ t: 0.5, rel: true, crouch: 0.05, lean: 0.06, ...toward(h.strike, h.follow, 0.3, [...BODY, ...LIMB]) }],
+  });
+  for (const [id, P] of Object.entries(ATTACK_POSES)) if (/^agathe[A-Z]/.test(id)) {
+    P.ease = { ...P.ease, windup: 'outCubic' };
+    P.hits = P.hits.map(carry).map(h => ({ ...h, via: { ...inBetween(h), ...(h.via || {}) } }));
+  }
 }
 
 // ---- the boss -----------------------------------------------------------------------------------------------------------
@@ -214,6 +257,8 @@ MODEL_DEFS.motherAgathe = {
   const ANKLE = { w: 5.0, h: 0.8, d: 3.4, fwd: 1.9, y: 0.4 };
   const CHOP = { w: 1.8, h: 3.2, d: 4.8, fwd: 2.8, y: 1.2 };
   const FURROW = { w: 3.0, h: 0.6, d: 10.5, fwd: 6.0, y: 0.3, ground: true };
+  const BLADE = { w: 1.8, h: 2.8, d: 3.8, fwd: 2.3, y: 1.0 };       // (pass 148) the hook's blow before the furrow: parry it
+  const LEAPED = { w: 3.2, h: 2.8, d: 3.8, fwd: 1.6, y: 1.0 };      // the hook driven down where you stood
   const TURN = { w: 7.6, h: 1.8, d: 7.6, fwd: -0.4, y: 1.1 };
   const GALE = { w: 9.0, h: 1.6, d: 9.0, fwd: 0, y: 1.1 }, GALE_LOW = { ...GALE, h: 0.9, y: 0.45 };
   const BOLT = { w: 2.4, h: 6.0, d: 2.4, fwd: 0, y: 3.0 };          // where the mark lay
@@ -253,9 +298,9 @@ MODEL_DEFS.motherAgathe = {
         damage: 34, poise: 50, knock: 7, lunge: 1.6, range: 7.0, box: HAUL },
       // The Correction: butt-first like a staff; three raps of the iron shoe. Parry them.
       { id: 'correction', name: 'The Correction', anim: 'thrust', pose: 'agatheCorrection', tracking: { rate: 3.2, commit: 0.7 }, markers: glint(0, 1, 2),
-        hits: [{ startup: 0.8, active: 0.12, follow: 0.06 },
-               { startup: 0.34, active: 0.12, follow: 0.06, step: { from: 0.1, speed: 3, side: 0 } },
-               { startup: 0.42, active: 0.12, follow: 0.25, step: { from: 0.1, speed: 3, side: 0 } }], recovery: 1.8,
+        hits: [{ tell: 'shoe', startup: 0.8, active: 0.12, follow: 0.06 },
+               { tell: 'shoe', startup: 0.34, active: 0.12, follow: 0.06, step: { from: 0.1, speed: 3, side: 0 } },
+               { tell: 'shoe', startup: 0.42, active: 0.12, follow: 0.25, step: { from: 0.1, speed: 3, side: 0 } }], recovery: 1.8,
         followUps: [{ attack: 'hookHaul', if: 'near', chance: 0.17 }],
         damage: 16, poise: 30, knock: 4, lunge: 0.8, range: 3.2, box: RAP },
       // Hook and Haul: trailing behind her heel, head bowed; a reap at the ankles (jump it), then heaved overhead and down
@@ -264,10 +309,12 @@ MODEL_DEFS.motherAgathe = {
         hits: [{ startup: 1.0, active: 0.16, follow: 0.1, damage: 22, box: ANKLE },
                { startup: 0.75, active: 0.14, follow: 0.35, impact: { ring: 2.4, crack: 1.4, dust: 14, shake: 0.1 } }], recovery: 2.34,
         damage: 40, heavy: true, poise: 70, knock: 8, lunge: 1.0, range: 4.4, box: CHOP },
-      // Rend the Earth: raised high on her left; dragged through the floor ahead, a line of shockwaves. Roll or jump it.
-      { id: 'rendEarth', name: 'Rend the Earth', anim: 'chop', pose: 'agatheRendEarth', noParry: true, rollOnly: true, tracking: { rate: 2.4, commit: 0.65 }, minRange: 2.5, chance: 0.45,
-        hits: [{ startup: 1.15, active: 0.22, follow: 0.35, line: true, impact: { ring: 2.2, crack: 3.0, dust: 20, shake: 0.12 } }], recovery: 1.8,
-        damage: 30, poise: 50, knock: 7, lunge: 0, range: 11, box: FURROW },
+      // Rend the Earth: raised high on her left; the hook comes down before her (parry it, pass 148), then is torn on through
+      // the floor ahead, a line of shockwaves (roll or jump it). Its aim stops early: the line's mark must not turn late.
+      { id: 'rendEarth', name: 'Rend the Earth', anim: 'chop', pose: 'agatheRendEarth', markers: glint(0), tracking: { rate: 2.4, commit: 0.3 }, minRange: 2.5, chance: 0.45,
+        hits: [{ startup: 1.15, active: 0.16, follow: 0.3, damage: 26, step: { from: 0.35, speed: 3, side: 0 }, impact: { ring: 1.2, crack: 1.0, dust: 8, shake: 0.06 } },
+               { startup: 0.6, active: 0.22, follow: 0.35, noParry: true, still: true, line: true, box: FURROW, impact: { ring: 2.2, crack: 3.0, dust: 20, shake: 0.12 } }], recovery: 1.6,
+        damage: 30, poise: 50, knock: 7, lunge: 0, range: 6, box: BLADE },   // (pass 148) from where the blow, stepped in, reaches you (the diff review)
       // Torn Stones: crouched, dragging through the rubble; a fan of stones. At range.
       { id: 'tornStones', name: 'Torn Stones', anim: 'sweep', pose: 'agatheTornStones', noParry: true, tracking: { rate: 3.0, commit: 0.85 }, minRange: 4, chance: 0.35,
         projectile: STONES, hits: [{ startup: 0.85, active: 0.05, follow: 0.2 }], recovery: 1.08,
@@ -298,21 +345,24 @@ MODEL_DEFS.motherAgathe = {
                { startup: 1.0, active: 0.18, follow: 0.3, bolt: true, impact: { ring: 2.0, crack: 0.6, dust: 10, shake: 0.08 } }], recovery: 2.16,
         damage: 30, poise: 40, knock: 6, lunge: 0, range: 20, box: BOLT },
       // Lightning Down the Furrow: rend the earth, and then the hook points at you: the storm falls where you stand.
-      { id: 'stormFurrow', name: 'Lightning Down the Furrow', anim: 'chop', pose: 'agatheStormFurrow', noParry: true, rollOnly: true, tracking: { rate: 2.4, commit: 0.6 }, minRange: 2.5, chance: 0.45,
-        hits: [{ startup: 1.1, active: 0.22, follow: 0.2, line: true, impact: { ring: 2.2, crack: 3.0, dust: 20, shake: 0.12 } },
+      // (pass 148) the hook's blow is parried, the furrow's line jumped or rolled, the bolt stepped off.
+      { id: 'stormFurrow', name: 'Lightning Down the Furrow', anim: 'chop', pose: 'agatheStormFurrow', markers: glint(0), tracking: { rate: 2.4, commit: 0.3 }, minRange: 2.5, chance: 0.45,
+        hits: [{ startup: 1.1, active: 0.16, follow: 0.3, damage: 26, step: { from: 0.35, speed: 3, side: 0 }, impact: { ring: 1.2, crack: 1.0, dust: 8, shake: 0.06 } },
+               { startup: 0.6, active: 0.22, follow: 0.2, noParry: true, still: true, line: true, box: FURROW, impact: { ring: 2.2, crack: 3.0, dust: 20, shake: 0.12 } },
                { startup: 1.0, active: 0.18, follow: 0.3, bolt: true, damage: 28, box: BOLT, impact: { ring: 2.0, crack: 0.6, dust: 10, shake: 0.08 } }], recovery: 1.98,
-        damage: 30, poise: 50, knock: 7, lunge: 0, range: 11, box: FURROW },
+        damage: 30, poise: 50, knock: 7, lunge: 0, range: 6, box: BLADE },
       // The Gale Reap: wound round behind her back, her back to you; full round at full reach, then back the other way low.
-      // Roll the first; jump or roll the second.
-      { id: 'galeReap', name: 'The Gale Reap', anim: 'sweep', pose: 'agatheGaleReap', noParry: true, tracking: { rate: 2.0, commit: 0.55 }, chance: 0.55,
+      // Parry both (pass 148: the hook's blows), or roll the first and jump the second.
+      { id: 'galeReap', name: 'The Gale Reap', anim: 'sweep', pose: 'agatheGaleReap', markers: glint(0, 1), tracking: { rate: 2.0, commit: 0.55 }, chance: 0.55,
         hits: [{ startup: 1.15, active: 0.2, follow: 0.1, box: GALE },
                { startup: 0.55, active: 0.2, follow: 0.35, damage: 26, box: GALE_LOW }], recovery: 2.52,
         damage: 32, poise: 50, knock: 8, lunge: 0.6, range: 4.6, box: GALE },
-      // The Hook from the Storm: a spring from a deep crouch; the hook driven down where you stood, and the storm strikes
-      // it. Roll it late; a long opening after.
-      { id: 'stormLeap', name: 'The Hook from the Storm', anim: 'chop', pose: 'agatheStormLeap', noParry: true, tracking: { rate: 2.4, commit: 0.5 }, minRange: 5, chance: 0.4,
-        hits: [{ startup: 1.3, active: 0.16, follow: 0.45, leap: { from: 0.4, max: 12, short: 1.4 }, impact: { ring: 4.2, crack: 2.0, dust: 22, shake: 0.18 } }], recovery: 2.88,
-        damage: 46, heavy: true, poise: 85, knock: 10, lunge: 0, range: 12, box: { w: 3.2, h: 2.8, d: 3.8, fwd: 1.6, y: 1.0 } },
+      // The Hook from the Storm: a spring from a deep crouch; the hook driven down where you stood (parry it, pass 148, or
+      // roll it late), and then the storm strikes it: a ring of lightning along the floor (jump or roll it). A long opening after.
+      { id: 'stormLeap', name: 'The Hook from the Storm', anim: 'chop', pose: 'agatheStormLeap', markers: glint(0), tracking: { rate: 2.4, commit: 0.5 }, minRange: 5, chance: 0.4,
+        hits: [{ startup: 1.3, active: 0.16, follow: 0.45, leap: { from: 0.4, max: 12, short: 1.4 }, impact: { ring: 2.6, crack: 2.0, dust: 16, shake: 0.14 } },
+               { startup: 0.35, follow: 0.4, noParry: true, damage: 24, active: 0.5, box: RING(0.6, 6.5, 1.4, 0.5), impact: { ring: 4.2, crack: 0, dust: 14, shake: 0.12 } }], recovery: 2.5,
+        damage: 46, heavy: true, poise: 85, knock: 10, lunge: 0, range: 12, box: LEAPED },
     ],
   };
   ENEMY_DEFS.push(AGATHE); ENEMY_BY_ID[AGATHE.id] = AGATHE;
@@ -322,7 +372,7 @@ MODEL_DEFS.motherAgathe = {
 // four times with a hooked knife, fling stones and rend the floor into a line of shockwaves. Rough: the Beastman's moves
 // (BEASTMAN_MOVES, js/data/move-sources.js) on the Rogue's Blender figure in an undyed cowl, one hooked knife.
 {
-  const B = BEASTMAN_MOVES, NAMES = { bmSlash: ['brotherCuts', 'Four Cuts'], bmClaw: ['brotherRend', 'Rend the Earth'],
+  const B = BEASTMAN_MOVES, NAMES = { bmSlash: ['brotherCuts', 'Four Cuts'], bmClaw: ['brotherRend', 'The Floor Torn Open'],
     bmSling: ['brotherStones', 'Flung Stones'], bmLunge: ['brotherLunge', 'Lunging Hook'], bmPounce: ['brotherLeap', 'Leaping Hook'] };
   const BROTHER = { ...B, id: 'rendingBrother', model: 'rendingBrother', name: 'Rending Brother',
     description: 'A monk of the Torn Abbey, who cut at the hill with his abbess. He springs from the ruins, cuts four times with a hooked knife, flings stones, and rends the floor into a line of shockwaves (roll or jump).',

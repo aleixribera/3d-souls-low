@@ -98,7 +98,8 @@ const BOSS_FX = {
   // Mother Agathe, the Rending Hand (Level 12): the hook's steel, and the torn earth and stones, in the first half; then
   // the storm comes at her back: the hook seamed with lightning, and the storm falls where you stand
   // (js/data/bosses/agathe.js, loaded after this file; checked at validation).
-  agathe: { element: 'steel', aura: 0xc8d4e8, phases: { storm: 'storm' }, attacks: {
+  // (pass 148) the ribbon is a thin arc at the crescent, its head smeared on the last frames, not a band from her wrists.
+  agathe: { element: 'steel', aura: 0xc8d4e8, trail: { edge: 0.25, life: 0.16, smear: 0.3 }, phases: { storm: 'storm' }, attacks: {
     hookHaul: { impact: 'shatter' }, rendEarth: { element: 'earth', impact: 'quake', windup: 'gather' }, tornStones: { element: 'earth' },
     cornerstone: { element: 'earth', impact: 'quake', windup: 'gather' },
     stormComes: { element: 'storm', impact: 'gale', windup: 'gather' }, stormKnows: { element: 'storm', impact: 'gale', windup: 'gather' },

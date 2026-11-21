@@ -62,3 +62,6 @@ them (`git show 88f1abd:BACKLOG.md`).
   split mantle, as Hollis's. Pass 146 (`bars-1`): the same through Empty Reign's wind-up and after the Sworn Fist.
 - Deferred from item 8 batch 1 (pass 109): Iron Blood veins, Quick Draught smear, the level-IV streak, card hover
   loops (design/abilities/BUILD-ORDER.md).
+- Pass 148's `bars-1` round (Agathe's) saw two older bosses' wind-ups covered: the Regent's Feast washes his whole body
+  red and then a fire burst whites it out; the castellans' Hewing opens on a white flash over the body. Check against
+  Oswin's fix (pass 146, `js/effect-lighting.js`).

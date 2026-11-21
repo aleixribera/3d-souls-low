@@ -44,6 +44,29 @@
     expect.ok(BOSS_FX.agathe && BOSS_FX.agathe.phases.storm === 'storm', 'her effects are written, the storm\'s once it comes');
     expect.ok(M.attacks.some(a => a.id === 'shedRobes') && M.name === 'Beast Clergyman' && M.phases.blackBlade.reveal, 'Maliketh himself is untouched');
   });
+  // Pass 148 (docs/bosses/agathe.md, the moveset audit): every blow of the hook or its iron shoe can be parried; only the
+  // furrow's line, the storm's rings and its bolts are rolled, jumped or stepped off, and a phase keeps roll-only moves to
+  // a quarter (docs/bosses/system.md 1). The tell sits on the crescent, or on the shoe for the Correction's raps.
+  test('Torn Abbey: Agathe\'s hook blows are parried, the furrow and the storm rolled, a quarter roll-only at most (pass 148)', () => {
+    const d = A.ENEMY_BY_ID.agathe, by = id => d.attacks.find(a => a.id === id);
+    for (const a of d.attacks.filter(a => !a.projectile)) a.hits.forEach((h, i) => {
+      const floor = !!(h.box || a.box).ring || !!h.line || !!h.bolt;
+      expect.ok(floor ? !canParryHit(a, i) : canParryHit(a, i), `${a.id} hit ${i + 1}: ${floor ? 'along the floor or from the sky, rolled' : 'a blow, parried'}`);
+    });
+    for (const [id, Ph] of Object.entries(d.phases)) {
+      const rolled = Ph.attacks.filter(x => !by(x).hits.some((h, i) => canParryHit(by(x), i)));
+      expect.ok(rolled.length <= Ph.attacks.length / 4, `${id}: ${rolled.length} of ${Ph.attacks.length} roll-only (${rolled.join(', ')})`);
+    }
+    // The hook's blow before the furrow reaches as far as the move is chosen from, stepped in (the diff review): no parry
+    // wind-up for a blow that cannot touch you.
+    for (const a of [by('rendEarth'), by('stormFurrow')]) {
+      const h = a.hits[0], stepped = h.step.speed * h.startup * (1 - h.step.from);
+      expect.ok(hitReach(a, h) + stepped >= a.range && a.hits[1].still, `${a.id}: the blow reaches ${(hitReach(a, h) + stepped).toFixed(1)} m of its ${a.range} m; the line falls where it was aimed`);
+    }
+    const M = KIT.resolve(d.model);
+    expect.ok(M.edgeTell.slot === 'steel' && by('correction').hits.every(h => h.tell === 'shoe'), 'the tell on the crescent, or on the iron shoe');
+    expect.ok(A.ENEMY_BY_ID.rendingBrother.attacks.every(a => !d.attacks.some(b => b.name === a.name)), 'the Brothers\' moves keep names of their own');
+  });
   test('Torn Abbey: her hook hits hard and takes nothing off the bar (pass 96: the rend is gone)', () => {
     const { e, p } = duel(), draw = e.attackById('reapingDraw');
     e.beginAttack(draw); e.holdLeft = 0;
@@ -62,7 +85,7 @@
     e.cooldown = 99; e.attack = null; e.hitbox = null; e.state = ES.IDLE;
     e.x = e.px = p.x; e.z = e.pz = p.z + 8; e.y = p.y; e.yaw = Math.PI;
     e.beginAttack(e.attackById('stormKnows'));
-    expect.ok(!canParryHit(e.attack, 0) && !canParryHit(e.attackById('stormFurrow'), 1), 'lightning cannot be parried');
+    expect.ok(!canParryHit(e.attack, 0) && !canParryHit(e.attackById('stormFurrow'), 2), 'lightning cannot be parried');
     sim.seconds(0.2, 1);
     expect.ok(e.bolt && !e.bolt.locked && Math.hypot(e.bolt.x - p.x, e.bolt.z - p.z) < 0.01, 'the mark is where you stand');
     expect.ok(stormRend.live().marks >= 1, `the mark is drawn (${JSON.stringify(stormRend.live())})`);
