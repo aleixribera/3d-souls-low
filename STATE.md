@@ -3,11 +3,11 @@
 The iterate loop's working note (`.claude/iterate.md`). Cap: 8,000 characters.
 
 ## Now
-- Track 2, pass 134, PLAN item 8 batch 8 (pass 1 of 1), done in v7.186.0: Guard I. Iron Root (`root/bite`, no knock),
-  Unbroken (`Player.floorHp`, `loseHp` for burns), Vanishing Step (`vanished()`, server `vanishOf` turns the boss away),
-  Ember Mail (plates), Still Water (`abilityPools`, a `guardPool` frame event); Mending and Iron Stance drawn and heard
-  (`js/guard-fx.js`). Acceptance: `tests/guard-self.cjs`, in-page `guard self`; clip `docs/scorecard/now/guard-self.mp4`
-  (`node tools/ability-clips.cjs self`). Next on track 2: batch 9, Guard II. Browser lock:
+- Track 2, pass 137, PLAN item 8 batch 9 (pass 1 of 1), done in v7.189.0: Guard II. Mirror Ward (`ward/bounce`, capped
+  at the struck attack), Ash Husk (`abilityPowers.husks`, a decoy), Moon Dome (`abilityDomes`: `shelter`, `crossing`),
+  Waiting Blade (`rootKind 'wait'`), Hourglass (`Player.trail`, `startRewind`), Binding Seal (`Enemy.sealNo`); drawn in
+  `js/guard-fx-2.js`. Acceptance: `tests/guard-boss.cjs`, in-page `guard boss`; clip `docs/scorecard/now/guard-boss.mp4`
+  (`node tools/ability-clips.cjs boss`). Next on track 2: batch 10, Summons I. Browser lock:
   `node tools/browser-lock.cjs run <pass> -- <cmd>` (docs/two-tracks.md).
 - Track 1, pass 138 (PLAN item 6, Hale and Harrow, pass 1 of 2: the audit and the rework), done in v7.188.0: a rework
   (`docs/bosses/castellans.md`): 8 moves each (the Hewing; Elbow and Knee, the Heel from Heaven), parries on the
