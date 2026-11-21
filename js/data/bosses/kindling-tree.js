@@ -189,10 +189,11 @@ MODEL_DEFS.kindlingTree = {
     armR: [-0.6, 0, 1.0], elbowR: [-0.2, 0, 0], armL: [0.15, 0, 1.25], elbowL: [-0.1, 0, 0] };
   ATTACK_POSES.treeBrambleSweep = { ease: swing, lag: { armR: 0.05, armL: 0.05 }, hits: [{ windup: draggedLow, strike: sweptLow, follow: { ...sweptLow, spin: [0, 1.05, 0] } }] };
 
-  // The Reaching Bough: the right bough drawn straight back behind it, the trunk turned away, its left claw pointed at
-  // you; driven straight out at you, the whole trunk leaning after it.
-  const drawnBack = { crouch: 0.18, lean: -0.1, spin: [0, -0.65, 0], chest: [-0.05, -0.25, 0], head: [0.2, 0.55, 0],
-    armR: [0.95, 0, -0.25], elbowR: [-0.1, 0, 0], armL: [-1.5, 0, -0.1], elbowL: [-0.05, 0, 0] };
+  // The Reaching Bough: crouched and coiled low, the trunk turned away, the right bough drawn straight back level behind
+  // it and the left claw levelled at you, one line through the body like a spear; driven straight out at you, the whole
+  // trunk leaning after it. (pass 152, bars-1: drawn back low and the claw raised, it read as the Wrack's spread boughs.)
+  const drawnBack = { crouch: 0.32, lean: 0.22, spin: [0, -0.9, 0], chest: [0.3, -0.3, 0], head: [-0.1, 0.75, 0],
+    armR: [1.85, 0, -0.1], elbowR: [0, 0, 0], armL: [-1.05, 0, 0.05], elbowL: [0, 0, 0] };
   const driven2 = { crouch: 0.2, lean: 0.35, spin: [0, 0.35, 0], chest: [0.3, 0.2, 0], head: [0.1, -0.2, 0],
     armR: [-1.55, 0, 0.1], elbowR: [0, 0, 0], armL: [-0.3, 0, 0.7], elbowL: [-0.8, 0, 0] };
   ATTACK_POSES.treeReaching = { ease: { ...swing, active: 'outQuad' }, lag: { armR: 0.05 }, hits: [{ windup: drawnBack, strike: driven2, follow: { ...driven2, lean: 0.42, spin: [0, 0.45, 0] } }] };

@@ -226,7 +226,15 @@ void main() {
   const isHeavy = (L, a, h) => L.a && L.a.windup === 'none' ? false : (L.a && L.a.windup === 'gather') || (h.damage || a.damage || 0) >= BB.heavy
     || !!(h.hold || h.leap || h.sigil || (h.box || a.box || {}).ring || h.impact || a.impact);
   const when = (type, fn) => events.on(type, d => { if (!on()) return; try { fn(d); } catch (e) { warnOnce(`Ultra boss effect for "${type}" failed: ${e.message}`); } });
-  const tip = (e, z, out) => { e.rig.weapon.updateWorldMatrix(true, false); return out.set(0, 0, z).applyMatrix4(e.rig.weapon.matrixWorld); };
+  // (pass 152) A body with no weapon (`weapon: 'none'`, its tells on claws, boughs or crown) has only an unseen weapon node:
+  // its blow's effects sit on the part that strikes (the hit's `tell`), and a heavy's wind-up gathers nothing, since its
+  // grown halo is the tell (the Kindling Tree's gather glow hung in the air beside it, bars-1).
+  const bare = e => e.def.weapon === 'none' && !!e.rig.tellGlows;
+  const tip = (e, z, out, h) => {
+    const part = h && h.tell && bare(e) && e.rig.tellGlows[h.tell];
+    if (part) return part.getWorldPosition(out);
+    e.rig.weapon.updateWorldMatrix(true, false); return out.set(0, 0, z).applyMatrix4(e.rig.weapon.matrixWorld);
+  };
   when('attackPhase', d => {
     const e = d.actor;
     if (d.phase !== PHASE.ACTIVE || !e || e === Game.player) return;
@@ -245,7 +253,7 @@ void main() {
       if (R.to >= 5) ultraPost.wave(fx.chest(e), Math.min(1.6, R.to / 7), Math.min(2.5, R.to / 4));
     }
     if (isHeavy(L, a, h) && !a.projectile) {   // a heavy swing cracks the air at its blade
-      tip(e, 1.1, v1);
+      tip(e, 1.1, v1, h);
       fx.sparkBurst(v1, 14, L.el.sparks, null, 0, 0.9);
       fx.flare(v1, L.el.core, 1.2 * Math.sqrt(L.scale), 0.22);
       ultraPost.wave(v1, 0.35, 0.5);
@@ -279,7 +287,7 @@ void main() {
       if (!L) continue;
       const a = e.attack, h = a.hits[e.hitIndex] || a.hits[0], sc = Math.sqrt(L.scale);
       let acc = rate.get(e) || 0;
-      if (e.state === ES.WINDUP && isHeavy(L, a, h)) {   // gather: motes pulled into the blade, a glow swelling on it
+      if (e.state === ES.WINDUP && isHeavy(L, a, h) && !bare(e)) {   // gather: motes pulled into the blade, a glow swelling on it
         const k = clamp(e.stateTime / Math.max(0.1, h.startup), 0, 1);
         tip(e, 1.0, v1);
         acc += BB.gather * dt * sc * (0.4 + k) * VIS.fxBudgets[visuals.quality().fxBudget].density;
@@ -300,11 +308,11 @@ void main() {
         const n = e.state === ES.ACTIVE ? BB.shed : 1;
         SHED.size = 0.8 * sc;   // one options record for every shed mote (moteBurst only reads it)
         for (let i = 0; i < n; i++) {
-          tip(e, rand(0.35, 1.25), v1);
+          tip(e, rand(0.35, 1.25), v1, h);
           fx.moteBurst(v1, 1, L.el.mote, SHED);
         }
-        if (e.state === ES.ACTIVE && Math.random() < 0.5) fx.sparkBurst(tip(e, 1.2, v1), 1, L.el.sparks, null, 0, 0.5);
-        if (L.el.smoke && e.state === ES.ACTIVE && Math.random() < 0.6) fx.puff(tip(e, rand(0.4, 1.2), v1).x, v1.y, v1.z, L.el.smoke, 0.25, 0.9, 0.7, [0, 0.3, 0], 0.5);
+        if (e.state === ES.ACTIVE && Math.random() < 0.5) fx.sparkBurst(tip(e, 1.2, v1, h), 1, L.el.sparks, null, 0, 0.5);
+        if (L.el.smoke && e.state === ES.ACTIVE && Math.random() < 0.6) fx.puff(tip(e, rand(0.4, 1.2), v1, h).x, v1.y, v1.z, L.el.smoke, 0.25, 0.9, 0.7, [0, 0.3, 0], 0.5);
       }
       if (e.leaping) {   // through the air, a trail of the element
         const c = fx.chest(e);

@@ -89,6 +89,24 @@
       expect.ok(lit.some(l => Math.hypot(l.position.x - fist.x, l.position.z - fist.z) < 0.5), 'the blow lights from the fist');
     } finally { settings.graphics = saved; applySettings(); }
   });
+  test('Guiding light: a body with no weapon lights and gathers nothing over its wind-up, and lands its blow from the bough (pass 152)', () => {
+    const saved = settings.graphics;
+    try {
+      sim.begin(); visuals.setQuality('normal'); Game.startFight('kindlingTree'); Game.loading = 0;
+      const e = Game.enemies[0], p = Game.player, a = e.attackById('kindlingMark'), claw = new THREE.Vector3();
+      e.x = p.x + 5; e.z = p.z; e.rig.root.visible = true;
+      e.attack = a; e.hitIndex = 0; e.setState(ES.WINDUP); e.stateTime = a.hits[0].startup * 0.8;
+      expect.ok(ultraBoss.look(e) && VIS.effectLight.elements.includes(ultraBoss.look(e).name), 'the Kindling Mark burns: an element that lights');
+      for (let i = 0; i < 12; i++) Game.render(1, CONFIG.step);
+      expect.ok(effectLighting.info().activeEffects === 0, 'the wind-up: its claw\'s halo tells it, no light bathes its trunk');
+      expect.ok(ultraBoss.info().glows === 0, 'no gather glow hangs where its unseen weapon is');
+      e.setState(ES.ACTIVE); e.stateTime = 0;
+      for (let i = 0; i < 12; i++) Game.render(1, CONFIG.step);
+      e.rig.tellGlows.boughL.getWorldPosition(claw);
+      const lit = effectLighting.lights.filter(l => l.visible && l.intensity > 0.5);
+      expect.ok(lit.some(l => Math.hypot(l.position.x - claw.x, l.position.z - claw.z) < 0.5), 'the blow lights from the claw');
+    } finally { settings.graphics = saved; applySettings(); }
+  });
   test('Guiding light: reaching or resting at a bonfire advances the route, including default checkpoint spawns', () => {
     start('the-tower');
     const p = Game.player, b = Game.level.bonfires.find(b => b.id === 'tower-bait');

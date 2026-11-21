@@ -2,7 +2,7 @@
 
 The twelfth boss through the system (`system.md`; PLAN item 6, the roster in the order players meet them). Data:
 `js/data/bosses/kindling-tree.js` (boss id `kindlingTree`, model `kindlingTree`); model: `tools/blender/kindling_tree.py`.
-Status: pass 149, the audit and the rework (below); awaiting the `bars-1` round and Aleix's fight.
+Status: pass 149, the audit and the rework (below); pass 152, the `bars-1` round and its fixes (below); awaiting Aleix's fight.
 
 ## Moveset audit (pass 149): rework
 
@@ -102,3 +102,19 @@ Key poses per hit (`tree*` in the data file). Pass 149: every follow-through car
 bend and turn past the strike (`carry`, as Oswin's and Agathe's); a blow that neither drops nor leans settles its trunk
 through the follow; in-between keys from each hit's own poses (all `rel`), every wind-up reaching its pose fast
 (`outCubic`). Strips (`STYLE=cel`): `docs/scorecard/now/kindling-tree-*.jpg`; clip `kindling-tree.mp4`.
+
+## `bars-1` round (pass 152)
+
+Thirteen cel strips blind (seven of its moves: the Lash, the Falling Bough, the Kindling Mark, the Wrack, the Bramble Sweep,
+the Reaching Bough, the Falling Tree, beside the Ringer's stamp, the castellans' Crown Cleave, Agathe's Gale Reap,
+Oswin's Sworn Fist, the Regent's Pavane and the Hunger's Pound). Its biggest problem was the tree's: its whole trunk
+washed fire-red through the Kindling Mark, the Thorns and the Falling Tree, so a parry and a roll looked alike. The
+cause was the shared effect light and the heavy's gather glow, both placed on the weapon node, which a tree with no
+weapon still has, unseen, by its hand: lit from there, the trunk took the light, and the gather glow hung in the air
+beside it. Now a body with `weapon: 'none'` lights only as a blow lands, from the part that strikes (`js/effect-lighting.js`,
+as Oswin's cast-off axe), gathers nothing in a wind-up (its grown halo is the tell), and sheds its sparks from the part
+that strikes (`js/ultra-boss.js`). Second: the Reaching Bough read as the Wrack (one bough up, one out); its wind-up is
+now coiled low, the bough drawn back level and the claw levelled at you, one line through the body like a spear.
+Rechecked on the strips (`docs/scorecard/now/kindling-tree-*.jpg`). Left: every strip opens on the guard with the right
+splay's halo low by its roots (the first frame of every boss's strip is its guard); the Bramble Sweep's floor line reads
+as a hazard to the judge while it is red (a parry), which is the pending call on whether it should be jump-only.
