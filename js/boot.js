@@ -32,7 +32,7 @@ function registerListeners() {
   };
   events.on('trapWarning', d => { Game.addShake(d.trap.warning + CONFIG.fx.trap.rumble, CONFIG.fx.trap.jolt); trapDust(d.trap, false); });
   events.on('trapSprung', d => trapDust(d.trap, true));
-  events.on('device', () => { hud.buildTexts(Game); Game.showMenuHint(); });   // labels follow keyboard or gamepad
+  events.on('device', () => { hud.buildTexts(Game); Game.showMenuHint(); couchScale(); });   // labels follow keyboard or gamepad
   registerVisualListeners();
   registerHudListeners();
   spectral.attach();   // spectral weapons drawn for `spectral` attacks
@@ -148,10 +148,20 @@ document.addEventListener('pointerlockchange', () => {
   if (!document.pointerLockElement && Game.mode === 'play' && !bootReplay?.enabled) Game.pause(true);
 });
 
+// On a controller the player is likely on a couch before a television: the menus (laid out for a 1280x720 window) grow
+// with the window like the HUD, to at most CONFIG.hud.couchMax (1.5 at 1080p, so a 1080p screen lays them out as 720p).
+// Keyboard and mouse keep them at their own size. js/ui-theme.js zooms the screens by --couch under html.couch.
+function couchScale() {
+  const H = CONFIG.hud, k = Math.min(H.couchMax, window.innerWidth / H.refWidth, window.innerHeight / H.refHeight);
+  const on = usingPad() && k > 1.05, root = document.documentElement;
+  root.classList.toggle('couch', on);
+  if (on) root.style.setProperty('--couch', k.toFixed(3)); else root.style.removeProperty('--couch');
+}
 function resize() {
   const w = Math.max(1, window.innerWidth), h = Math.max(1, window.innerHeight);
   visuals.resize(w, h);   // renderer, post-processing and particle sizes
   hud.layout();           // the HUD stage scale and compact mode
+  couchScale();           // the menus' size on a television
   camera.aspect = w / h; camera.updateProjectionMatrix();
 }
 

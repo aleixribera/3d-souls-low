@@ -581,7 +581,7 @@ const CONFIG = {
   // switches to the compact layout. Times are seconds. Calm: after `calmDelay` s without a threat the vitals dim
   // (by `calmDim`) over `calmFadeOut` s; any threat brings them back over `calmFadeIn` s.
   hud: { fps: { interval: 0.5 },   // FPS counter refresh (s)
-         refWidth: 1280, refHeight: 720, minScale: 0.7, maxScale: 2, narrowWidth: 1180,
+         refWidth: 1280, refHeight: 720, minScale: 0.7, maxScale: 2, narrowWidth: 1180, couchMax: 1.5,
          trailHold: 0.45, healFlash: 0.9, hitShake: 0.3,
          lowHp: 0.3, heartRate: 6.5, critVignette: 0.5, hurtVignette: 0.4, hurtTime: 0.5,
          calmDelay: 4, calmDim: 0.5, calmFadeOut: 1.6, calmFadeIn: 0.25,

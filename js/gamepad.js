@@ -17,11 +17,39 @@ const gamepad = {
   neutralRequired: false,
   menuDir: null, menuTimer: 0,
 
-  // The first connected pad, or null.
+  activeIndex: -1, activeId: '',   // the pad used last (Gamepad.index and id); several may be connected (Steam adds a virtual one)
+  family: 'ps',                 // whose button names to show: 'ps' or 'xbox' (padFamily)
+
+  // The pad used last: the one held now, or a pad that has just been touched while it is idle. Any connected pad
+  // until one is used; null when none is connected.
   read() {
-    const pads = navigator.getGamepads ? navigator.getGamepads() : [];
-    for (const p of pads) if (p && p.connected !== false) return p;
-    return null;
+    let pads = [];
+    try { pads = navigator.getGamepads ? navigator.getGamepads() : []; } catch (e) { /* not allowed here */ }
+    let current = null, first = null, touched = null;
+    for (const p of pads) {
+      if (!p || p.connected === false) continue;
+      if (!first) first = p;
+      if (p.index === this.activeIndex) current = p;
+      else if (!touched && this.busy(p)) touched = p;
+    }
+    // Stay on the current pad while it is held; a mirror (Steam's virtual copy of the same pad) never steals it.
+    const pick = current && (this.busy(current) || !touched) ? current : touched || current || first;
+    if (!pick) this.activeIndex = -1;   // all unplugged: the next pad, whatever its index, names its own buttons
+    else if (pick.index !== this.activeIndex || pick.id !== this.activeId) { this.activeIndex = pick.index; this.activeId = pick.id; this.setFamily(pads); }
+    return pick;
+  },
+  // A button down or a stick off centre.
+  busy(p) {
+    const C = CONFIG.gamepad;
+    for (const b of p.buttons || []) if (typeof b === 'object' ? b.pressed || b.value > C.trigger : b > C.trigger) return true;
+    for (const a of p.axes || []) if (Math.abs(a) > C.deadzone) return true;
+    return false;
+  },
+  // PlayStation names unless the only pads are Microsoft's (a Steam virtual pad copying a DualShock names itself Xbox).
+  setFamily(pads) {
+    const ids = [...pads].filter(p => p && p.connected !== false).map(p => String(p.id || ''));
+    const family = padFamily(ids);
+    if (family !== this.family) { this.family = family; if (input.device === 'pad') events.emit('device', { device: 'pad' }); }
   },
   // Radial dead zone, rescaled so the stick's usable range still reaches 0..1.
   stick(x, y) {

@@ -186,7 +186,7 @@ const crateScreen = (() => {
   function show(view) {
     $c('cratesCollection').hidden = view !== 'collection'; $c('cratesRoll').hidden = view !== 'roll';
     root.classList.toggle('pad', usingPad());
-    for (const k of root.querySelectorAll('.crates-esc')) k.textContent = usingPad() ? 'B' : 'Esc';
+    for (const k of root.querySelectorAll('.crates-esc')) k.textContent = usingPad() ? keyLabel('PadB') : 'Esc';
   }
   // `then` runs once the screen closes (the title redraws its line); `lockedFn` says whether a run is on (the lobby's).
   function openCollection(then, lockedFn = null) {
@@ -360,7 +360,7 @@ const crateScreen = (() => {
   // The pad, while the screen is open: A presses, B goes back, the stick and the d-pad move. True when it took the input.
   function pad(pressed, dt = 1 / 60) {
     if (root.hidden) return false;
-    if (pressed.length) { root.classList.add('pad'); for (const k of root.querySelectorAll('.crates-esc')) k.textContent = 'B'; }
+    if (pressed.length) { root.classList.add('pad'); for (const k of root.querySelectorAll('.crates-esc')) k.textContent = keyLabel('PadB'); }
     if (pressed.includes('PadB')) { back(); return true; }
     if (pressed.includes('PadA')) {
       if (roll && !roll.done) hurry();

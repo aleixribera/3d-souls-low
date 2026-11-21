@@ -108,7 +108,7 @@ const { createServer } = require('../server/index.cjs');
     await pad(a, 0);
     assert.equal(await asking(a), true);
     assert.equal(await a.locator('#nameAskKeys').isVisible(), true, 'the pad gets the letter keys');
-    assert.match(await a.locator('#nameAskHint').textContent(), /D-pad.*Move.*A.*Type.*X.*Delete/);
+    assert.match(await a.locator('#nameAskHint').textContent(), /D-pad.*Move.*✕.*Type.*☐.*Delete/);
     await pad(a, 0); assert.equal(await a.locator('#nameAskField').inputValue(), 'Vale the SecondA', 'A types the focused letter');
     await pad(a, 13); await pad(a, 0); assert.equal(await a.locator('#nameAskField').inputValue(), 'Vale the SecondAK', 'down moves a row');
     await pad(a, 2); assert.equal(await a.locator('#nameAskField').inputValue(), 'Vale the SecondA', 'X deletes');

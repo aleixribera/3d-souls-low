@@ -3997,9 +3997,9 @@
       until('PadRight', 'Controls'); press('PadA');
       const binding = name => { const row = [...document.querySelectorAll('#menuSide .menu-binds .bind')].find(r => r.querySelector('.n').textContent === name); return row && row.querySelector('.v').textContent; };
       const fixed = name => { const row = [...document.querySelectorAll('#menuSide .menu-controls div')].find(r => r.firstChild.textContent === name); return row && row.lastChild.textContent; };
-      expect.ok(Game.screen === 'controls' && on() === 'Back' && binding('Dodge') === 'B / ○' && binding('Light attack') === 'RB / R1',
+      expect.ok(Game.screen === 'controls' && on() === 'Back' && binding('Dodge') === '◯' && binding('Light attack') === 'R1',
         `Controls lists the pad's buttons, starting on Back (${Game.screen}, ${on()}: Dodge ${binding('Dodge')}, Light ${binding('Light attack')})`);
-      expect.ok(binding('Block and deflect') === 'LB / L1, LT / L2' && !fixed('Help'), `the pad's own deflect trigger, F1 left out (${binding('Block and deflect')})`);
+      expect.ok(binding('Block and deflect') === 'L1, L2' && !fixed('Help'), `the pad's own deflect trigger, F1 left out (${binding('Block and deflect')})`);
       input.use('keyboard'); expect.ok(binding('Dodge') === 'Shift' && binding('Block and deflect') === 'L' && fixed('Help') === 'F1', `the keys after a key press (${binding('Dodge')}, ${binding('Block and deflect')})`);
       input.use('pad');
       press('PadB'); expect.ok(Game.screen === 'main', 'B leaves Controls');

@@ -54,8 +54,8 @@ const rush = 'calling/' + C.calling.id, weekly = 'calling/' + C.weekly.id, adven
     assert.deepEqual(await a.locator('#lobbyModes .ui-row').evaluateAll(rows => rows.map(r => r.dataset.mode)), adventures, 'one row per mode');
     assert.equal(await a.locator('#lobbyModes .ui-row[aria-pressed=true]').textContent(), 'Boss Rush');
     await navigate(a, 'lobbyStart');
-    assert.match(await a.locator('#lobbyPadHint').textContent(), /D-pad.*Move.*A.*Select/, 'hints follow the controller');
-    assert.equal(await a.locator('#lobbyLeave .ui-key').textContent(), 'B', "Back's key sits on Leave lobby");
+    assert.match(await a.locator('#lobbyPadHint').textContent(), /D-pad.*Move.*✕.*Select/, 'hints follow the controller');
+    assert.equal(await a.locator('#lobbyLeave .ui-key').textContent(), '◯', "Back's key sits on Leave lobby");
     await pad(a, 12);
     assert.match(await a.evaluate(() => document.activeElement.dataset.padKey || ''), /^mode\//, 'up from Start reaches the mode list');
     await navigate(a, 'mode/' + weekly); await pad(a, 0);

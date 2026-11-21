@@ -402,14 +402,14 @@ Object.assign(Game, {
   // version on the title and in pause) and the key on Back.
   showMenuHint() {
     const s = this.screens()[this.screen], hint = $('menuHint'), layout = s.layout || 'list', pad = usingPad();
-    for (const b of this.menuButtons || []) if (b.classList.contains('menu-back')) b.querySelector('.ui-key').textContent = pad ? 'B' : 'Esc';
+    for (const b of this.menuButtons || []) if (b.classList.contains('menu-back')) b.querySelector('.ui-key').textContent = pad ? keyLabel('PadB') : 'Esc';
     if (layout === 'controls') this.showControls();
     hint.classList.add('ui-hints'); hint.textContent = '';
     if (s.hint) { hint.textContent = s.hint; return; }
     // Controls on a pad has only Back, which shows its key; on a keyboard, Enter on a row waits for its new key.
     const keys = layout === 'controls' && pad ? [] : [[pad ? 'D-pad' : '↑ ↓', 'Move']];
     if (layout === 'options') keys.push(['← →', 'Change']);
-    if (layout !== 'controls' || !pad) keys.push([pad ? 'A' : 'Enter', layout === 'controls' ? 'Change key' : 'Select']);
+    if (layout !== 'controls' || !pad) keys.push([pad ? keyLabel('PadA') : 'Enter', layout === 'controls' ? 'Change key' : 'Select']);
     if (layout === 'title' || layout === 'pause') keys.push(['', VERSION]);
     for (const [key, label] of keys) {
       const item = document.createElement('span'), cap = document.createElement('span');
@@ -462,7 +462,7 @@ Object.assign(Game, {
   titleKeys() {
     if (this.screen !== 'main' || !this.menuButtons) return;
     const p = (this.menuItems || []).findIndex(x => x.lead), key = p >= 0 && this.menuButtons[p].querySelector('.ui-key');
-    if (key) key.textContent = this.selected === p ? usingPad() ? 'A' : 'Enter' : '';
+    if (key) key.textContent = this.selected === p ? usingPad() ? keyLabel('PadA') : 'Enter' : '';
   },
   // One step of directional menu input (keys, D-pad or stick); 'next' and 'prev' (Tab) go through every entry in order.
   menuStep(dir) {

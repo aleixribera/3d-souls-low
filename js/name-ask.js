@@ -86,10 +86,10 @@ const nameAsk = (() => {
     if (root.hidden) return;
     const pad = usingPad();
     root.classList.toggle('pad', pad); keys.hidden = !pad;
-    done.querySelector('.ui-key').textContent = pad ? 'Start' : 'Enter';
-    cancel.querySelector('.ui-key').textContent = pad ? 'B' : 'Esc';
+    done.querySelector('.ui-key').textContent = pad ? keyLabel('PadStart') : 'Enter';
+    cancel.querySelector('.ui-key').textContent = pad ? keyLabel('PadB') : 'Esc';
     const hint = $n('nameAskHint'); hint.textContent = '';
-    if (pad) for (const [key, label] of [['D-pad', 'Move'], ['A', 'Type'], ['X', 'Delete']]) {
+    if (pad) for (const [key, label] of [['D-pad', 'Move'], [keyLabel('PadA'), 'Type'], [keyLabel('PadX'), 'Delete']]) {
       const item = document.createElement('span'), cap = document.createElement('span');
       cap.className = 'ui-key'; cap.textContent = key; item.append(cap, label); hint.appendChild(item);
     }

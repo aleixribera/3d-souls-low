@@ -90,11 +90,24 @@ function resetBindings() { settings.keys = {}; saveSettings(); applyBindings(); 
 const KEY_LABELS = { Space: 'Space', ShiftLeft: 'Shift', ShiftRight: 'Shift',
   Tab: 'Tab', Escape: 'Esc', Enter: 'Enter', Equal: '=', Minus: '-', NumpadAdd: 'Num +', NumpadSubtract: 'Num -',
   ArrowUp: '↑', ArrowDown: '↓', ArrowLeft: '←', ArrowRight: '→', Mouse0: 'LMB', Mouse2: 'RMB', Mouse3: 'Side mouse', Mouse4: 'Side mouse',
-  // Gamepad buttons: Xbox name / PlayStation name.
-  PadA: 'A / ✕', PadB: 'B / ○', PadX: 'X / □', PadY: 'Y / △', PadLB: 'LB / L1', PadRB: 'RB / R1', PadLT: 'LT / L2', PadRT: 'RT / R2',
-  PadL3: 'L3', PadR3: 'R3', PadStart: 'Menu / Options', PadBack: 'View / Share', PadUp: 'D-pad ↑', PadDown: 'D-pad ↓', PadLeft: 'D-pad ←', PadRight: 'D-pad →',
-  PadFlickL: 'Right stick ←', PadFlickR: '→' };   // read together: "Right stick ← / →"
+};
+// A pad button's name on the pad in hand (gamepad.family): PlayStation's shapes, or Xbox's letters.
+const PAD_NAMES = {
+  ps: { PadA: '✕', PadB: '◯', PadX: '☐', PadY: '△', PadLB: 'L1', PadRB: 'R1', PadLT: 'L2', PadRT: 'R2', PadL3: 'L3', PadR3: 'R3',
+        PadStart: 'Options', PadBack: 'Share' },
+  xbox: { PadA: 'A', PadB: 'B', PadX: 'X', PadY: 'Y', PadLB: 'LB', PadRB: 'RB', PadLT: 'LT', PadRT: 'RT', PadL3: 'LS', PadR3: 'RS',
+          PadStart: 'Menu', PadBack: 'View' },
+  any: { PadUp: 'D-pad ↑', PadDown: 'D-pad ↓', PadLeft: 'D-pad ←', PadRight: 'D-pad →', PadFlickL: 'Right stick ←', PadFlickR: '→' },   // flicks read together: "Right stick ← / →"
+};
+// Whose names to show for the connected pads' ids: Xbox only for a pad that is Microsoft's own (vendor 045e) with no
+// PlayStation pad beside it. Steam's virtual pad (vendor 28de, or plain XInput on Windows) copies a DualShock here.
+function padFamily(ids) {
+  if (ids.some(id => /054c|sony|playstation|dualshock|dualsense/i.test(id))) return 'ps';
+  return ids.some(id => /045e/i.test(id)) ? 'xbox' : 'ps';
+}
+const padName = code => PAD_NAMES.any[code] || (PAD_NAMES[typeof gamepad !== 'undefined' && gamepad.family] || PAD_NAMES.ps)[code];
 function keyLabel(code) {
+  if (isPadCode(code)) return padName(code) || code;
   if (KEY_LABELS[code]) return KEY_LABELS[code];
   if (code.startsWith('Key')) return code.slice(3).toLowerCase();
   if (code.startsWith('Digit')) return code.slice(5);

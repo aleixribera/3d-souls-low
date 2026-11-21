@@ -113,7 +113,7 @@ const multiplayer = (() => {
     #publicLobby .lobby-footer{grid-area:foot;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px 24px;margin-top:max(20px,3vh);padding-top:12px;border-top:1px solid var(--ui-line)}
     #publicLobby .lobby-footer-actions{display:flex;flex-wrap:wrap;gap:4px;margin-left:-10px}
     #lobbyPadHint:empty{display:none}
-    #publicLobby .lobby-controls{position:fixed;z-index:1;left:50%;top:50%;transform:translate(-50%,-50%);width:min(720px,calc(100vw - 32px));max-height:calc(100dvh - 32px);overflow:auto;
+    #publicLobby .lobby-controls{position:fixed;z-index:1;left:50%;top:50%;transform:translate(-50%,-50%);width:min(720px,calc((100vw - 32px) / var(--couch,1)));max-height:calc((100dvh - 32px) / var(--couch,1));overflow:auto;
       padding:24px 28px;background:var(--ui-panel);border:1px solid var(--ui-line-hi);box-shadow:0 0 0 100vmax #000000a8}
     #publicLobby .lobby-controls-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:14px}
     #publicLobby .lobby-controls h2{font:400 var(--ui-size-head)/1.2 var(--ui-display);color:var(--ui-ink)}
@@ -259,7 +259,7 @@ const multiplayer = (() => {
       rows.appendChild(tr);
     }
     panel.inert = true; runSummary.hidden = false; input.clear(); if (document.pointerLockElement) document.exitPointerLock();
-    el('runSummaryLobbyKey').textContent = usingPad() ? 'B' : 'Esc';
+    el('runSummaryLobbyKey').textContent = usingPad() ? keyLabel('PadB') : 'Esc';
     el('runSummaryLobby').lastChild.textContent = solo ? 'Title' : 'Lobby';
     drawRunSummary(); summaryButtons()[0]?.focus({ preventScroll: true });
   }
@@ -363,7 +363,7 @@ const multiplayer = (() => {
     buttons[at < 0 ? 0 : (at + step + buttons.length) % buttons.length]?.focus({ preventScroll: true });
   }
   function drawAbilities() {
-    const visible = !!ability && active() && Game.loading <= 0 && panel.classList.contains('hidden');
+    const visible = !!ability && active() && Game.loading <= 0 && panel.classList.contains('hidden') && Game.mode === 'play';   // the game menu covers it
     const opening = visible && abilityScreen.hidden;
     abilityScreen.hidden = !visible;
     if (!visible) return;
@@ -405,7 +405,7 @@ const multiplayer = (() => {
   }, true);
   // The pad: the d-pad moves between cards and Confirm, A highlights a card or presses Confirm, Start still opens the lobby.
   function abilityPad(pressed) {
-    if (abilityScreen.hidden || pressed.includes('PadStart')) return false;
+    if (abilityScreen.hidden || pressed.includes('PadStart') || Game.mode !== 'play') return false;
     input.clear();
     const confirm = el('abilityConfirm');
     if (pressed.includes('PadLeft')) moveAbilityFocus(-1, false);
@@ -499,15 +499,15 @@ const multiplayer = (() => {
     const back = !el('lobbyControls').hidden ? 'lobbyControlsClose'
       : ['lobbyResume', 'lobbyGuestResume'].find(id => !el(id).hidden && el(id).offsetParent) || 'lobbyLeave';
     for (const id of ['lobbyResume', 'lobbyGuestResume', 'lobbyLeave', 'lobbyControlsClose'])
-      el(id).querySelector('.ui-key').textContent = id === back ? pad ? 'B' : 'Esc' : '';
+      el(id).querySelector('.ui-key').textContent = id === back ? pad ? keyLabel('PadB') : 'Esc' : '';
     const hints = el('lobbyPadHint'); hints.textContent = '';
-    for (const [key, label] of [[pad ? 'D-pad' : '↑ ↓', 'Move'], [pad ? 'A' : 'Enter', 'Select']]) {
+    for (const [key, label] of [[pad ? 'D-pad' : '↑ ↓', 'Move'], [pad ? keyLabel('PadA') : 'Enter', 'Select']]) {
       const item = document.createElement('span'), cap = document.createElement('span');
       cap.className = 'ui-key'; cap.textContent = key; item.append(cap, label); hints.appendChild(item);
     }
   }
   events.on('device', updateLobbyPadHint);
-  // The controls sheet: one overlay over the lobby, with its own Close (Esc / B).
+  // The controls sheet: one overlay over the lobby, with its own Close (Esc, or the pad's back button).
   // While it is open, the lobby behind it takes no clicks.
   function setLobbyHelp(open) {
     el('lobbyControls').hidden = !open; el('lobbyHelp').setAttribute('aria-expanded', String(open));
@@ -549,10 +549,10 @@ const multiplayer = (() => {
       if (!canSwitch && document.activeElement === arrow) el('spectatorToggle').focus();
     }
     el('spectatorControls').hidden = !spectatorBarOpen;
-    text('spectatorToggle', (spectatorBarOpen ? 'Hide' : 'Show') + ' spectator bar · ' + (usingPad() ? 'X / □' : 'Tab'));
+    text('spectatorToggle', (spectatorBarOpen ? 'Hide' : 'Show') + ' spectator bar · ' + (usingPad() ? keyLabel('PadX') : 'Tab'));
     el('spectatorToggle').setAttribute('aria-expanded', String(spectatorBarOpen));
-    text('spectatorHint', (canSwitch ? usingPad() ? 'LB / L1 · RB / R1 to switch · ' : '← / → to switch · ' : '')
-      + (usingPad() ? 'Menu / Options opens menu' : 'Escape opens menu'));
+    text('spectatorHint', (canSwitch ? usingPad() ? `${keyLabel('PadLB')} · ${keyLabel('PadRB')} to switch · ` : '← / → to switch · ' : '')
+      + (usingPad() ? `${keyLabel('PadStart')} opens menu` : 'Escape opens menu'));
   }
   function switchSpectator(direction) {
     const candidates = spectatorCandidates(), at = candidates.findIndex(([id]) => id === spectatorTarget);

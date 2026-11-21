@@ -46,6 +46,7 @@
   .ui-hints span{display:inline-flex;align-items:center;gap:8px}
   .ui-mirror{position:absolute!important;width:1px!important;height:1px!important;margin:-1px!important;padding:0!important;overflow:hidden!important;clip:rect(0 0 0 0)!important;border:0!important;white-space:nowrap!important}
   @media (pointer:coarse){.ui-row,.ui-button,.ui-text-button{min-height:44px}}
+  html.couch :is(#menu,#loading,#publicLobby,#runSummary,#nameAsk,#crates,#abilityScreen,#abilityLab,#abilityLabWorn,#onlineSpectator){zoom:var(--couch,1)}
   @media (prefers-reduced-motion:reduce){.ui-row,.ui-primary,.ui-button{transition:none}}`;
   document.head.appendChild(style);
 })();

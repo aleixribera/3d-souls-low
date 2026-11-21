@@ -1,26 +1,31 @@
 # Combat Arena 3D
 
-A Souls-like in the browser, alone or with friends online.
+Fast, anime-style action with Souls-like bosses, in the browser: a story alone, or an endless Boss Rush with friends.
 
 ## Play
 
 - In the browser: https://aleix.tailfef0f7.ts.net/souls/ (the home server: alone or online), or open `combat-arena-3d.html` from
-  a checkout. Nothing to install.
-- **Story** is the one road: Ashmere, then over the pass into Thrale. It saves itself at every bonfire you rest at.
-  **Boss Rush** joins the public lobby, where friends fight boss after boss together. Solo play is available if the lobby cannot be used.
-  **Practice** fights any enemy or boss (one, several, or two teams of bosses) or plays any level on its own.
-- Fight like a Souls game: watch the wind-up, roll through or parry the strike, punish the recovery, mind your
-  stamina. Bonfires refill your health and flasks and are your checkpoints.
+  a checkout. Nothing to install. Plays with keyboard and mouse, keyboard alone, or a controller (PlayStation or Xbox).
+- **Boss Rush** joins the public lobby, where friends fight boss after boss together, each harder than the last. Between
+  fights everyone picks an ability; playing earns levels, and each level a crate that unlocks a new ability. It runs
+  alone too when the lobby can't be reached.
+- **Story** is the one road, alone: Ashmere, then over the pass into Thrale. It saves at every bonfire you rest at.
+- **Practice** fights any enemy or boss (one, several, or two teams of bosses) or plays any level on its own.
+- Read the wind-up, dodge or deflect the blow, punish the opening, and use your four abilities. Bonfires refill your
+  health and flasks and are your checkpoints.
 
-| Action | Keys | Gamepad |
+| Action | Keys | Controller (PlayStation / Xbox) |
 |---|---|---|
 | Move / camera | WASD / mouse | Left / right stick |
-| Light / heavy attack | J or left mouse / K or right mouse | RB / RT |
-| Roll / jump | Shift / Space | B / A |
-| Block (hold) / parry | L or C / E | LB / LT |
-| Lock on / switch target | Q / Tab | R3 / flick the right stick |
-| Rest at a bonfire / drink a flask / talk | F / G / T | Y / X / D-pad right |
-| Pause and options / help | Escape / F1 | Menu / — |
+| Light / heavy attack (hold to charge) | J or left mouse / K or right mouse | R1 / R2 (RB / RT) |
+| Dodge / jump | Shift / Space | ◯ / ✕ (B / A) |
+| Block (hold) / deflect (tap as the blow lands) | L / L | L1 / L2 (LB / LT) |
+| Abilities | 1 2 3 4 | D-pad |
+| Lock on / switch target | Q / Tab | R3 (RS) / flick the right stick |
+| Flask / interact (rest, talk, read) | E / F | ☐ / △ (X / Y) |
+| Pause / restart / help | Escape / R / F1 | Options / Share (Menu / View) / none |
+
+Your keys can be changed on the Controls screen. Menus: arrows or D-pad to move, Enter or ✕ to choose, Escape or ◯ to go back.
 
 ## Host
 

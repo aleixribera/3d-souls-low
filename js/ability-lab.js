@@ -62,7 +62,7 @@ const abilityLab = (() => {
       tool('Low health', () => { const p = Game.player; if (p && p.alive()) p.hp = Math.max(1, Math.floor(p.maxHp * 0.2)); }),
       tool('Charge keys', () => { const p = Game.player; if (p) abilityGain(p.kit, p.perk, 999); }));   // keys 1-4 full
     const shut = make('button', 'ui-button lab-close'); shut.type = 'button';
-    shut.append('Back to the fight ', make('kbd', 'ui-key', 'B'));
+    shut.append('Back to the fight ', make('kbd', 'ui-key lab-close-key'));
     shut.addEventListener('click', close);
     tools.appendChild(shut);
     head.append(title, tools);
@@ -156,6 +156,7 @@ const abilityLab = (() => {
     if (open || Game.mode !== 'play' || !here(Game)) return;
     if (!root) build();
     open = true; Game.mode = 'lab'; Game.clearControls();
+    root.querySelector('.lab-close-key').textContent = usingPad() ? keyLabel('PadB') : 'Esc';
     draw(); root.hidden = false; worn.hidden = true;
     if (document.pointerLockElement) document.exitPointerLock();
     events.emit('pause');

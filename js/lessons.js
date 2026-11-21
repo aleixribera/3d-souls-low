@@ -106,7 +106,7 @@ const lessons = (() => {
   // Keycaps from the live bindings: the keyboard's first key and its mouse button (or the one key a lesson names), or the
   // controller's buttons.
   const NAMES = { move: 'Move', camera: 'Look', block: 'Block', parry: 'Deflect', jump: 'Jump', heavy: 'Heavy', light: 'Attack', roll: 'Dash' };
-  const FACE = { PadA: 'A', PadB: 'B', PadX: 'X', PadY: 'Y' };
+  const FACE = { PadA: 'a', PadB: 'b', PadX: 'x', PadY: 'y' };   // the face buttons by place (bottom, right, left, top)
   const cap = label => label.length === 1 ? label.toUpperCase() : label;
   function caps(key) {
     if (typeof key === 'object') {   // { action, key }: that one key on a keyboard, while it is still bound
@@ -119,7 +119,7 @@ const lessons = (() => {
     if (usingPad()) {
       const pad = codes.filter(isPadCode);
       if (key === 'switchTarget') return [{ text: 'Flick right stick', kind: 'stick' }];
-      return pad.map(c => FACE[c] ? { text: FACE[c], kind: `face face-${FACE[c].toLowerCase()}`, title: keyLabel(c) } : { text: keyLabel(c), kind: 'pad' });
+      return pad.map(c => FACE[c] ? { text: keyLabel(c), kind: `face face-${FACE[c]}${gamepad.family === 'ps' ? ' ps' : ''}`, title: keyLabel(c) } : { text: keyLabel(c), kind: 'pad' });
     }
     const k = codes.find(c => !c.startsWith('Mouse') && !isPadCode(c)), m = codes.find(c => c.startsWith('Mouse'));
     return [...(k ? [{ text: cap(keyLabel(k)), kind: 'key' }] : []), ...(m ? [{ text: keyLabel(m), kind: 'mouse' }] : [])];
