@@ -174,6 +174,18 @@ const ABILITIES = [
     perk: { when: 'press', then: 'heal' }, levels: [{ charge: 14, heal: 0.2 }, { charge: 13, heal: 0.25 }, { charge: 12, heal: 0.3 }] },
   { id: 'iron-stance', name: 'Iron Stance', rarity: 'rare', key: 'guard', text: 'Deflect blows for {time}, no timing needed.',
     perk: { when: 'press', then: 'stance' }, levels: [{ charge: 12, time: 2.5 }, { charge: 12, time: 3 }, { charge: 12, time: 3.5 }] },
+  // Guard I, on yourself (design/abilities batch 8), in blue ink by js/guard-fx.js (with Mending and Iron Stance above):
+  // roots that take the flinch, a flame no blow can put out, a vanish into petals, plates that take whole blows, a pool.
+  { id: 'iron-root', name: 'Iron Root', rarity: 'rare', key: 'guard', text: 'For {time}, nothing staggers you; take {cut} less.',
+    perk: { when: 'press', then: 'root' }, levels: [{ charge: 13, time: 4, cut: 0.3 }, { charge: 12, time: 4.5, cut: 0.35 }, { charge: 11, time: 5, cut: 0.4 }] },
+  { id: 'unbroken', name: 'Unbroken', rarity: 'rare', key: 'guard', text: 'For {time}, no blow can kill you.',
+    perk: { when: 'press', then: 'undying' }, levels: [{ charge: 18, time: 3 }, { charge: 17, time: 4 }, { charge: 16, time: 5 }] },
+  { id: 'vanishing-step', name: 'Vanishing Step', rarity: 'rare', key: 'guard', text: 'Refill all dashes; vanish for {time}.',
+    perk: { when: 'press', then: 'vanish' }, levels: [{ charge: 12, time: 0.6 }, { charge: 11, time: 0.7 }, { charge: 10, time: 0.8 }] },
+  { id: 'ember-mail', name: 'Ember Mail', rarity: 'rare', key: 'guard', text: 'Ember armour takes {hits} blows for you.',
+    perk: { when: 'press', then: 'armour' }, levels: [{ charge: 15, hits: 1, time: 8 }, { charge: 14, hits: 2, time: 8 }, { charge: 13, hits: 2, time: 10 }] },
+  { id: 'still-water', name: 'Still Water', rarity: 'rare', key: 'guard', text: 'A pool heals {heal} over {time}.',
+    perk: { when: 'press', then: 'pool' }, levels: [{ charge: 16, time: 5, heal: 0.25, radius: 2.5 }, { charge: 15, time: 5, heal: 0.3, radius: 2.7 }, { charge: 14, time: 5, heal: 0.35, radius: 2.9 }] },
   { id: 'static-edge', name: 'Static Edge', rarity: 'rare', text: 'Every {hits}th hit: a spark strikes the boss.',
     power: { when: 'hits', then: 'spark' }, levels: [{ hits: 5, damage: 30 }, { hits: 4, damage: 34 }, { hits: 4, damage: 44 }] },
 

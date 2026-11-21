@@ -7,7 +7,7 @@ const bootReplay = typeof replayView === 'undefined' ? null : replayView;
 function registerListeners() {
   const F = CONFIG.fx.bursts, chest = b => ({ x: b.x, y: b.y + b.height * 0.6, z: b.z });
   events.on('strike', d => {
-    const kind = d.blocked ? 'block' : d.attacker instanceof Player ? (d.strike.riposte ? 'riposte' : 'hit') : 'hurt';
+    const kind = d.blocked || d.plated ? 'block' : d.attacker instanceof Player ? (d.strike.riposte ? 'riposte' : 'hit') : 'hurt';
     spawnBurst(d.at, F[kind]);
   });
   events.on('chargeFull', d => { if (!d.player || d.player === Game.player) Game.addShake(CONFIG.player.chargeShake.time, CONFIG.player.chargeShake.amp); });
@@ -50,6 +50,7 @@ function registerListeners() {
   rareStrikeFx.attach(); // the rares' new triggers drawn (js/rare-strike-fx.js)
   strikeFx.attach();     // Strike I, the key-1 shapes on the ground drawn (js/strike-fx.js)
   strikeFx2.attach();    // Strike II, the flashy key-1 strikes drawn (js/strike-fx-2.js)
+  guardFx.attach();      // Guard I, the key-2 guards on yourself drawn (js/guard-fx.js)
   summonFigures.attach(); // the Stone Guardian and the Lancer of Ash drawn (js/summon-figures.js)
   registerAudioListeners();
 }

@@ -27,7 +27,19 @@ const ABILITY_MODS = { damage: 'more', maxHp: 'more', counterWindow: 'more',
 //   finisher/heal:    a Finishing Blow heals `heal` of the bar (a crate's).
 //   parry/heal:       a parry heals `heal` of the bar, at most once every `cooldown` s (a crate's).
 //   press/heal:       pressed (its key full: `charge` points): heals `heal` of the bar.
-//   press/stance:     pressed: for `time` s every blow that can be deflected is, as if timed (canDeflectNow).
+//   press/stance:     pressed: for `time` s every blow that can be deflected is, as if timed (canDeflectNow). A deflect
+//                     made only by the stance (not blocking or tapping) gives the Guard key no points (abilityGain's `skip`).
+// Guard I (design/abilities batch 8, on yourself), each pressed on key 2 and settled on its holder's own body; drawn by
+// js/guard-fx.js:
+//   press/root:       for `time` s no blow flinches, staggers or knocks its holder back, and each does `cut` less (a
+//                     grab still takes it). Perk clocks `rooted`, `rootV`.
+//   press/undying:    for `time` s no health loss takes its holder below CONFIG.abilities.undying.floor (Player.floorHp);
+//                     a blow that would have killed kneels it instead (`saved`). A fall into a pit still kills.
+//   press/vanish:     every dash charge refilled; for `time` s untouchable and hidden, never a target (a blow passing
+//                     through is no perfect dodge); an attack or a flask ends it. Perk clock `vanish`.
+//   press/armour:     `hits` plates take the next blows whole for `time` s (a grab breaks them all). Perk clocks `plates`, `mail`.
+//   press/pool:       a pool at its holder's feet for `time` s, `radius` m across: standing in it heals `heal` of the bar
+//                     over its time (anyone else CONFIG.abilities.shared.pool of that). abilityPools.
 // The commons' perks (design/abilities batch 3, the guard and the run), each on its holder's own body:
 //   parry/freeDash:      a deflect banks one free dash (the next dash costs no charge), at most once every `cooldown` s.
 //   low/veil:            once a fight, at or under `below` of the bar: the next enemy blow does `cut` less.
@@ -50,6 +62,8 @@ const ABILITY_PERKS = {
   'dodge/flashBehind': ['window', 'cooldown'], 'hurt/empower': ['window', 'damage'], 'streak/heal': ['hits', 'heal'],
   'low/freeDash': ['below'], 'cracked/damage': ['damage'], 'block/charge': ['window'], 'unhurt/empower': ['after', 'damage'],
   'finisher/heal': ['heal'], 'parry/heal': ['heal', 'cooldown'], 'press/heal': ['charge', 'heal'], 'press/stance': ['charge', 'time'],
+  'press/root': ['charge', 'time', 'cut'], 'press/undying': ['charge', 'time'], 'press/vanish': ['charge', 'time'],
+  'press/armour': ['charge', 'hits', 'time'], 'press/pool': ['charge', 'time', 'heal', 'radius'],
   'parry/freeDash': ['cooldown'], 'low/veil': ['below', 'cut'], 'hurt/ironSkin': ['cut', 'time'], 'parry/keys': ['charge'],
   'finisher/keys': ['charge'], 'ready/empower': ['damage'], 'fightStart/freeDash': ['time'], 'revive/reviveHeal': ['heal'],
   'flask/unshaken': ['time'], 'summonHit/empower': ['damage'], 'ready/overcharge': ['damage'],
@@ -60,7 +74,7 @@ const COMMON_PERKS = new Set(['parry/freeDash', 'freeDash/spent', 'low/veil', 'v
 // The rares' state cues (batch 4: a mote, a lit blade, a breath), drawn by js/rare-fx.js but too frequent or too quiet
 // for the rares' camera kick (camera-feel.js).
 const RARE_QUIET_PERKS = new Set(['streak/step', 'streak/lost', 'hurt/armed', 'unhurt/ready', 'low/freeDash', 'block/armed', 'cracked/damage',
-  'unshaken/glance', 'overcharge/step']);
+  'unshaken/glance', 'overcharge/step', 'root/bite', 'armour/crack', 'armour/broken', 'stance/deflect', 'vanish/end']);
 // A key's extra points from a commons' `<when>/keys` perk (Kindling's deflect, Tithe's Finishing Blow).
 const abilityKeysFor = (kit, when) => (kit.perks[when + '/keys'] || {}).charge || 0;
 // A heal of `share` of the bar from a perk (Grave Feast, Iron Mercy), told as that perk (`target`: the enemy it came from).
@@ -253,10 +267,12 @@ function pressGain(strike) {
 // `n` points toward each key the kit holds, each up to its ability's `charge`.
 // Returns true when a key filled just now woke Glint (`ready/empower`, not already waiting).
 // Overcharge (`ready/overcharge`) lets a full key run on past full, up to CONFIG.abilities.overcharge.most of its charge more.
-function abilityGain(kit, st, n) {
+// `skip`: a key left out (Iron Stance's untimed deflects give the Guard key nothing).
+function abilityGain(kit, st, n, skip = null) {
   let filled = false;
   const most = kit.perks['ready/overcharge'] ? 1 + CONFIG.abilities.overcharge.most : 1;
   for (const key in kit.pressed) {
+    if (key === skip) continue;
     const full = kit.pressed[key].v.charge, was = st.charge[key];
     st.charge[key] = Math.min(full * most, was + n);
     if (was < full && st.charge[key] >= full) filled = true;
@@ -298,11 +314,46 @@ function pressOpen(slot, body, e, slack = 0) {
 }
 // The input actions of the four keys, in ABILITY_KEYS order (js/input.js binds them).
 const ABILITY_ACTIONS = ['ability1', 'ability2', 'ability3', 'ability4'];
-// A pressed perk on its holder's body (Guard's): a heal, or the deflecting stance.
-function abilityPressPerk(p, slot, over = 0) {
-  if (slot.then === 'heal') abilityHeal(p, Math.min(1, slot.v.heal * abilityOverBy(p.kit, over)), 'press/heal');
-  else if (slot.then === 'stance') { p.perk.stance = slot.v.time; events.emit('abilityPerk', { body: p, perk: 'press/stance' }); }
+// A pressed perk on its holder's body (Guard's): a heal, the deflecting stance, or batch 8's (ABILITY_PERKS above).
+// `holder`: who it is, for a pool (the browser's own player is 'self').
+function abilityPressPerk(p, slot, over = 0, holder = 'self') {
+  const v = slot.v, st = p.perk, tell = (more = {}) => events.emit('abilityPerk', { body: p, perk: 'press/' + slot.then, ability: slot.id, v, ...more });
+  switch (slot.then) {
+    case 'heal': abilityHeal(p, Math.min(1, v.heal * abilityOverBy(p.kit, over)), 'press/heal'); return;
+    case 'stance': st.stance = v.time; tell(); return;
+    case 'root': st.rooted = v.time; st.rootV = v; tell(); return;
+    case 'undying': st.undying = v.time; tell(); return;
+    case 'vanish': st.vanish = v.time; p.dashes = CONFIG.player.dashCharges; tell(); return;
+    case 'armour': st.plates = v.hits; st.mail = v.time; tell(); return;   // a new press sets both afresh: it never stacks
+    case 'pool': {
+      const heal = Math.min(1, v.heal * abilityOverBy(p.kit, over));
+      tell({ pool: abilityPools.place(holder, p.x, p.y, p.z, v.radius, heal / v.time, v.time) }); return;
+    }
+  }
 }
+// Still Water's pools (press/pool): { holder, x, y, z, radius, rate (share of the bar a s, its holder's), left (s), time },
+// at most CONFIG.abilities.pools, one a holder (a new one replaces its old). Each realm keeps its own: the browser the
+// ones it heard of (its own and the server's word of others'), the server every one (its bots heal in them).
+const abilityPools = (() => {
+  const list = [];
+  function place(holder, x, y, z, radius, rate, time) {
+    let q = list.find(o => o.holder === holder);
+    if (!q) { if (list.length >= CONFIG.abilities.pools) list.shift(); list.push(q = {}); }
+    return Object.assign(q, { holder, x, y, z, radius, rate, left: time, time });
+  }
+  function tick(dt) { for (let i = list.length - 1; i >= 0; i--) if ((list[i].left -= dt) <= 0) list.splice(i, 1); }
+  // The share of the bar a s body `b` (holder `id`) heals now: the best pool it stands in (two never add). Its own at the
+  // full rate, another's at CONFIG.abilities.shared.pool of it.
+  function rate(b, id) {
+    let best = 0;
+    for (const q of list) {
+      if (Math.hypot(b.x - q.x, b.z - q.z) > q.radius || Math.abs(b.y - q.y) > CONFIG.height.stepUp) continue;
+      best = Math.max(best, q.rate * (q.holder === id ? 1 : CONFIG.abilities.shared.pool));
+    }
+    return best;
+  }
+  return { list, place, tick, rate, clear() { list.length = 0; } };
+})();
 
 // An ability's level for a list of held ids (one id per pick, repeated by its upgrades), at most its last level.
 function abilityLevel(b, held) {
@@ -313,6 +364,9 @@ function abilityLevel(b, held) {
 // The numbers of ability `b` at `level` (1 = the first).
 const abilityAt = (b, level) => b.levels[clamp(level, 1, b.levels.length) - 1];
 
+// The Guard presses the server is told of (a perk is its holder's own, but these reach others): a vanish (no target)
+// and a pool (a teammate heals in it).
+const GUARD_CLAIMED = new Set(['vanish', 'pool']);
 const NO_MODS = Object.freeze(Object.fromEntries(Object.keys(ABILITY_MODS).map(k => [k, 0])));
 const NO_KIT = Object.freeze({ ids: Object.freeze([]), mods: NO_MODS, perks: Object.freeze({}), powers: Object.freeze([]), whens: new Set(), pressed: Object.freeze({}) });
 // A body's kit from the ids it holds: { ids, mods: { key: fraction }, perks: { 'when/then': level numbers },
@@ -326,6 +380,7 @@ function abilityKit(held) {
     const b = ABILITY_BY_ID[id], v = abilityAt(b, abilityLevel(b, ids));
     if (b.key) {   // a key's ability: fired by its key only (a second one for the same key, never offered, is idle)
       if (!pressed[b.key]) pressed[b.key] = Object.freeze({ id: b.id, then: (b.perk || b.power).then, power: !!b.power, v });
+      if (b.perk && pressed[b.key].id === b.id && GUARD_CLAIMED.has(b.perk.then)) whens.add('press');   // the server must hear of a vanish or a pool
       if (b.perk || pressed[b.key].id !== b.id) continue;
     }
     if (b.mods) for (const [key, x] of Object.entries(v)) mods[key] += x;
@@ -355,9 +410,11 @@ function kitMight(held) {
 // left (`hunt`), Glint's waiting blow (`glint`, 0 or 1), Bitter Draught's burning blows left with its level (`burn`, `burnV`),
 // Counterstep's s until it may step again (`step`), Ironclad's s left (`unshaken`), Hunting Call's marked enemy and s left
 // (`mark`, `markT`).
+// Batch 8's: Iron Root's s left with its level (`rooted`, `rootV`), Unbroken's (`undying`), Vanishing Step's (`vanish`),
+// Ember Mail's plates and s left (`plates`, `mail`).
 const abilityPerkState = () => ({ calm: 0, vengeance: 0, bastion: 0, streak: 0, moon: 0, moonV: null, mercy: 0, stance: 0,
   charge: { strike: 0, guard: 0, summon: 0, ultimate: 0 }, bank: 0, ring: 0, veil: 0, iron: 0, hunt: 0, glint: 0, burn: 0, burnV: null, step: 0,
-  unshaken: 0, mark: null, markT: 0 });
+  unshaken: 0, mark: null, markT: 0, rooted: 0, rootV: null, undying: 0, vanish: 0, plates: 0, mail: 0 });
 // Losing health (any blow, a burn, a fall): the perks that wait for it. With the `body` (its owner's), the rares' cues:
 // Vengeance's blade lit (`hurt/armed`), Bloodthirst's motes scattered (`streak/lost`).
 function abilityHurt(kit, st, body) {
@@ -369,7 +426,8 @@ function abilityHurt(kit, st, body) {
 function abilityClocks(st, dt) {
   st.step = Math.max(0, st.step - dt); st.calm += dt; st.vengeance = Math.max(0, st.vengeance - dt); st.bastion = Math.max(0, st.bastion - dt); st.moon = Math.max(0, st.moon - dt); st.mercy = Math.max(0, st.mercy - dt);
   st.stance = Math.max(0, st.stance - dt); st.ring = Math.max(0, st.ring - dt); st.iron = Math.max(0, st.iron - dt); st.hunt = Math.max(0, st.hunt - dt);
-  st.unshaken = Math.max(0, st.unshaken - dt);
+  st.unshaken = Math.max(0, st.unshaken - dt); st.rooted = Math.max(0, st.rooted - dt); st.undying = Math.max(0, st.undying - dt);
+  st.vanish = Math.max(0, st.vanish - dt); st.mail = Math.max(0, st.mail - dt); if (st.mail <= 0) st.plates = 0;
   if (st.mark && (st.markT -= dt) <= 0) { st.mark = null; st.markT = 0; }
 }
 // A deflect, on the deflecting body (js/combat.js; a bot's on the server): Iron Mercy's heal, Ringing Steel's bank,
@@ -478,7 +536,7 @@ const abilityPowers = (() => {
   // `bodyOf(holder)`: the holder's body now (the server's, whose bodies are remade each pose); else the one it was called with.
   // `perkOf(holder)`: the holder's perk clocks where its body carries none (the server's persons: Hunting Call's mark).
   const api = { trigger, tick, reset, twinOf, summonOf, decoy, credit: null, bodyOf: null, perkOf: null, running, ahead };
-  function reset() { running.length = 0; ahead.length = 0; ready.clear(); counts.clear(); summons.clear(); waiting.clear(); ghosts.clear(); clock = 0; }
+  function reset() { abilityPools.clear(); running.length = 0; ahead.length = 0; ready.clear(); counts.clear(); summons.clear(); waiting.clear(); ghosts.clear(); clock = 0; }
   // A power's blow: magic, so it comes from behind the enemy's facing (a shield never takes it). Never a counter: the
   // Finishing Blow is the holder's to earn.
   function wound(e, damage, holder, power) {

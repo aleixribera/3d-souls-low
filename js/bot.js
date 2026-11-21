@@ -8,6 +8,9 @@
 // attack data, so no enemy is special-cased. Tuning: CONFIG.bot; personalities: BOT_PROFILES (js/data/bots.js).
 // The lobby server runs bots (js/lobby-sim.js); the brain never touches game state, it only presses.
 
+// The Guard presses a bot keeps for a wound (a heal, a pool) or for a wind-up coming close (js/data/abilities.js `then`).
+const GUARD_HURT = new Set(['heal', 'pool']), GUARD_BRACE = new Set(['stance', 'root', 'undying', 'armour']);
+
 // The interface Player reads from `input`, keyed by action name. Presses age on the bot's own clock.
 class BotHands {
   constructor() { this.time = 0; this.held = new Set(); this.pressed = new Map(); }
@@ -553,7 +556,9 @@ const bot = (() => {
       if (me.kit) for (let n = 0; n < ABILITY_KEYS.length; n++) {
         const key = ABILITY_KEYS[n], slot = me.kit.pressed[key], BP = CONFIG.abilities.press;
         if (!slot || me.perk.charge[key] < slot.v.charge) continue;
-        if (slot.then === 'heal' ? health < BP.botHeal : slot.then === 'stance' ? e.state === ES.WINDUP && gap < BP.botReach : gap < BP.botReach) {
+        // Guard I's: the pool when hurt; a vanish at a wind-up with no dash left; the others a wind-up coming close.
+        const coming = e.state === ES.WINDUP && gap < BP.botReach;
+        if (GUARD_HURT.has(slot.then) ? health < BP.botHeal : slot.then === 'vanish' ? coming && me.dashes < 1 : GUARD_BRACE.has(slot.then) ? coming : gap < BP.botReach) {
           hands.press(ABILITY_ACTIONS[n]); break;
         }
       }

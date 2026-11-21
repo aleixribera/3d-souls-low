@@ -390,7 +390,9 @@ const AUDIO_CUES = ['hitFlesh', 'hitHurt', 'hitBlock', 'riposteBoom', 'parry', '
   'abilityClank', 'abilityChime', 'abilityGulp', 'abilityFrost', 'abilityInk', 'abilitySizzle', 'abilityWhirl', 'abilityMirror',
   'abilityWave', 'abilityMoonfall', 'abilityCyclone', 'abilityPetals', 'abilityGhostBlade', 'abilityOvercharge',
   'abilityBloom', 'abilitySpikes', 'abilityFist', 'abilityFang', 'abilityClap', 'abilityFlurry', 'abilityFlurryHit', 'abilityDrill', 'abilityStitch',
-  'abilityPierce', 'abilityBoomerang', 'abilityClones', 'abilitySheathe', 'abilityIaiDraw', 'abilityIai'];
+  'abilityPierce', 'abilityBoomerang', 'abilityClones', 'abilitySheathe', 'abilityIaiDraw', 'abilityIai',
+  'abilityMend', 'abilityStance', 'abilityStancePing', 'abilityRoot', 'abilityRootThud', 'abilityUnbroken', 'abilityUnbrokenHeld', 'abilityVanish',
+  'abilityMail', 'abilityMailShatter', 'abilityPool'];
 // A power's sound by its `then`, its later blows' (`strike`: a lightning bolt, a twin's echo, a hound's bite) by
 // STRIKE_SOUNDS, a summon drawing the boss's eye (`draw`) by DRAW_SOUNDS; a rare's perk its own (ABILITY_PERK_SOUNDS,
 // at a pitch), a pick's pitch by its rarity.
@@ -408,7 +410,12 @@ const ABILITY_PERK_SOUNDS = { empower: ['abilityEmpower', 1], 'streak/heal': ['a
   // batch 4's (js/rare-fx.js): [sound, pitch, vel]; Bloodthirst's mote rises in pitch with each blow (`n`)
   'streak/step': ['abilityChime', 1.1, 0.35], 'streak/lost': ['abilityInk', 0.9, 0.5], 'hurt/armed': ['abilityFlare', 0.7, 0.5],
   'unhurt/ready': ['abilityChime', 1.8, 0.3], 'unhurt/empower': ['abilityInk', 0.75, 0.9], 'low/freeDash': ['abilityFrost', 1.1, 0.55],
-  'cracked/damage': ['abilityClank', 1.3, 0.45], 'block/armed': ['abilityCharge', 1.25, 0.5], 'parry/heal': ['abilityHeal', 1.2], 'press/heal': ['abilityHeal', 0.9], 'press/stance': ['abilityCharge', 0.8],
+  'cracked/damage': ['abilityClank', 1.3, 0.45], 'block/armed': ['abilityCharge', 1.25, 0.5], 'parry/heal': ['abilityHeal', 1.2],
+  // Guard I's (batch 8, js/guard-fx.js); Unbroken's killing blow held is its own (abilityPerkSound)
+  'press/heal': ['abilityMend', 1], 'press/stance': ['abilityStance', 1], 'stance/deflect': ['abilityStancePing', 1, 0.8],
+  'press/root': ['abilityRoot', 1], 'root/bite': ['abilityRootThud', 1, 0.8], 'press/undying': ['abilityUnbroken', 1],
+  'press/vanish': ['abilityVanish', 1], 'vanish/end': ['abilityChime', 1.5, 0.3], 'press/armour': ['abilityMail', 1],
+  'armour/crack': ['abilityMailShatter', 1], 'armour/broken': ['abilityMailShatter', 0.8], 'press/pool': ['abilityPool', 1],
   // the commons' (batch 3): quiet ones, from sounds the plain commons already use
   'parry/freeDash': ['abilityChime', 1.25], 'freeDash/spent': ['abilityChime', 1.6], 'fightStart/freeDash': ['abilityStep', 1.1],
   'low/veil': ['abilityFrost', 0.8], 'veil/spent': ['abilityInk', 1], 'hurt/ironSkin': ['abilityClank', 1], 'ironSkin/glance': ['abilityClank', 1.35],
@@ -433,7 +440,7 @@ function registerAudioListeners() {
   const big = b => 1 / Math.pow((b && b.def && b.def.scale) || 1, 0.6);   // big bodies sound lower
   on('strike', d => {
     const vel = clamp(((d.strike && d.strike.damage) || 20) / 45, 0.25, 1), pos = d.at || chest(d.target);
-    if (d.blocked) audio.play('hitBlock', { vel, pos });
+    if (d.blocked || d.plated) audio.play('hitBlock', { vel, pos });   // Ember Mail's plate takes it as a guard would
     else if (d.target === Game.player) {
       audio.play('hitHurt', { vel, pos });
       audio.play(vel > 0.65 ? 'hurtMoan' : 'hurtGrunt', { vel, delay: 0.03 });   // the player's voice
@@ -529,7 +536,11 @@ function registerAudioListeners() {
   on('abilityPower', d => { if (d.mark && d.strike && d.body === Game.player) audio.play('abilityChime', { pitch: 0.7, vel: 0.5, delay: 0.04 }); });
   on('abilityPress', d => { if (d.body === Game.player && d.over > 0) audio.play('abilityOvercharge', { vel: 0.6 + 0.4 * d.over }); });   // Overcharge's crack
   on('shotDeflected', d => { if (d.player === Game.player) audio.play('abilityMirror', { vel: 0.7 }); });   // Mirror Shard, its holder's own
-  on('abilityPerk', d => { if (d.body === Game.player) { const [id, pitch, vel] = ABILITY_PERK_SOUNDS[d.perk] || ['abilityPerk', 1]; audio.play(id, { pitch: pitch * (1 + 0.08 * (d.n || 0)), vel }); } });
+  on('abilityPerk', d => {
+    if (d.body !== Game.player) return;
+    const [id, pitch, vel] = d.saved ? ['abilityUnbrokenHeld', 1] : ABILITY_PERK_SOUNDS[d.perk] || ['abilityPerk', 1];   // Unbroken holding a killing blow
+    audio.play(id, { pitch: pitch * (1 + 0.08 * (d.n || 0)), vel });
+  });
   on('abilityPicked', d => audio.play('abilityPick', { pitch: ABILITY_PICK_PITCH[d.rarity] || 1, vel: d.rarity === 'common' ? 0.6 : 0.9 }));
   // The plain commons' touches (js/ability-touch.js): the holder's own, quiet, each on its moment.
   const held = (p, mod) => p && p === Game.player && p.kit && p.kit.mods[mod] > 0;

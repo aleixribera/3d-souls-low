@@ -1133,6 +1133,38 @@
         `all gone (${JSON.stringify(left)})`);
     } finally { audio.play = play; strikeFx2.clear(); }
   });
+  // Pass 134 (PLAN.md item 8, batch 8): Guard I, each key-2 guard on its holder drawn by js/guard-fx.js and heard, at the
+  // press and at its moments (a deflect, a bite, a killing blow held, a plate shattering); a vanished body hidden.
+  test('guard self: each is drawn and heard', () => {
+    Game.startFight('pillagerCaptain'); Game.loading = 0; sim.begin(); guardFx.clear(); abilityPowers.reset();
+    const p = Game.player, e = Game.duel, R = () => guardFx.state, played = [];
+    const play = audio.play; audio.play = (id, o) => { played.push(id); return play.call(audio, id, o); };
+    const frames = n => { for (let i = 0; i < n; i++) Game.render(1, STEP); };
+    const press = id => { played.length = 0; p.grantAbilities([id]); abilityPressPerk(p, p.kit.pressed.guard, 0); frames(2); };
+    const blow = (damage = 10) => ({ attackId: 'test', damage, poise: 10, knock: 2, hitstop: 0 });
+    const hit = (damage) => { played.length = 0; p.takeHit(blow(damage), e); frames(1); };
+    try {
+      sturdy(p); e.cooldown = 30; faceOff(e, p, 3);
+      press('mending'); expect.ok(R().pulses && R().strokes === 3 && played.includes('abilityMend'), `Mending: the ring and its strokes (${JSON.stringify(R())})`);
+      press('iron-stance'); frames(8); expect.ok(R().shell && played.includes('abilityStance'), `Iron Stance: the shell (${JSON.stringify(R())})`);
+      played.length = 0; events.emit('abilityPerk', { body: p, perk: 'stance/deflect', target: e }); frames(1);
+      expect.ok(R().stars && played.includes('abilityStancePing'), 'a deflect in it: a starburst and a ping');
+      press('iron-root'); frames(10); expect.ok(R().roots && played.includes('abilityRoot'), 'Iron Root: the roots');
+      hit(10); expect.ok(played.includes('abilityRootThud') && p.state !== PS.HURT, 'a blow bites; the body stays');
+      press('unbroken'); frames(15); expect.ok(R().flame && played.includes('abilityUnbroken'), 'Unbroken: the flame');
+      p.hp = 5; hit(60); expect.ok(R().flare && played.includes('abilityUnbrokenHeld') && p.alive() && p.hp === CONFIG.abilities.undying.floor, `a killing blow held (${p.hp})`);
+      press('vanishing-step'); frames(3);
+      expect.ok(R().petals > 0 && played.includes('abilityVanish') && !p.rig.root.visible, `Vanishing Step: petals, the body hidden (${R().petals})`);
+      p.attack = Object.values(PLAYER_DEF.moveset.attacks)[0]; p.setState(PS.ATTACK); frames(20); p.setState(PS.IDLE); p.attack = null; frames(2); expect.ok(p.rig.root.visible && !R().petals, 'an attack ends it: the body back');
+      press('ember-mail'); frames(20); expect.ok(R().plates > 0 && played.includes('abilityMail'), `Ember Mail: the plates (${R().plates})`);
+      hit(10); expect.ok(!R().plates && played.includes('abilityMailShatter'), 'a blow shatters them');
+      press('still-water'); frames(25); expect.ok(R().pools && abilityPools.list.length === 1 && played.includes('abilityPool'), 'Still Water: the pool');
+      frames(660);
+      const left = R();
+      expect.ok(!left.pulses && !left.strokes && !left.shell && !left.stars && !left.roots && !left.flame && !left.petals && !left.plates && !left.pools && !left.flakes,
+        `all gone (${JSON.stringify(left)})`);
+    } finally { audio.play = play; guardFx.clear(); abilityPools.clear(); }
+  });
   // Pass 97 (PLAN.md 3d): the sparring scene. The player's part of each drill is the teacher's own demonstration, played
   // on the player's keys (a swing drill's steps from the moment the partner's blow begins), so a demo that cannot do
   // its drill fails here too.

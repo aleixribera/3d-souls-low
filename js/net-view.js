@@ -59,10 +59,18 @@ const netView = {
     p.state = a.state; p.stateTime = a.stateTime + Math.max(0, since); p.hp = a.hp; p.attackT = a.attackT + (a.charge === 1 ? 0 : Math.max(0, since));
     p.attack = ArenaNet.own(PLAYER_DEF.moveset.attacks, a.attack) || null; p.charge = a.charge; p.chargeT = a.chargeT + (a.charge === 1 ? Math.max(0, since) : 0); p.walkPhase = lerp(a.walkPhase, b.walkPhase, f);
     p.vx = a.vx; p.vy = a.vy; p.vz = a.vz;
-    p.usingItem = ITEMS.flask; p.landTime = a.landTime; p.stunTime = a.stunTime;
+    p.usingItem = ITEMS.flask; p.landTime = a.landTime; p.stunTime = a.stunTime; p.vanishLeft = Math.max(0, (a.vanish || 0) - Math.max(0, since));
     p.activeAt = a.activeAt < 0 ? Infinity : a.activeAt;
     p.exec = a.execEnemy ? { enemy: Game.enemies.find(e => e.netId === a.execEnemy), aim: 0 } : null;
     if ([PS.ATTACK, PS.JUMP_ATTACK, PS.LAND, PS.EXECUTE].includes(p.state) && !p.attack) p.state = PS.IDLE;
+  },
+  // Another's Still Water (the server's word): it heals this browser's player at the shared rate, and is drawn
+  // (js/guard-fx.js) at its holder's body when this browser has one, else where it was laid.
+  guardPool(d, ctx) {
+    if (![d.x, d.y, d.z, d.radius, d.rate, d.time].every(Number.isFinite) || d.radius <= 0 || d.time <= 0 || typeof d.holder !== 'string') return;
+    const v = ArenaNet.own(ABILITY_BY_ID, d.ability)?.levels?.[0] || null;
+    const pool = abilityPools.place(d.holder, d.x, d.y, d.z, d.radius, Math.max(0, d.rate), d.time);
+    events.emit('abilityPerk', { body: ctx.bodyOf(d.holder) || null, perk: 'press/pool', v, pool, remote: true });
   },
   // A legendary, anyone's (js/ability-fx.js draws it).
   ability(d, e, ctx) {

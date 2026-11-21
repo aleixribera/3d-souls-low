@@ -32,8 +32,9 @@ const cameraFeel = (() => {
     if (d.attack.flashStep) kick('z', F.flashPush);   // a flash step: the view surges after the body (pass 95)
   });
   events.on('strike', d => {
-    if (isPlayer(d.target)) {   // knocked away from the blow
-      const k = clamp((d.strike.damage || 10) / F.hurtRef, 0.3, 1.4) * (d.blocked ? F.blockMul : 1);
+    if (isPlayer(d.target) && d.rooted) kick('fov', F.hurtFov * 0.5);   // Iron Root: planted, the view stays with the body
+    else if (isPlayer(d.target)) {   // knocked away from the blow
+      const k = clamp((d.strike.damage || 10) / F.hurtRef, 0.3, 1.4) * (d.blocked || d.plated ? F.blockMul : 1);
       const [lx, lz] = d.attacker ? local(d.target.x - d.attacker.x, d.target.z - d.attacker.z) : [0, -1];
       kick('x', lx * F.hurtPush * k); kick('z', lz * F.hurtPush * k);
       kick('roll', (lx >= 0 ? -1 : 1) * F.hurtRoll * k); kick('fov', F.hurtFov * k);
@@ -69,7 +70,11 @@ const cameraFeel = (() => {
     const k = isPlayer(d.body) ? 1 : clamp(1 - Math.hypot(p.x - d.x, p.z - d.z) / F.powerNear, 0, 1);
     if (k > 0) { kick('fov', P[0] * k); kick('y', -P[1] * k); }
   });
-  events.on('abilityPerk', d => { if (isPlayer(d.body) && !COMMON_PERKS.has(d.perk) && !RARE_QUIET_PERKS.has(d.perk)) kick('fov', F.perkFov); });   // a rare acting: a small punch in (a common is drawn alone)
+  events.on('abilityPerk', d => {
+    if (!isPlayer(d.body)) return;
+    if (d.saved) { const P = F.powers.undying; kick('fov', P[0]); kick('y', -P[1]); return; }   // Unbroken holding a killing blow: wide, with the kneel
+    if (!COMMON_PERKS.has(d.perk) && !RARE_QUIET_PERKS.has(d.perk)) kick('fov', F.perkFov);
+  });   // a rare acting: a small punch in (a common is drawn alone)
 
   Game.renderHooks.unshift((game) => {   // first of the hooks: effects drawn after it see the moved camera
     const dt = game.renderDt;

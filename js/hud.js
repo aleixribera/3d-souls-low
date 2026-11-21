@@ -443,7 +443,7 @@ const hud = {
 // Listeners: they only set the HUD's own timers and notices, from what the event says and what the game shows.
 function registerHudListeners() {
   const H = CONFIG.hud;
-  events.on('strike', d => { hud.idle = 0; if (d.target === Game.player && !d.blocked) hud.hurtTimer = H.hurtTime; });
+  events.on('strike', d => { hud.idle = 0; if (d.target === Game.player && !d.blocked && !d.plated) hud.hurtTimer = H.hurtTime; });
   events.on('parry', d => { if (!d.player || d.player === Game.player) hud.idle = 0; });
   events.on('dodge', d => { if (!d.player || d.player === Game.player) hud.idle = 0; });
   events.on('itemUsed', d => { if (d.item === 'flask' && d.player === Game.player) {

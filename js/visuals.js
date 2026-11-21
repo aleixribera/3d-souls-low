@@ -1576,7 +1576,7 @@ const visuals = (() => {
 // Visual reactions to game events. Read-only: they never touch combat state.
 function registerVisualListeners() {
   const chest = b => ({ x: b.x, y: b.y + b.height * 0.55, z: b.z });
-  events.on('strike', d => { if (!d.blocked && !d.target.training) visuals.blood(d.at, 1); });
+  events.on('strike', d => { if (!d.blocked && !d.plated && !d.target.training) visuals.blood(d.at, 1); });   // Ember Mail's plate: no blood
   events.on('enemyDeath', d => { if (!d.enemy.training) visuals.blood({ x: d.enemy.x, y: d.enemy.y + 0.2, z: d.enemy.z }, VIS.blood.deathSize, false); });
   events.on('playerDeath', d => visuals.blood(chest(d.player), VIS.blood.deathSize));
   events.on('rest', d => visuals.flare(d.bonfire));

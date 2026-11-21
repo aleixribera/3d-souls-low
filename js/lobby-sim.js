@@ -74,6 +74,8 @@ globalThis.host = (() => {
       eventList.push({ type: 'strike', player: acting.id, enemy: d.target.netId, strike: d.strike, blocked: !!d.blocked, at: d.at });
     if (acting && type === 'parry' && d.target?.netId) eventList.push({ type: 'parry', player: acting.id, enemy: d.target.netId });
     if (acting && type === 'finisherStart' && d.player === acting.body) feat(acting.id).finishers++;   // a bot's Finishing Blow
+    // A bot's Still Water, for every browser (a person's: guardPressed).
+    if (type === 'abilityPerk' && d.perk === 'press/pool' && d.pool && d.body && d.body.botId) tellPool(d.body.botId, d.ability, d.pool);
     // A legendary fired or striking, for every browser to draw (js/ability-fx.js).
     if (type === 'abilityPower') eventList.push({ type, power: d.power, then: d.then, holder: d.holder, enemy: d.enemy?.netId || null,
       x: d.x, y: d.y, z: d.z, v: d.v, strike: d.strike, draw: d.draw || undefined, path: d.path, flight: d.flight, mark: d.mark || undefined, yaw: d.yaw, over: d.over, end: d.end });
@@ -376,7 +378,7 @@ globalThis.host = (() => {
     return st;
   }
   // A person's number keys fill from the claims accepted here (CONFIG.abilities.press.gain), as on their own body.
-  function gainCharge(id, n) { const kit = kitOf(id); if (kit !== NO_KIT) abilityGain(kit, perkOf(id), n); }
+  function gainCharge(id, n, skip = null) { const kit = kitOf(id); if (kit !== NO_KIT) abilityGain(kit, perkOf(id), n, skip); }
   // A person's pose: health lost wakes the perks that wait for it, as on their own body.
   function notePose(id, hp) {
     const kit = kitOf(id);
@@ -393,6 +395,18 @@ globalThis.host = (() => {
     if (p.botId) return p;
     return { x: p.x, y: p.y, z: p.z, hp: p.hp, maxHp: maxHpOf(id), perk: perkOf(id), alive: () => p.alive() };
   }
+  // A person's Guard press the others must know of (GUARD_CLAIMED): a vanish (never a target while it lasts, with a pose's
+  // slack) or a pool (every browser hears of it; its holder's heals at once, the others' and the bots' as they stand in it).
+  function guardPressed(id, slot, p, over) {
+    if (slot.then === 'vanish') perkOf(id).vanish = slot.v.time + CONFIG.abilities.guardSlack;
+    if (slot.then === 'pool') {
+      const v = slot.v, heal = Math.min(1, v.heal * abilityOverBy(kitOf(id), over));
+      tellPool(id, slot.id, abilityPools.place(id, p.x, p.y, p.z, v.radius, heal / v.time, v.time));
+    }
+  }
+  const tellPool = (holder, ability, q) => eventList.push({ type: 'guardPool', holder, ability, x: q.x, y: q.y, z: q.z, radius: q.radius, rate: q.rate, time: q.time });
+  // Whether player `p` (a person's pose or a bot's body) is vanished now: the server's own count of the press it took.
+  const vanished = p => (p.botId ? p.perk && p.perk.vanish : perkOf(p.id).vanish) > 0;
   // A person's claim of an ability trigger (ABILITY_CLAIMS): a jump attack landing (from their pose: landing, with that
   // air attack), a perfect dodge (rolling, of a blow that was out near them lately, as a parry's check), being this
   // low (their pose's health) or drinking a flask (their pose: drinking). A claim sent ahead of the pose that shows it waits up to C.claimWait s for that pose
@@ -412,6 +426,7 @@ globalThis.host = (() => {
       const over = abilityOver(kit, st, msg.key);   // Overcharge, by this server's own count
       st.charge[msg.key] = 0;
       abilityPowers.trigger(id, body, kit, 'press', { key: msg.key, enemy: e, over });
+      if (!slot.power) guardPressed(id, slot, p, over);
     } else if (msg.when === 'land') {
       const a = ArenaNet.own(PLAYER_DEF.moveset.air, msg.action);
       if (!a || !['land', 'jumpAttack'].includes(p.state) || p.attack !== a) return false;
@@ -518,10 +533,10 @@ globalThis.host = (() => {
       } finally { acting = null; }
       Game.enemies.forEach((e, i) => { creditDamage(b.id, before[i] - e.hp); noteDamage(e, b.id, before[i] - e.hp); });
       if (p.alive() && !p.invulnerable()) for (const h of world.hazards || []) if (p.grounded && inRect(h.rect, p.x, p.z) && Math.abs(p.y - h.y) <= CONFIG.height.stepUp) {
-        p.hp = Math.max(0, p.hp - h.dps * dt); if (p.hp <= 0) p.setState(PS.DEAD);
+        p.loseHp(h.dps * dt); if (p.hp <= 0) p.setState(PS.DEAD);
       }
       const fire = fireUnder(Game, p);   // a bot burns in them like a person (each client burns its own body)
-      if (fire) { p.hp = Math.max(0, p.hp - fire.dps * dt); if (p.hp <= 0) p.setState(PS.DEAD); }
+      if (fire) { p.loseHp(fire.dps * dt); if (p.hp <= 0) p.setState(PS.DEAD); }   // Unbroken holds either at its floor
     }
   }
   // A chase camera behind the bot, facing its fight, for teammates who spectate it (the same view format browsers send).
@@ -636,6 +651,8 @@ globalThis.host = (() => {
     if (sleeping) { progress(dt); return; }
     ageFires(Game, dt); updateBots(dt); flyBolts(dt);   // the fires enemies left (js/enemy.js) burn down here too
     for (const st of perks.values()) abilityClocks(st, dt);
+    for (const p of players) if (!p.botId && VANISH_ENDS.has(p.state) && perks.has(p.id)) perks.get(p.id).vanish = 0;   // their attack or flask ends a vanish
+    abilityPools.tick(dt);   // Still Water's pools (the bots heal in them: Player.poolStep)
     // Reservations and world timers belong to the run, even if their owner
     // disconnects or every remaining player is dead/stale.
     for (const e of Game.enemies) if (e.netExec) {
@@ -662,8 +679,9 @@ globalThis.host = (() => {
       fadeThreat(e, dt);
       // Keep an attack's target locked until its recovery. Outside attacks pick a
       // visible player on the same floor, with hysteresis to avoid twitchy retargets.
-      const valid = living.filter(p => !e.arena || inArea(e.arena, p.x, p.z));
-      let target = valid.find(p => p.id === e.netTarget);
+      const inside = living.filter(p => !e.arena || inArea(e.arena, p.x, p.z)), seen = inside.filter(p => !vanished(p));
+      const valid = seen.length ? seen : inside;   // Vanishing Step: no new choice of one unseen
+      let target = (e.in('attacking') ? inside : valid).find(p => p.id === e.netTarget);   // a swing under way goes on at its target
       const score = p => Math.hypot(p.x - e.x, p.z - e.z) + Math.abs(p.y - e.y) * CONFIG.height.reach + (gateBetween(e, p) ? e.notice : 0);
       if (e.isBoss()) {
         if (!target || !e.in('attacking')) target = bossTarget(e, valid, target, score);
@@ -809,7 +827,8 @@ globalThis.host = (() => {
     const opened = hit === a.hits.length - 1;
     if (opened && e.netAttack === msg.serial) e.getParried();
     lastParry.set(id, time);
-    feat(id).parries++; gainCharge(id, CONFIG.abilities.press.gain.deflect + abilityKeysFor(kitOf(id), 'parry'));   // Kindling's too
+    // Kindling's too; Iron Stance's untimed deflect (the browser says so) gives the Guard key nothing, as on its body.
+    feat(id).parries++; gainCharge(id, CONFIG.abilities.press.gain.deflect + abilityKeysFor(kitOf(id), 'parry'), msg.stance === true ? 'guard' : null);
     eventList.push({ type: 'parry', player: id, enemy: e.netId });
     abilityPowers.trigger(id, holderOf(id), kitOf(id), 'parry', { enemy: e });   // Thousand Blades, Counterflame
     return true;
@@ -878,7 +897,7 @@ globalThis.host = (() => {
     // A fallen player's bar as they rise, raised by their reviver's Kindred Ember (`by`), never over full.
     reviveHealth: (id, by) => maxHpOf(id) * Math.min(1, CONFIG.revive.health + ((by && kitOf(by).perks['revive/reviveHeal']) || { heal: 0 }).heal), frame, hit, parry, dodged, endFinisher, lifesteal, landed,
     playerMaxHp: PLAYER_DEF.stats.maxHp,
-    offerAbilities, setGear, hasGear, poolOf: id => gear.has(id) ? [...gear.get(id)] : null, settleAbilities, pickAbility, giveAbilities, kitOf, maxHpOf, notePose, abilityClaim,
+    offerAbilities, setGear, hasGear, poolOf: id => gear.has(id) ? [...gear.get(id)] : null, settleAbilities, pickAbility, giveAbilities, kitOf, maxHpOf, notePose, abilityClaim, vanishOf: id => perkOf(id).vanish,
     offerSize, abilityPickTime: CONFIG.abilities.pickTime, abilityPickHold: CONFIG.abilities.pickHold, abilityFirst: CONFIG.abilities.first,
     rushPar, rushHealth, partyMight, swiftExtra: CONFIG.swift.extra,
     abilities: () => Object.fromEntries(owned), abilityOffer: id => offers.get(id) || null,

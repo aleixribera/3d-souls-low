@@ -151,9 +151,12 @@ function resolveCombat(game) {
     for (const e of live) { const t = parryTiming(p, e, 0); if (t !== null && t < soonest) { soonest = t; target = e; } }
     if (target) {
       const key = blowKey(target);
-      const res = typeof multiplayer !== 'undefined' && multiplayer.active() ? multiplayer.parry(target) : target.getDeflected();
+      // Iron Stance's own deflect (not blocking or tapping): the Guard key gets nothing from it, or the stance refills itself.
+      const untimed = !(p.deflect > 0 && (p.state === PS.BLOCK || p.isFree()));
+      const res = typeof multiplayer !== 'undefined' && multiplayer.active() ? multiplayer.parry(target, untimed) : target.getDeflected();
       p.deflected(target, key, res.opened);
-      p.gainCharge(CONFIG.abilities.press.gain.deflect + abilityKeysFor(p.kit, 'parry'));   // Kindling's too
+      p.gainCharge(CONFIG.abilities.press.gain.deflect + abilityKeysFor(p.kit, 'parry'), untimed ? 'guard' : null);   // Kindling's too
+      if (untimed) events.emit('abilityPerk', { body: p, perk: 'stance/deflect', target });
       game.hitstop = Math.max(game.hitstop, P.hitstop * (res.opened ? 1.3 : 1));
       events.emit('parry', { target, player: p, opened: res.opened });
       if (p.perk) abilityParried(p, target);   // Iron Mercy, Ringing Steel, Kindling
@@ -201,7 +204,7 @@ function resolveCombat(game) {
     if (db && db.enemy === hb.owner && db.key === blowKey(hb.owner)) { hb.markHit(p); continue; }   // turned aside by a deflect
     if (p.invulnerable()) {   // dashed through: the hitbox stays live (it can catch the end of the dash)
       // Weighed once, on the first frame they meet. A Finishing Blow's untouchable time, or Counterstep's step, is no dodge.
-      if (p.state === PS.ROLL && !p.blink && hb.weighed !== p.dashNo) { hb.weighed = p.dashNo; if (dashOutlasts(p, hb)) perfectDodge(p, hb); }
+      if (p.state === PS.ROLL && !p.blink && !p.vanished() && hb.weighed !== p.dashNo) { hb.weighed = p.dashNo; if (dashOutlasts(p, hb)) perfectDodge(p, hb); }
       continue;
     }
     hb.markHit(p);   // (a blow dodged is marked too, so the counter out of it is never caught by it: perfectDodge)
@@ -218,7 +221,7 @@ function resolveCombat(game) {
       else hb.owner.lifesteal();
     }
     game.hitstop = Math.max(game.hitstop, res.blocked ? CONFIG.block.hitstop : hb.payload.hitstop);
-    events.emit('strike', { strike: hb.payload, attacker: hb.owner, target: p, at: contact(hb, p), blocked: res.blocked });
+    events.emit('strike', { strike: hb.payload, attacker: hb.owner, target: p, at: contact(hb, p), blocked: res.blocked, plated: res.plated, rooted: res.rooted });
   }
 }
 
@@ -228,7 +231,7 @@ function applyEnemyStrike(game, strike, attacker, target, at, projectile = false
   const res = target.takeHit(strike, from);
   if (attacker.def.lifesteal) attacker.lifesteal();
   game.hitstop = Math.max(game.hitstop, res.blocked ? CONFIG.block.hitstop : strike.hitstop);
-  events.emit('strike', { strike, attacker, target, at, blocked: !!res.blocked, projectile });
+  events.emit('strike', { strike, attacker, target, at, blocked: !!res.blocked, plated: res.plated, rooted: res.rooted, projectile });
   return res;
 }
 function resolveTeamCombat(game) {

@@ -59,7 +59,7 @@
   // `required` are finite numbers; `motion` optional finite numbers; `personal` never leave the server.
   const pose = Object.freeze({
     required: Object.freeze(['x', 'y', 'z', 'yaw', 'hp', 'stateTime', 'attackT', 'chargeT', 'walkPhase']),
-    motion: Object.freeze(['vx', 'vy', 'vz', 'activeAt', 'landTime', 'stunTime', 'execGrace']),
+    motion: Object.freeze(['vx', 'vy', 'vz', 'activeAt', 'landTime', 'stunTime', 'execGrace', 'vanish']),
     personal: Object.freeze(['flasks', 'doomTime', 'doomDrain']),
     states: Object.freeze(['idle', 'walk', 'jump', 'fall', 'roll', 'attack', 'jumpAttack', 'land', 'block', 'parry', 'useItem', 'rest', 'hurt', 'stagger', 'dead', 'execute', 'held']),
   });
@@ -68,7 +68,7 @@
     attack: p.attack?.id || null, attackT: p.attackT, charge: p.charge, chargeT: p.chargeT,
     walkPhase: p.walkPhase, grounded: p.grounded, execEnemy: p.exec?.enemy.netId || null,
     vx: p.vx, vy: p.vy, vz: p.vz, activeAt: Number.isFinite(p.activeAt) ? p.activeAt : -1,
-    landTime: p.landTime, stunTime: p.stunTime, execGrace: p.execGrace || 0 });
+    landTime: p.landTime, stunTime: p.stunTime, execGrace: p.execGrace || 0, vanish: p.perk ? p.perk.vanish : 0 });   // Vanishing Step: drawn faint
   const name = s => typeof s === 'string' ? s.replace(/[\u0000-\u001f\u007f<>]/g, '').trim().slice(0, config.maxName) : '';
   // Optional presentation data only. Reject malformed cameras without dropping
   // the player's otherwise valid combat pose.

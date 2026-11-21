@@ -271,6 +271,13 @@ function validateData({ visual = true } = {}) {
   need(CN && lead(CN.lead), 'CONFIG.abilities.clones: lead from 0 to 0.5.');
   need(IA && num(IA.stance) && IA.stance > 0 && num(IA.beat) && IA.beat >= 0 && IA.beat <= 0.6 && num(IA.width) && IA.width > 0, 'CONFIG.abilities.iai: stance above 0, beat from 0 to 0.6, width above 0.');
   need(num(BL.rootSlip) && BL.rootSlip > 0, 'CONFIG.abilities.rootSlip: above 0.');
+  // Guard I (batch 8): Unbroken's floor, a pool's share for another, how many pools at once, a vanish's slack on the server.
+  need(BL.undying && num(BL.undying.floor) && BL.undying.floor > 0 && BL.shared && num(BL.shared.pool) && BL.shared.pool >= 0 && BL.shared.pool <= 1
+    && Number.isInteger(BL.pools) && BL.pools >= 1 && num(BL.guardSlack) && BL.guardSlack >= 0,
+    'CONFIG.abilities: undying.floor above 0, shared.pool from 0 to 1, pools a whole number from 1, guardSlack 0 or more.');
+  const GF = CONFIG.VISUALS.abilityFx.guard;   // js/guard-fx.js's sizes and times
+  if (visual) need(GF && ['mend', 'mendRise', 'mendTime', 'shell', 'star', 'roots', 'flame', 'flare', 'flareRing', 'plate'].every(k => num(GF[k]) && GF[k] > 0) && num(GF.faint) && GF.faint >= 0 && GF.faint < 1,
+    'VIS.abilityFx.guard: mend, mendRise, mendTime, shell, star, roots, flame, flare, flareRing and plate above 0; faint from 0 to under 1.');
   const EC = BL.echo, OC = BL.overcharge;
   need(EC && num(EC.keep) && EC.keep > 0 && num(EC.delay) && EC.delay >= 0 && EC.delay <= 0.5, 'CONFIG.abilities.echo: keep above 0, delay from 0 to 0.5.');
   need(OC && num(OC.most) && OC.most > 0 && OC.most <= 2, 'CONFIG.abilities.overcharge: most above 0, at most 2.');

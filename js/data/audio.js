@@ -617,6 +617,66 @@ const AUDIO = {
     ] },
     // Quick Draw: the blade's scrape into the sheath, then near silence (the stance); at the draw a razor whistle
     // (abilityIaiDraw); at the split a deep cleaving slash over a low boom and a long ring (abilityIai).
+    // Guard I, on yourself (batch 8, js/guard-fx.js): each the holder's own, played at their press or at the moment told.
+    // Mending: a soft bell, a chord rising a semitone as the ring climbs, a breath.
+    abilityMend: { bus: 'sfx', priority: 2, cooldown: 0.2, max: 1, verb: 0.5, heat: 0.15, jitter: 0, layers: [
+      { wave: 'sine', freq: 1047, partials: [[1, 1, 1], [2.76, 0.3, 0.5]], a: 0.002, d: 0.4, gain: 0.12 },
+      { wave: 'sine', freq: 523, to: 554, glide: 0.5, a: 0.04, h: 0.2, d: 0.5, gain: 0.12 },
+      { wave: 'sine', freq: 659, to: 698, glide: 0.5, at: 0.06, a: 0.04, h: 0.2, d: 0.45, gain: 0.1 },
+      { wave: 'sine', freq: 784, to: 831, glide: 0.5, at: 0.12, a: 0.04, h: 0.2, d: 0.4, gain: 0.09 },
+      { noise: 'pink', filter: { type: 'bandpass', freq: 3000, q: 1.5 }, at: 0.3, a: 0.05, d: 0.4, gain: 0.12 },
+    ] },
+    // Iron Stance: a sword set short, a low iron hum swelling in, a ring.
+    abilityStance: { bus: 'sfx', priority: 2, cooldown: 0.2, max: 1, verb: 0.4, heat: 0.2, jitter: 10, layers: [
+      { noise: 'white', filter: { type: 'bandpass', freq: 3200, q: 1.2 }, a: 0.002, d: 0.06, gain: 0.35 },
+      { wave: 'sine', freq: 98, partials: [[1, 1, 1], [2.01, 0.5, 0.8]], a: 0.1, h: 0.3, d: 0.3, gain: 0.22 },
+      { wave: 'sine', freq: 784, at: 0.05, a: 0.003, d: 1.0, gain: 0.07 },
+    ] },
+    // A deflect made by the stance: a bright blue ping over the normal clang.
+    abilityStancePing: { bus: 'sfx', priority: 2, cooldown: 0.08, max: 2, verb: 0.3, heat: 0.1, jitter: 30, layers: [
+      { wave: 'sine', freq: 1568, partials: [[1, 1, 1], [2.76, 0.25, 0.4]], a: 0.001, d: 0.3, gain: 0.1 },
+    ] },
+    // Iron Root: stone cracking, iron groaning into the floor, a deep ring; each blow taken a dull iron thud.
+    abilityRoot: { bus: 'sfx', priority: 2, cooldown: 0.2, max: 1, verb: 0.4, heat: 0.35, jitter: 10, layers: [
+      { noise: 'white', filter: { type: 'bandpass', freq: 2000, q: 1.5 }, a: 0.001, d: 0.03, gain: 0.45 },
+      { wave: 'sawtooth', freq: 55, to: 46, glide: 0.6, filter: { type: 'lowpass', freq: 300 }, drive: 2, a: 0.02, h: 0.3, d: 0.3, gain: 0.25 },
+      { wave: 'sine', freq: 147, partials: [[1, 1, 1], [2.01, 0.4, 0.6]], at: 0.1, a: 0.01, d: 1.0, gain: 0.1 },
+    ] },
+    abilityRootThud: { bus: 'sfx', priority: 2, cooldown: 0.08, max: 2, verb: 0.2, heat: 0.2, jitter: 20, layers: [
+      { wave: 'sine', freq: 80, to: 60, glide: 0.15, a: 0.002, d: 0.15, gain: 0.3 },
+    ] },
+    // Unbroken: a flame drawn up over a low held note; a killing blow held: a deep gong and the flame roaring up.
+    abilityUnbroken: { bus: 'sfx', priority: 3, cooldown: 0.2, max: 1, verb: 0.5, heat: 0.3, jitter: 0, layers: [
+      { noise: 'pink', filter: { type: 'bandpass', freq: 300, to: 1500, q: 1.2 }, a: 0.05, d: 0.3, gain: 0.35 },
+      { wave: 'sine', freq: 110, a: 0.2, h: 1.2, d: 0.8, gain: 0.08 },
+    ] },
+    abilityUnbrokenHeld: { bus: 'sfx', priority: 4, cooldown: 0.3, max: 1, verb: 0.6, heat: 0.5, jitter: 0, layers: [
+      { wave: 'sine', freq: 73, partials: [[1, 1, 1], [2.4, 0.5, 0.6], [3.9, 0.3, 0.4]], drive: 1.5, a: 0.002, d: 1.4, gain: 0.3 },
+      { noise: 'brown', filter: { type: 'lowpass', freq: 500, to: 1800 }, a: 0.03, d: 0.5, gain: 0.45 },
+    ] },
+    // Vanishing Step: a soft air pop, a swirl of petals, a rising glass note.
+    abilityVanish: { bus: 'sfx', priority: 2, cooldown: 0.2, max: 1, verb: 0.4, heat: 0.15, jitter: 20, layers: [
+      { noise: 'white', filter: { type: 'highpass', freq: 3000 }, a: 0.001, d: 0.02, gain: 0.4 },
+      { noise: 'pink', filter: { type: 'bandpass', freq: 800, to: 3000, q: 1.5 }, a: 0.08, h: 0.2, d: 0.3, gain: 0.18 },
+      { wave: 'sine', freq: 988, to: 1175, glide: 0.4, at: 0.55, a: 0.02, d: 0.4, gain: 0.07 },
+    ] },
+    // Ember Mail: three quick metal locks over a low ember roar; a plate shattering: a clang and a crackle of embers.
+    abilityMail: { bus: 'sfx', priority: 2, cooldown: 0.2, max: 1, verb: 0.35, heat: 0.3, jitter: 10, layers: [
+      { noise: 'white', filter: { type: 'bandpass', freq: 3500, q: 3 }, a: 0.001, d: 0.01, gain: 0.45 },
+      { noise: 'white', filter: { type: 'bandpass', freq: 3500, q: 3 }, at: 0.06, a: 0.001, d: 0.01, gain: 0.45 },
+      { noise: 'white', filter: { type: 'bandpass', freq: 3500, q: 3 }, at: 0.12, a: 0.001, d: 0.01, gain: 0.45 },
+      { noise: 'brown', filter: { type: 'lowpass', freq: 400 }, a: 0.05, d: 0.5, gain: 0.35 },
+    ] },
+    abilityMailShatter: { bus: 'sfx', priority: 3, cooldown: 0.08, max: 2, verb: 0.35, heat: 0.3, jitter: 30, layers: [
+      { wave: 'sine', freq: 520, partials: [[1, 1, 1], [2.76, 0.4, 0.5]], a: 0.002, d: 0.3, gain: 0.16 },
+      { noise: 'white', filter: { type: 'highpass', freq: 4000 }, a: 0.002, d: 0.3, gain: 0.25 },
+    ] },
+    // Still Water: one drop into still water and a splash, a soft held water tone fading.
+    abilityPool: { bus: 'sfx', priority: 2, cooldown: 0.2, max: 1, verb: 0.55, heat: 0.15, jitter: 10, layers: [
+      { wave: 'sine', freq: 1200, to: 600, glide: 0.04, a: 0.001, d: 0.06, gain: 0.14 },
+      { noise: 'white', filter: { type: 'bandpass', freq: 2000, q: 2 }, at: 0.02, a: 0.002, d: 0.06, gain: 0.2 },
+      { wave: 'sine', freq: 330, partials: [[1, 1, 1], [1.5, 0.4, 1]], at: 0.05, a: 0.2, h: 1.2, d: 0.4, gain: 0.06 },
+    ] },
     abilitySheathe: { bus: 'sfx', priority: 3, cooldown: 0.25, max: 2, verb: 0.3, heat: 0.2, jitter: 20, layers: [
       { noise: 'white', filter: { type: 'bandpass', freq: 2000, to: 5000, q: 2 }, a: 0.02, h: 0.1, d: 0.18, gain: 0.3 },
       { wave: 'sine', freq: 2400, at: 0.28, a: 0.001, d: 0.08, gain: 0.06 },

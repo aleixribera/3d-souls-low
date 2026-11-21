@@ -1350,7 +1350,7 @@ function burnInFires(game, dt, body, other) {
     const b = k ? other : body; if (!b) continue;
     const hot = fireUnder(game, b);
     if (!hot) { b.fireTick = 0; continue; }
-    b.hp = Math.max(0, b.hp - hot.dps * dt);
+    if (b.loseHp) b.loseHp(hot.dps * dt); else b.hp = Math.max(0, b.hp - hot.dps * dt);   // Unbroken holds a burn at its floor
     if ((b.fireTick = (b.fireTick || 0) + dt) >= CONFIG.hazards.tick) { b.fireTick -= CONFIG.hazards.tick; b.tint = Math.max(b.tint, 0.5); events.emit('hazard', { hazard: hot, player: b }); }
     if (b.hp <= 0) { b.die(); events.emit('hazardDeath', { hazard: hot, player: b }); }
   }

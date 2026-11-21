@@ -174,7 +174,7 @@ const projectiles = (() => {
           else {
             const res = actor.takeHit(b.strike, { x: b.x, z: b.z });
             game.hitstop = Math.max(game.hitstop, res.blocked ? CONFIG.block.hitstop : b.strike.hitstop);
-            events.emit('strike', { strike: b.strike, attacker: b.owner, target: actor, at, blocked: res.blocked, projectile: true });
+            events.emit('strike', { strike: b.strike, attacker: b.owner, target: actor, at, blocked: res.blocked, plated: res.plated, rooted: res.rooted, projectile: true });
           }
           this.kill(b); break;
         }

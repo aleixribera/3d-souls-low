@@ -3,7 +3,7 @@
 // each fired twice, its name in the corner: docs/scorecard/now/<set>-commons.mp4. The clock is stepped by hand
 // (Game.manualClock) and every other step is a frame, so a clip plays at real speed whatever the PC's speed. With
 // `--stills`, the guard set's current frames too (guard-*.jpg, desktop; -phone for two).
-// Usage: node tools/ability-clips.cjs [blade|guard|mirror|rares|triggers|echo|strikes ...] [--stills]   (no set = all). One headless Edge; needs ffmpeg.
+// Usage: node tools/ability-clips.cjs [blade|guard|mirror|rares|triggers|echo|strikes|flashy|self ...] [--stills]   (no set = all). One headless Edge; needs ffmpeg.
 require('../tests/low-priority.cjs');
 const fs = require('node:fs');
 const os = require('node:os');
@@ -114,6 +114,18 @@ const SETS = {
     ['Three Shadows', `(p, e) => __key()`, 56, 'strike-three-shadows', 20],
     ['Quick Draw', `(p, e) => __key()`, 84, 'strike-quick-draw', 54],
   ] },
+  // Guard I (pass 134, batch 8): docs/scorecard/now/guard-self.mp4, with --stills a frame of each (guard-self-<id>.jpg;
+  // -phone for the first two). Each pressed through the player's own key 2, its charge full; its moments (a deflect, a
+  // blow taken) told as js/combat.js tells them. Ember Mail at level II (two layers of plates).
+  self: { ids: [], file: 'guard-self', phone: 2, crf: 30, beats: [
+    ['Mending', `p => { p.grantAbilities(['mending']); p.hp = p.lastHp = p.maxHp * 0.5; __key2(); }`, 50, 'guard-self-mending', 14],
+    ['Iron Stance', `(p, e) => { p.grantAbilities(['iron-stance']); __key2(); for (const n of [24, 44]) __later(n, () => events.emit('abilityPerk', { body: p, perk: 'stance/deflect', target: e })); }`, 70, 'guard-self-iron-stance', 26],
+    ['Iron Root', `(p, e) => { p.grantAbilities(['iron-root']); __key2(); for (const n of [24, 44]) __later(n, () => p.takeHit({ attackId: 'x', damage: 8, knock: 6, poise: 20, heavy: true, hitstop: 0 }, e)); }`, 70, 'guard-self-iron-root', 26],
+    ['Unbroken', `(p, e) => { p.grantAbilities(['unbroken']); __key2(); __later(36, () => { p.hp = p.lastHp = 5; p.takeHit({ attackId: 'x', damage: 60, knock: 4, poise: 20, hitstop: 0 }, e); }); }`, 84, 'guard-self-unbroken', 40],
+    ['Vanishing Step', `p => { p.grantAbilities(['vanishing-step']); p.dashes = 0; __key2(); }`, 60, 'guard-self-vanishing-step', 16],
+    ['Ember Mail', `(p, e) => { p.grantAbilities(['ember-mail', 'ember-mail']); __key2(); __later(40, () => p.takeHit({ attackId: 'x', damage: 20, knock: 4, poise: 20, hitstop: 0 }, e)); }`, 76, 'guard-self-ember-mail', 30],
+    ['Still Water', `p => { p.grantAbilities(['still-water']); p.hp = p.lastHp = p.maxHp * 0.4; __key2(); }`, 110, 'guard-self-still-water', 50],
+  ] },
 };
 
 (async () => {
@@ -154,13 +166,17 @@ const SETS = {
             __face(); const slot = p.kit.pressed.strike; if (slot) p.perk.charge.strike = slot.v.charge;
             const c = p.ctl.consume; p.ctl.consume = function (a) { if (a === 'ability1') { p.ctl.consume = c; return true; } return c.call(this, a); };
           };
+          window.__key2 = () => {   // key 2 (Guard) pressed with its charge full, through the player's own press
+            const slot = p.kit.pressed.guard; if (slot) p.perk.charge.guard = slot.v.charge;
+            const c = p.ctl.consume; p.ctl.consume = function (a) { if (a === 'ability2') { p.ctl.consume = c; return true; } return c.call(this, a); };
+          };
           window.__face = () => { p.yaw = p.pyaw = Math.atan2(e.x - p.x, e.z - p.z); };
           window.__landed = () => {   // a blow of the player's, told as js/combat.js tells it (the strike its cues listen for)
             const s = abilityStrike(p.kit, p.perk, e, { attackId: 'light', damage: 10, poise: 0, knock: 0, hitstop: 0 }); e.takeHit(s, p);
             events.emit('strike', { strike: s, attacker: p, target: e, at: { x: e.x, y: e.y + 1.2, z: e.z }, blocked: false });
           };
           window.__reset = name => {
-            commonFx.clear(); rareFx.clear(); rareStrikeFx.clear(); strikeFx.clear(); strikeFx2.clear(); abilityPowers.reset(); later.length = 0; tag.textContent = name; e.cracks = 0; events.emit('guardCrack', { enemy: e, cracks: 0 });
+            commonFx.clear(); rareFx.clear(); rareStrikeFx.clear(); strikeFx.clear(); strikeFx2.clear(); guardFx.clear(); abilityPowers.reset(); later.length = 0; tag.textContent = name; e.cracks = 0; events.emit('guardCrack', { enemy: e, cracks: 0 });
             p.hp = p.maxHp; p.lastHp = p.hp; p.perk = abilityPerkState(); p.tint = 0;
             for (let i = 0; i < 30; i++) Game.update(CONFIG.step);
             e.x = e.px = p.x + Math.sin(p.yaw + 0.6) * 2.8; e.z = e.pz = p.z + Math.cos(p.yaw + 0.6) * 2.8; e.y = p.y; e.yaw = Math.atan2(p.x - e.x, p.z - e.z);

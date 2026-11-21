@@ -638,15 +638,7 @@ const abilityFx = (() => {
     groundFx.ring(e.x, e.z, (e.radius || 1) + 0.8, FL.color, 0.55, e.y); light(c, FL.color, 7, 9);
   }
 
-  // ---- The rares' small cues (the local player's own) --------------------------------------------------------------
-  function perk(d) {
-    const p = d.body;
-    if (!p || p !== Game.player) return;
-    const c = chestOf(p), P = F.perks;
-    // the kept rares' (batch 4) are js/rare-fx.js's; these are the guard keys' legendaries'
-    if (d.perk === 'press/heal') { ultraFx.moteBurst(c, 30, P.heal, { r: 0.6, speed: 0.9, lift: 1.8, life: [0.8, 1.3] }); groundFx.ring(p.x, p.z, 1.9, P.heal, 0.6, p.y); }
-    else if (d.perk === 'press/stance') { ultraFx.sparkBurst(c, 22, 'gold', null, 0, 0.9); groundFx.ring(p.x, p.z, 2.2, P.charge, 0.7, p.y); }
-  }
+  // The rares' small cues are js/rare-fx.js's (batch 4); the Guard keys' pressed perks js/guard-fx.js's (batch 8).
 
   events.on('abilityPower', d => {
     const e = d.enemy;
@@ -664,7 +656,6 @@ const abilityFx = (() => {
     else if (d.then === 'pyre' && e) pyre(d, e);
     else if (d.then === 'flare' && e && d.power !== 'counterflame' && !strikeFx.mine(d)) flareOn(e);   // Fire Burst's press is js/strike-fx.js's; Counterflame's js/rare-fx.js's
   });
-  events.on('abilityPerk', perk);
   events.on('abilityPicked', d => {
     const p = Game.player, color = F.perks.picked[d.rarity];
     if (!p || color === undefined) return;

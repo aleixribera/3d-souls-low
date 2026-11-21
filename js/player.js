@@ -6,6 +6,8 @@
 // Counterstep's probe of the spot behind a foe (Player.flashBehind): one body, reused.
 const FLASH_PROBE = { x: 0, y: 0, z: 0, px: 0, pz: 0, radius: 0.5, height: 1.8, grounded: true };
 const makeInventory = list => Object.fromEntries(list.map(it => [it.item, { count: it.count, max: it.max }]));
+// Vanishing Step ends on these: an attack begun or a drink.
+const VANISH_ENDS = new Set([PS.ATTACK, PS.JUMP_ATTACK, PS.USE_ITEM]);
 
 class Player {
   constructor(def, x, z, yaw, y = 0) {
@@ -63,7 +65,17 @@ class Player {
   isFree() { return this.in('free'); }
   isAttacking() { return this.in('attacking'); }
   savePrev() { this.px = this.x; this.py = this.y; this.pz = this.z; this.pyaw = this.yaw; }
-  setState(s) { if (s !== PS.FALL) this.dropped = false; this.state = s; this.stateTime = 0; }
+  setState(s) {
+    if (s !== PS.FALL) this.dropped = false;
+    if (this.perk && this.perk.vanish > 0 && VANISH_ENDS.has(s)) { this.perk.vanish = 0; events.emit('abilityPerk', { body: this, perk: 'vanish/end' }); }   // Vanishing Step: an attack or a drink ends it
+    this.state = s; this.stateTime = 0;
+  }
+  // Vanishing Step's untouchable, unseen time: the owner's perk clock, else a teammate's pose (`vanishLeft`).
+  vanished() { return (this.perk ? this.perk.vanish : 0) > 0 || this.vanishLeft > 0; }
+  // Unbroken: the least health this body keeps now (0: none).
+  floorHp() { return this.perk && this.perk.undying > 0 && this.alive() ? CONFIG.abilities.undying.floor : 0; }
+  // Health lost to anything but a blow (a burn, a drain, a hazard, a grip, a hard landing): Unbroken holds it at its floor.
+  loseHp(n) { this.hp = Math.max(Math.min(this.hp, this.floorHp()), this.hp - n); }
   attackPhase() { return attackTimeline(this.attack, this.attackT).phase; }
   // Rolling (its i-frames), or executing and just after (every source: blows, bolts, shockwaves).
   // The health ceiling: the maximum, less Destined Death's cut while it lasts (CONFIG.bossPowers.destined).
@@ -71,7 +83,7 @@ class Player {
     const doom = this.doomTime > 0 ? CONFIG.bossPowers.destined.cut : 0;
     return this.maxHp * Math.max(0.05, 1 - doom);
   }
-  invulnerable() { return this.iFramesLeft() > 0 || this.state === PS.EXECUTE || this.execGrace > 0 || !!this.blink; }
+  invulnerable() { return this.iFramesLeft() > 0 || this.state === PS.EXECUTE || this.execGrace > 0 || !!this.blink || this.vanished(); }
   // Seconds of the dash's i-frames still to come (0 out of a dash; never past the dash's end, however long Long Shadow
   // makes them).
   iFramesLeft() {
@@ -316,6 +328,7 @@ class Player {
     if ((this.comboTimer -= dt) <= 0) this.comboFrom = null;
     this.bufferInputs();
     this.refillDashes(dt);
+    this.poolStep(dt);
     if (this.blink && this.alive()) { if (this.kit !== NO_KIT) this.abilityStep(dt); this.blinkStep(dt); return; }   // Counterstep's step: nothing else moves the body
     if (this.kit !== NO_KIT) { this.abilityStep(dt); this.pressAbilities(enemies, lock); }
     const fx = Math.sin(this.yaw), fz = Math.cos(this.yaw);
@@ -493,6 +506,14 @@ class Player {
     this.checkFall();
     this.walkPhase += Math.hypot(this.vx, this.vz) * dt * 2.6;
   }
+  // Still Water: standing in a pool heals (the best one; anyone's, a teammate's at its shared rate). The browser's own
+  // player runs its realm's pool clocks; the server runs its own (js/lobby-sim.js).
+  poolStep(dt) {
+    if (typeof Game !== 'undefined' && this === Game.player && !this.id) abilityPools.tick(dt);
+    if (!abilityPools.list.length || !this.alive()) return;
+    const rate = abilityPools.rate(this, this.id || 'self');
+    if (rate > 0 && this.hp < this.hpCap()) { this.hp = Math.min(this.hpCap(), this.hp + this.maxHp * rate * dt); this.lastHp = Math.max(this.lastHp, this.hp); }
+  }
   // A step of the kit's perks: health lost wakes Vengeance and resets the calm and the streak, the clocks run, and a
   // body this low first reports it (Blood Moon).
   abilityStep(dt) {
@@ -542,16 +563,17 @@ class Player {
       this.perk.charge[key] = 0;
       events.emit('abilityPress', { body: this, key, ability: slot.id, over: over > 0 ? over : undefined });
       if (slot.power) abilityReport(this, 'press', { key, enemy: e, over });
-      else { abilityPressPerk(this, slot, over); abilityReport(this, 'press', { key, over }); }   // a Guard's press arms Echoing Blade too
+      else { abilityPressPerk(this, slot, over, this.id || 'self'); abilityReport(this, 'press', { key, over }); }   // a Guard's press arms Echoing Blade too
     }
   }
   // Points toward the number keys (CONFIG.abilities.press.gain): a landed blow's, a deflect's, a dodge's, a Finishing Blow's.
-  gainCharge(n) {
+  // `skip`: a key that gets nothing (an untimed deflect in Iron Stance: the Guard key).
+  gainCharge(n, skip = null) {
     if (this.kit === NO_KIT) return;
     const P = this.kit.perks['ready/overcharge'], st = this.perk;
     let was = 0;   // Overcharge: the fifths past full before, to hear each new one
     if (P) for (const key in this.kit.pressed) was = Math.max(was, Math.floor(abilityOver(this.kit, st, key) * 5 + 1e-9));
-    if (abilityGain(this.kit, st, n)) events.emit('abilityPerk', { body: this, perk: 'ready/empower' });   // Glint wakes
+    if (abilityGain(this.kit, st, n, skip)) events.emit('abilityPerk', { body: this, perk: 'ready/empower' });   // Glint wakes
     if (!P) return;
     let now = 0;
     for (const key in this.kit.pressed) now = Math.max(now, Math.floor(abilityOver(this.kit, st, key) * 5 + 1e-9));
@@ -566,7 +588,7 @@ class Player {
       const on = this.alive() && this.grounded && !this.invulnerable() && inRect(h.rect, this.x, this.z) && Math.abs(this.y - h.y) < CONFIG.height.stepUp;
       let timer = on ? (timers.get(h) || 0) + dt : 0;
       if (on) {
-        this.hp = Math.max(0, this.hp - h.dps * dt);
+        this.loseHp(h.dps * dt);
         if (timer >= CONFIG.hazards.tick) { timer -= CONFIG.hazards.tick; this.tint = Math.max(this.tint, 0.5); events.emit('hazard', { hazard: h, player: this }); }
         if (this.hp <= 0) { this.die(); died = true; events.emit('hazardDeath', { hazard: h, player: this }); }
       }
@@ -583,7 +605,7 @@ class Player {
     if (this.inPit) { this.die(); events.emit('fell', { body: this }); return; }
     const dmg = this.fallHeight > 0 ? fallDamage(this.fallHeight) : 0;
     if (dmg <= 0) return;
-    this.hp = Math.max(0, this.hp - dmg); this.tint = 1; this.hitbox = null;
+    this.loseHp(dmg); this.tint = 1; this.hitbox = null;
     events.emit('fallDamage', { body: this, height: this.fallHeight, damage: Math.min(dmg, this.maxHp) });
     if (this.hp <= 0) { this.die(); return; }
     this.stunTime = CONFIG.fall.hurtTime; this.setState(PS.HURT);
@@ -596,7 +618,7 @@ class Player {
     if (!this.alive()) return;
     if (this.doomDrain > 0) {
       const d = Math.min(this.doomDrain, this.maxHp * D.drain / D.drainTime * dt);
-      this.doomDrain -= d; this.hp -= d;
+      this.doomDrain -= d; this.loseHp(d);
     }
     this.hp = Math.min(this.hp, this.hpCap());
     if (this.hp <= 0) this.die();
@@ -622,7 +644,7 @@ class Player {
     const by = H.by, S = H.S;
     for (const a of ['light', 'heavy', 'roll', 'parry']) if (this.ctl && this.ctl.consume(a)) { H.left -= S.escape; events.emit('struggle', { body: this, enemy: by }); }
     H.left -= dt;
-    this.hp = Math.max(0, this.hp - S.dps * (by.damageMul || 1) * dt);
+    this.loseHp(S.dps * (by.damageMul || 1) * dt);
     if (this.hp <= 0) { this.held = null; this.die(); return; }
     const gripping = by.alive() && (by.state === ES.ACTIVE || by.state === ES.RECOVER) && by.attack && by.attack.id === H.attackId;
     if (H.left <= 0 || !gripping) { this.releaseHold(gripping && this.stateTime >= S.time - 1e-6); return; }   // thrown only when he lets go himself
@@ -664,13 +686,24 @@ class Player {
     const st = this.perk, P = this.kit.perks;
     const drinking = this.state === PS.USE_ITEM;
     const blocked = this.state === PS.BLOCK && !strike.rollOnly && isInFront(this, from.x, from.z);
+    if (st.plates > 0 && !blocked && damage > 0) {   // Ember Mail: a plate takes the blow whole (a grab breaks them all, and takes you)
+      const grab = !!(strike.seize || strike.pull);
+      st.plates = grab ? 0 : st.plates - 1; if (!st.plates) st.mail = 0;
+      events.emit('abilityPerk', { body: this, perk: grab ? 'armour/broken' : 'armour/crack', left: st.plates, at: { x: from.x, y: from.y, z: from.z } });
+      if (!grab) { this.brace = 1; return { blocked: false, plated: true }; }
+    }
     if (st.veil === 1 && damage > 0 && !blocked) {   // Ash Veil takes this blow's edge, once (a guard's chip doesn't spend it)
       damage *= 1 - P['low/veil'].cut; st.veil = 2; events.emit('abilityPerk', { body: this, perk: 'veil/spent' });
     }
     if (st.iron > 0 && P['hurt/ironSkin'] && damage > 0 && !blocked) { damage *= 1 - P['hurt/ironSkin'].cut; events.emit('abilityPerk', { body: this, perk: 'ironSkin/glance' }); }   // Grit
     if (blocked) { damage *= B.damageMul; knock *= B.knockMul; }
     else this.closeCounter();   // the counter (a dodge's or a deflect's) is lost to any blow that lands
-    this.hp = Math.max(0, this.hp - damage);
+    const rooted = st.rooted > 0 && st.rootV && !strike.seize && !strike.pull;   // Iron Root: less from it, and nothing moves the body
+    if (rooted) { damage *= 1 - st.rootV.cut; knock = 0; }
+    const floor = this.floorHp(), saved = floor > 0 && damage > 0 && !blocked && this.hp - damage < floor;   // Unbroken: no blow takes you below its floor
+    if (floor > 0 && !saved) damage = Math.min(damage, Math.max(0, this.hp - floor));   // a guarded chip holds at it too, unsaid
+    this.hp = saved ? Math.min(this.hp, floor) : Math.max(0, this.hp - damage);
+    if (saved) events.emit('abilityPerk', { body: this, perk: 'press/undying', saved: true });
     if (damage > 0) this.root = 0;   // a blow taken ends a held strike (js/abilities.js ends its thrusts too)
     if (this.state === PS.HELD) {   // already in a grip: the blow hurts, but nothing throws you out of it
       this.tint = 1;
@@ -678,6 +711,17 @@ class Player {
       return { blocked: false };
     }
     if (strike.seize && !blocked && strike.seizeBy && this.hp > 0) { this.tint = 1; this.seize(strike.seizeBy, strike.seize, strike.seizeAttack); return { blocked: false }; }
+    if (rooted && !blocked && !saved) {   // planted: the blow bites, the body keeps doing what it did (a drink too)
+      this.tint = 1;
+      if (this.hp <= 0) { this.die(); return { blocked: false, died: true }; }
+      events.emit('abilityPerk', { body: this, perk: 'root/bite', at: { x: from.x, y: from.y, z: from.z } });
+      if (strike.destined) {
+        const D = CONFIG.bossPowers.destined;
+        this.doomTime = D.time; this.doomDrain = this.maxHp * D.drain; this.hp = Math.min(this.hp, this.hpCap());
+        events.emit('destinedDeath', { body: this });
+      }
+      return { blocked: false, rooted: true };
+    }
     if (!blocked && st.unshaken > 0 && P['flask/unshaken']) {   // Ironclad: the blow glances off, its damage taken; no knock, no flinch
       this.tint = 1;
       events.emit('abilityPerk', { body: this, perk: 'unshaken/glance', at: { x: from.x, y: from.y, z: from.z } });
@@ -705,6 +749,7 @@ class Player {
       if (bastion) { this.perk.bastion = bastion.window; events.emit('abilityPerk', { body: this, perk: 'block/armed' }); }   // Bastion armed
       return { blocked: true };
     }
+    if (saved) { this.hitbox = null; this.stunTime = C.staggerTime; this.setState(PS.STAGGER); return { blocked: false, saved: true }; }   // Unbroken's kneel
     if (strike.heavy || !this.isCommitted()) {   // a jump attack still in its air wind-up is cancelled too
       this.hitbox = null;
       this.stunTime = strike.heavy ? C.staggerTime : C.hurtTime;

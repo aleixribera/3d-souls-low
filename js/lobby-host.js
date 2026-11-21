@@ -444,6 +444,7 @@
         view: net.cameraView(s.view) };
       if (session.teamWipeOnly && p.arenaDefeated) { p.pose.hp = 0; p.pose.state = 'dead'; p.pose.attack = null; }
       if (rose) p.pose.hp = Math.min(p.pose.hp, rose);   // up with the bar the revive gave, no more
+      p.pose.vanish = Math.max(0, Math.min(p.pose.vanish, sim.vanishOf(p.id)));   // drawn faint to peers only while the server counts a vanish
       if (!p.startPose) p.startPose = { x: p.pose.x, y: p.pose.y, z: p.pose.z };
       else if (!p.acted && !firstPick && (Math.hypot(p.pose.x - p.startPose.x, p.pose.z - p.startPose.z) > 0.08
         || Math.abs(p.pose.y - p.startPose.y) > 0.08

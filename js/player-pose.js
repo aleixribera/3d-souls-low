@@ -143,6 +143,11 @@ Player.prototype.pose = function (tt, ctx) {
   const r = this.rig, C = CONFIG.player;
   let glint = -1; this.chargeGlow = 0;   // set by a key-posed attack; -1 leaves the animator's own glint
   r.reset(); r.setOpacity(1);
+  // Vanishing Step: this browser's own body is gone (its petals show where: js/guard-fx.js); another's a faint shape.
+  const gone = this.vanished(), own = typeof Game !== 'undefined' && this === Game.player;
+  if ((gone && own) !== !!r.vanishHid) { r.vanishHid = gone && own; r.root.visible = !r.vanishHid; }
+  if (r.vanishHid) r.shadow.visible = false;
+  else if (gone) r.setOpacity(VIS.abilityFx.guard.faint);
   switch (this.state) {
     case PS.IDLE:
       if (this.root > 0 && this.rootKind) { rootPose(r, this.rootKind, this.rootT); break; }   // Sparrow Flurry's thrusts, Quick Draw's stance
