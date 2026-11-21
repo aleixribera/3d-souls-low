@@ -205,8 +205,18 @@ Object.assign(Game, {
   // The title's Tutorial: the showcase, then the sparring scene, then the title again (js/showcase.js, js/sparring.js).
   playTutorial() {
     let started = false;   // a show that fails half-way calls onEnd and returns false: the scene still starts once
-    const spar = () => { if (!started) { started = true; sparring.start({ back: 'main' }); } };
-    if (typeof showcase === 'undefined' || !showcase.play({ toMenu: false, onEnd: spar })) spar();
+    const spar = () => { if (!started) { started = true; $('loading').classList.remove('show'); sparring.start({ back: 'main' }); } };
+    if (typeof showcase === 'undefined') { spar(); return; }
+    // The show's setup builds its three grounds (seconds on a laptop): the loading screen covers it, painted first,
+    // as at the first launch (showcase.firstLaunch), instead of a title frozen under the pointer. play() lifts it.
+    // On the stepped clock (tests) at once, as loadingFirst.
+    const go = () => { this.pendingLoad = false; if (!showcase.play({ toMenu: false, onEnd: spar })) spar(); };
+    if (this.manualClock) { go(); return; }
+    if (this.pendingLoad) return;
+    this.pendingLoad = true;   // a second click while the screen paints starts nothing more
+    $('loadName').textContent = ''; $('loadTip').textContent = '';
+    $('loading').classList.add('show');
+    requestAnimationFrame(() => requestAnimationFrame(go));
   },
   refreshTitleCollection() {
     if (this.screen !== 'main' || this.mode !== 'menu') return;
