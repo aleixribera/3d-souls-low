@@ -8,9 +8,10 @@ The iterate loop's working note (`.claude/iterate.md`). Cap: 8,000 characters.
   Final Castle relit with `areas`; Blender gibbets and racks (`castle_bits.py`); Root hollows and Still Mere floors;
   Moor, Mere, Saltgrave recolours. Every PLAN Later item is through; next: the "Last" balance pass (track 2).
   Acceptance: `docs/story/audit/*-after.jpg`; `story-redo-3.mp4`; `tools/story-audit.cjs` 14 chapters, 0 findings.
-- Track 2, pass 171 (PLAN Later item 6, the Finishing Blow's look, 1 of 1): shipped the `ink` look (colour kept, ink
-  slashes, no flash); `?finisher=classic|ember|still` for Aleix until 2026-11-28. Acceptance: in-page `Finishing`;
-  `docs/scorecard/now/finisher-directions.jpg`, `finisher.mp4`. Next on track 2: the "Last" balance pass.
+- Track 2, pass 173 (PLAN "Last" balance, 1 of ~2): blows x1.9, counter 2.75 lights, Finishing Blow ~8%
+  of a bar, boss blows x1.25, crate pity. Acceptance: the plan's six checks (`docs/balance/README.md`). Met: kit runs,
+  counter, crates, medians new 5 / strong 27. Pass 2: skilled no kit 10 (12-15); fights 92 s (45-90);
+  counters+FB 15%; weak legendaries.
 
 ## Works
 
@@ -26,8 +27,8 @@ The iterate loop's working note (`.claude/iterate.md`). Cap: 8,000 characters.
   and edge-on sheets take the rim light white: lower `rim` (model or slot).
 - Showcase (pass 166, v7.215.0): the player's view, a fade the only cut, the Finishing Blow its finale; in-page
   `Showcase`, clip `docs/scorecard/now/showcase.mp4`. Rush curve (pass 168): `pairTurns`, `settle`; `docs/scorecard/now/rush-curve.md`.
-- Pace: `CONFIG.pace`, `CONFIG.enemy.press`, `rushPace`, `bossMove`; `tests/boss-pace.cjs`, `rush-flow.cjs`;
-  `tools/rush-curve.cjs bosses|runs|pairs` (`SKILLED=1`, `KIT=`).
+- Pace: `CONFIG.pace`, `CONFIG.enemy.press`/`bossDamage`, `rushPace`; `tests/boss-pace.cjs`, `rush-flow.cjs`;
+  `tools/rush-curve.cjs bosses|runs|pairs` (`SKILLED=1`, `KIT=`, `SPLIT=1`, overrides in its header).
 - Bosses fight the group (v7.35.0): `CONFIG.aggro`, `bossTarget` (`js/lobby-sim.js`), `grouped` / `isAreaAttack`
   (`js/enemy.js`); `tests/boss-attention.cjs`.
 - Menus (pass 51, v7.72.0): title style everywhere, `optionsItems`, `pauseFacts`, `#runSummary`, Controls (`controlRows`); in-page `Menus:`.
