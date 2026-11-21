@@ -4,10 +4,10 @@ The iterate loop's working note (`.claude/iterate.md`). Cap: 8,000 characters.
 
 ## Now
 - Resumed 2026-11-21: next the PLAN "Later" items in order, then the balance pass (loop file stop point).
-- Track 1, pass 169 (PLAN Later item 3, Story redone in cel, 2 of ~3): Night Gaol warm cells and cold
-  bridges, fog gates as drifting fog (`js/fog-gate.js`), Aurel in Ash relit, Burning Town house variety (`townLook`,
-  Blender bays and dormers), Keyless, Cinderfolk recoloured. Next: `docs/story/audit.md` "Left" (Sunken Keep).
-  Acceptance: `tools/story-frames.cjs` sheets; clip `story-redo-2.mp4` (`tools/story-clip.cjs`); audit 0 findings.
+- Track 1, pass 172 (PLAN Later item 3, Story redone in cel, 3 of 3: DONE, v7.222.0): Sunken Keep, Tower, Saltgrave,
+  Final Castle relit with `areas`; Blender gibbets and racks (`castle_bits.py`); Root hollows and Still Mere floors;
+  Moor, Mere, Saltgrave recolours. Every PLAN Later item is through; next: the "Last" balance pass (track 2).
+  Acceptance: `docs/story/audit/*-after.jpg`; `story-redo-3.mp4`; `tools/story-audit.cjs` 14 chapters, 0 findings.
 - Track 2, pass 171 (PLAN Later item 6, the Finishing Blow's look, 1 of 1): shipped the `ink` look (colour kept, ink
   slashes, no flash); `?finisher=classic|ember|still` for Aleix until 2026-11-28. Acceptance: in-page `Finishing`;
   `docs/scorecard/now/finisher-directions.jpg`, `finisher.mp4`. Next on track 2: the "Last" balance pass.
