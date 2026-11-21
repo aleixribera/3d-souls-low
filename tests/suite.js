@@ -4047,7 +4047,8 @@
       expect.ok(document.activeElement === buttons[0], `focus starts on the first button (${document.activeElement.id})`);
       const scroller = [list, body].find(n => n.scrollHeight > n.clientHeight + 1 && getComputedStyle(n).overflowY === 'auto');
       expect.ok(scroller, 'thirty fights do not fit: the list scrolls');
-      press('PadDown'); await new Promise(r => setTimeout(r, 700));
+      press('PadDown');   // a smooth scroll: up to 3 s on a slow machine
+      for (let t = 0; t < 30 && scroller.scrollTop === 0; t++) await new Promise(r => setTimeout(r, 100));
       expect.ok(scroller.scrollTop > 0 && document.activeElement === buttons[0], `down scrolls the list and keeps the focus (${Math.round(scroller.scrollTop)}, ${document.activeElement.id})`);
       for (let i = 0; i < buttons.length && document.activeElement.id !== 'runSummaryLobby'; i++) press('PadRight');
       expect.ok(document.activeElement.id === 'runSummaryLobby', `right reaches Lobby (${document.activeElement.id})`);
