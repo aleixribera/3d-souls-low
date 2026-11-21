@@ -185,9 +185,9 @@ Object.assign(Game, {
       { name: 'Back', desc: '', cue: 'menuBack', go: () => this.showMenu(back) },
     ];
   },
-  // The title's Boss Rush: the mode in a line, or who is in the public lobby right now (multiplayer.lobby). It plays in
-  // the lobby, with Play in private beside it (Aleix); while the lobby does not answer the two swap, and a page with no
-  // lobby at all (a file, a static host) plays only in private.
+  // The title's Boss Rush: the mode in a line, or who is in the public lobby right now (multiplayer.lobby). It always
+  // opens the lobby; Boss Rush alone is the lobby screen's: its button when the lobby can't be reached, a quiet footer
+  // entry when it can (VISION, 2026-11-21).
   titleLobby() {
     const L = typeof multiplayer !== 'undefined' ? multiplayer.lobby : { state: 'absent' }, n = L.players;
     const live = L.state === 'online' && n > 0, reachable = L.state === 'online';

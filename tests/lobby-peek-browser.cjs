@@ -1,7 +1,8 @@
 'use strict';
 // The title screen's online card (v7.19.0): it reads /api/lobby while the title shows, so a friend who opens the link
 // sees that others are playing right now, and what. Polls only on the title. Boss Rush tries the lobby; Play in private
-// shows only once a join fails.
+// is the lobby screen's big button only once a join fails, and a quiet footer entry while the lobby answers (VISION,
+// 2026-11-21), gone while a run is on.
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const { chromium } = require('./browser.cjs');
@@ -37,8 +38,25 @@ const { createServer } = require('../server/index.cjs');
     await b.waitForFunction(() => multiplayer.connected);
     await a.waitForFunction(() => /1 playing online now/.test(document.querySelector('#menuDesc').textContent));
     assert.equal(await a.evaluate(() => Game.menuItems[0].lobbyState), 'live');
+    // The lobby answers: no big private button, only the footer's quiet entry, at desktop and phone width; it plays alone.
+    const quiet = async page => assert.deepEqual(await page.evaluate(() => ['lobbyPrivate', 'lobbyAlone'].map(id => !!document.getElementById(id).offsetParent)), [false, true], 'reachable: Play in private only in the footer');
+    await quiet(b);
+    await b.screenshot({ path: '.scratch/lobby-peek/lobby-reachable-desktop.png' });
+    const d = await open('Dune', { width: 390, height: 844 });
+    await card(d).click();
+    await d.waitForFunction(() => multiplayer.connected && !multiplayer.alone);
+    await quiet(d);
+    assert.ok(await d.evaluate(() => document.documentElement.scrollWidth <= innerWidth), 'the lobby fits a phone');
+    await d.screenshot({ path: '.scratch/lobby-peek/lobby-reachable-phone.png' });
+    await d.locator('#lobbyAlone').click();
+    await d.waitForFunction(() => multiplayer.alone && multiplayer.connected && document.getElementById('publicLobby').classList.contains('hidden'), null, { timeout: 20000 });
+    await d.close();
     await b.locator('#lobbyAdventure').selectOption('calling/weekly');
     await b.locator('#lobbyStart').click();
+    await b.waitForFunction(() => !!multiplayer.info.session, null, { timeout: 15000 });
+    await b.evaluate(() => multiplayer.show());
+    assert.equal(await b.locator('#lobbyAlone').isVisible(), false, 'a run on: no way out to play alone but Leave');
+    await b.evaluate(() => multiplayer.hide());
     await a.waitForFunction(() => /playing online now · Weekly/.test(document.querySelector('#menuDesc').textContent), null, { timeout: 15000 });
     await a.screenshot({ path: '.scratch/lobby-peek/title-live.png' });
     // Off the title it stops asking.
@@ -57,6 +75,7 @@ const { createServer } = require('../server/index.cjs');
     assert.match(await badge(a).first().textContent(), /^Boss after boss/);
     await card(a).click();
     await a.locator('#lobbyPrivate').waitFor({ state: 'visible' });
+    assert.equal(await a.locator('#lobbyAlone').isVisible(), false, 'unreachable: the big button, not the footer entry');
     await a.screenshot({ path: '.scratch/lobby-peek/lobby-failed.png' });
     await a.locator('#lobbyPrivate').click();
     await a.waitForFunction(() => multiplayer.connected && document.getElementById('publicLobby').classList.contains('hidden'), null, { timeout: 20000 });
@@ -68,6 +87,6 @@ const { createServer } = require('../server/index.cjs');
     assert.ok(fit.scroll <= 375 && fit.boxes.every(([l, r]) => l >= 0 && r <= 375), `phone layout fits: ${JSON.stringify(fit)}`);
     await phone.screenshot({ path: '.scratch/lobby-peek/title-phone.png' });
     assert.deepEqual(errors, []);
-    console.log('Lobby peek: title card count and run name, online-first focus, polling only on the title, Boss Rush joins in one click, private only when joining fails and phone layout passed.');
+    console.log('Lobby peek: title card count and run name, online-first focus, polling only on the title, Boss Rush joins in one click, private as the big button only when joining fails, else in the footer, and phone layout passed.');
   } finally { await browser.close(); await app.close(); }
 })().catch(e => { console.error(e); process.exitCode = 1; });

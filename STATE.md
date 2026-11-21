@@ -4,10 +4,9 @@ The iterate loop's working note (`.claude/iterate.md`). Cap: 8,000 characters.
 
 ## Now
 - Resumed by Aleix, 2026-11-21: next the PLAN "Later" items in order, then the balance pass (loop file stop point).
-- Track 2, pass 159 (PLAN item 8, batch 18, Story's four, pass 1 of 1), v7.208.0: Scarlet Draw, Oath Guard, The
-  Seven, Bell of Waking, rarity `story` (`given`), each given by its chapter's level (`giveAbility`), saved as `gifts`
-  (`js/story-fx.js`, Blender `seven_founder.py`, `ghost_bell.py`). Acceptance: `tests/story-four.cjs`, in-page
-  `story four`, `given on the road`; clip `docs/scorecard/now/story-four.mp4`. PLAN items 5-8 are done.
+- Track 2, pass 161 (PLAN Later item 1, Boss Rush alone off the title, pass 1 of 1): the title always opens the lobby;
+  Play in private is the lobby's big button when it can't be reached, a quiet footer entry when it can, none mid-run.
+  Acceptance: `tests/lobby-peek-browser.cjs`; frames `docs/scorecard/now/lobby-private-*`.
 - Track 1, pass 155 (Aleix's ask: cel the default, pass 1 of 1), v7.205.0: cel with no `?style=`, `classic` the way
   back. Acceptance: `tests/style-browser.cjs`; frames `docs/scorecard/now/cel-default-*`. Normal inks from the scene's
   depth (GPU +10%, was +90%); laptop unreachable, 60 fps there unmeasured. Track 1 has no plan item left.

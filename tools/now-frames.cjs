@@ -2,7 +2,8 @@
 // The current frames (docs/scorecard/now/, PLAN.md "Process first"): one latest frame per screen, the only place judges,
 // reviewers and the director look. A pass that changes a screen retakes it here under the same name.
 // Usage: node tools/now-frames.cjs [lobby|rush|crate|abilities ...]   (no part = all). One headless Edge, closed at the end.
-//   lobby-desktop / lobby-phone   the lobby, Boss Rush chosen
+//   lobby-desktop / lobby-phone   the lobby, Boss Rush chosen (Play in private a quiet footer entry, pass 161)
+//   lobby-private-desktop / -phone  `private`: the lobby that can't be reached, Play in private its big button (pass 161)
 //   rush-fight                    a Boss Rush run started from the lobby, its first boss attacking
 //   crate-roll                    a crate's roll landing on its reward
 //   abilities-desktop / -phone    the Abilities page (PLAN.md item 7) opened from the lobby: a few unlocked, one off;
@@ -47,6 +48,13 @@ const shot = (page, name, clip) => page.screenshot({ path: path.join(out, name +
     if (want('lobby')) for (const [w, h, tag] of [[1280, 720, 'desktop'], [390, 844, 'phone']]) {
       const page = await open(w, h); await joinLobby(page); await shot(page, `lobby-${tag}`); await page.close();
       console.log('lobby', tag);
+    }
+    if (want('private')) for (const [w, h, tag] of [[1280, 720, 'desktop'], [390, 844, 'phone']]) {
+      const page = await open(w, h); await page.route('**/api/lobby', route => route.abort());
+      await page.evaluate(() => multiplayer.join());
+      await page.locator('#lobbyPrivate').waitFor({ state: 'visible', timeout: 30000 }); await page.waitForTimeout(500);
+      await shot(page, `lobby-private-${tag}`); await page.close();
+      console.log('private', tag);
     }
     if (want('cel')) {
       // The default look (pass 155: cel with no ?style=): the Practice fight with the Pillager Captain, a bot at the

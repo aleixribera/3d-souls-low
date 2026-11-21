@@ -57,7 +57,7 @@ const multiplayer = (() => {
     </section></div>
     <footer class="lobby-footer"><div class="lobby-footer-actions"><button id="lobbyLeave" class="ui-text-button"><span class="ui-key" aria-hidden="true"></span><span>Leave lobby</span></button>
     <button id="lobbyHelp" class="ui-text-button" aria-expanded="false" aria-controls="lobbyControls">Controls</button>
-    <button id="lobbyOptions" class="ui-text-button">Options</button><button id="lobbyCollection" class="ui-text-button">Abilities</button><button id="lobbyTutorial" class="ui-text-button">Tutorial</button></div><p id="lobbyPadHint" class="ui-hints"></p></footer>
+    <button id="lobbyOptions" class="ui-text-button">Options</button><button id="lobbyCollection" class="ui-text-button">Abilities</button><button id="lobbyAlone" class="ui-text-button" hidden>Play in private</button><button id="lobbyTutorial" class="ui-text-button">Tutorial</button></div><p id="lobbyPadHint" class="ui-hints"></p></footer>
     <section id="lobbyControls" class="lobby-controls" aria-labelledby="lobbyControlsTitle" hidden><div class="lobby-controls-head"><h2 id="lobbyControlsTitle">Controls</h2>
     <button id="lobbyControlsClose" class="ui-text-button"><span class="ui-key" aria-hidden="true"></span>Close</button></div>
     <dl id="lobbyControlsList"></dl>
@@ -807,6 +807,7 @@ const multiplayer = (() => {
     el('lobbyRetry').hidden = connected || starting || reconnectWanted;
     el('lobbyRetry').textContent = needsReload ? 'Reload game' : 'Try again';
     el('lobbyPrivate').hidden = connected || starting || needsReload;   // the lobby failed or is being retried: Boss Rush in private instead (Aleix)
+    el('lobbyAlone').hidden = !connected || !!session || solo;   // the lobby answers: Boss Rush alone stays a quiet footer entry, off the title (VISION, 2026-11-21)
     el('lobbyWaiting').hidden = connected && self === leader || !connected;
     el('lobbyCount').textContent = connected ? `${roster.length} / ${capacity}` : '—';
   }
@@ -1278,7 +1279,7 @@ const multiplayer = (() => {
   el('lobbyTutorial').onclick = () => { leave(); sparring.start({ then: () => join() }); };   // the sparring scene, then back into the lobby (js/sparring.js)
   el('lobbyGuestResume').onclick = hide;
   el('lobbyRetry').onclick = () => needsReload ? location.reload() : join();
-  el('lobbyPrivate').onclick = () => { leave(); playAlone(); };
+  el('lobbyPrivate').onclick = el('lobbyAlone').onclick = () => { leave(); playAlone(); };
   el('lobbyAdventure').onchange = () => updateRoster();   // the row's click already sounds
   el('lobbyManage').onclick = () => {
     const open = panel.classList.toggle('managing-party'); el('lobbyManage').setAttribute('aria-expanded', String(open));
