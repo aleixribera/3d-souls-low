@@ -12,6 +12,9 @@ Parts: judge (panel: `docs/scorecard/panel/`), review (weekly, from 2026-11-20),
 - Stop point (Aleix, 2026-11-21, "I want all of this done"): every `PLAN.md` "Later" item, in order and shipped on
   (Aleix confirmed them), then the "Last" balance pass up to "awaiting Aleix's playtest". The pass that reaches it
   writes the pause line in `STATE.md` "Now". Items 5 to 8 were the previous stop point (pass 159).
+- Story levels (Aleix, 2026-11-21): "all story levels need redoing, or almost all of them, there are broken parts, not
+  only for the 7-14 ones." The Later Story item covers every chapter, and its broken parts are owner's bugs (step 2.2):
+  audit each chapter by playing it through, fix what's broken first, then redo the levels.
 - No per-release or per-model docs: the commit message holds the details, and the in-game changelog
   (`js/data/changelog.js`) is the one changelog. A model's notes are its `tools/blender/<name>.py` header.
 - Third-party assets: logged in the header of the file that uses it.
