@@ -577,10 +577,71 @@
       const other = { x: p.x + 1, y: p.y, z: p.z, yaw: 0, alive: () => true }, net = { self: 'me', bodyOf: id => (id === 'them' ? other : null) };
       const word = (power, then, extra) => ({ type: 'abilityPower', power, then, holder: 'them', x: e.x, y: e.y, z: e.z, v: ABILITY_BY_ID[power].levels[0], ...extra });
       e.netId = 'ult-boss';
-      netView.events({ events: [word('heavens-lance', 'beam', { enemy: e.netId, strike: 1 }), word('tempest', 'tempest', { enemy: e.netId, strike: 1 })], shots: [], value: {} }, net);
-      netView.ability(word('cataclysm', 'quake', { enemy: null, strike: 1 }), null, net);
+      // (pass 157: the blast through netView.events like the rest; it named no enemy, so it was dropped online)
+      netView.events({ events: [word('heavens-lance', 'beam', { enemy: e.netId, strike: 1 }), word('tempest', 'tempest', { enemy: e.netId, strike: 1 }),
+        word('cataclysm', 'quake', { enemy: null, strike: 1 })], shots: [], value: {} }, net);
       Game.render(1, STEP);
       expect.ok(fx().columns === 1 && fx().storms === 1 && fx().slabs === 6, `another's column, storm and blast from the word (${JSON.stringify(fx())})`);
+    } finally { audio.play = play; Game.lock = null; e.netId = netId0; wipe(); p.grantAbilities([]); }
+  });
+  test('ultimates two: the great wave crashing, the sky blade falling and planted, the firebird in its holder\'s place, the black star holding and imploding; the world dim; others\' from the server\'s word', () => {
+    Game.startLevel('test-abilities'); sim.begin(); sim.step(2);
+    const p = Game.player, e = Game.enemies.find(o => o.def.id === 'greatDummy'), played = [];
+    const play = audio.play; audio.play = (id, o) => { played.push(id); return play.call(audio, id, o); };
+    const heard = ids => expect.ok(ids.every(id => played.includes(id)), `heard ${ids.join(', ')} (${[...new Set(played)].join(', ')})`);
+    const wipe = () => { abilityPowers.reset(); legendFx4.clear(); impactFrame.clear(); e.frozen = 0; e.holdRest = 0; p.dive = null; p.diveGrace = 0; played.length = 0; };
+    const fx = () => legendFx4.state, count = () => impactFrame.info().count, frames = n => { for (let i = 0; i < n; i++) sim.step(1, 1); };
+    const press = id => { p.grantAbilities([id]); wipe(); abilityPowers.trigger('self', p, p.kit, 'press', { key: 'ultimate', enemy: e, yaw: p.yaw }); };
+    const netId0 = e.netId, U = CONFIG.abilities.ult, PX = CONFIG.abilities.phoenix;
+    try {
+      p.x = e.x - 6; p.z = e.z; p.yaw = Math.PI / 2; Game.lock = e;
+      // Great Wave: the wave rising behind its holder, the world dimming; the crash on one impact frame, the foam; gone.
+      press('great-wave'); let n0 = count(), hp0 = e.hp;
+      frames(20); expect.ok(fx().waves === 1 && impactFrame.info().dim > 0 && fx().foam === 0, `the wave rises, the dim (${JSON.stringify(fx())})`);
+      frames(Math.ceil(U.wave * 60) - 20 + 6);
+      expect.ok(count() === n0 + 1 && fx().foam === 1 && e.hp < hp0, `the crash: one frame, the foam, the boss hit (${JSON.stringify(fx())}, ${count() - n0})`);
+      let inked = 0;
+      scene.traverse(o => { if (o.isMesh && o.visible && o.material && o.material.uniforms && o.material.uniforms.uInk) inked++; });
+      expect.ok(inked >= 3, `the wave in ink, deep, band and foam (${inked})`);
+      frames(120); expect.ok(fx().waves === 0 && fx().foam === 0, `gone into foam (${JSON.stringify(fx())})`);
+      heard(['abilityGreatWave']);
+      // Sky Blade: the target ring and the sword over the boss; it lands on one frame, a crater; planted, then sunk away.
+      press('sky-blade'); n0 = count(); hp0 = e.hp;
+      frames(20); expect.ok(fx().swords === 1 && fx().marks === 1 && fx().craters === 0, `the sword forms over its mark (${JSON.stringify(fx())})`);
+      frames(Math.ceil(U.sky * 60) - 20 + 4);
+      expect.ok(count() === n0 + 1 && fx().craters === 1 && fx().swords === 1 && e.hp < hp0, `it lands: one frame, a crater, planted (${JSON.stringify(fx())})`);
+      frames(Math.ceil((VIS.abilityFx.ults2.planted + VIS.abilityFx.ults2.fade) * 60) + 10);
+      expect.ok(fx().swords === 0 && fx().craters === 0, `sunk away (${JSON.stringify(fx())})`);
+      heard(['abilitySkyBlade', 'abilitySkyLand']);
+      // Phoenix Dive: its holder's body hidden, the bird and its fire trail in its place, flying; one frame at the last
+      // pass; landed, the body back.
+      press('phoenix-dive'); p.diveStart(e, p.kit.pressed.ultimate.v); n0 = count(); hp0 = e.hp;
+      frames(Math.ceil((PX.burst + PX.up) * 60) + 4);
+      expect.ok(fx().birds === 1 && fx().rigsHidden === 1 && fx().trails === 1 && !p.rig.root.visible && p.invulnerable(), `the bird in the holder's place (${JSON.stringify(fx())})`);
+      frames(Math.ceil(3 * (PX.dive + PX.gap) * 60));
+      expect.ok(count() === n0 + 1 && e.hp < hp0, `one frame, at the last pass (${count() - n0})`);
+      frames(Math.ceil((PX.land + VIS.abilityFx.ults2.fade + 0.4) * 60));
+      expect.ok(fx().birds === 0 && fx().rigsHidden === 0 && p.rig.root.visible && p.dive === null, `landed, the body back (${JSON.stringify(fx())})`);
+      heard(['abilityPhoenix', 'abilityPhoenixPass']);
+      // Black Star: thrown from the chest; the sphere held over the boss, streaks spiralling in, the boss held; then the
+      // implosion on one frame, a scorch left.
+      press('black-star'); n0 = count(); hp0 = e.hp;
+      frames(8); expect.ok(fx().thrown === 1 && fx().spheres === 0, `the star thrown (${JSON.stringify(fx())})`);
+      frames(Math.ceil(U.star * 60) - 8 + 12);
+      expect.ok(fx().spheres === 1 && fx().motes > 0 && e.frozen > 0 && e.hp === hp0, `the sphere, the streaks, the boss held (${JSON.stringify(fx())}, ${e.frozen})`);
+      frames(Math.ceil(p.kit.pressed.ultimate.v.time * 60));
+      expect.ok(fx().spheres === 0 && fx().scorches === 1 && count() === n0 + 1 && e.hp < hp0, `the implosion: one frame, a scorch (${JSON.stringify(fx())}, ${count() - n0})`);
+      heard(['abilityBlackStar', 'abilityImplode']);
+      // Online: another's from the server's word alone (the local copy emptied): a crash, a blade and a star landing on no
+      // enemy (theirs died first), a firebird on its holder.
+      wipe(); p.grantAbilities([]); frames(70);
+      const other = { x: p.x + 1, y: p.y, z: p.z, yaw: 0, alive: () => true }, net = { self: 'me', bodyOf: id => (id === 'them' ? other : null) };
+      const word = (power, then, extra) => ({ type: 'abilityPower', power, then, holder: 'them', x: e.x, y: e.y, z: e.z, v: ABILITY_BY_ID[power].levels[0], ...extra });
+      e.netId = 'ult2-boss';
+      netView.events({ events: [word('great-wave', 'greatWave', { enemy: null, strike: 1, yaw: 0 }), word('sky-blade', 'skyBlade', { enemy: null, strike: 1 }),
+        word('black-star', 'blackStar', { enemy: null, strike: 2 }), word('phoenix-dive', 'phoenix', { enemy: e.netId })], shots: [], value: {} }, net);
+      frames(Math.ceil((PX.burst + PX.up) * 60));
+      expect.ok(fx().foam === 1 && fx().craters === 1 && fx().scorches === 1 && fx().birds === 1, `another's crash, blade, star and bird from the word (${JSON.stringify(fx())})`);
     } finally { audio.play = play; Game.lock = null; e.netId = netId0; wipe(); p.grantAbilities([]); }
   });
   test('regression: every duel runs 20 s and the enemy engages', () => {

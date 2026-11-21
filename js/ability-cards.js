@@ -122,6 +122,11 @@ const ABILITY_ICONS = {
   'heavens-lance': '<path d="M19 2 H29 V40 H19 Z"/><path d="M24 2 V40"/><ellipse cx="24" cy="40" rx="16" ry="5"/><path d="M6 6 L12 10 M42 6 L36 10"/>',
   'frozen-lotus': '<path d="M24 4 L28 26 L24 32 L20 26 Z"/><path d="M20 30 L6 22 L10 34 Z"/><path d="M28 30 L42 22 L38 34 Z"/><path d="M14 38 L24 32 L34 38 L24 44 Z"/>',
   'tempest': '<path d="M6 6 H42"/><path d="M10 14 H38"/><path d="M15 22 H33"/><path d="M19 30 H29"/><path d="M22 38 H26 L24 44"/><path d="M38 20 L34 28 H38 L35 34"/>',
+  // Ultimates II (batch 16)
+  'great-wave': '<path d="M4 42 C6 26 14 8 30 8 C40 8 44 16 40 22 C36 27 29 24 31 18"/><path d="M12 42 C14 30 20 20 28 18"/><path d="M4 42 H44"/><path d="M36 34 L42 30 M30 38 L38 36"/>',
+  'sky-blade': '<path d="M21 4 H27 V30 L24 36 L21 30 Z"/><path d="M24 4 V30"/><path d="M14 30 H34"/><path d="M8 44 H40"/><path d="M24 36 V40 M16 42 L19 39 M32 42 L29 39"/>',
+  'phoenix-dive': '<path d="M24 12 L30 22 L24 30 L18 22 Z"/><path d="M18 22 C10 14 6 10 4 4 C12 8 16 12 21 16"/><path d="M30 22 C38 14 42 10 44 4 C36 8 32 12 27 16"/><path d="M21 29 L16 44 M24 30 V44 M27 29 L32 44"/>',
+  'black-star': '<circle cx="24" cy="24" r="8"/><path d="M24 4 L26 16 M24 44 L22 32 M4 24 L16 22 M44 24 L32 26"/><path d="M10 10 C14 14 16 14 18 18 M38 38 C34 34 32 34 30 30 M38 10 C34 14 34 16 30 18 M10 38 C14 34 16 32 18 30"/>',
 };
 const ABILITY_RARITY_WORD = { common: 'Common', rare: 'Rare', legendary: 'Legendary' };
 const ABILITY_LEVEL_MARK = ['I', 'II', 'III', 'IV', 'V', 'VI'];

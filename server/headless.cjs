@@ -12,6 +12,10 @@ const net = require('../js/net-protocol.js');
 const scripts = files.filter(net.engineScript);
 // Ignore text/visual-only definitions in the compatibility fingerprint? No: clients and
 // server must run exactly the same release, including every level and balance edit.
+// A file GAME_FILES names but the tree lacks fails every simulation test at once, in a fraction of a second (pass 156: a
+// test run read the page's list while a pass had added a file to it and not yet written the file). Said plainly.
+const missing = [...files, ...net.hostFiles].filter(f => !fs.existsSync(path.join(root, 'js', f)));
+if (missing.length) throw new Error(`combat-arena-3d.html's GAME_FILES (or net-protocol's hostFiles) names js/${missing.join(', js/')}, which is not on disk: the tree is mid-edit, or the list is wrong.`);
 const hash = crypto.createHash('sha256');
 for (const f of [...files, ...net.hostFiles]) hash.update(f).update(fs.readFileSync(path.join(root, 'js', f)));
 const build = hash.digest('hex').slice(0, 24);

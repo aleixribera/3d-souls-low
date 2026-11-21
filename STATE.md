@@ -3,10 +3,10 @@
 The iterate loop's working note (`.claude/iterate.md`). Cap: 8,000 characters.
 
 ## Now
-- Track 2, pass 156 (PLAN item 8, batch 15, Ultimates I, pass 1 of 1): Thunder Call, Cataclysm, Heaven's Lance,
-  Frozen Lotus, Tempest (`js/legend-fx-3.js`, Blender `ice_lotus.py`, `cataclysm_slabs.py`); the pin
-  (`Enemy.pinned`), the world dim (`impactFrame.dim`). Acceptance: `tests/ultimates-one.cjs`, in-page
-  `ultimates one`; clip `docs/scorecard/now/ultimates-one.mp4`. Next on track 2: batch 16, Ultimates II.
+- Track 2, pass 157 (PLAN item 8, batch 16, Ultimates II, pass 1 of 1): Great Wave, Sky Blade, Phoenix Dive
+  (`Player.diveStart`), Black Star (`js/legend-fx-4.js`, Blender `great_wave.py`, `sky_blade.py`, `phoenix.py`).
+  Acceptance: `tests/ultimates-two.cjs`, in-page `ultimates two`; clip `docs/scorecard/now/ultimates-two.mp4`.
+  Fixed: CI's audio peak (soft clip unoversampled), Cataclysm unseen online. Next: batch 17, Ultimates III.
 - Track 1, pass 155 (Aleix's ask: cel the default, pass 1 of 1), v7.205.0: cel with no `?style=`, `classic` the way
   back. Acceptance: `tests/style-browser.cjs`; frames `docs/scorecard/now/cel-default-*`. Normal inks from the scene's
   depth (GPU +10%, was +90%); laptop unreachable, 60 fps there unmeasured. Track 1 has no plan item left.

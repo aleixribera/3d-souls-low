@@ -65,7 +65,7 @@ const seeded = seed => () => { seed = (seed + 0x6d2b79f5) >>> 0; let t = seed; t
   for (const [r, w] of Object.entries(CRATES.odds)) near(count[r] / N, w / total, `crate odds, ${r}`, 0.02 / (w / total));
   assert.equal(progress.open(rng), null, 'no crate, nothing to open');
   const prizes = ABILITIES.filter(b => !CRATES.starter.includes(b.id));
-  progress.award({ won: 1000, crowned: 200, time: 0 }, 'long');   // (more as abilities are added)
+  progress.award({ won: 1400, crowned: 280, time: 0 }, 'long');   // (more as abilities are added)
   assert.ok(progress.crates > prizes.length, 'enough crates for everything and more');
   const seen = new Set(), before = progress.crates;
   for (let i = 0; i < prizes.length; i++) {

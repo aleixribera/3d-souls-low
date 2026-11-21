@@ -9,7 +9,9 @@
 const rushNow = () => (typeof replayView !== 'undefined' && replayView.rush) || (typeof multiplayer !== 'undefined' && multiplayer.rush) || null;
 // The powers whose word reaches browsers with no live enemy to name: a stance's draw, a husk, a dash's line, a finished
 // enemy's suns, Fourfold's keys, a shade clone called on no one.
-const NET_FREE_POWERS = new Set(['iai', 'husk', 'lightningDash', 'sunLines', 'refillKeys', 'shadeClone']);
+// The Ultimates told with no enemy: Cataclysm and Great Wave always (they strike a place), Sky Blade and Black Star when
+// their enemy died before they landed (pass 157: Cataclysm was never drawn online, its test calling netView.ability).
+const NET_FREE_POWERS = new Set(['iai', 'husk', 'lightningDash', 'sunLines', 'refillKeys', 'shadeClone', 'quake', 'greatWave', 'skyBlade', 'blackStar']);
 const netView = {
   // One enemy at `alpha` between snapshot values `s` and `q`; `since` s after `s` was taken (its clock runs on).
   enemy(e, s, q, alpha, since, ctx) {

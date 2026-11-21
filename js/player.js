@@ -5,6 +5,8 @@
 // Inventory: { itemId: { count, max } }, created from the player definition.
 // Counterstep's probe of the spot behind a foe (Player.flashBehind): one body, reused.
 const FLASH_PROBE = { x: 0, y: 0, z: 0, px: 0, pz: 0, radius: 0.5, height: 1.8, grounded: true };
+const DIVE_AT = { x: 0, z: 0 }, DIVE_FROM = { x: 0, z: 0 };   // Phoenix Dive's points, reused (diveStep)
+const diveEase = x => { x = Math.max(0, Math.min(1, x)); return x * x * (3 - 2 * x); };
 const makeInventory = list => Object.fromEntries(list.map(it => [it.item, { count: it.count, max: it.max }]));
 // Vanishing Step ends on these: an attack begun or a drink.
 const VANISH_ENDS = new Set([PS.ATTACK, PS.JUMP_ATTACK, PS.USE_ITEM]);
@@ -42,6 +44,7 @@ class Player {
     // server bot's own; unset, abilityReport finds it). lastHp: the health last step, so losing any is noticed.
     this.kit = NO_KIT; this.perk = abilityPerkState(); this.onAbility = null; this.lastHp = this.hp; this.lowReported = false;
     this.blink = null; this.breathLow = false;   // Counterstep's step under way; Last Breath's band entered
+    this.dive = null; this.diveGrace = 0;   // Phoenix Dive's flight under way (diveStart), and its untouchable s after landing
     // Hourglass (press/rewind): the places it keeps (a ring, made with a kit that holds it), and its glide back under way.
     this.trail = null; this.rewind = null;
     this.savePrev();
@@ -138,7 +141,7 @@ class Player {
     const doom = this.doomTime > 0 ? CONFIG.bossPowers.destined.cut : 0;
     return this.maxHp * Math.max(0.05, 1 - doom);
   }
-  invulnerable() { return this.iFramesLeft() > 0 || this.state === PS.EXECUTE || this.execGrace > 0 || !!this.blink || !!this.rewind || this.vanished(); }
+  invulnerable() { return this.iFramesLeft() > 0 || this.state === PS.EXECUTE || this.execGrace > 0 || !!this.blink || !!this.rewind || !!this.dive || this.diveGrace > 0 || this.vanished(); }
   // Seconds of the dash's i-frames still to come (0 out of a dash; never past the dash's end, however long Long Shadow
   // makes them).
   iFramesLeft() {
@@ -257,6 +260,56 @@ class Player {
     this.x = B.cx + Math.sin(a) * r; this.z = B.cz + Math.cos(a) * r; this.vx = this.vz = this.kx = this.kz = 0;
     this.yaw = Math.atan2(B.cx - this.x, B.cz - this.z);
     if (k >= 1) { this.y = B.y; this.vy = 0; this.grounded = true; this.blink = null; this.setState(PS.IDLE); }
+  }
+  // Phoenix Dive (press/phoenix): this browser flies its own body as the bird, on the clock the server times the passes
+  // by (CONFIG.abilities.phoenix): a crouch of `burst`, up `rise` m in `up`, then `strikes` dives through `e`, each a
+  // straight line through its middle from `past` m beyond its edge to as far beyond the other side, turned 120 degrees
+  // from the last, dipping to its chest halfway, a `gap` between; then down where the last ended in `land`. Untouchable
+  // all the way and `grace` s after.
+  diveStart(e, v) {
+    const P = CONFIG.abilities.phoenix;
+    this.dive = { foe: e, cx: e.x, cz: e.z, a0: Math.atan2(e.x - this.x, e.z - this.z), r: (e.radius || 1) + P.past, n: Math.max(1, v.strikes | 0),
+      x0: this.x, z0: this.z, y0: this.y, t: 0, lx: this.x, lz: this.z };
+    this.vx = this.vz = this.kx = this.kz = this.vy = 0; this.hitbox = null; this.root = 0;
+    if (this.state !== PS.IDLE) this.setState(PS.IDLE);
+  }
+  // The point dive `k` is `f` of the way along (heading a0 + k * 120 degrees, through the boss's middle), into `out`.
+  diveAt(D, k, f, out) {
+    const a = D.a0 + k * Math.PI * 2 / 3, s = (f * 2 - 1) * D.r;
+    out.x = D.cx + Math.sin(a) * s; out.z = D.cz + Math.cos(a) * s;
+    return out;
+  }
+  diveStep(dt) {
+    const D = this.dive, P = CONFIG.abilities.phoenix, top = D.y0 + P.rise, o = DIVE_AT, ease = diveEase;
+    D.t += dt;
+    if (D.foe.alive()) { D.cx = D.foe.x; D.cz = D.foe.z; }   // the boss's middle, where it is now
+    const t0 = P.burst + P.up, each = P.dive + P.gap, end = t0 + D.n * P.dive + (D.n - 1) * P.gap;
+    let y = D.y0;
+    if (D.t < P.burst) { o.x = D.x0; o.z = D.z0; }
+    else if (D.t < t0) {   // up, toward the first dive's start
+      const f = ease((D.t - P.burst) / P.up);
+      this.diveAt(D, 0, 0, o); o.x = lerp(D.x0, o.x, f); o.z = lerp(D.z0, o.z, f); y = lerp(D.y0, top, f);
+    } else if (D.t < end) {
+      const k = Math.min(D.n - 1, Math.floor((D.t - t0) / each)), f = (D.t - t0 - k * each) / P.dive;
+      if (f <= 1) { this.diveAt(D, k, f, o); y = top - P.rise * 0.75 * Math.sin(Math.PI * f); }   // through the boss, dipping to its chest
+      else {   // the turn to the next dive's start, high
+        const g = ease((f - 1) * P.dive / P.gap);
+        this.diveAt(D, k, 1, DIVE_FROM); this.diveAt(D, k + 1, 0, o); o.x = lerp(DIVE_FROM.x, o.x, g); o.z = lerp(DIVE_FROM.z, o.z, g); y = top;
+      }
+    } else {   // the landing where the last dive ended
+      this.diveAt(D, D.n - 1, 1, o);
+      const f = Math.min(1, (D.t - end) / P.land), floor = world.groundAt(o.x, o.z, D.y0);
+      y = lerp(top, Number.isFinite(floor) ? floor : D.y0, f * f);
+      if (f >= 1) {
+        this.px = D.lx; this.pz = D.lz; this.x = o.x; this.z = o.z; clampToWorld(this); this.y = y;
+        this.vy = 0; this.grounded = true; this.dive = null; this.diveGrace = P.grace; this.setState(PS.IDLE);
+        return;
+      }
+    }
+    if (Math.hypot(o.x - D.lx, o.z - D.lz) > 1e-4) this.yaw = Math.atan2(o.x - D.lx, o.z - D.lz);
+    this.px = D.lx; this.pz = D.lz; this.x = o.x; this.z = o.z; clampToWorld(this); this.y = y;
+    D.lx = this.x; D.lz = this.z;
+    this.vx = this.vz = this.kx = this.kz = this.vy = 0; this.grounded = false;
   }
   // A dash that went past an enemy (Spark Step's `dashPast`, js/abilities.js dashPastOf): told once, as it ends.
   // Every dash, with its path (Thunder God Step's `dash`): the enemies it crossed are found where they are owned.
@@ -391,6 +444,8 @@ class Player {
     if (this.rewind && this.alive()) { if (this.kit !== NO_KIT) this.abilityStep(dt); this.rewindStep(dt); return; }   // Hourglass's glide: nothing else moves the body
     if (this.trail) this.trailStep(dt);
     if (this.blink && this.alive()) { if (this.kit !== NO_KIT) this.abilityStep(dt); this.blinkStep(dt); return; }   // Counterstep's step: nothing else moves the body
+    this.diveGrace = Math.max(0, this.diveGrace - dt);
+    if (this.dive && this.alive()) { if (this.kit !== NO_KIT) this.abilityStep(dt); this.diveStep(dt); return; }   // Phoenix Dive: the bird's flight moves the body
     if (this.kit !== NO_KIT) { this.abilityStep(dt); this.pressAbilities(enemies, lock); }
     const fx = Math.sin(this.yaw), fz = Math.cos(this.yaw);
     const face = lock ? Math.atan2(lock.x - this.x, lock.z - this.z) : null;
@@ -629,6 +684,7 @@ class Player {
       if (slot.power) {
         abilityReport(this, 'press', { key, enemy: e, over });
         if (slot.then === 'husk') this.huskStep(e);   // Ash Husk: its husk is left where it stood
+        if (slot.then === 'phoenix') this.diveStart(e, slot.v);   // Phoenix Dive: this body becomes the bird
       } else { abilityPressPerk(this, slot, over, this.id || 'self'); abilityReport(this, 'press', { key, over }); }   // a Guard's press arms Echoing Blade too
     }
   }
@@ -665,7 +721,7 @@ class Player {
   // Every way of dying ends here (blows, falls, pits, Destined Death's drain, hazard floors): no health, no hitbox,
   // the death state. The mode that owns this body notices the change (Game.update: onPlayerDeath).
   die() {
-    if (this.exec) finisher.abandon(this); if (this.held) this.releaseHold(false); this.blink = null; this.rewind = null;
+    if (this.exec) finisher.abandon(this); if (this.held) this.releaseHold(false); this.blink = null; this.rewind = null; this.dive = null;
     if (this.trail) { this.trail.n = 0; this.trail.acc = 0; }   // Hourglass never reaches back past a death
     this.hp = 0; this.hitbox = null; this.setState(PS.DEAD);
   }

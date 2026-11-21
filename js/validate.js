@@ -225,6 +225,9 @@ function validateData({ visual = true } = {}) {
     const U1 = CONFIG.VISUALS.abilityFx.ults1;   // Ultimates I's look (js/legend-fx-3.js)
     need(U1 && Object.values(U1).every(x => num(x) && x > 0) && U1.see < 1 && Number.isInteger(U1.rain) && U1.rain <= 60 && Object.keys(U1).length === 27,
       'CONFIG.VISUALS.abilityFx.ults1: every number above 0 (all 27 of them), see under 1, rain a whole number up to 60.');
+    const U2 = CONFIG.VISUALS.abilityFx.ults2;   // Ultimates II's look (js/legend-fx-4.js)
+    need(U2 && Object.values(U2).every(x => num(x) && x > 0) && U2.see < 1 && U2.drop < CONFIG.abilities.ult.sky && Object.keys(U2).length === 26,
+      'CONFIG.VISUALS.abilityFx.ults2: every number above 0 (all 26 of them), see under 1, drop shorter than CONFIG.abilities.ult.sky.');
     const IF = CONFIG.VISUALS.impactFrame, FX = CONFIG.VISUALS.abilityFx, CRn = FX.crown, CGn = FX.cage, TW = FX.twin;
     need(pos(IF, ['time', 'calm', 'gap', 'near']) && IF.gap >= 1 && IF.time < IF.gap && num(IF.darken) && IF.darken > 0 && IF.darken < 1 && typeof IF.filter === 'string'
       && num(IF.dim) && IF.dim > 0 && IF.dim < 1 && Number.isInteger(IF.dimSteps) && IF.dimSteps >= 1,
@@ -307,12 +310,18 @@ function validateData({ visual = true } = {}) {
       `${where}: shadeClone's most is a whole number from 1 to its flanks (${CONFIG.abilities.summons.shadeClone.flanks.length}).`);
     if (b.power && b.power.then === 'refillKeys') need(b.needs === 'ultimate', `${where}: refillKeys needs the ultimate key held (needs: 'ultimate').`);
     // Ultimates I (pass 156): key 4's, each a whole number of blows.
-    const ult = b.power && ['dragon', 'quake', 'beam', 'iceLotus', 'tempest'].includes(b.power.then);
+    const ult = b.power && ['dragon', 'quake', 'beam', 'iceLotus', 'tempest', 'greatWave', 'skyBlade', 'phoenix', 'blackStar'].includes(b.power.then);
     if (ult) need(b.key === 'ultimate' && b.power.when === 'press', `${where}: ${b.power.then} is an Ultimate's (key 'ultimate', when 'press').`);
     if (ult && b.power.then === 'dragon') need(pv.every(v => Number.isInteger(v.strikes) && v.strikes >= 1 && v.lead > 0 && v.every > 0),
       `${where}: dragon's strikes a whole number from 1, lead and every above 0.`);
     if (ult && ['beam', 'iceLotus', 'tempest'].includes(b.power.then)) need(pv.every(v => v.every > 0 && Math.abs(v.time / v.every - Math.round(v.time / v.every)) < 1e-6 && v.time / v.every >= 1),
       `${where}: ${b.power.then}'s time is a whole number of \`every\` (one blow each).`);
+    // Ultimates II (pass 157).
+    if (ult && b.power.then === 'phoenix') need(pv.every(v => Number.isInteger(v.strikes) && v.strikes >= 1 && v.strikes <= 6 && v.damage > 0),
+      `${where}: phoenix's strikes a whole number from 1 to 6, with a damage.`);
+    if (ult && b.power.then === 'greatWave') need(pv.every(v => v.width > 0 && v.reach > 0 && v.damage > 0), `${where}: greatWave's width, reach and damage above 0.`);
+    if (ult && b.power.then === 'skyBlade') need(pv.every(v => v.damage > 0), `${where}: skyBlade's damage above 0.`);
+    if (ult && b.power.then === 'blackStar') need(pv.every(v => v.time > 0 && v.radius > 0 && v.damage > 0), `${where}: blackStar's time, radius and damage above 0.`);
     // A common's perk (pass 114) is one js/common-fx.js draws: its cue in COMMON_PERKS (never a camera kick).
     if (b.perk && b.rarity === 'common') need(COMMON_PERKS.has(b.perk.when + '/' + b.perk.then) || b.perk.when + '/' + b.perk.then === 'revive/reviveHeal',
       `${where}: a common's perk is one of COMMON_PERKS (js/abilities.js) or revive/reviveHeal.`);
@@ -360,6 +369,11 @@ function validateData({ visual = true } = {}) {
   const UL = BL.ult;
   need(UL && ['quake', 'beam', 'lotus', 'tempest', 'follow'].every(k => num(UL[k]) && UL[k] > 0) && num(UL.pinTurn) && UL.pinTurn >= 0 && UL.pinTurn <= 1,
     'CONFIG.abilities.ult: quake, beam, lotus, tempest and follow above 0; pinTurn from 0 to 1.');
+  need(['wave', 'sky', 'skyRadius', 'star', 'pull', 'diveReach'].every(k => num(UL[k]) && UL[k] > 0),
+    'CONFIG.abilities.ult: wave, sky, skyRadius, star, pull and diveReach above 0 (Ultimates II).');
+  const PX = BL.phoenix;
+  need(PX && ['burst', 'up', 'rise', 'dive', 'gap', 'past', 'land'].every(k => num(PX[k]) && PX[k] > 0) && num(PX.grace) && PX.grace >= 0,
+    'CONFIG.abilities.phoenix: burst, up, rise, dive, gap, past and land above 0; grace 0 or more.');
   const CS = BL.crescent, CY = BL.cyclone, MK = BL.mark;
   need(CS && num(CS.reach) && CS.reach > 0 && num(CS.width) && CS.width > 0, 'CONFIG.abilities.crescent: reach and width, each above 0.');
   need(CY && num(CY.gap) && CY.gap > 0, 'CONFIG.abilities.cyclone: gap above 0.');

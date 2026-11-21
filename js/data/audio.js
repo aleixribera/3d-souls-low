@@ -318,6 +318,52 @@ const AUDIO = {
       { noise: 'white', filter: { type: 'bandpass', freq: 1800, to: 900, q: 4 }, a: 0.8, h: 3, d: 1.2, gain: 0.18 },
       { noise: 'brown', filter: { type: 'lowpass', freq: 300, to: 90 }, a: 0.2, h: 0.4, d: 2, gain: 0.7 },
     ] },
+    // Ultimates II (pass 157). Great Wave: water drawn up into a roar behind you, then the crash 0.95 s on
+    // (CONFIG.abilities.ult.wave): a heavy low slam and a long hiss of spray.
+    abilityGreatWave: { bus: 'sfx', priority: 3, cooldown: 0.5, max: 1, verb: 0.6, heat: 0.8, jitter: 0, layers: [
+      { noise: 'pink', filter: { type: 'bandpass', freq: 300, to: 900, q: 1.2 }, a: 0.7, h: 0.15, d: 0.2, gain: 0.55 },
+      { noise: 'brown', filter: { type: 'lowpass', freq: 200, to: 420 }, a: 0.8, d: 0.25, gain: 0.6 },
+      { noise: 'brown', filter: { type: 'lowpass', freq: 600, to: 90 }, at: 0.95, a: 0.004, d: 1.3, gain: 1.1, drive: 2 },
+      { wave: 'sine', freq: 50, to: 30, at: 0.95, a: 0.004, d: 0.8, gain: 0.7, drive: 2 },
+      { noise: 'white', filter: { type: 'bandpass', freq: 3000, to: 1500, q: 0.6 }, at: 1, a: 0.05, d: 1.4, gain: 0.3 },
+    ] },
+    // Sky Blade forming: a long steel ring high up, a rushing fall under it.
+    abilitySkyBlade: { bus: 'sfx', priority: 3, cooldown: 0.5, max: 1, verb: 0.8, heat: 0.6, jitter: 0, layers: [
+      { wave: 'triangle', freq: 1320, fm: { ratio: 2.76, index: 1.2, decay: 1.2 }, a: 0.02, d: 1.1, gain: 0.22 },
+      { wave: 'sine', freq: 880, a: 0.02, d: 1, gain: 0.18 },
+      { noise: 'pink', filter: { type: 'bandpass', freq: 600, to: 2600, q: 1.5 }, at: 0.55, a: 0.5, d: 0.06, gain: 0.35 },
+    ] },
+    // ...and landing: a ground-shaking slam with a struck-bell clang on top.
+    abilitySkyLand: { bus: 'sfx', priority: 3, cooldown: 0.3, max: 1, verb: 0.7, heat: 1, jitter: 0, layers: [
+      { wave: 'sine', freq: 48, to: 24, a: 0.002, d: 1.4, gain: 1.1, drive: 3 },
+      { noise: 'brown', filter: { type: 'lowpass', freq: 800, to: 90 }, a: 0.002, d: 1.2, gain: 1, drive: 2 },
+      { wave: 'triangle', freq: 440, fm: { ratio: 2.76, index: 2, decay: 0.8 }, a: 0.001, d: 1.6, gain: 0.3 },
+      { noise: 'white', filter: { type: 'highpass', freq: 4000 }, a: 0.0005, d: 0.04, dv: 0.4, gain: 0.6 },
+    ] },
+    // Phoenix Dive: a burst of flame and a rising cry as its holder takes wing.
+    abilityPhoenix: { bus: 'sfx', priority: 3, cooldown: 0.5, max: 1, verb: 0.5, heat: 0.7, jitter: 0, layers: [
+      { noise: 'pink', filter: { type: 'bandpass', freq: 500, to: 1800, q: 1 }, a: 0.01, h: 0.15, d: 0.4, gain: 0.6, drive: 2 },
+      { wave: 'sawtooth', freq: 900, to: 1700, glide: 0.25, filter: { type: 'bandpass', freq: 1600, q: 3 }, at: 0.1, a: 0.03, h: 0.12, d: 0.3, gain: 0.18 },
+      { wave: 'sine', freq: 70, to: 110, a: 0.02, d: 0.4, gain: 0.5 },
+    ] },
+    // Each pass through the boss: a fiery whoosh with a bite.
+    abilityPhoenixPass: { bus: 'sfx', priority: 3, cooldown: 0.12, max: 2, verb: 0.35, heat: 0.7, jitter: 60, layers: [
+      { noise: 'pink', filter: { type: 'bandpass', freq: 700, to: 2400, q: 1.2 }, a: 0.03, d: 0.25, gain: 0.6, drive: 2 },
+      { noise: 'brown', filter: { type: 'lowpass', freq: 400, to: 120 }, a: 0.002, d: 0.3, gain: 0.7, drive: 2 },
+    ] },
+    // Black Star: a low hum swelling as the air is sucked in, held.
+    abilityBlackStar: { bus: 'sfx', priority: 3, cooldown: 0.5, max: 1, verb: 0.7, heat: 0.6, jitter: 0, layers: [
+      { wave: 'sine', freq: 38, to: 60, a: 0.4, h: 1.1, d: 0.2, gain: 0.8, drive: 2 },
+      { noise: 'pink', filter: { type: 'bandpass', freq: 3200, to: 300, q: 1 }, a: 0.6, h: 0.9, d: 0.2, gain: 0.35 },
+      { wave: 'triangle', freq: 220, fm: { ratio: 1.5, index: 2, decay: 2 }, a: 0.3, h: 1, d: 0.2, gain: 0.12 },
+    ] },
+    // ...and its collapse: a sucked-in thump, then a cracking boom outward.
+    abilityImplode: { bus: 'sfx', priority: 3, cooldown: 0.3, max: 1, verb: 0.65, heat: 1, jitter: 0, layers: [
+      { noise: 'pink', filter: { type: 'bandpass', freq: 200, to: 2400, q: 1 }, a: 0.08, d: 0.02, gain: 0.5 },
+      { wave: 'sine', freq: 60, to: 26, at: 0.08, a: 0.002, d: 1.2, gain: 1.1, drive: 3 },
+      { noise: 'brown', filter: { type: 'lowpass', freq: 900, to: 80 }, at: 0.08, a: 0.002, d: 1.1, gain: 0.9, drive: 2 },
+      { noise: 'white', filter: { type: 'highpass', freq: 3500 }, at: 0.08, a: 0.0005, d: 0.05, dv: 0.4, gain: 0.6 },
+    ] },
     // Each bolt: a split-second crack overhead, then thunder rolling away.
     abilityThunder: { bus: 'sfx', priority: 3, cooldown: 0.12, max: 3, verb: 0.6, heat: 0.9, jitter: 200, layers: [
       { noise: 'white', filter: { type: 'highpass', freq: [3000, 4500], q: 0.7 }, a: 0.0004, d: 0.025, dv: 0.4, gain: 1, drive: 4 },

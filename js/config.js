@@ -43,7 +43,7 @@ const CONFIG = {
             hurtRef: 40, hurtPush: 0.14, hurtRoll: 0.02, hurtFov: 1.2, blockMul: 0.45, punchFrom: 40, hitFov: -1.4, heavyHitFov: -2.2, counterFov: -1.6, counterHitFov: -3.4, counterRoll: 0.035, counterSwing: 0.16, flashPush: 0.3,
             parryFov: -3, parryPush: 0.06, breakFov: -1.8, executeFov: -2.2, phaseFov: 2.5, landDip: 0.1,
             strafeRoll: 0.012, moveFov: 1.2, moveRef: 5, maxRoll: 0.05, maxFov: 6, powerNear: 26, perkFov: -0.9,
-            powers: { blast: [4, 0.24], dragon: [2.4, 0.08], quake: [4, 0.24], beam: [-2.8, 0.1], iceLotus: [-2.2, 0.06], lotusBreak: [1.4, 0.04], tempest: [2.2, 0.08], strike: [-1.8, 0.06], freeze: [-3.2, 0.05], blades: [-1.4, 0.04], bloodMoon: [3, 0.12],
+            powers: { blast: [4, 0.24], dragon: [2.4, 0.08], quake: [4, 0.24], beam: [-2.8, 0.1], iceLotus: [-2.2, 0.06], lotusBreak: [1.4, 0.04], tempest: [2.2, 0.08], greatWave: [3.6, 0.2], skyBlade: [4.6, 0.26], phoenix: [3.2, 0.1], blackStar: [-3, 0.04], starPull: [-1, 0], strike: [-1.8, 0.06], freeze: [-3.2, 0.05], blades: [-1.4, 0.04], bloodMoon: [3, 0.12],
               twin: [2.6, 0.1], echo: [-0.6, 0.02], sunLines: [3.4, 0.1], lightningDash: [-1.2, 0.03], shadeClone: [1.4, 0.03], gale: [-2.4, 0.05], boltCrown: [-2.4, 0.08], bladeCage: [-1.6, 0.03], pyre: [3.2, 0.16], flare: [-1.1, 0.03], spark: [-0.8, 0.02],
               hound: [1.4, 0.05], bite: [-0.5, 0.02], draw: [1.2, 0.03], guardian: [2.2, 0.1], lancer: [1.2, 0.04], fox: [1, 0.03], lantern: [0.6, 0],
               crows: [0.8, 0.02], archer: [0.8, 0.02], hawk: [1.2, 0.04], stoop: [-0.6, 0.02], owl: [0.6, 0], owlBurst: [-0.4, 0.02],
@@ -335,7 +335,14 @@ const CONFIG = {
     // Ultimates I (pass 156): s from the press to each one's first blow (Cataclysm's burst, the Lance landing, the first
     // petal, the storm's first tick); the storm's middle follows its enemy at up to `follow` m/s; a pinned enemy turns
     // at `pinTurn` of its own rate.
-    ult: { quake: 0.45, beam: 0.55, lotus: 0.45, tempest: 0.5, follow: 8, pinTurn: 0.5 },
+    // Ultimates II (pass 157): Great Wave crashes `wave` s on, Sky Blade drops `sky` s on and hits all within `skyRadius` m
+    // of its point, Black Star flies `star` s and draws small enemies in at `pull` m/s, a Phoenix Dive pass burns all
+    // within `diveReach` m of the boss's edge.
+    ult: { quake: 0.45, beam: 0.55, lotus: 0.45, tempest: 0.5, follow: 8, pinTurn: 0.5, wave: 0.95, sky: 1.1, skyRadius: 3, star: 0.35, pull: 3, diveReach: 1.5 },
+    // Phoenix Dive's flight (Player.diveStart), s and m: a crouch of `burst`, up `rise` m in `up`, then each dive `dive`
+    // long through the boss from `past` m beyond its far edge, a turn of `gap` between, the landing `land`; untouchable
+    // from the burst to `grace` after the landing. The server's passes keep the same clock.
+    phoenix: { burst: 0.25, up: 0.2, rise: 4, dive: 0.3, gap: 0.12, past: 3, land: 0.21, grace: 0.2 },
     // Legendaries II (pass 154): Hundred Suns' sheets run `length` m out of the finished body's edge, `width` m either side
     // of their cut; Fourfold's threads reach the other keys `delay` s after the Ultimate's press.
     suns: { length: 8, width: 0.75 }, refill: { delay: 0.3 },
@@ -874,6 +881,16 @@ const CONFIG = {
       ults1: { sky: 14, slit: 7, dragon: 0.8, coil: 2.6, coilUp: 3.4, bolt: 0.16, crack: 0.55, dome: 3, domeTime: 0.5, ring: 0.4, slabUp: 8, slabOut: 4,
         slabLife: 1.5, sigil: 4.2, column: 1.5, columnTop: 18, see: 0.35, seeNear: 3, frost: 5, spearLife: 0.45, funnel: 14, funnelBase: 1.4,
         funnelTop: 6, spin: 2.6, rain: 60, full: 2, fade: 0.4 },
+      // Ultimates II (pass 157, js/legend-fx-4.js), m and s: the wave rises `waveAhead` in front of its holder (behind, it
+      // filled the camera) at `waveHeight` of
+      // its model's 9 m and crashes over `waveCrash`; the sword (its model 31 m) at `sword` scale forms `skyHigh` over the
+      // boss in `form`, drops in the last `drop` of its lead, stands `bury` deep for `planted` (edges cooling over `cool`),
+      // then sinks `sink`; see-through (`see`) within `seeNear` of its reach; the bird at `bird` scale `birdUp` over its
+      // body's feet, `flap` rad/s, its trail `trail` wide, a `landRing` ring; the star `kindle` in the hand, a `sphere`
+      // in a `corona` held `starUp` up, a `scorch` left; `crater` the sword's.
+      ults2: { waveAhead: 2.5, waveHeight: 0.42, waveCrash: 0.45, sword: 0.3, skyHigh: 11, form: 0.4, drop: 0.16, bury: 1.2, planted: 1.3, cool: 1.1, sink: 2.5,
+        see: 0.4, seeNear: 2, markSize: 4, crater: 6, bird: 0.5, birdUp: 0.9, flap: 16, trail: 0.9, landRing: 2.2, kindle: 0.9, sphere: 1.4, corona: 4.2,
+        starUp: 1.6, scorch: 7, fade: 0.4 },
       legends2: { sunHeight: 2.2, sunOpen: 0.08, sunBurn: 0.6, sunFade: 0.7, line: 0.26, lineInk: 0.44, lineHold: 0.14, lineBurn: 0.5, lineUp: 0.9,
         scorch: 1.6, lineFrame: 3, waist: 1.0, waistRing: 1.4, threads: 0.3, eyes: 0.15, sink: 0.4, slash: 2.2, slashLife: 0.28 },
       guard2: { pane: 1.3, paneOff: 0.75, star: 1, huskRing: 1.3, scorch: 2.6, dial: 1.8, answer: 4, waist: 1.1, rewindRing: 1.6, seal: 1.2, sealUp: 0.85 },

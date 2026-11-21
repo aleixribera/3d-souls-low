@@ -3,7 +3,7 @@
 // each fired twice, its name in the corner: docs/scorecard/now/<set>-commons.mp4. The clock is stepped by hand
 // (Game.manualClock) and every other step is a frame, so a clip plays at real speed whatever the PC's speed. With
 // `--stills`, the guard set's current frames too (guard-*.jpg, desktop; -phone for two).
-// Usage: node tools/ability-clips.cjs [blade|guard|mirror|rares|triggers|echo|strikes|flashy|self|boss|summons|summons2|summons3|legends1|legends2|ults1 ...] [--stills]   (no set = all). One headless Edge; needs ffmpeg.
+// Usage: node tools/ability-clips.cjs [blade|guard|mirror|rares|triggers|echo|strikes|flashy|self|boss|summons|summons2|summons3|legends1|legends2|ults1|ults2 ...] [--stills]   (no set = all). One headless Edge; needs ffmpeg.
 require('../tests/low-priority.cjs');
 const fs = require('node:fs');
 const os = require('node:os');
@@ -188,6 +188,13 @@ const SETS = {
     ["Heaven's Lance", `(p, e) => { __far(6); __ult(); }`, 170, 'ult-heavens-lance', 44],
     ['Frozen Lotus', `(p, e) => { __far(6); __ult(); }`, 210, 'ult-frozen-lotus', 52],
     ['Tempest', `(p, e) => { __far(7); __ult(); }`, 340, 'ult-tempest', 90],
+  ] },
+  ults2: { ids: ['great-wave', 'sky-blade', 'phoenix-dive', 'black-star'], solo: true,
+    file: 'ultimates-two', phone: 2, crf: 30, beats: [
+    ['Great Wave', `(p, e) => { __far(7); __ult(); }`, 150, 'ult-great-wave', 64],
+    ['Sky Blade', `(p, e) => { __far(7); __ult(); }`, 190, 'ult-sky-blade', 72],
+    ['Phoenix Dive', `(p, e) => { __far(6); __ult(); p.diveStart(e, p.kit.pressed.ultimate.v); }`, 140, 'ult-phoenix-dive', 48],
+    ['Black Star', `(p, e) => { __far(6); __ult(); }`, 150, 'ult-black-star', 60],
   ] },
   legends2: { ids: ['hundred-suns', 'thunder-god-step', 'fourfold', 'shade-host'], solo: true,
     file: 'legendaries-two', phone: 2, crf: 30, beats: [

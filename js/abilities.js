@@ -168,6 +168,19 @@ function abilityHeal(p, share, perk, target = null) {
 //   press/tempest:       Tempest. A storm round the enemy for `time` s, its middle easing after it at up to
 //                        `ult.follow` m/s; `ult.tempest` s on, then every `every` s, every enemy within `radius` m of the
 //                        middle takes `damage` (each told as a `strike` with the middle's place).
+// Ultimates II (design/abilities batch 16), key 4; drawn by js/legend-fx-4.js.
+//   press/greatWave:     Great Wave. A wave rises behind its holder and crashes `ult.wave` s on: every enemy in the box
+//                        `width` m wide and `reach` m long from where it was pressed, aimed at the enemy pressed on (else
+//                        along its holder's facing), takes `damage` once (told as `strike` 1, with the box's foot and aim).
+//   press/skyBlade:      Sky Blade. A sword forms over the enemy, following it, and drops `ult.sky` s on: `damage` to it
+//                        and to every enemy within `ult.skyRadius` m of the point (where it was, if it fell first).
+//   press/phoenix:       Phoenix Dive. Its holder becomes a firebird (Player.diveStart: untouchable, its body driven by
+//                        the browser that owns it) and dives through the enemy `strikes` times; each pass, timed from
+//                        CONFIG.abilities.phoenix, lands `damage` on it and on every enemy within `ult.diveReach` m of it.
+//   press/blackStar:     Black Star. A black star flies `ult.star` s to the enemy and holds every enemy within `radius` m
+//                        of where it arrives for `time` s (Time Rift's `frozen`; one resting from a hold or pinned only
+//                        takes the damage), drawing the small ones in at `ult.pull` m/s; then it implodes: `damage` to
+//                        every enemy within `radius` m (told as `strike` 1 on arrival, 2 at the implosion).
 // The effect commons (design/abilities, batch 2: the blade), each a small blow of `damage` (CONFIG.abilities.commons):
 //   dashPast/spark:      a dash that went past an enemy (dashPastOf) sparks it, once every `cooldown` s.
 //   stringEnd/lick:      the last blow of a full light string (an attack with `stringEnd`) licks that enemy with flame.
@@ -246,6 +259,8 @@ const ABILITY_POWERS = {
   'press/blades': ['charge', 'time', 'every', 'damage'], 'press/dragon': ['charge', 'strikes', 'lead', 'every', 'damage'],
   'press/quake': ['charge', 'radius', 'damage'], 'press/beam': ['charge', 'time', 'every', 'damage'],
   'press/iceLotus': ['charge', 'time', 'every', 'damage'], 'press/tempest': ['charge', 'time', 'every', 'damage', 'radius'],
+  'press/greatWave': ['charge', 'damage', 'width', 'reach'], 'press/skyBlade': ['charge', 'damage'], 'press/phoenix': ['charge', 'strikes', 'damage'],
+  'press/blackStar': ['charge', 'time', 'damage', 'radius'],
   'dashPast/spark': ['damage', 'cooldown'], 'stringEnd/lick': ['damage'], 'fullHeavy/molten': ['damage'],
   'dashStrike/lateCut': ['damage'], 'dodge/afterimage': ['damage'], 'jump/whirl': ['damage', 'cooldown'],
   'block/thorns': ['damage', 'cooldown'], 'flask/burnHits': ['hits', 'damage'], 'crack/shards': ['damage'],
@@ -354,6 +369,13 @@ function enemyNear(enemies, x, y, z, r) {
 // An Ultimate's hold (Heaven's Lance, Frozen Lotus): enemy `e` pinned where it stands for `time` s (Enemy.pinned), unless
 // it can't be held now (invulnerable, through a Finishing Blow, already stopped in time) or rests from a hold (holdRest).
 // True if it holds.
+// Black Star's hold: Time Rift's stop (`frozen`: no step, no blow, no hitbox) on enemy `e` for `time` s, unless it can't
+// be held now, is pinned by another Ultimate or rests from a hold. True if it holds.
+function abilityHold(e, time) {
+  if (!e || !e.alive() || e.invulnerable() || e.netExec || e.state === ES.EXECUTED || e.pinned > 0 || e.holdRest > 0) return false;
+  e.frozen = Math.max(e.frozen || 0, time); e.hitbox = null;
+  return true;
+}
 function abilityPin(e, time) {
   if (!e || !e.alive() || e.invulnerable() || e.netExec || e.state === ES.EXECUTED || e.frozen > 0 || e.holdRest > 0) return false;
   e.pinned = Math.max(e.pinned || 0, time);
@@ -666,11 +688,11 @@ function abilityReport(body, when, ctx) {
 // its number), the first `lead` s after it fires (the time its dragon takes to reach the boss), then every `every` s; damage goes through Enemy.takeHit like any blow and `credit` (the server's) counts it to the holder.
 const ECHO_DELAY = 0.06;   // s from its holder's blow to the twin's: the two land as one
 // The powers that need a live enemy to strike (the one parried, struck, broken or dodged).
-const ON_ENEMY = new Set(['dragon', 'beam', 'iceLotus', 'tempest', 'boltCrown', 'bladeCage', 'blades', 'flare', 'spark', 'gale', 'pyre', 'hound', 'lancer', 'fox', 'lantern', 'crows', 'archer', 'hawk', 'owl', 'ronin', 'serpent', 'puppet', 'bear', 'mantis', 'lick', 'molten', 'lateCut', 'afterimage',
+const ON_ENEMY = new Set(['skyBlade', 'phoenix', 'blackStar', 'dragon','beam', 'iceLotus', 'tempest', 'boltCrown', 'bladeCage', 'blades', 'flare', 'spark', 'gale', 'pyre', 'hound', 'lancer', 'fox', 'lantern', 'crows', 'archer', 'hawk', 'owl', 'ronin', 'serpent', 'puppet', 'bear', 'mantis', 'lick', 'molten', 'lateCut', 'afterimage',
   'thorns', 'shards', 'reflect', 'wave', 'spikes', 'fist', 'risingFire', 'clap',
   'flurry', 'drill', 'stitch', 'boomerang', 'clones', 'iai', 'seal']);
 // The powers whose blow lands a beat after they fire: each tells every browser again as it lands (`strike`).
-const DELAYED = new Set(['dragon', 'beam', 'iceLotus', 'boltCrown', 'bladeCage', 'lateCut', 'afterimage', 'shards', 'reflect', 'ghostBlade', 'flurry', 'stitch']);
+const DELAYED = new Set(['phoenix', 'dragon','beam', 'iceLotus', 'boltCrown', 'bladeCage', 'lateCut', 'afterimage', 'shards', 'reflect', 'ghostBlade', 'flurry', 'stitch']);
 const abilityPowers = (() => {
   // The powers still striking (lightning, blades, a pyre, a twin's echo): { pw, holder, enemy, left, next, n }, an echo
   // with its own `damage` and `twin`.
@@ -879,6 +901,20 @@ const abilityPowers = (() => {
       case 'beam': running.push({ pw, holder, enemy: e, left: Math.round(v.time / v.every), next: CONFIG.abilities.ult.beam, n: 0, pin: true }); break;
       case 'iceLotus': running.push({ pw, holder, enemy: e, left: Math.round(v.time / v.every), next: CONFIG.abilities.ult.lotus, n: 0, pin: true }); break;
       case 'tempest': running.push({ pw, holder, enemy: e, left: Math.round(v.time / v.every), next: CONFIG.abilities.ult.tempest, n: 0, x: e.x, y: e.y, z: e.z, storm: true }); break;
+      case 'greatWave': {   // the box's foot where it was pressed, aimed at the enemy pressed on, else along the holder's facing
+        const from = body || ctx, yaw = ctx.yaw ?? (body && body.yaw) ?? 0;
+        let ux = Math.sin(yaw), uz = Math.cos(yaw);
+        if (e && e.alive()) { const dx = e.x - from.x, dz = e.z - from.z, l = Math.hypot(dx, dz); if (l > 1e-6) { ux = dx / l; uz = dz / l; } }
+        running.push({ pw, holder, body, enemy: null, left: 1, next: CONFIG.abilities.ult.wave, n: 0, x, y, z, ux, uz, wave: true });
+        break;
+      }
+      case 'skyBlade': running.push({ pw, holder, body, enemy: e, left: 1, next: CONFIG.abilities.ult.sky, n: 0, x: e.x, y: e.y, z: e.z, sky: true }); break;
+      case 'phoenix': {   // each pass through the body, timed as the holder's own dives (Player.diveStart)
+        const P = CONFIG.abilities.phoenix;
+        running.push({ pw, holder, body, enemy: e, left: v.strikes, next: P.burst + P.up + P.dive / 2, every: P.dive + P.gap, n: 0, dive: true });
+        break;
+      }
+      case 'blackStar': running.push({ pw, holder, body, enemy: e, left: 2, next: CONFIG.abilities.ult.star, n: 0, star: true }); break;
       case 'boltCrown': {   // the ring's first point faces the holder (`a0`, round the enemy from +x)
         const from = body || ctx, a0 = Math.atan2((from.z ?? e.z) - e.z, (from.x ?? e.x) - e.x);
         running.push({ pw, holder, body, enemy: e, left: v.strikes, next: v.lead, every: v.every, n: 0, crown: a0 || 0 });
@@ -1156,6 +1192,14 @@ const abilityPowers = (() => {
         ahead.splice(i, 1);
       }
     }
+    for (const r of running) {
+      if (r.sky && r.enemy.alive() && Game.enemies.includes(r.enemy)) { r.x = r.enemy.x; r.y = r.enemy.y; r.z = r.enemy.z; }   // the sword follows its enemy until it drops
+      if (r.star && r.n === 1) for (const o of Game.enemies) {   // the star draws the small ones in (a boss is held where it is)
+        if (o.isBoss() || !(o.frozen > 0) || !near(o, r.x, r.y, r.z, r.pw.v.radius)) continue;
+        const dx = r.x - o.x, dz = r.z - o.z, d = Math.hypot(dx, dz), go = Math.min(Math.max(0, d - (o.radius || 0.5)), CONFIG.abilities.ult.pull * dt);
+        if (d > 1e-6 && go > 0) { o.x += dx / d * go; o.z += dz / d * go; }
+      }
+    }
     for (const r of running) if (r.storm && r.enemy.alive()) {   // Tempest's middle eases after its enemy
       const dx = r.enemy.x - r.x, dz = r.enemy.z - r.z, d = Math.hypot(dx, dz), go = Math.min(d, CONFIG.abilities.ult.follow * dt);
       if (d > 1e-6) { r.x += dx / d * go; r.z += dz / d * go; }
@@ -1170,6 +1214,35 @@ const abilityPowers = (() => {
       }
       if ((r.next -= dt) > 0) continue;
       if (r.refill) { refill(r); running.splice(i, 1); continue; }
+      if (r.wave) {   // Great Wave's crash: the whole box at once
+        events.emit('abilityPower', { power: r.pw.id, then: r.pw.then, holder: r.holder, body: r.body, enemy: null, x: r.x, y: r.y, z: r.z, v: r.pw.v, strike: 1, yaw: Math.atan2(r.ux, r.uz) });
+        line(r.x, r.y, r.z, r.ux, r.uz, r.pw.v.reach, r.pw.v.width / 2, r.pw.v.damage, r.holder, r.pw.id);
+        running.splice(i, 1); continue;
+      }
+      if (r.sky) {   // Sky Blade lands: its enemy (if still there) and every enemy round the point
+        const live = e.alive() && Game.enemies.includes(e);
+        events.emit('abilityPower', { power: r.pw.id, then: r.pw.then, holder: r.holder, body: r.body, enemy: live ? e : null, x: r.x, y: r.y, z: r.z, v: r.pw.v, strike: 1 });
+        if (live) wound(e, r.pw.v.damage, r.holder, r.pw.id);
+        for (const o of Game.enemies) if (o !== e && near(o, r.x, r.y, r.z, CONFIG.abilities.ult.skyRadius)) wound(o, r.pw.v.damage, r.holder, r.pw.id);
+        running.splice(i, 1); continue;
+      }
+      if (r.star) {   // Black Star: it arrives and holds (1), then implodes (2), where it arrived
+        if (r.n === 0) {
+          if (!e.alive()) { running.splice(i, 1); continue; }
+          r.x = e.x; r.y = e.y; r.z = e.z; r.n = 1; r.next += r.pw.v.time;
+          for (const o of Game.enemies) if (near(o, r.x, r.y, r.z, r.pw.v.radius)) abilityHold(o, r.pw.v.time);
+          events.emit('abilityPower', { power: r.pw.id, then: r.pw.then, holder: r.holder, body: r.body, enemy: e, x: r.x, y: r.y, z: r.z, v: r.pw.v, strike: 1 });
+          continue;
+        }
+        events.emit('abilityPower', { power: r.pw.id, then: r.pw.then, holder: r.holder, body: r.body, enemy: e.alive() ? e : null, x: r.x, y: r.y, z: r.z, v: r.pw.v, strike: 2 });
+        for (const o of Game.enemies) if (near(o, r.x, r.y, r.z, r.pw.v.radius)) wound(o, r.pw.v.damage, r.holder, r.pw.id);
+        running.splice(i, 1); continue;
+      }
+      if (r.dive) {   // its holder fell mid-flight: no more passes
+        const b = (api.bodyOf && api.bodyOf(r.holder)) || r.body;
+        if (b && b.alive && !b.alive()) { running.splice(i, 1); continue; }
+      }
+      if (r.dive && e.alive()) for (const o of Game.enemies) if (o !== e && near(o, e.x, e.y, e.z, (e.radius || 1) + CONFIG.abilities.ult.diveReach)) wound(o, r.pw.v.damage, r.holder, r.pw.id);   // the bird's path through the body burns those beside it
       if (r.quake) {   // Cataclysm's burst, where its holder pressed
         events.emit('abilityPower', { power: r.pw.id, then: r.pw.then, holder: r.holder, body: r.body, enemy: null, x: r.x, y: r.y, z: r.z, v: r.pw.v, strike: 1 });
         for (const o of Game.enemies) if (near(o, r.x, r.y, r.z, r.pw.v.radius)) wound(o, r.pw.v.damage, r.holder, r.pw.id);

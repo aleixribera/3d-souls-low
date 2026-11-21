@@ -58,11 +58,12 @@ class AudioManager {
     this.mood_f = c.createBiquadFilter(); this.mood_f.type = 'lowpass'; this.mood_f.frequency.value = A.muffle.open; this.mood_f.Q.value = 0.5;
     this.mix = g();
     // A soft clip last of all: transparent below 0.6, then it rounds off whatever the limiter lets through instead of clipping.
-    // It tops out at 0.95, not 1: the 2x oversampling's filter rings a little past the curve on a hard-driven burst (Moonfall
-    // Cut's crack reached 1.014 on CI, v7.177.0), and that headroom keeps the ringing under full scale.
+    // It tops out at 0.95 and runs without oversampling: the 2x oversampler's filter rang past the curve on hard-driven
+    // bursts (Moonfall Cut's crack 1.014 on CI, v7.177.0; the Storm King's crown 1.007 even with the 0.95 top, v7.203.0).
+    // Without it the output is the curve itself, so it can never pass 0.95; the tanh knee is smooth enough not to alias.
     const clip = c.createWaveShaper(), curve = new Float32Array(2049);
     for (let i = 0; i < curve.length; i++) { const x = i / 1024 - 1, m = Math.abs(x); curve[i] = m < 0.6 ? x : Math.sign(x) * (0.6 + 0.35 * Math.tanh((m - 0.6) / 0.35)); }
-    clip.curve = curve; clip.oversample = '2x';
+    clip.curve = curve; clip.oversample = 'none';
     this.mix.connect(this.mood_f); this.mood_f.connect(comp); comp.connect(limiter); limiter.connect(this.master); this.master.connect(clip); clip.connect(c.destination);
     this.buses = {};
     for (const name in A.buses) { const b = g(); b.gain.value = A.buses[name]; b.connect(this.mix); this.buses[name] = b; }
@@ -399,11 +400,12 @@ const AUDIO_CUES = ['hitFlesh', 'hitHurt', 'hitBlock', 'riposteBoom', 'parry', '
   'abilityCrows', 'abilityPeck', 'abilityArcher', 'abilityArrow', 'abilityArrowHit', 'abilityHawk', 'abilityStoop', 'abilityStoopHit',
   'abilityOwl', 'abilityMark', 'abilityMarkBurst', 'abilityRonin', 'abilityRoninCut', 'abilitySerpent', 'abilityCoil', 'abilityHiss',
   'abilityPuppet', 'abilityPuppetBlow', 'abilityBear', 'abilityRear', 'abilityMaul', 'abilityRoar', 'abilityMantis', 'abilityScissor', 'abilityCrown', 'abilityCage', 'abilityCageCut',
-  'abilitySuns', 'abilityThunderStep', 'abilityFourfold', 'abilityShade', 'abilityCrack', 'abilityLance', 'abilityLotus', 'abilityTempest'];
+  'abilitySuns', 'abilityThunderStep', 'abilityFourfold', 'abilityShade', 'abilityCrack', 'abilityLance', 'abilityLotus', 'abilityTempest',
+  'abilityGreatWave', 'abilitySkyBlade', 'abilitySkyLand', 'abilityPhoenix', 'abilityPhoenixPass', 'abilityBlackStar', 'abilityImplode'];
 // A power's sound by its `then`, its later blows' (`strike`: a lightning bolt, a twin's echo, a hound's bite) by
 // STRIKE_SOUNDS, a summon drawing the boss's eye (`draw`) by DRAW_SOUNDS; a rare's perk its own (ABILITY_PERK_SOUNDS,
 // at a pitch), a pick's pitch by its rarity.
-const ABILITY_SOUNDS = { blast: 'abilityBlast', dragon: 'abilityDragon', quake: 'abilityCrack', beam: 'abilityLance', iceLotus: 'abilityLotus', tempest: 'abilityTempest', freeze: 'abilityFreeze', blades: 'abilityBlades', bloodMoon: 'abilityMoon',
+const ABILITY_SOUNDS = { blast: 'abilityBlast', dragon: 'abilityDragon', quake: 'abilityCrack', beam: 'abilityLance', iceLotus: 'abilityLotus', tempest: 'abilityTempest', greatWave: 'abilityGreatWave', skyBlade: 'abilitySkyBlade', phoenix: 'abilityPhoenix', blackStar: 'abilityBlackStar', freeze: 'abilityFreeze', blades: 'abilityBlades', bloodMoon: 'abilityMoon',
   twin: 'abilityTwin', gale: 'abilityGale', bladeCage: 'abilityCage', pyre: 'abilityPyre', flare: 'abilityFlare', spark: 'abilitySpark', hound: 'abilityHound',
   guardian: 'abilityGuardian', lancer: 'abilityLancer', fox: 'abilityFox', lantern: 'abilityLantern', crows: 'abilityCrows', archer: 'abilityArcher', hawk: 'abilityHawk', owl: 'abilityOwl', owlBurst: 'abilityMarkBurst',
   ronin: 'abilityRonin', serpent: 'abilitySerpent', puppet: 'abilityPuppet', bear: 'abilityBear', mantis: 'abilityMantis', wave: 'abilityWave', crescent: 'abilityMoonfall', cyclone: 'abilityCyclone', petals: 'abilityPetals',
@@ -566,6 +568,17 @@ function registerAudioListeners() {
       else if (d.then === 'quake') audio.play('abilityBlast', { pos, vel: 1 });
       else if (d.then === 'iceLotus') audio.play('abilityFrost', { pos, vel: 0.5, pitch: 1 + 0.04 * d.strike });
       else if (d.then === 'tempest' && d.strike % 4 === 0) audio.play('abilityThunder', { pos: spot(d), vel: 0.4, pitch: 0.8 });
+      return;
+    }
+    // Ultimates II: the Wave's one sound carries its crash (timed to CONFIG.abilities.ult.wave), so its strike is silent;
+    // the Blade rings as it forms and slams as it lands; the Phoenix cries at the press, whooshes at each pass; the Star
+    // hums as it arrives and booms as it implodes.
+    if (d.then === 'greatWave' || d.then === 'skyBlade' || d.then === 'phoenix' || d.then === 'blackStar') {
+      const pos = d.body === Game.player && !d.strike ? null : d.enemy && d.then === 'phoenix' ? chest(d.enemy) : spot(d);
+      if (!d.strike) { if (d.then !== 'blackStar') audio.play(ABILITY_SOUNDS[d.then], { pos, vel: 1 }); }
+      else if (d.then === 'skyBlade') audio.play('abilitySkyLand', { pos, vel: 1 });
+      else if (d.then === 'phoenix') audio.play('abilityPhoenixPass', { pos, vel: 0.8, pitch: 1 + 0.06 * d.strike });
+      else if (d.then === 'blackStar') audio.play(d.strike === 1 ? 'abilityBlackStar' : 'abilityImplode', { pos, vel: 1 });
       return;
     }
     const id = d.draw ? ABILITY_DRAW_SOUNDS[d.then] : d.then === 'iai' && d.strike ? (d.strike === 1 ? 'abilityIaiDraw' : 'abilityIai')

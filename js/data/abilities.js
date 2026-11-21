@@ -313,6 +313,19 @@ const ABILITIES = [
   { id: 'tempest', name: 'Tempest', rarity: 'legendary', key: 'ultimate', text: 'A storm whirls round the boss for {time}.',
     power: { when: 'press', then: 'tempest' },
     levels: [{ charge: 42, time: 5, every: 0.25, damage: 18, radius: 6 }] },
+  // Ultimates II (pass 157, design/abilities batch 16), to the same bar; drawn by js/legend-fx-4.js.
+  { id: 'great-wave', name: 'Great Wave', rarity: 'legendary', key: 'ultimate', text: 'A wave crashes over all in front.',
+    power: { when: 'press', then: 'greatWave' },
+    levels: [{ charge: 42, damage: 340, width: 10, reach: 16 }] },
+  { id: 'sky-blade', name: 'Sky Blade', rarity: 'legendary', key: 'ultimate', text: 'A sword as tall as a tower falls.',
+    power: { when: 'press', then: 'skyBlade' },
+    levels: [{ charge: 46, damage: 380 }] },
+  { id: 'phoenix-dive', name: 'Phoenix Dive', rarity: 'legendary', key: 'ultimate', text: 'Dive through the boss {strikes} times in fire.',
+    power: { when: 'press', then: 'phoenix' },
+    levels: [{ charge: 42, strikes: 3, damage: 120 }] },
+  { id: 'black-star', name: 'Black Star', rarity: 'legendary', key: 'ultimate', text: 'Holds the boss for {time}, then implodes.',
+    power: { when: 'press', then: 'blackStar' },
+    levels: [{ charge: 44, time: 1.5, damage: 320, radius: 5 }] },
 
   // ---- Two more rares (pass 71, once crate-only; since PLAN.md item 7 every ability outside the starter set comes from a
   // crate, js/data/crates.js) ----

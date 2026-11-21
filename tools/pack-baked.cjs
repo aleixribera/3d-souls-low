@@ -54,6 +54,9 @@ const FILES = {
   'glass-mantis': { sources: ['glass_mantis'] },
   'ice-lotus': { sources: ['ice_lotus'] },
   'cataclysm-slabs': { sources: ['cataclysm_slabs'] },
+  'great-wave': { sources: ['great_wave'] },
+  'sky-blade': { sources: ['sky_blade'] },
+  'phoenix': { sources: ['phoenix'] },
 };
 
 function readGlb(file) {

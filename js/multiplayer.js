@@ -1086,6 +1086,7 @@ const multiplayer = (() => {
     if (!s || !['x', 'y', 'z', 'yaw', 'hp', 'flasks'].every(key => ArenaNet.finite(s[key]))) return;
     const p = Game.player;
     for (const key of ['x', 'y', 'z', 'yaw']) p[key] = s[key];
+    p.dive = null; p.diveGrace = 0; p.rewind = null;   // no flight or glide carried over the reconnect
     p.hp = clamp(s.hp, 0, p.maxHp);
     p.item('flask').count = clamp(Math.floor(s.flasks), 0, p.item('flask').max);
     for (const key of ['doomTime', 'doomDrain']) if (ArenaNet.finite(s[key]) && s[key] >= 0) p[key] = s[key];
