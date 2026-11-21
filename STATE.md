@@ -3,12 +3,12 @@
 The iterate loop's working note (`.claude/iterate.md`). Cap: 8,000 characters.
 
 ## Now
-- Track 2, pass 129, PLAN item 8 batch 6 (pass 1 of 1), done in v7.180.0: Strike I. Tidal Arc (`press/wave`), Frost
-  Spike (`press/spikes`, a running line), Stone Fist and Rising Fang (the spot erupts a beat later), Thunderclap
-  (`press/clap`, a close cone; `pressOpen` holds the key while its enemy is out of reach, the server with `reachSlack`);
-  Fire Burst's lotus and Wind Blade's crescent (`js/strike-fx.js`). Acceptance: `tests/strike-shapes.cjs`, in-page
-  `strike shapes`; clip `docs/scorecard/now/strike-shapes.mp4` (`node tools/ability-clips.cjs strikes`). Next on track 2:
-  batch 7, Strike II. Browser lock: `node tools/browser-lock.cjs run <pass> -- <cmd>` (docs/two-tracks.md).
+- Track 2, pass 131, PLAN item 8 batch 7 (pass 1 of 1), done in v7.183.0: Strike II. Sparrow Flurry (`press/flurry`,
+  thrusts while planted, `Player.root`), Whirl Drill, Shadow Stitch, Spinning Blade (`bladeTick`, out and back), Three
+  Shadows (ink figures, `js/strike-fx-2.js`) and Quick Draw (`stanceTick`: stance, draw, split; cut short, the charge back).
+  Acceptance: `tests/strike-flashy.cjs`, in-page `strike flashy`; clip `docs/scorecard/now/strike-flashy.mp4`
+  (`node tools/ability-clips.cjs flashy`). CI flake in `tests/calling.cjs` (a spent legendary offered) hardened. Next on
+  track 2: batch 8, Guard I. Browser lock: `node tools/browser-lock.cjs run <pass> -- <cmd>` (docs/two-tracks.md).
 - Track 1, pass 132 (PLAN item 6; the loop chat's call: before Aleix fights them): the Captain, the Bell Warden and the
   Giant now carry every follow-through on past the strike (`followOn`, `js/data/pose-library.js`; body check 40 hits
   flagged, then 0), and so does the Antlered Hunger (11, then 0). The Hunger's step-0 audit (`docs/bosses/antlered-hunger.md`):
