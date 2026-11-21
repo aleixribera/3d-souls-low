@@ -8,10 +8,9 @@ The iterate loop's working note (`.claude/iterate.md`). Cap: 8,000 characters.
   Also CI: `tests/reconnect-browser.cjs` teardown bounded (v7.193/194 browser-smoke hung). Acceptance:
   `tests/summons-two.cjs`, in-page `summons` 3/3; clip `docs/scorecard/now/summons-two.mp4`. Next on track 2:
   batch 12, Summons III. Browser lock: `node tools/browser-lock.cjs run <pass> -- <cmd>` (docs/two-tracks.md).
-- Track 1, pass 148 (PLAN item 6, Agathe, pass 1 of 2), done: her hook's blows parried (Rend the Earth and the Furrow
-  split: blow parried, line rolled; the Gale Reap; the Hook from the Storm's landing, then a ring jumped); roll-only 2/9,
-  3/12; body check 0/27; tells on the crescent and the shoe; in-between keys; page `docs/bosses/agathe.md`; one `bars-1`
-  round. In-page `Torn Abbey` 7/7; clip `docs/scorecard/now/agathe-cel.mp4`. Next: the Kindling Tree's audit.
+- Track 1, pass 149 (PLAN item 6, the Kindling Tree, pass 1 of 2), done in v7.199.0: audit said rework; new Wrack,
+  Bramble Sweep, Reaching Bough, Falling Tree; boughs parried, roll-only 2/11, 3/12; body check 0/27. Acceptance:
+  in-page `Ember Root` 9/9; clip `docs/scorecard/now/kindling-tree.mp4`. Next: its `bars-1` round, then the King's Blade.
 
 ## Works
 
@@ -72,6 +71,7 @@ The iterate loop's working note (`.claude/iterate.md`). Cap: 8,000 characters.
 
 - Fight Oswin (Practice, `?style=cel`; reworked: threefold, the leap and his hands now parried unless you say).
 - Fight Agathe (Practice, `?style=cel`; the Gale Reap and the Hook from the Storm's landing now parried unless you say).
+- Fight the Kindling Tree (Practice, `?style=cel`; reworked: its boughs parried, the Bramble Sweep and the Charge too, unless you say).
 - Fight the Regent Hollis (Practice, `?style=cel`; the Pavane is new, and the Feast's blade is parried unless you say).
 - Fight the Ringer (Practice, `?style=cel`; her stamping foot and Over the Line's ball are parried unless you say).
 - Fight Hale and Harrow (Practice, `?style=cel`; Harrow's axe stays hidden until the whole phase unless you say).

@@ -6,6 +6,7 @@
 //   title    a few words
 //   text     one to three sentences, shown under the list when the entry is selected
 const CHANGELOG = [
+  { version: 'v7.199.0', title: 'The Kindling Tree, reworked', text: 'The Kindling Tree fights anew: parry its boughs, jump its low sweep, and when it burns, get out from under it as it falls.' },
   { version: 'v7.198.0', title: 'Summons III', text: 'Five new summons for key 3: the Ronin Shade duels the boss and turns its first blow aside, the Mire Serpent coils round the boss and squeezes, the Puppet Knight drops in on strings, the Ash Bear rears and slams down, and the Glass Mantis scissors with its scythes.' },
   { version: 'v7.197.0', title: 'Mother Agathe can be parried', text: 'Mother Agathe\'s great hook can now be parried: the blow before Rend the Earth\'s line, both reaps of the Gale Reap, and the landing of the Hook from the Storm. Roll or jump only what runs along the floor or falls from the sky. Her whole body swings the hook now, and the red or blue warning sits on the blade (or the iron shoe of her staff) instead of over her.' },
   { version: 'v7.196.0', title: 'Oswin, uncrowned, reads clearly', text: 'Oswin\'s bare-handed wind-ups no longer wash him red: the glow sits on the fist that strikes, so you can see whether to parry. Empty Reign\'s wind-up shows his hands.' },
