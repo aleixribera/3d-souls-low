@@ -72,7 +72,7 @@ for (const kind of ['parry', 'dodged']) {
       alive: () => true, invulnerable: () => false, takeHit() { this.hp -= 10; return {}; }, openCounter() {} };
     p.hitbox = box(p, payload); e.hitbox = box(e, { ...payload, riposte: false });
     const game = { player: p, enemies: [e], hitstop: 0 };
-    const context = { CONFIG, NO_KIT: kit, game, gateBetween: () => false, abilityStrike: (k, perk, foe, s) => s,
+    const context = { CONFIG, NO_KIT: kit, game, gateBetween: () => false, abilityStrike: (k, perk, foe, s) => s, abilityOwlStrike: (foe, s) => s, abilityOwlLanded() {}, abilityBlocked() {},
       events: { emit() {} }, abilityReport() {}, clamp: (v, lo, hi) => Math.max(lo, Math.min(hi, v)),
       finisher: { start() {} }, PS: { ROLL: 'roll' } };
     vm.runInNewContext(fs.readFileSync(path.join(__dirname, '../js/combat.js'), 'utf8') + '\nresolveCombat(game);', context);

@@ -4,6 +4,7 @@ const { pinRush, selectRush } = require('./browser-adventure.cjs');
 const { chromium } = require('./browser.cjs');
 const { createServer } = require('../server/index.cjs');
 const { config: C } = require('../js/net-protocol.js');
+const t0 = Date.now(), step = name => console.log(`[${((Date.now() - t0) / 1000).toFixed(1)}s] ${name}`);   // where a hang stops, in CI's log
 (async () => {
   const app = createServer({ dev: true, firstPick: false });
   pinRush(app, ['ostrey']);
@@ -54,7 +55,7 @@ const { config: C } = require('../js/net-protocol.js');
     await page.waitForFunction(() => multiplayer.info.players.some(p => p.id === multiplayer.info.self && p.name === 'Remembered knight'));
   };
   try {
-    const a = await player('Leader');
+    step('leader joins'); const a = await player('Leader');
     await selectRush(a); await a.locator('#lobbyStart').click(); await ready(a);
     const epoch = app.session.epoch, oldId = await a.evaluate(() => multiplayer.info.self);
     // Hold the boss still and wound her: the run's state every reconnect must find again.
@@ -63,6 +64,7 @@ const { config: C } = require('../js/net-protocol.js');
     const wounded = hp => a.waitForFunction(hp => Game.duel && Math.abs(Game.duel.hp - hp) < 0.5, hp);
     await wounded(boss.hp);
 
+    step('freeze the leader');
     // Reproduce a lone leader's suspended tab, followed by a new active joiner.
     const devtools = await a.context().newCDPSession(a);
     // Some headless browser activations thaw a page; also suppress its outgoing stream to keep this fixture suspended.
@@ -70,16 +72,17 @@ const { config: C } = require('../js/net-protocol.js');
     const frozenAt = app.sim.state.time;
     await wait((C.stalePlayer + 0.2) * 1000);
     assert.ok(app.sim.state.time > frozenAt + 2, 'the only frozen browser cannot stop the server clock');
-    const b = await player('Friend'); await ready(b);
+    step('friend joins'); const b = await player('Friend'); await ready(b);
     await b.waitForFunction(() => multiplayer.info.self === multiplayer.info.leader);
     assert.equal(await b.locator('#lobbyLeader').count(), 1);
     assert.equal(app.session.epoch, epoch, 'a new leader enters the existing run');
-    suspended.delete(a); await devtools.send('Page.setWebLifecycleState', { state: 'active' }); await ready(a);
+    step('thaw the leader'); suspended.delete(a); await devtools.send('Page.setWebLifecycleState', { state: 'active' }); await ready(a);
     assert.equal(await a.evaluate(() => multiplayer.info.self), oldId, 'thaw/recovery retains identity');
     const saved = await save(a);
     for (const until = Date.now() + 5000; app.clients.get(oldId).pose?.flasks !== 1 && Date.now() < until;) await a.waitForTimeout(50);   // the next pose carries it
     assert.equal(app.clients.get(oldId).pose.flasks, 1);
 
+    step('transport failure');
     // A transport failure restores personal state once, rather than creating a full-health character.
     app.clients.get(oldId).ws.terminate();
     await a.waitForFunction(() => !multiplayer.connected);
@@ -88,11 +91,13 @@ const { config: C } = require('../js/net-protocol.js');
     assert.equal(app.session.epoch, epoch);
     await wounded(boss.hp);
 
+    step('reload');
     // A hard reload uses the private persisted credential too.
     await a.reload(); await a.waitForFunction(() => window.__arenaReady, null, { timeout: 120000 });
     await a.locator('#menuList .title-lead').click(); await ready(a);
     assert.equal(await a.evaluate(() => multiplayer.info.self), oldId); await assertSaved(a, saved);
 
+    step('menu recovery');
     // Recover a title/menu fallback without a refill, and retry repeated transport failures.
     await a.evaluate(() => Game.showMenu('main')); await ready(a);
     await a.waitForFunction(() => Game.mode === 'play'); await assertSaved(a, saved);
@@ -102,6 +107,7 @@ const { config: C } = require('../js/net-protocol.js');
     await wait(3500); await b.unroute('**/api/lobby'); await ready(b);
     assert.equal(await b.evaluate(() => multiplayer.info.self), friendId);
 
+    step('leave and removal');
     // Deliberate leave/removal cancels retries but keeps the run and saved resources.
     await a.evaluate(() => { Game.player.item('flask').count = 0; multiplayer.leave(); });
     app.clients.get(friendId).ws.close(1008, 'Removed by the lobby leader.');
@@ -109,7 +115,7 @@ const { config: C } = require('../js/net-protocol.js');
     assert.equal(app.clients.size, 0); assert.equal(app.session.epoch, epoch);
     const emptyAt = app.sim.state.time; await wait(250);
     assert.ok(app.sim.state.time > emptyAt + 0.1, 'the empty lobby keeps simulating');
-    await a.bringToFront(); await a.evaluate(() => multiplayer.join()); await ready(a);
+    step('rejoin'); await a.bringToFront(); await a.evaluate(() => multiplayer.join()); await ready(a);
     assert.equal(await a.evaluate(() => multiplayer.info.self), oldId);
     await assertSaved(a, { ...saved, flasks: 0 });
     assert.equal(app.session.epoch, epoch);
@@ -118,6 +124,7 @@ const { config: C } = require('../js/net-protocol.js');
   } finally {
     // Teardown is bounded: a page's socket or the server's keep-alive once held the close past CI's limit after every
     // check had passed (v7.193.0, run 44870837769). Each close gets 10 s, then the process ends on its own result.
+    step('teardown');
     const bounded = p => Promise.race([p.catch(() => {}), new Promise(r => setTimeout(r, 10000).unref())]);
     await bounded(browser.close()); await bounded(app.close());
   }
