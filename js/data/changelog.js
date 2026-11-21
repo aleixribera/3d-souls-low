@@ -6,6 +6,7 @@
 //   title    a few words
 //   text     one to three sentences, shown under the list when the entry is selected
 const CHANGELOG = [
+  { version: 'v7.225.0', title: 'The balance, live', text: 'The new balance reaches you: blows that count, bosses that keep up with your build.' },
   { version: 'v7.224.0', title: 'Bosses that rise to meet you', text: 'In Boss Rush, bosses hit harder the stronger your abilities are, so a strong build still meets a real fight. Ember Twin, Thunder God Step and Shade Host hit harder, Story\'s chapter bosses are tougher, and your own light blows no longer shake the camera. Bots in your party now take their counters.' },
   { version: 'v7.223.0', title: 'Blows that count', text: 'Your blows hit almost twice as hard and a counter is worth nearly three light hits; the Finishing Blow takes less off a boss. Bosses hit a quarter harder. Your first legendary comes within three crates, and never more than ten apart after that.' },
   { version: 'v7.222.0', title: 'The castles, the keep and the storm relit', text: 'The Sunken Keep, the Tower, Saltgrave and the Final Castle are relit: each wing and court has its own light, the floors read apart from the walls, and the Gaoler King\'s gibbets line the road to his gate. Saltgrave\'s yards and the castle courts have weapon racks. The Root of the Ember\'s hollows and the Still Mere\'s white gate read clearer, and the lantern thralls, the Drowned and the Salt Knights wear new colours.' },
