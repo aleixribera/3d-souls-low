@@ -11,11 +11,10 @@ The iterate loop's working note (`.claude/iterate.md`). Cap: 8,000 characters.
   ruins; 8 enemies recoloured with steel blades and edge tells. Left: Story-only recolours, bowman,
   gargoyle, lobby scene.
   Acceptance: in-page `model`/`arena`; clip `cel-enemies.mp4`.
-- Track 1, pass 164 (Aleix: the opening spectacular, pass 1 of 2), v7.214.0: each boss on its own ground, close-ups,
-  Dutch angles, whip pans, slow-mo ramps, DASH/COUNTER/FINISH full-screen words cut to the music, the title's own slam,
-  glare cut (judge: 7 v 4, 6 v 3.5). Pass 2: manga panels or split screens, a real face portrait (`face`
-  gets the sword arm), fuller Final Castle wide, the white blowout at Legion and the finisher, a bigger "3D" stamp,
-  anime reference stills (need Aleix's OK). The finale is the Finishing Blow: PLAN Later item 4 covered.
+- Track 1, pass 166 (Aleix: the showcase in the player's view, pass 1 of 1; replaces pass 164's anime opening and its
+  pass 2), v7.215.0: the game's own camera and HUD throughout, three bosses on their own grounds, a fade to black the
+  only cut, a "Showcase" tag and corner marks, the game's name at the end; the cinematic code is gone. The finale is
+  still the Finishing Blow (PLAN Later item 4 covered).
   Acceptance: in-page `Showcase`; `docs/showcase/storyboard.md`; clip `docs/scorecard/now/showcase.mp4`.
 
 ## Works
