@@ -19,7 +19,7 @@ const root = path.resolve(__dirname, '..');
 const out = path.join(root, 'docs', 'style');
 const [styleArg = 'all', partArg = 'still,fight,clip,time'] = process.argv.slice(2);
 const parts = new Set(partArg.split(','));
-const STYLES = styleArg === 'all' ? ['control', 'cel', 'dark', 'paint'] : styleArg.split(',');
+const STYLES = styleArg === 'all' ? ['classic', 'cel', 'dark', 'paint'] : styleArg.split(',');
 const BOSS = 'pillagerCaptain', W = 1280, H = 720, CLIP = 10;
 const main = /[\\/]\.claude[\\/]worktrees[\\/]/.test(root) ? path.resolve(root, '../../..') : root;
 const { acquire } = require('./browser-lock.cjs');
@@ -119,9 +119,9 @@ const measure = (page, ms) => page.evaluate(ms => new Promise(done => {
     }
     if (parts.has('time')) fs.writeFileSync(timesFile, JSON.stringify({ ...times, measured: 'this PC, headless Edge on its GPU, unthrottled, Normal, 1280x720' }, null, 1) + '\n');
     // The stills side by side, each named.
-    const stills = ['control', 'cel', 'dark', 'paint'].filter(s => fs.existsSync(path.join(out, `${s}-still.jpg`)));
+    const stills = ['classic', 'cel', 'dark', 'paint'].filter(s => fs.existsSync(path.join(out, `${s}-still.jpg`)));
     if (stills.length === 4 && parts.has('still')) {
-      const names = await (async () => { const { context, page } = await open('control', false); const n = await page.evaluate(() => Object.fromEntries(STYLE_DEFS.map(s => [s.id, s.name]))); await context.close(); return n; })();
+      const names = await (async () => { const { context, page } = await open('classic', false); const n = await page.evaluate(() => Object.fromEntries(STYLE_DEFS.map(s => [s.id, s.name]))); await context.close(); return n; })();
       const page = await browser.newPage({ viewport: { width: 1280, height: 744 } });
       const cell = s => `<figure><img src="data:image/jpeg;base64,${fs.readFileSync(path.join(out, `${s}-still.jpg`)).toString('base64')}"><figcaption>${names[s]}</figcaption></figure>`;
       await page.setContent(`<style>body{margin:0;background:#111;display:grid;grid-template-columns:1fr 1fr;gap:4px;font:600 15px system-ui;color:#eee}

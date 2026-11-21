@@ -20,6 +20,7 @@ function validateData({ visual = true } = {}) {
   // The art style exploration (js/data/styles.js, js/style-lab.js): numbers it writes into shaders must be numbers.
   if (visual) {
     const n = v => Number.isFinite(v), pos = v => n(v) && v > 0, rgb = c => Array.isArray(c) && c.length === 3 && c.every(n), seen = new Set();
+    need(STYLE_DEFS.filter(S => S.default === true).length === 1 && STYLE_DEFS.every(S => [undefined, true].includes(S.default)), 'Styles: exactly one style is `default: true` (the look without ?style=).');
     for (const S of STYLE_DEFS) {
       const at = `Style "${S.id}"`, P = S.post, B = S.bands;
       need(typeof S.id === 'string' && /^[a-z]+$/.test(S.id) && !seen.has(S.id) && typeof S.name === 'string', `${at}: a unique lower-case id and a name.`); seen.add(S.id);
@@ -36,6 +37,7 @@ function validateData({ visual = true } = {}) {
       need((S.hitFlash === undefined || n(S.hitFlash) && S.hitFlash >= 0 && S.hitFlash <= 1) && [undefined, true].includes(S.tintFromSkin), `${at}: hitFlash is 0 to 1; tintFromSkin only true.`);
       if (S.flat) need(pos(S.flat.bias) && n(S.flat.keep) && S.flat.keep >= 0 && S.flat.keep <= 1, `${at}: flat needs a positive mip bias and keep 0 to 1.`);
       if (!P) continue;
+      need(P.sceneDepth === undefined || P.ink && !P.rim && pos(P.sceneDepth.depth), `${at}: post.sceneDepth needs ink, no rim, and a positive depth.`);
       need(pos(P.prepass) && P.prepass <= 1 && (P.sat === undefined || n(P.sat)) && (P.exposure === undefined || pos(P.exposure)) && (P.tint === undefined || rgb(P.tint)), `${at}: post.prepass is 0 to 1 of the screen; sat a number; exposure above 0; tint [r, g, b].`);
       if (P.ink) need(['depth', 'width', 'color', 'fade'].every(k => n(P.ink[k])) && (P.ink.fold === undefined || pos(P.ink.fold)), `${at}: ink needs depth, width, color and fade (fold optional).`);
       if (P.haze) need(n(P.haze.from) && P.haze.to > P.haze.from && rgb(P.haze.color) && n(P.haze.amount), `${at}: haze needs from < to, an [r, g, b] color and amount.`);

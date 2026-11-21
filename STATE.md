@@ -7,11 +7,9 @@ The iterate loop's working note (`.claude/iterate.md`). Cap: 8,000 characters.
   Frozen Lotus, Tempest (`js/legend-fx-3.js`, Blender `ice_lotus.py`, `cataclysm_slabs.py`); the pin
   (`Enemy.pinned`), the world dim (`impactFrame.dim`). Acceptance: `tests/ultimates-one.cjs`, in-page
   `ultimates one`; clip `docs/scorecard/now/ultimates-one.mp4`. Next on track 2: batch 16, Ultimates II.
-- Track 1, pass 153 (PLAN item 6, Gemini, pass 1 of 1), v7.202.0: audit: restyle (`docs/bosses/vesper.md`): the Lunar
-  Tempest its own opening, edgeTell, body check 0/20; one `bars-1` round for her and the King's Blade.
-  Acceptance: strips `docs/scorecard/now/gemini-*.jpg`, clip `gemini.mp4`. She was
-  the last of the 14: PLAN items 5-6 are done on the loop's side, each awaiting Aleix. Track 1 has no
-  plan item left; the stop point waits on track 2 (item 8).
+- Track 1, pass 155 (Aleix's ask: cel the default, pass 1 of 1), v7.205.0: cel with no `?style=`, `classic` the way
+  back. Acceptance: `tests/style-browser.cjs`; frames `docs/scorecard/now/cel-default-*`. Normal inks from the scene's
+  depth (GPU +10%, was +90%); laptop unreachable, 60 fps there unmeasured. Track 1 has no plan item left.
 
 ## Works
 
@@ -55,8 +53,8 @@ The iterate loop's working note (`.claude/iterate.md`). Cap: 8,000 characters.
 - The Finishing Blow (pass 100-103, `js/finisher.js`, `js/finisher-fx.js`): the 3rd counter; its look is "Later".
 - Summons (pass 141-147): `js/summon-beasts.js` (hound, fox), `summon-lantern.js`, `summon-figures.js` (archer, ronin, puppet), `summon-birds.js`, `summon-crows.js`, `summon-brutes.js` (bear, mantis), `summon-coil.js`; `tests/summons-{one,two,three}.cjs`, in-page `summons`; clips `tools/ability-clips.cjs summons|summons2|summons3`, side views `tools/summon-closeups.cjs`.
 - Legendaries I, II (151, 154): `tests/legendaries-{one,two}.cjs`, in-page `legendaries one|two`, clips `legends1|2`.
-- Art styles (pass 108): `?style=cel|dark|paint`, `js/data/styles.js`, `js/style-lab.js`; `tests/style-browser.cjs`;
-  retake `node tools/style-frames.cjs [styles] [still,fight,clip,time]`.
+- Art style: cel by default (pass 155), `?style=classic|dark|paint`; `js/style-lab.js`, `sceneDepth` on Normal
+  (`tools/style-cost.cjs`); `tests/style-browser.cjs`; frames `tools/now-frames.cjs cel`.
 - Body check (retro 130): `tools/body-check.cjs [bossId]`; `tests/body-check.cjs` holds every boss with a page.
 - Clawed bosses' tells (pass 133): `tellsGrow` on a model with `tells`; in-page `Church: a heavy wind-up`.
 - Scorecard frames: `tools/scorecard-frames.cjs`; current frames `docs/scorecard/now/` (`tools/now-frames.cjs`).
@@ -71,16 +69,16 @@ The iterate loop's working note (`.claude/iterate.md`). Cap: 8,000 characters.
 
 ## Needs Aleix
 
-- Fight Oswin (Practice, `?style=cel`; reworked: threefold, the leap and his hands now parried unless you say).
-- Fight Agathe (Practice, `?style=cel`; the Gale Reap and the Hook from the Storm's landing now parried unless you say).
-- Fight Gemini (Practice, `?style=cel`; the Lunar Tempest ends on a rising cut unless you say).
-- Fight the King's Blade (Practice, `?style=cel`; the Ember Leaps, the Shield Burns' swing and the Wall's cut parried unless you say).
-- Fight the Kindling Tree (Practice, `?style=cel`; reworked: its boughs parried, the Bramble Sweep and the Charge too, unless you say).
-- Fight the Regent Hollis (Practice, `?style=cel`; the Pavane is new, and the Feast's blade is parried unless you say).
-- Fight the Ringer (Practice, `?style=cel`; her stamping foot and Over the Line's ball are parried unless you say).
-- Fight Hale and Harrow (Practice, `?style=cel`; Harrow's axe stays hidden until the whole phase unless you say).
-- Fight Old Ostrey, the Antlered Hunger, Aldric, the Giant Skeleton and the Bell Warden too (Practice, `?style=cel`;
+- Fight Oswin (Practice; reworked: threefold, the leap and his hands now parried unless you say).
+- Fight Agathe (Practice; the Gale Reap and the Hook from the Storm's landing now parried unless you say).
+- Fight Gemini (Practice; the Lunar Tempest ends on a rising cut unless you say).
+- Fight the King's Blade (Practice; the Ember Leaps, the Shield Burns' swing and the Wall's cut parried unless you say).
+- Fight the Kindling Tree (Practice; reworked: its boughs parried, the Bramble Sweep and the Charge too, unless you say).
+- Fight the Regent Hollis (Practice; the Pavane is new, and the Feast's blade is parried unless you say).
+- Fight the Ringer (Practice; her stamping foot and Over the Line's ball are parried unless you say).
+- Fight Hale and Harrow (Practice; Harrow's axe stays hidden until the whole phase unless you say).
+- Fight Old Ostrey, the Antlered Hunger, Aldric, the Giant Skeleton and the Bell Warden too (Practice;
   the pending calls are in the commits: Ostrey's landing parried, the Hunger's follow-ups, Aldric's pommel strike).
 - Fight the Pillager Captain (PLAN item 5's last gate; six judge rounds tried). Practice,
-  `?style=cel`; say what feels off or unfair.
+  say what feels off or unfair.
 Answered: the art style is cel-shaded anime (Aleix, 2026-11-20). The home server's `/souls/` address is PUBLIC (Aleix, 2026-11-20).

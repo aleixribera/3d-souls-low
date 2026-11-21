@@ -205,7 +205,7 @@ const SETS = {
 (async () => {
   const ffmpeg = process.env.FFMPEG || 'ffmpeg';
   const app = createServer({ dev: true }); await new Promise(r => app.server.listen(0, '127.0.0.1', r));
-  const url = `http://127.0.0.1:${app.server.address().port}/combat-arena-3d.html?style=cel`;
+  const url = `http://127.0.0.1:${app.server.address().port}/combat-arena-3d.html`;
   const browser = await chromium.launch({ channel: 'msedge', headless: true });
   const errors = [];
   try {

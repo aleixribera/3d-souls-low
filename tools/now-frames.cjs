@@ -8,6 +8,7 @@
 //   abilities-desktop / -phone    the Abilities page (PLAN.md item 7) opened from the lobby: a few unlocked, one off;
 //   abilities-phone-end           the phone page scrolled to its legendaries; abilities-locked: opened during a run
 //   blade-*                       the blade commons' effects (pass 112) in the cel style, on the Pillager Captain
+//   cel-default-desktop / -phone  the default look (cel, no ?style=) in a Practice fight; cel-default-fight.mp4: 10 s of it
 require('../tests/low-priority.cjs');
 const fs = require('node:fs');
 const path = require('node:path');
@@ -45,6 +46,40 @@ const shot = (page, name, clip) => page.screenshot({ path: path.join(out, name +
     if (want('lobby')) for (const [w, h, tag] of [[1280, 720, 'desktop'], [390, 844, 'phone']]) {
       const page = await open(w, h); await joinLobby(page); await shot(page, `lobby-${tag}`); await page.close();
       console.log('lobby', tag);
+    }
+    if (want('cel')) {
+      // The default look (pass 155: cel with no ?style=): the Practice fight with the Pillager Captain, a bot at the
+      // player's keys, on desktop and phone (HUD in), and 10 s of it as cel-default-fight.mp4.
+      const fight = async page => page.evaluate(async () => {
+        Game.startFight('pillagerCaptain');
+        while (!(Game.player && Game.loading <= 0 && !Game.pendingLoad)) await new Promise(r => setTimeout(r, 100));
+        const p = Game.player; p.maxHp = p.hp = 1e7; Game.worldWaiting = false;
+        const brain = bot.create(BOT_PROFILES[0]); p.ctl = brain.hands;
+        Game.moveInput = () => brain.think(CONFIG.step, p, Game.enemies.filter(e => e.alive()), [], projectiles.live(), null).mv;
+      });
+      for (const [w, h, tag] of [[1280, 720, 'desktop'], [390, 844, 'phone']]) {
+        const page = await open(w, h);
+        if (await page.evaluate(() => styleLab.style) !== 'cel') throw new Error('the page without ?style= is not cel');
+        await fight(page); await page.waitForTimeout(3500);
+        await page.waitForFunction(() => Game.enemies.some(e => e.alive() && e.attack), null, { timeout: 15000 }).catch(() => {});
+        await shot(page, `cel-default-${tag}`); await page.close();
+        console.log('cel', tag);
+      }
+      const dir = path.join(out, '.video'), t0 = Date.now();
+      const context = await browser.newContext({ viewport: { width: 1280, height: 720 }, recordVideo: { dir, size: { width: 1280, height: 720 } } });
+      const page = await context.newPage();
+      page.on('pageerror', e => errors.push(e.message.slice(0, 200)));
+      await page.addInitScript(() => localStorage.setItem('combat-arena-3d.settings', JSON.stringify({ graphics: 'normal', volume: 0, lessons: false })));
+      await page.goto(url); await page.waitForFunction(() => window.__arenaReady, null, { timeout: 120000 });
+      await fight(page); await page.waitForTimeout(2000);
+      const from = (Date.now() - t0) / 1000;
+      await page.waitForTimeout(10500);
+      const video = page.video(); await context.close();
+      const raw = await video.path();
+      require('node:child_process').execFileSync('ffmpeg', ['-y', '-loglevel', 'error', '-ss', from.toFixed(2), '-i', raw, '-t', '10', '-an', '-c:v', 'libx264',
+        '-pix_fmt', 'yuv420p', '-crf', '30', '-preset', 'slow', '-movflags', '+faststart', path.join(out, 'cel-default-fight.mp4')]);
+      fs.rmSync(dir, { recursive: true, force: true });
+      console.log('cel clip');
     }
     if (want('rush')) {
       const page = await open(1280, 720); await joinLobby(page);
@@ -127,7 +162,7 @@ const shot = (page, name, clip) => page.screenshot({ path: path.join(out, name +
     if (want('blades')) for (const [w, h, tag] of [[1280, 720, ''], [390, 844, '-phone']]) {
       // The blade commons (pass 112) in the cel style, on a Pillager Captain held 2.8 m ahead and to the right. The clock is stepped by
       // hand (Game.manualClock) so each frame is caught at the same moment of its effect every time.
-      const page = await open(w, h, 0, null, '?style=cel');
+      const page = await open(w, h);
       await page.evaluate(() => Game.startFight('pillagerCaptain'));
       await page.waitForFunction(() => Game.mode === 'play' && Game.player && Game.duel && !Game.loading, null, { timeout: 60000 });
       await page.waitForTimeout(800);

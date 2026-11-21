@@ -1,7 +1,7 @@
 'use strict';
 // ============================================================================
-// The art style exploration (PLAN.md item 4): one of STYLE_DEFS (js/data/styles.js), chosen when the page loads with
-// `?style=<id>`. Without it (every player's page) this file does nothing.
+// The game's art style (PLAN.md item 4): one of STYLE_DEFS (js/data/styles.js), chosen when the page loads with
+// `?style=<id>`; without it (every player's page), the style marked `default` (cel). `?style=classic` adds nothing.
 // ============================================================================
 // Drawing only: it reads the scene and the camera and never changes the game. Two parts:
 //   shade  every lit material's light (standard, lambert, phong) reshaped where three.js writes the pixel
@@ -10,10 +10,10 @@
 //          pre-pass of the solid scene, then ink lines, distance haze, a rim light and a Kuwahara brush, as the style asks.
 const styleLab = (() => {
   const id = (() => { try { return new URLSearchParams(location.search).get('style'); } catch (e) { return null; } })();
-  const S = STYLE_DEFS.find(s => s.id === id) || null;
-  // hitFlash: what a struck body's white flash is scaled by (js/enemy.js, js/player-pose.js).
-  const lab = { style: S ? S.id : null, def: S, frames: 0, hidden: 0, skipped: [], hitFlash: S && S.hitFlash !== undefined ? S.hitFlash : 1 };
-  if (!S) return lab;
+  const S = STYLE_DEFS.find(s => s.id === id) || STYLE_DEFS.find(s => s.default);
+  // hitFlash: what a struck body's white flash is scaled by (js/enemy.js, js/player-pose.js). pass: the screen pass, if any.
+  const lab = { style: S.id, def: S, frames: 0, hidden: 0, skipped: [], hitFlash: S.hitFlash !== undefined ? S.hitFlash : 1, pass: null };
+  if (!S.shade && !S.flat && !S.post) return lab;
   const f = v => (Number.isInteger(v) ? v.toFixed(1) : String(v));
   const v3 = a => `vec3(${a.map(f).join(', ')})`;
 
@@ -89,7 +89,7 @@ vec4 artMap(vec4 sharp, vec4 blurred) {
   if (P.brush) Object.assign(defines, { BRUSH: '', BRUSH_R: String(P.brush.radius), BRUSH_WOBBLE: f(P.brush.wobble), BRUSH_CANVAS: f(P.brush.canvas) });
   if (P.tint) defines.TINT = v3(P.tint);
   defines.SAT = f(P.sat ?? 1); defines.EXPOSURE = f(P.exposure ?? 1);
-  const mat = new THREE.ShaderMaterial({
+  const makeMat = defines => new THREE.ShaderMaterial({
     defines, depthTest: false, depthWrite: false,
     uniforms: { tColor: { value: null }, tDepth: { value: null }, tNormal: { value: null }, uPx: { value: new THREE.Vector2() },
                 uGPx: { value: new THREE.Vector2() }, uNear: { value: 0.1 }, uFar: { value: 200 } },
@@ -164,7 +164,31 @@ void main() {
   gl_FragColor = vec4(c, 1.0);
 }`,
   });
+  // (pass 155) `sceneDepth`: where the screen has no MSAA (Normal), the ink reads the scene render's own depth, kept in
+  // a depth texture on the composer's targets, and the pre-pass (a second draw of every solid mesh) is skipped. Without
+  // normals there are no fold lines or rim: the depth's second difference, at the lower `sceneDepth.depth`, inks the
+  // creases instead. Measured in tools/style-cost.cjs: the pre-pass was most of the style's cost, doubling the GPU's
+  // frame on Normal; without it the style adds about a tenth.
+  const mat = makeMat(defines);
+  const sceneMat = P.sceneDepth ? makeMat({ ...Object.fromEntries(Object.entries(defines).filter(([k]) => k !== 'INK_FOLD' && !k.startsWith('RIM'))),
+    INK_DEPTH: f(P.sceneDepth.depth) }) : null;
   const quad = new FullScreenQuad(mat);
+  const C = visuals.composer;
+  const depthFor = rt => {   // a depth texture where there's no MSAA
+    const want = !rt.samples;
+    if (want === !!rt.depthTexture) return;
+    if (rt.depthTexture) rt.depthTexture.dispose();
+    rt.depthTexture = want ? new THREE.DepthTexture(rt.width, rt.height) : null;
+    rt.dispose();   // its framebuffer is rebuilt with (or without) the texture on the next draw
+  };
+  // Where the pass sits: reading the scene's depth, right after the scene (the light pass's quad would draw over that
+  // depth); with the pre-pass (MSAA, Ultra), after the light pass and before bloom, as before pass 155.
+  const place = () => {
+    const L = C.passes, at = L.indexOf(lab.pass), pre = !!C.renderTarget1.samples;
+    if (at < 0 || at === (pre ? L.indexOf(visuals.passes.bloom) - 1 : 1)) return;
+    L.splice(at, 1); L.splice(pre ? L.indexOf(visuals.passes.bloom) : 1, 0, lab.pass);
+  };
+  if (P.sceneDepth) visuals.hooks.beforeDraw.push(() => { depthFor(C.renderTarget1); depthFor(C.renderTarget2); place(); });
   const normalMat = new THREE.MeshNormalMaterial();
   const clearColor = new THREE.Color(), flatNormal = new THREE.Color().setRGB(0.5, 0.5, 1, THREE.LinearSRGBColorSpace);   // (0, 0, 1): facing the camera
   let gbuf = null;
@@ -182,6 +206,18 @@ void main() {
   class StylePass extends Pass {
     constructor() { super(); this.needsSwap = true; }
     render(r, writeBuffer, readBuffer) {
+      if (sceneMat && !lab.prepassAlways && readBuffer.depthTexture && !readBuffer.samples) {   // prepassAlways: tools/style-cost.cjs
+        const U = sceneMat.uniforms;
+        U.tColor.value = readBuffer.texture; U.tDepth.value = readBuffer.depthTexture;
+        U.uPx.value.set(1 / readBuffer.width, 1 / readBuffer.height); U.uGPx.value.copy(U.uPx.value);
+        U.uNear.value = camera.near; U.uFar.value = camera.far;
+        lab.frames++; lab.sceneDepth = true;
+        quad.material = sceneMat;
+        r.setRenderTarget(this.renderToScreen ? null : writeBuffer);
+        quad.render(r);
+        return;
+      }
+      quad.material = mat; lab.sceneDepth = false;
       const w = Math.max(1, Math.round(readBuffer.width * P.prepass)), h = Math.max(1, Math.round(readBuffer.height * P.prepass));
       if (!gbuf || gbuf.width !== w || gbuf.height !== h) {
         if (gbuf) { gbuf.depthTexture.dispose(); gbuf.dispose(); }
@@ -207,8 +243,10 @@ void main() {
       quad.render(r);
     }
   }
-  // After the scene and the light pass (js/ultra-post.js puts it at 1), before bloom and the grade.
-  const passes = visuals.composer.passes, at = passes.findIndex(p => p === visuals.passes.bloom);
-  visuals.composer.insertPass(new StylePass(), at < 0 ? 1 : at);
+  // After the scene and the light pass (js/ultra-post.js puts it at 1), before bloom and the grade; a `sceneDepth` style
+  // right after the scene (and `place` moves it before each draw as the screen's MSAA comes and goes).
+  const passes = visuals.composer.passes, at = P.sceneDepth ? 1 : passes.findIndex(p => p === visuals.passes.bloom);
+  lab.pass = new StylePass(); lab.materials = { prepass: mat, scene: sceneMat };   // for tools
+  visuals.composer.insertPass(lab.pass, at < 0 ? 1 : at);
   return lab;
 })();

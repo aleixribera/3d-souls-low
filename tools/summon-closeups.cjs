@@ -21,7 +21,7 @@ const ids = args.length ? args : ['ronin-shade', 'mire-serpent', 'puppet-knight'
     const page = await browser.newPage({ viewport: { width: 960, height: 640 } });
     page.on('pageerror', e => errors.push(e.message.slice(0, 200)));
     await page.addInitScript(() => localStorage.setItem('combat-arena-3d.settings', JSON.stringify({ graphics: 'normal', volume: 0, lessons: false })));
-    await page.goto(`http://127.0.0.1:${app.server.address().port}/combat-arena-3d.html?style=cel`);
+    await page.goto(`http://127.0.0.1:${app.server.address().port}/combat-arena-3d.html`);
     await page.waitForFunction(() => window.__arenaReady, null, { timeout: 120000 });
     await page.evaluate(() => Game.startFight('pillagerCaptain'));
     await page.waitForFunction(() => Game.mode === 'play' && Game.player && Game.duel && !Game.loading, null, { timeout: 60000 });
