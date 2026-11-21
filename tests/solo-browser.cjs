@@ -42,7 +42,7 @@ const { createServer } = require('../server/index.cjs');
     try { weights = JSON.parse(fs.readFileSync(path.join(__dirname, 'shard-weights.json'), 'utf8')); } catch (e) { /* by count */ }
     const results = await page.evaluate(async ([filter, shard, weights]) => { Game.manualClock = true; return __arena.tests.run(filter, { shard, weights }); }, [process.argv[2] || '', shard, weights]);
     const output = path.resolve('.scratch/multiplayer-solo'); fs.mkdirSync(output, { recursive: true });
-    fs.writeFileSync(path.join(output, 'results.json'), JSON.stringify({ results, messages }, null, 2));
+    fs.writeFileSync(path.join(output, shard ? `results-${shard[0] + 1}of${shard[1]}.json` : 'results.json'), JSON.stringify({ results, messages }, null, 2));   // shards run side by side
     console.log(results.summary);
     console.log(`slowest:\n  ${results.slowest.join('\n  ')}`);
     if (results.failed?.length) throw new Error(results.failed.join('\n'));

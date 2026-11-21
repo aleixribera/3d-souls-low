@@ -49,6 +49,16 @@ agents: a draft, changed whenever the code changes.
   full suite locally.
 - Browser tests get Playwright from `tests/browser.cjs`. Never set `ARENA_SOFTWARE_GL=1` locally.
 
+### Test time budget
+
+- `npm test` (node group + the browser tests CI runs): files run in parallel, the in-page suite as one shard per browser
+  slot. Budget: node group 60 s, `npm test` 10 min on the Fedora laptop; `tests/run-all.cjs` prints a loud warning past it.
+- CI: about 8 minutes (10 in-page shards, 2 smoke halves, the node job); each step's `timeout-minutes` is ~1.5x its time.
+- Only what changed: `node tests/run-all.cjs <name>`, `node tests/solo-browser.cjs "<filter>"` (`a|b` for either).
+- Slow and opt-in: `--group extra` (Playwright files CI never ran, several failing; see `tests/run-all.cjs`) and the
+  optional benchmarks (`--list`). Output is dots and failures; logs and the timing table are in `.scratch/test-logs/`.
+- A new long in-page walk is one test per item (per level, per duel), so the shards can split it.
+
 ## Release
 
 1. `node tools/release.cjs "<title>" "<text>" ["Co-Authored-By: ..."]`: the next minor `VERSION` (`js/config.js`),
