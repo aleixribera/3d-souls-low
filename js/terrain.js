@@ -29,6 +29,15 @@ const EDGES = {   // fixed coordinate (rect index), outward sign, the axis the e
 const LEVEL_LAYOUTS = ['arena', 'hall', 'rooms'];
 // Every entry of a room level with a gate: its zones, shortcuts and sealed gates.
 const gatedEntries = L => [...L.gated, ...(L.shortcuts || []), ...(L.sealed || [])];
+// Whether a gate `g` (standing on the floor at `gy`, `gh` m tall) has a wall at both ends reaching over its top, so a
+// lintel over it joins them. In an open place (a walkway, a court with open edges) it does not: the lintel would hang
+// in the air, and the gate lifts out of sight instead (js/scene.js; pass 163, the Story audit: 14 floating lintels).
+function gateWalled(T, g, gy, gh) {
+  const half = g.width / 2 + 0.35, top = gy + gh + 0.3, e = 0.05;
+  const wall = (x, z) => T.solids.some(s => !s.low && s.kind !== 'prop' && x >= s.x0 - e && x <= s.x1 + e && z >= s.z0 - e && z <= s.z1 + e &&
+    s.y1 >= top && s.y0 <= gy + 1);
+  return g.along === 'x' ? wall(g.x - half, g.z) && wall(g.x + half, g.z) : wall(g.x, g.z - half) && wall(g.x, g.z + half);
+}
 
 // A room or ramp as a region: floorAt(x, z), its floor range lo..hi, and `top` (lo..hi plus headroom).
 function makeRegion(src, kind, L) {

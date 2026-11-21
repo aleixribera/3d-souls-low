@@ -77,9 +77,10 @@ const LEVEL_12 = {
     { id: 'zone-steps', trigger: [40, 64, -12, 12], gate: { x: 64, z: 0, along: 'z', width: 6 },
       enemies: [{ enemy: 'rendingBrother', spawn: { x: 56, z: -5, yaw: -Math.PI / 2 } }, { enemy: 'rendingBrother', spawn: { x: 56, z: 5, yaw: -Math.PI / 2 } },
                 { enemy: 'rendingBrother', variant: 'elite', spawn: { x: 60, z: 0, yaw: -Math.PI / 2 } }] },
-    // The undercroft: the colonnade drops you in among them. The gate is at the foot of the undercroft ramp.
+    // The undercroft: the colonnade drops you in among them. The gate is at the foot of the undercroft ramp. Every one
+    // stands on the undercroft's floor (y 0), not the colonnade over it (pass 163: the knight stood up there).
     { id: 'zone-undercroft', trigger: [86, 114, -14, 14], gate: { x: 114, z: -11, along: 'z', width: 6 },
-      enemies: [{ enemy: 'knight', spawn: { x: 106, z: 2, yaw: -Math.PI / 2 } }, { enemy: 'rendingBrother', spawn: { x: 94, z: -10, yaw: 0 } },
+      enemies: [{ enemy: 'knight', spawn: { x: 106, y: 0, z: 2, yaw: -Math.PI / 2 } }, { enemy: 'rendingBrother', spawn: { x: 94, z: -10, yaw: 0 } },
                 { enemy: 'rendingBrother', spawn: { x: 96, z: 10, yaw: Math.PI } }] },
     { id: 'zone-terrace', trigger: [140, 160, -20, 4], gate: { x: 160, z: 0, y: 8, along: 'z', width: 6 },
       enemies: [{ enemy: 'rendingBrother', spawn: { x: 152, y: 8, z: -6, yaw: -Math.PI / 2 } }, { enemy: 'rendingBrother', spawn: { x: 154, y: 8, z: 1, yaw: -Math.PI / 2 } },

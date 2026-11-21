@@ -316,7 +316,8 @@ function buildRooms(L) {
   for (const z of gatedEntries(L)) {
     const g = z.gate, alongX = g.along === 'x', gy = TR.floorY(g.x, g.z, g.y), wh = gateHeadroom(TR, g.x, g.z, gy);
     const barricade = g.style === 'barricade', th = barricade ? C.barricade.depth : t;
-    if (!barricade && wh > gh && !L.clearGates) addBox(G, alongX ? g.width : 1.2, wh - gh, alongX ? 1.2 : g.width, MAT.wall, g.x, gy + gh + (wh - gh) / 2, g.z);
+    const clear = !!L.clearGates || (!barricade && !gateWalled(TR, g, gy, gh));   // open on a side: no lintel to hang in the air
+    if (!barricade && wh > gh && !clear) addBox(G, alongX ? g.width : 1.2, wh - gh, alongX ? 1.2 : g.width, MAT.wall, g.x, gy + gh + (wh - gh) / 2, g.z);
     const mesh = barricade ? buildBarricade(G, g.width, gh, th, strSeed(z.id)) : buildPortcullis(G, g.x, g.width, gh);
     mesh.position.set(g.x, gy, g.z); if (alongX) mesh.rotation.y = Math.PI / 2;
     const box = alongX ? { x0: g.x - g.width / 2, x1: g.x + g.width / 2, z0: g.z - th / 2, z1: g.z + th / 2, y0: gy, y1: gy + gh }
@@ -328,7 +329,7 @@ function buildRooms(L) {
       fall = alongX ? -Math.sign(g.z - cz) || 1 : Math.sign(g.x - cx) || 1;
     }
     gates.push({ id: z.id, x: g.x, z: g.z, y: gy, box, mesh, liftHeight: gh - CONFIG.level.gateLiftGap, opensFrom: z.opensFrom || null,
-                 style: barricade ? 'barricade' : 'portcullis', fall, clear: !!L.clearGates });
+                 style: barricade ? 'barricade' : 'portcullis', fall, clear });
   }
   const bonfireFires = [];   // bonfires lit later (`litBy`): their flames, hidden until then (Game.render)
   for (const b of L.bonfires) {
@@ -395,7 +396,8 @@ function placeTrap(t) {
 // out of sight as it lands.
 function placeGate(g) {
   const k = ease(g.lift);
-  // `clearGates` levels (v4.3.1): no wall over the doorway, and an open portcullis rises right out of sight, so neither hides the fight.
+  // `clearGates` levels (v4.3.1), and any gate with no wall at an end (pass 163): no wall over the doorway, and an open
+  // portcullis rises right out of sight, so neither hides the fight nor hangs in the air.
   if (g.style !== 'barricade') { g.mesh.position.y = g.y + k * (g.clear ? g.liftHeight * 3 : g.liftHeight); g.mesh.visible = !g.clear || g.lift < 1; return; }
   const B = CONFIG.rooms.barricade;
   g.mesh.rotation.z = -g.fall * k * B.topple;
