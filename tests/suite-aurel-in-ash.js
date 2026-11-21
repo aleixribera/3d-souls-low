@@ -23,14 +23,22 @@
     for (const a of d.attacks) { const t = tell(a), other = seen.get(t); expect.ok(!other || other.name === a.name, `${a.id} and ${other && other.id} share a wind-up`); seen.set(t, a); }
     // The floor: most of his blows crack it; the calls that burn it come only once enough is open, with a long tell.
     const seams = d.attacks.filter(a => a.hits.some(h => h.seam)), calls = d.attacks.filter(a => a.hits.some(h => h.erupt));
-    expect.ok(seams.length >= 8 && calls.length === 2 && calls.every(a => a.when === 'seamed' && a.noParry), `${seams.length} moves crack the floor; ${calls.length} call it up`);
+    expect.ok(seams.length >= 8 && calls.length === 2 && calls.every(a => a.when === 'seamed' && (a.id !== 'firstHunger' || (canParryHit(a, 0) && !canParryHit(a, 1) && !canParryHit(a, 2)))), `${seams.length} moves crack the floor; ${calls.length} call it up, and only the First Hunger's hands, never its fire, are parried`);
     for (const a of calls) expect.ok(a.hits.find(h => h.erupt).startup >= CONFIG.seams.minTell, `${a.id}: the floor glows a full ${CONFIG.seams.minTell} s first`);
     expect.ok(d.hp === 3500 && d.phases.crowned.hp === 3500, 'health as tuned in pass 45');
     const U = d.phases.uncrowned;
     expect.ok(U.at === 0.4 && U.opener === 'crownCastDown' && U.ignite && U.conceal.join() === 'weapon' && U.name === 'Oswin, Uncrowned',
       'at 40% he casts the axe down and the Ember takes his hands');
     expect.ok(d.attacks.find(a => a.id === 'crownCastDown').invulnerable, 'he cannot be hurt through the change');
-    expect.ok(U.attacks.filter(id => d.attacks.find(a => a.id === id).rollOnly).length >= 3, 'uncrowned, he grabs: only a roll gets clear');
+    expect.ok(d.attacks.find(a => a.id === 'kingsHold').rollOnly, 'uncrowned, he grabs: only a roll gets clear');
+    // (pass 145, docs/bosses/system.md 0) the rework: at most a quarter of each phase's moves cannot be parried, and the
+    // moves he lost are gone.
+    for (const [id, P] of Object.entries(d.phases)) {
+      const shut = P.attacks.filter(n => !canParryAttack(d.attacks.find(a => a.id === n)));
+      expect.ok(shut.length <= P.attacks.length / 4, `${id}: ${shut.length} of ${P.attacks.length} cannot be parried (${shut.join(', ')})`);
+    }
+    expect.ok(!ids.has('twinTread') && !ids.has('grasp') && !ids.has('holdPunish') && ['royalProgress', 'emptyReign', 'swornFist', 'openHand'].every(n => ids.has(n)), 'the reworked moveset');
+    for (const n of d.phases.uncrowned.attacks) for (const h of d.attacks.find(a => a.id === n).hits) if (n !== 'crownCastDown') expect.ok(h.tell, `${n}: with the axe cast down, each blow names its tell`);
     expect.ok(!/Godfrey|Loux|Serosh|Elden|Hoarah|Erdtree/.test(JSON.stringify(d.attacks.map(a => a.name)) + JSON.stringify(Object.values(d.phases).map(p => p.name || '')) + d.name + d.description),
       'no names of the old road');
     expect.ok(BOSS_FX.oswin && BOSS_FX.oswin.phases.uncrowned === 'fire' && Object.keys(BOSS_FX.oswin.attacks).every(id => ids.has(id)), 'his effects are written, for his own moves');
@@ -69,12 +77,13 @@
     sim.seconds(VIS.emberSeams.burn + VIS.emberSeams.fade + VIS.emberSeams.close + 0.5, 1);
     expect.ok(!emberSeams.live().length, `and then they close (${JSON.stringify(emberSeams.live())})`);
     // The First Hunger burns them twice; with none open, a call does nothing.
-    strike('twinTread', 0);
-    expect.ok(e.seams.length === 2, `twin tread, two seams (${e.seams.length})`);
+    strike('royalProgress', 0);
+    expect.ok(e.seams.length === 1, `the royal progress ends on a tread, one seam (${e.seams.length})`);
+    strike('tread', 0);
     put(-30, 30, 0); e.cooldown = 99; e.beginAttack(e.attackById('firstHunger'));
-    sim.until(() => e.hitIndex === 0 && e.state === ES.ACTIVE, 4);
-    expect.ok(e.hitbox && e.seams.length === 2, 'the first burning keeps them open');
     sim.until(() => e.hitIndex === 1 && e.state === ES.ACTIVE, 4);
+    expect.ok(e.hitbox && e.seams.length === 2, 'the first burning keeps them open');
+    sim.until(() => e.hitIndex === 2 && e.state === ES.ACTIVE, 4);
     expect.ok(e.hitbox && e.seams.length === 0, 'the second spends them');
     put(-30, 30, 0); e.cooldown = 99; e.beginAttack(e.attackById('longLive'));
     sim.until(() => e.hitIndex === 1 && e.state === ES.ACTIVE, 6);

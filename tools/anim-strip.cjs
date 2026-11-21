@@ -107,6 +107,9 @@ const REPEAT = Math.max(1, +process.env.REPEAT || 1), VIEW = process.env.VIEW ||
         // The boss at the middle facing +x, the player in front of it beyond the attack's reach (it tracks them), the
         // camera square to its side. Its AI held while it settles; then the attack, every step drawn, `frames` of it kept.
         const e = Game.duel || Game.enemies[0], a = e.attackById(bossAttack);
+        // (pass 145) an attack only a later phase makes is filmed in that phase: its name, its glow, its cast-off weapon
+        const inPhase = (e.phaseIds || []).findIndex(id => (e.baseDef.phases[id].attacks || []).includes(bossAttack));
+        if (inPhase > 0 && !(e.baseDef.phases[e.phaseIds[0]].attacks || []).includes(bossAttack)) e.enterPhase(inPhase);
         p.maxHp = p.hp = 1e6;
         const k = Math.max(1, e.def.scale || 1), far = (a.range || 3) + (a.lunge || 0) + (view === 'game' ? 2 : 4);   // the game's camera: nearer, as a player stands
         e.x = e.px = 0; e.z = e.pz = 0; e.yaw = Math.PI / 2;

@@ -85,12 +85,16 @@ const BOSS_FX = {
     callHome: { element: 'fire' }, feast: { element: 'fire', impact: 'blaze', windup: 'gather' } } },
   // Oswin, the First Crown (Level 11): the ash king's stomps and axe crack the floor, and the cracks stay open (drawn by
   // js/ember-seams.js on every preset); from 40 % the axe is cast down and the Ember takes his hands.
-  oswin: { element: 'earth', aura: 0xff8a40, phases: { uncrowned: 'fire' }, attacks: {
-    tread: { impact: 'quake' }, twinTread: { element: 'fire', impact: 'quake' }, headsman: { impact: 'shatter', windup: 'gather' },
-    threefold: { impact: 'quake' }, kingsLeap: { impact: 'shatter' }, leapPunish: { impact: 'shatter' }, sceptre: { element: 'steel' }, turn: { element: 'steel' }, backhand: { element: 'fire' },
+  // (pass 145) the axe's ribbon a thin arc at its bit, its head smeared on the last frames; his new moves' fire. Bare-handed,
+  // no gathering glow (it swells where the cast-off axe's bit would be, over his body): the halo grows on the fist instead.
+  oswin: { element: 'earth', aura: 0xff8a40, trail: { edge: 0.3, life: 0.16, smear: 0.3 }, phases: { uncrowned: 'fire' }, attacks: {
+    tread: { impact: 'quake' }, royalProgress: { impact: 'quake' }, headsman: { impact: 'shatter', windup: 'gather' },
+    emptyReign: { element: 'fire', windup: 'none' }, swornFist: { element: 'fire', impact: 'shatter', windup: 'none' }, fistPunish: { element: 'fire', impact: 'shatter', windup: 'none' },
+    openHand: { element: 'fire', impact: 'blaze', windup: 'none' }, kingsHold: { element: 'fire', windup: 'none' }, backhand: { element: 'fire', windup: 'none' },
+    threefold: { impact: 'quake' }, kingsLeap: { impact: 'shatter' }, leapPunish: { impact: 'shatter' }, sceptre: { element: 'steel' }, turn: { element: 'steel' },
     longLive: { element: 'fire', impact: 'blaze', windup: 'gather' }, crownCastDown: { element: 'fire', impact: 'roar', windup: 'gather' },
-    emberFists: { element: 'fire', impact: 'quake' }, groundBreaker: { element: 'fire', impact: 'quake', windup: 'gather' },
-    firstHunger: { element: 'fire', impact: 'blaze', windup: 'gather' } } },
+    emberFists: { element: 'fire', impact: 'quake', windup: 'none' }, groundBreaker: { element: 'fire', impact: 'quake', windup: 'none' },
+    firstHunger: { element: 'fire', impact: 'blaze', windup: 'none' } } },
   // Mother Agathe, the Rending Hand (Level 12): the hook's steel, and the torn earth and stones, in the first half; then
   // the storm comes at her back: the hook seamed with lightning, and the storm falls where you stand
   // (js/data/bosses/agathe.js, loaded after this file; checked at validation).

@@ -9,12 +9,10 @@ The iterate loop's working note (`.claude/iterate.md`). Cap: 8,000 characters.
   against a sealed attack refused. Acceptance: `tests/summons-one.cjs`, in-page `summons` 2/2; clip
   `docs/scorecard/now/summons-one.mp4`. Next on track 2: batch 11, Summons II. Browser lock:
   `node tools/browser-lock.cjs run <pass> -- <cmd>` (docs/two-tracks.md).
-- Track 1, pass 143 (PLAN item 6, the Regent Hollis, pass 1 of 2): step-0 audit a restyle plus a string (his own 11
-  moves, a real phase two, but one real string in phase one; hungry `noParry` 4/12; body check 11/30): the Pavane added,
-  the Feast's blade parried (roll-only 2/9, 3/13), tell on the blade (`edgeTell`), in-between keys, outCubic wind-ups,
-  the mantle hangs on a bowed back (cloth `plumb`) after the `bars-1` round (`docs/bosses/hollis.md`). Acceptance:
-  in-page `Aurel|Boss edge tells|Player look` 20/20, body-check 0/34; clip `docs/scorecard/now/hollis-cel.mp4`. He
-  awaits Aleix. The Ringer (pass 142) awaits Aleix too. Next on track 1: Oswin's step-0 audit.
+- Track 1, pass 145 (PLAN item 6, Oswin, pass 1 of 2), done: audit a rework (crowned 7 moves; roll-only 5 of 8
+  and 7 of 9; body check 19/25). Now 9 and 10 moves (Royal Progress, Empty Reign, Sworn Fist, Open Hand new), roll-only
+  2 a phase, body check 0/31, tells on axe edge, fists, feet; in-page `Aurel in Ash` 9/9; clip
+  `docs/scorecard/now/oswin-cel.mp4`. Pass 2: the `bars-1` round. Then Agathe's audit.
 
 ## Works
 
@@ -73,6 +71,7 @@ The iterate loop's working note (`.claude/iterate.md`). Cap: 8,000 characters.
 
 ## Needs Aleix
 
+- Fight Oswin (Practice, `?style=cel`; reworked: threefold, the leap and his hands now parried unless you say).
 - Fight the Regent Hollis (Practice, `?style=cel`; the Pavane is new, and the Feast's blade is parried unless you say).
 - Fight the Ringer (Practice, `?style=cel`; her stamping foot and Over the Line's ball are parried unless you say).
 - Fight Hale and Harrow (Practice, `?style=cel`; Harrow's axe stays hidden until the whole phase unless you say).
