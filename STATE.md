@@ -8,18 +8,11 @@ The iterate loop's working note (`.claude/iterate.md`). Cap: 8,000 characters.
   against the shots it fired (`shotsFired`), and bots turn bolts in `flyBolts`. Acceptance: the bolt turns, is drawn
   and heard, and the shooter is struck: `tests/mirror-shard.cjs`, in-page `mirror shard`; clip
   `docs/scorecard/now/mirror-shard.mp4`. Batch 3 is done (pass 114: the other eleven). Next on track 2: batch 4.
-- Track 1, pass 118: item 5, the Captain's cel model (pass 1 of 2). In cel he drew near-white (a dark body's light
-  passed `keep` as a glow; a `tint` sets hue only): now the style's `body` bands (`ART_BODY`), black plate textures,
-  flared pauldrons (`captain.py`), and `softJoints` (knees, elbows, waist, cloak bend as one body). Acceptance:
-  `STYLE=cel` strips show black banded plate and unbroken joints (`docs/scorecard/now/captain-cel-{cuts,wheel}.jpg`,
-  `captain-cel.mp4`, `captain-cleave.jpg`); in-page `model`, `Pillager Captain`. Judge round 5: motion 5, readability
-  7, spectacle 5 (from 4, 7, 4), caught 9/10; giveaway: the bill's blade a flat white paper cutout. Next (pass 2):
-  shade the bill's steel in cel and smear the swing.
-- Pass 110, the retro (track 2 slot): v7.163.0's CI green (run 44830197524), its container published, and players
-  are on it at last (they had v7.159.0 until now). Item 1 done: `PLAY-LINK.txt` is https://aleix.tailfef0f7.ts.net/souls/,
-  Pages unpublished (old address 404). Step 1 of every pass: `node tools/live-check.cjs`. Items 1-3 done.
-- The Finishing Blow (pass 100-103, `js/finisher.js`, `js/finisher-fx.js`): 3rd counter; judge 4, 4, 5; its look and
-  the showcase finale are "Later" in the plan.
+- Track 1, pass 120, the retro: `node tools/boss-judge.cjs` plots the boss judge and prints `FLAT`; judge `sekiro-1`
+  is flat (caught 9/10 six rounds, motion 3 to 5). Next on track 1 (pass 121, item 5 pass 2 of the cel model): shade
+  the bill's steel in cel and smear the swing (round 5's giveaway; clip `docs/scorecard/now/`), then one round with
+  the fresh judge `edges-1` (`docs/bosses/system.md` section 6). Then the Captain is "awaiting Aleix" and track 1
+  starts the second boss through the system, item 5's real check.
 
 ## Works
 
@@ -60,6 +53,7 @@ The iterate loop's working note (`.claude/iterate.md`). Cap: 8,000 characters.
   `docs/design-audit/2026-11-15.md`.
 - Abilities and crates (pass 107, v7.162.0): `js/data/crates.js`, `js/progress.js` (save `v` 2), `js/crate-screen.js`;
   `tests/crates.cjs`. Plain commons' touches (pass 109): `js/ability-touch.js`; in-page `plain commons`. Blade commons (pass 112): `js/common-fx.js`; `tests/blade-commons.cjs`, in-page `blade commons`. Guard commons (114, 117): `tests/guard-commons.cjs`, `mirror-shard.cjs`.
+- The Finishing Blow (pass 100-103, `js/finisher.js`, `js/finisher-fx.js`): the 3rd counter; its look is "Later".
 - Art styles (pass 108): `?style=cel|dark|paint`, `js/data/styles.js`, `js/style-lab.js`; `tests/style-browser.cjs`;
   retake `node tools/style-frames.cjs [styles] [still,fight,clip,time]`.
 - Scorecard frames: `tools/scorecard-frames.cjs`; current frames `docs/scorecard/now/` (`tools/now-frames.cjs`).
