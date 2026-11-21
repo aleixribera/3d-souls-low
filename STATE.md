@@ -7,13 +7,12 @@ The iterate loop's working note (`.claude/iterate.md`). Cap: 8,000 characters.
   `lure`; in-page `guard boss`); `weekly` and `network-load` hardened for a busy PC. Batch 9 (pass 137, v7.189.0):
   `tests/guard-boss.cjs`, clip `docs/scorecard/now/guard-boss.mp4`. Next on track 2: batch 10, Summons I. Browser
   lock: `node tools/browser-lock.cjs run <pass> -- <cmd>` (docs/two-tracks.md).
-- Track 1, pass 138 (PLAN item 6, Hale and Harrow, pass 1 of 2: the audit and the rework), done in v7.188.0: a rework
-  (`docs/bosses/castellans.md`): 8 moves each (the Hewing; Elbow and Knee, the Heel from Heaven), parries on the
-  landings and the Wall Turns' first turn (3 of 16 and 4 of 17 unparriable), the alone phase a fight of its own (calls
-  answered by one body, Vault the Haft, the Gauntlet's Hold). Acceptance: body-check 0/35, in-page `Saltgrave` 11/11;
-  strips `docs/scorecard/now/castellans-hewing.jpg`, `-vault.jpg`, `-heel.jpg`; clip `castellans-rework.mp4`. Next on
-  track 1 (pass 2): their cel tells (`edgeTell` on the axe, `tells` on the gauntlets and greaves: the heavy body wash
-  still shows), `via` keys, the Heel from Heaven's leg higher, one `bars-1` round, then Aleix. Old Ostrey awaits Aleix.
+- Track 1, pass 139 (PLAN item 6, Hale and Harrow, pass 2 of 2), done in v7.190.0: their wind-up halo sits on the
+  axe head, gauntlet, elbow, knee or greave that strikes (`edgeTell`, `tells`, `tellsGrow`; no body wash), every hit
+  has `via` keys, the Heel's toe reaches her helm; `bars-1` round: Crown Cleave's halo hid behind her and the part
+  halos were specks, fixed and rechecked (`docs/bosses/castellans.md`). Acceptance: in-page `Saltgrave|edge tells`
+  13/13, `tests/pose-via.cjs`, body-check 0/35; clip `docs/scorecard/now/castellans-cel.mp4`. They await Aleix. Next
+  on track 1: the Ringer's step-0 audit (PLAN item 6).
 
 ## Works
 
@@ -71,6 +70,7 @@ The iterate loop's working note (`.claude/iterate.md`). Cap: 8,000 characters.
 
 ## Needs Aleix
 
+- Fight Hale and Harrow (Practice, `?style=cel`; Harrow's axe stays hidden until the whole phase unless you say).
 - Fight Old Ostrey too (Practice, `?style=cel`; one `bars-1` round; the Burning Drop's landing parried unless you say).
 - Fight the Antlered Hunger too (Practice, `?style=cel`; one `bars-1` round; its follow-ups parriable unless you say).
 - Fight Aldric too (Practice, `?style=cel`; the Turning Key ends on a pommel strike unless you say all blade).
