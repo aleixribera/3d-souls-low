@@ -116,8 +116,12 @@ const ABILITY_ICONS = {
   'hourglass': '<path d="M8 40 C8 26 20 30 22 20 C24 10 34 8 40 8"/><circle cx="40" cy="6" r="2.5"/><path d="M40 10 V16"/><path d="M14 26 L18 30 M24 16 L28 19 M30 9 L32 13"/><path d="M14 40 L8 40 L8 34"/>',
   'binding-seal': '<path d="M18 4 H30 V34 C30 38 26 40 24 40 C22 40 18 38 18 34 Z"/><path d="M21 10 L27 12 M21 17 L27 18 M22 24 L26 26"/><path d="M24 40 C20 43 21 46 24 46 C27 46 28 43 24 40"/>',
   'iron-stance': '<path d="M24 5 L39 11 V23 C39 33 32 39 24 43 C16 39 9 33 9 23 V11 Z"/><path d="M16 23 L24 16 L32 23 M16 31 L24 24 L32 31"/>',
-  'thunder-call': '<path d="M16 4 L9 18 H15 L10 30"/><path d="M30 8 L22 23 H29 L23 38"/><path d="M41 4 L36 14 H40 L37 22"/><path d="M6 44 H42"/>',
-  'cataclysm': '<circle cx="24" cy="24" r="5"/><circle cx="24" cy="24" r="12" stroke-dasharray="3 3"/><circle cx="24" cy="24" r="19"/><path d="M24 1 V7 M24 41 V47 M1 24 H7 M41 24 H47"/>',
+  // Ultimates I (batch 15)
+  'thunder-call': '<path d="M6 10 H42" stroke-dasharray="4 3"/><path d="M14 10 C30 14 36 22 24 26 C12 30 16 38 30 36"/><path d="M30 36 L36 33 M30 36 L35 40"/><path d="M26 26 L22 34 H27 L23 44"/>',
+  'cataclysm': '<path d="M24 26 L10 40 M24 26 L40 38 M24 26 L24 44 M24 26 L6 26 M24 26 L42 24"/><path d="M14 14 L20 8 L24 13 L18 18 Z"/><path d="M30 6 L37 9 L34 16 L28 13 Z"/><path d="M4 44 H44"/>',
+  'heavens-lance': '<path d="M19 2 H29 V40 H19 Z"/><path d="M24 2 V40"/><ellipse cx="24" cy="40" rx="16" ry="5"/><path d="M6 6 L12 10 M42 6 L36 10"/>',
+  'frozen-lotus': '<path d="M24 4 L28 26 L24 32 L20 26 Z"/><path d="M20 30 L6 22 L10 34 Z"/><path d="M28 30 L42 22 L38 34 Z"/><path d="M14 38 L24 32 L34 38 L24 44 Z"/>',
+  'tempest': '<path d="M6 6 H42"/><path d="M10 14 H38"/><path d="M15 22 H33"/><path d="M19 30 H29"/><path d="M22 38 H26 L24 44"/><path d="M38 20 L34 28 H38 L35 34"/>',
 };
 const ABILITY_RARITY_WORD = { common: 'Common', rare: 'Rare', legendary: 'Legendary' };
 const ABILITY_LEVEL_MARK = ['I', 'II', 'III', 'IV', 'V', 'VI'];

@@ -3,13 +3,13 @@
 The iterate loop's working note (`.claude/iterate.md`). Cap: 8,000 characters.
 
 ## Now
-- Track 2, pass 154 (PLAN item 8, batch 14, Legendaries II, pass 1 of 1): Hundred Suns, Thunder God Step,
-  Fourfold, Shade Host (`js/legend-fx-2.js`, Blender `shade_clone.py`), each through the server. Acceptance:
-  `tests/legendaries-two.cjs`, in-page `legendaries two`; clip `docs/scorecard/now/legendaries-two.mp4`.
-  Next on track 2: batch 15, Ultimates I. Browser lock: `node tools/browser-lock.cjs run <pass> -- <cmd>`.
+- Track 2, pass 156 (PLAN item 8, batch 15, Ultimates I, pass 1 of 1): Thunder Call, Cataclysm, Heaven's Lance,
+  Frozen Lotus, Tempest (`js/legend-fx-3.js`, Blender `ice_lotus.py`, `cataclysm_slabs.py`); the pin
+  (`Enemy.pinned`), the world dim (`impactFrame.dim`). Acceptance: `tests/ultimates-one.cjs`, in-page
+  `ultimates one`; clip `docs/scorecard/now/ultimates-one.mp4`. Next on track 2: batch 16, Ultimates II.
 - Track 1, pass 153 (PLAN item 6, Gemini, pass 1 of 1), v7.202.0: audit: restyle (`docs/bosses/vesper.md`): the Lunar
-  Tempest its own opening, edgeTell, body check 0/20; one `bars-1` round for her and the King's Blade (Ember Leaps
-  lands in a shatter, not a blaze). Acceptance: strips `docs/scorecard/now/gemini-*.jpg`, clip `gemini.mp4`. She was
+  Tempest its own opening, edgeTell, body check 0/20; one `bars-1` round for her and the King's Blade.
+  Acceptance: strips `docs/scorecard/now/gemini-*.jpg`, clip `gemini.mp4`. She was
   the last of the 14: PLAN items 5-6 are done on the loop's side, each awaiting Aleix. Track 1 has no
   plan item left; the stop point waits on track 2 (item 8).
 

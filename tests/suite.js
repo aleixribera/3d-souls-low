@@ -524,6 +524,65 @@
       expect.ok(p.perk.charge.strike >= p.kit.pressed.strike.v.charge && !(p.perk.charge.ultimate > 0), `your keys refilled by the word, never the Ultimate (${JSON.stringify(p.perk.charge)})`);
     } finally { audio.play = play; Game.lock = null; wipe(); p.grantAbilities([]); }
   });
+  test('ultimates one: the dragon out of the sky slit, the cataclysm\'s slabs, the lance\'s column, the lotus blooming and shattering, the storm\'s long aura; the world dim; others\' from the server\'s word', () => {
+    Game.startLevel('test-abilities'); sim.begin(); sim.step(2);
+    const p = Game.player, e = Game.enemies.find(o => o.def.id === 'greatDummy'), played = [];
+    const play = audio.play; audio.play = (id, o) => { played.push(id); return play.call(audio, id, o); };
+    const heard = ids => expect.ok(ids.every(id => played.includes(id)), `heard ${ids.join(', ')} (${[...new Set(played)].join(', ')})`);
+    const wipe = () => { abilityPowers.reset(); legendFx3.clear(); impactFrame.clear(); e.pinned = 0; e.holdRest = 0; played.length = 0; };
+    const fx = () => legendFx3.state, count = () => impactFrame.info().count, frames = n => { for (let i = 0; i < n; i++) sim.step(1, 1); };
+    const press = id => { p.grantAbilities([id]); wipe(); abilityPowers.trigger('self', p, p.kit, 'press', { key: 'ultimate', enemy: e }); };
+    const netId0 = e.netId;
+    try {
+      p.x = e.x - 5; p.z = e.z; Game.lock = e;
+      // Thunder Call: the slit and the dragon at once, the world dimming over its lead; the first bite on one impact frame.
+      press('thunder-call'); let n0 = count();
+      frames(20);
+      expect.ok(fx().slits === 1 && fx().dragons === 1 && fx().heads === 1 && impactFrame.info().dim > 0, `the slit, the dragon, the dim (${JSON.stringify(fx())}, ${impactFrame.info().dim})`);
+      frames(52);
+      expect.ok(count() === n0 + 1 && impactFrame.info().dim === 0, `the first bite: one frame, the dim let go (${count() - n0})`);
+      frames(150); expect.ok(fx().dragons === 0 && fx().slits === 0, `gone after its bolts (${JSON.stringify(fx())})`);
+      heard(['abilityDragon', 'abilityThunder']);
+      // Cataclysm: eight cracks at the press; the burst: the dome, six slabs, one impact frame; the slabs gone after.
+      press('cataclysm'); n0 = count();
+      frames(10); expect.ok(fx().cracks === 8 && fx().slabs === 0, `the cracks run out (${JSON.stringify(fx())})`);
+      frames(25);
+      expect.ok(fx().slabs === 6 && fx().domes === 1 && count() === n0 + 1 && e.hp < e.def.hp, `the dome and six slabs on one frame (${JSON.stringify(fx())}, ${count() - n0})`);
+      let inked = 0;
+      scene.traverse(o => { if (o.isMesh && o.visible && o.material && o.material.uniforms && o.material.uniforms.uInk && o.material.uniforms.uRimOn) inked++; });
+      expect.ok(inked >= 12, `the slabs in ink, stone and ember (${inked})`);
+      frames(150); expect.ok(fx().slabs === 0 && fx().cracks === 0, `settled and gone (${JSON.stringify(fx())})`);
+      heard(['abilityCrack', 'abilityBlast']);
+      // Heaven's Lance: the sigil at the press, the column landing on its lead (one frame), the boss pinned; gone after.
+      press('heavens-lance'); n0 = count();
+      frames(10); expect.ok(fx().sigils === 1 && fx().columns === 0, `the sigil first (${JSON.stringify(fx())})`);
+      frames(30); expect.ok(fx().columns === 1 && count() === n0 + 1 && e.pinned > 0, `the column lands, the boss held (${JSON.stringify(fx())}, ${e.pinned})`);
+      frames(180); expect.ok(fx().columns === 0 && fx().lances === 0, `burnt out (${JSON.stringify(fx())})`);
+      heard(['abilityLance']);
+      // Frozen Lotus: the frost ring, then the flower's six petals and a spear each petal; it shatters at the last.
+      press('frozen-lotus');
+      frames(36); expect.ok(fx().petals === 6 && fx().spears >= 1 && e.pinned > 0, `the lotus blooms, spearing it (${JSON.stringify(fx())})`);
+      frames(170); expect.ok(fx().lotuses === 0 && fx().petals === 0, `shattered (${JSON.stringify(fx())})`);
+      heard(['abilityLotus', 'abilityFrost']);
+      // Tempest: the funnel's four sheets and its rain; after `full` s the long-aura budget (at most 4 meshes, half the rain).
+      press('tempest');
+      frames(45); expect.ok(fx().sheets === 4 && fx().rain > 0, `the funnel (${JSON.stringify(fx())})`);
+      const full = fx().rain;
+      frames(Math.ceil(VIS.abilityFx.ults1.full * 60) + 10);
+      expect.ok(fx().storms === 1 && fx().aura <= 4 && fx().rain <= Math.ceil(full / 2), `the long aura: ${fx().aura} meshes, rain ${fx().rain} of ${full}`);
+      frames(4 * 60); expect.ok(fx().storms === 0, `blown out (${JSON.stringify(fx())})`);
+      heard(['abilityTempest']);
+      // Online: another's from the server's word alone (the local copy emptied): a blast on no enemy, a column, a storm.
+      wipe(); p.grantAbilities([]);
+      const other = { x: p.x + 1, y: p.y, z: p.z, yaw: 0, alive: () => true }, net = { self: 'me', bodyOf: id => (id === 'them' ? other : null) };
+      const word = (power, then, extra) => ({ type: 'abilityPower', power, then, holder: 'them', x: e.x, y: e.y, z: e.z, v: ABILITY_BY_ID[power].levels[0], ...extra });
+      e.netId = 'ult-boss';
+      netView.events({ events: [word('heavens-lance', 'beam', { enemy: e.netId, strike: 1 }), word('tempest', 'tempest', { enemy: e.netId, strike: 1 })], shots: [], value: {} }, net);
+      netView.ability(word('cataclysm', 'quake', { enemy: null, strike: 1 }), null, net);
+      Game.render(1, STEP);
+      expect.ok(fx().columns === 1 && fx().storms === 1 && fx().slabs === 6, `another's column, storm and blast from the word (${JSON.stringify(fx())})`);
+    } finally { audio.play = play; Game.lock = null; e.netId = netId0; wipe(); p.grantAbilities([]); }
+  });
   test('regression: every duel runs 20 s and the enemy engages', () => {
     for (const d of [...A.ENEMY_DEFS, ...A.TEST_DEFS]) {
       Game.startFight(d.id); sim.begin();

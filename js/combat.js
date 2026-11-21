@@ -267,7 +267,7 @@ function resolveTeamCombat(game) {
 
 // Bodies cannot overlap; enemies barely give way to the player, and dummies never do.
 function separatePair(a, b, shareA) {
-  if (b.immovable || (b.def && b.def.rooted)) shareA = 1; else if (a.immovable || (a.def && a.def.rooted)) shareA = 0;   // a rooted phase (pass 50) is not shoved
+  if (b.immovable || (b.def && b.def.rooted) || b.pinned > 0) shareA = 1; else if (a.immovable || (a.def && a.def.rooted) || a.pinned > 0) shareA = 0;   // a rooted phase (pass 50) and a pinned enemy (abilityPin) are not shoved
   if (!a.alive() || !b.alive() || Math.abs(a.y - b.y) >= Math.min(a.height, b.height)) return;
   if (a.phasing) return;   // a flash step passes through (Player.flashMove)
   if ((a.burrowed && a.burrowed()) || (b.burrowed && b.burrowed())) return;   // under the floor (a hit's `burrow`)

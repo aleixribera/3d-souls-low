@@ -296,13 +296,23 @@ const ABILITIES = [
   { id: 'shade-host', name: 'Shade Host', rarity: 'legendary', text: 'Perfect dodge: a shadow clone joins for {time}.',
     power: { when: 'dodge', then: 'shadeClone' },
     levels: [{ time: 6, share: 0.35, most: 3, cooldown: 2 }] },
-  // Key 4, Ultimate: the longest charge and the biggest moment.
-  { id: 'thunder-call', name: 'Thunder Call', rarity: 'legendary', key: 'ultimate', text: '{strikes} lightning strikes on the boss.',
-    power: { when: 'press', then: 'lightning' },
+  // Key 4, Ultimate: the longest charge and the biggest moment. Ultimates I (pass 156, design/abilities batch 15), each to
+  // Thunder Call's bar of about 8.4 damage a charge point (a hold or an area pays the difference); drawn by js/legend-fx-3.js.
+  { id: 'thunder-call', name: 'Thunder Call', rarity: 'legendary', key: 'ultimate', text: 'A lightning dragon strikes the boss {strikes} times.',
+    power: { when: 'press', then: 'dragon' },
     levels: [{ charge: 40, strikes: 7, lead: 0.75, every: 0.3, damage: 48 }] },
   { id: 'cataclysm', name: 'Cataclysm', rarity: 'legendary', key: 'ultimate', text: 'A blast hits all within {radius}.',
-    power: { when: 'press', then: 'blast' },
+    power: { when: 'press', then: 'quake' },
     levels: [{ charge: 42, radius: 8, damage: 360 }] },
+  { id: 'heavens-lance', name: "Heaven's Lance", rarity: 'legendary', key: 'ultimate', text: 'A pillar of light pins the boss for {time}.',
+    power: { when: 'press', then: 'beam' },
+    levels: [{ charge: 40, time: 2, every: 0.2, damage: 30 }] },
+  { id: 'frozen-lotus', name: 'Frozen Lotus', rarity: 'legendary', key: 'ultimate', text: 'Ice spears the boss for {time}.',
+    power: { when: 'press', then: 'iceLotus' },
+    levels: [{ charge: 42, time: 3, every: 0.3, damage: 36 }] },
+  { id: 'tempest', name: 'Tempest', rarity: 'legendary', key: 'ultimate', text: 'A storm whirls round the boss for {time}.',
+    power: { when: 'press', then: 'tempest' },
+    levels: [{ charge: 42, time: 5, every: 0.25, damage: 18, radius: 6 }] },
 
   // ---- Two more rares (pass 71, once crate-only; since PLAN.md item 7 every ability outside the starter set comes from a
   // crate, js/data/crates.js) ----

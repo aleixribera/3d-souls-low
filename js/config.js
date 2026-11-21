@@ -43,7 +43,7 @@ const CONFIG = {
             hurtRef: 40, hurtPush: 0.14, hurtRoll: 0.02, hurtFov: 1.2, blockMul: 0.45, punchFrom: 40, hitFov: -1.4, heavyHitFov: -2.2, counterFov: -1.6, counterHitFov: -3.4, counterRoll: 0.035, counterSwing: 0.16, flashPush: 0.3,
             parryFov: -3, parryPush: 0.06, breakFov: -1.8, executeFov: -2.2, phaseFov: 2.5, landDip: 0.1,
             strafeRoll: 0.012, moveFov: 1.2, moveRef: 5, maxRoll: 0.05, maxFov: 6, powerNear: 26, perkFov: -0.9,
-            powers: { blast: [4, 0.24], lightning: [1.6, 0], strike: [-1.8, 0.06], freeze: [-3.2, 0.05], blades: [-1.4, 0.04], bloodMoon: [3, 0.12],
+            powers: { blast: [4, 0.24], dragon: [2.4, 0.08], quake: [4, 0.24], beam: [-2.8, 0.1], iceLotus: [-2.2, 0.06], lotusBreak: [1.4, 0.04], tempest: [2.2, 0.08], strike: [-1.8, 0.06], freeze: [-3.2, 0.05], blades: [-1.4, 0.04], bloodMoon: [3, 0.12],
               twin: [2.6, 0.1], echo: [-0.6, 0.02], sunLines: [3.4, 0.1], lightningDash: [-1.2, 0.03], shadeClone: [1.4, 0.03], gale: [-2.4, 0.05], boltCrown: [-2.4, 0.08], bladeCage: [-1.6, 0.03], pyre: [3.2, 0.16], flare: [-1.1, 0.03], spark: [-0.8, 0.02],
               hound: [1.4, 0.05], bite: [-0.5, 0.02], draw: [1.2, 0.03], guardian: [2.2, 0.1], lancer: [1.2, 0.04], fox: [1, 0.03], lantern: [0.6, 0],
               crows: [0.8, 0.02], archer: [0.8, 0.02], hawk: [1.2, 0.04], stoop: [-0.6, 0.02], owl: [0.6, 0], owlBurst: [-0.4, 0.02],
@@ -332,6 +332,10 @@ const CONFIG = {
     // within `reach` m of its point; Gale Crescent's cage cuts first `lead` s after its blow, everything within `reach` m
     // of the caged body's edge. An enemy a hold has just let go (Time Rift) rests `holdRest` s before another can stop it.
     crown: { gap: 1.5, reach: 2 }, cage: { lead: 0.2, reach: 1.2 }, holdRest: 3,
+    // Ultimates I (pass 156): s from the press to each one's first blow (Cataclysm's burst, the Lance landing, the first
+    // petal, the storm's first tick); the storm's middle follows its enemy at up to `follow` m/s; a pinned enemy turns
+    // at `pinTurn` of its own rate.
+    ult: { quake: 0.45, beam: 0.55, lotus: 0.45, tempest: 0.5, follow: 8, pinTurn: 0.5 },
     // Legendaries II (pass 154): Hundred Suns' sheets run `length` m out of the finished body's edge, `width` m either side
     // of their cut; Fourfold's threads reach the other keys `delay` s after the Ultimate's press.
     suns: { length: 8, width: 0.75 }, refill: { delay: 0.3 },
@@ -782,8 +786,9 @@ const CONFIG = {
     // preset's particles (js/fx.js).
     // A legendary's impact frame (design/abilities/STYLE.md rule 8, js/impact-frame.js): the screen inverted to two tones
     // for `time` s at its peak, `gap` s at least between two (under 3 Hz), only within `near` m of the player; reduced
-    // motion: darkened to `darken` for `calm` s instead.
-    impactFrame: { time: 0.06, calm: 0.15, darken: 0.7, gap: 1, near: 30, filter: 'grayscale(1) invert(1) contrast(6)' },
+    // motion: darkened to `darken` for `calm` s instead. An Ultimate's anticipation dims the world up to `dim` darker, in
+    // `dimSteps` steps (Ultimates I).
+    impactFrame: { time: 0.06, calm: 0.15, darken: 0.7, gap: 1, near: 30, filter: 'grayscale(1) invert(1) contrast(6)', dim: 0.2, dimSteps: 10 },
     abilityFx: {
       near: 14, cool: 0x2a0c06,
       // The plain commons' touches (js/ability-touch.js), seconds of real time and metres. Keen Edge (`edge`): the glint
@@ -858,6 +863,17 @@ const CONFIG = {
       // feet, its scorch fading over `scorch`, the impact frame at most one per `lineFrame`; Fourfold's waist ring
       // `waist` up and `waistRing` across, its threads `threads` s; a shade clone's eyes open at `eyes`, sinks over `sink`,
       // its ink slash `slash` across for `slashLife`.
+      // Ultimates I (js/legend-fx-3.js, batch 15), in m and s. Thunder Call: its sky slit `sky` m over the boss, `slit`
+      // across; the dragon `dragon` m thick at its head, coiling `coil` m out from the boss at `coilUp` m; each bolt
+      // gone in `bolt`. Cataclysm: its cracks `crack` wide, the dome to `dome` m in `domeTime`, the shock ring out in
+      // `ring`; slabs thrown `slabUp` m/s up and `slabOut` out, gone after `slabLife`. Heaven's Lance: the sigil
+      // `sigil` across, a column `column` m round to `columnTop` m up, `see` see-through within `seeNear` m of the
+      // player. Frozen Lotus: the frost ring `frost` across; each spear holds `spearLife`. Tempest: a funnel `funnel`
+      // m tall from `funnelBase` to `funnelTop` m round, turning `spin` rad/s, `rain` drops; after `full` s, half
+      // (the long-aura budget). Each fades out over `fade`.
+      ults1: { sky: 14, slit: 7, dragon: 0.8, coil: 2.6, coilUp: 3.4, bolt: 0.16, crack: 0.55, dome: 3, domeTime: 0.5, ring: 0.4, slabUp: 8, slabOut: 4,
+        slabLife: 1.5, sigil: 4.2, column: 1.5, columnTop: 18, see: 0.35, seeNear: 3, frost: 5, spearLife: 0.45, funnel: 14, funnelBase: 1.4,
+        funnelTop: 6, spin: 2.6, rain: 60, full: 2, fade: 0.4 },
       legends2: { sunHeight: 2.2, sunOpen: 0.08, sunBurn: 0.6, sunFade: 0.7, line: 0.26, lineInk: 0.44, lineHold: 0.14, lineBurn: 0.5, lineUp: 0.9,
         scorch: 1.6, lineFrame: 3, waist: 1.0, waistRing: 1.4, threads: 0.3, eyes: 0.15, sink: 0.4, slash: 2.2, slashLife: 0.28 },
       guard2: { pane: 1.3, paneOff: 0.75, star: 1, huskRing: 1.3, scorch: 2.6, dial: 1.8, answer: 4, waist: 1.1, rewindRing: 1.6, seal: 1.2, sealUp: 0.85 },

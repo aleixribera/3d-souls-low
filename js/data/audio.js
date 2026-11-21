@@ -282,12 +282,41 @@ const AUDIO = {
       { noise: 'pink', filter: { type: 'bandpass', freq: 380, to: 1300, q: 0.6 }, at: 0.04, a: 0.08, d: 1.6, gain: 0.7 },
       { noise: 'white', filter: { type: 'bandpass', freq: 2600, q: 0.8 }, at: 0.25, a: 0.1, d: 1.3, gain: 0.12 },
     ] },
-    // Storm King's dragon leaving the blade: an electric snarl that climbs, crackling, as it flies to the boss.
+    // Thunder Call's dragon out of the sky: an electric snarl that climbs, crackling, as it flies to the boss.
     abilityDragon: { bus: 'sfx', priority: 3, cooldown: 0.3, max: 2, verb: 0.45, heat: 0.6, jitter: 80, layers: [
       { wave: 'sawtooth', freq: 70, to: 210, glide: 0.7, fm: { ratio: 0.51, index: 4, decay: 1 }, filter: { type: 'bandpass', freq: 500, to: 2400, q: 1.6 }, a: 0.03, h: 0.45, d: 0.35, gain: 0.5, drive: 4 },
       { noise: 'white', filter: { type: 'bandpass', freq: 3200, to: 6400, q: 2.5 }, a: 0.01, h: 0.5, d: 0.25, gain: 0.35, drive: 3 },
       { noise: 'white', filter: { type: 'highpass', freq: 5000 }, a: 0.0005, d: 0.02, dv: 0.4, gain: 0.6 },
       { wave: 'sine', freq: 46, to: 64, a: 0.15, h: 0.4, d: 0.3, gain: 0.45 },
+    ] },
+    // Ultimates I (pass 156). Cataclysm's press: the ground splitting, a dry stony crackle under a low groan.
+    abilityCrack: { bus: 'sfx', priority: 3, cooldown: 0.3, max: 1, verb: 0.4, heat: 0.6, jitter: 40, layers: [
+      { noise: 'brown', filter: { type: 'lowpass', freq: 260, to: 120 }, a: 0.05, h: 0.2, d: 0.3, gain: 0.9, drive: 2 },
+      { noise: 'white', filter: { type: 'bandpass', freq: 1800, to: 900, q: 1.2 }, a: 0.002, d: 0.08, dv: 0.5, gain: 0.5, drive: 3 },
+      { noise: 'white', filter: { type: 'bandpass', freq: 1400, q: 1.4 }, at: 0.12, a: 0.002, d: 0.07, dv: 0.5, gain: 0.4, drive: 3 },
+      { noise: 'white', filter: { type: 'bandpass', freq: 1100, q: 1.4 }, at: 0.26, a: 0.002, d: 0.09, dv: 0.5, gain: 0.45, drive: 3 },
+    ] },
+    // Heaven's Lance landing: a bright choir-like chord swelling over a deep hum, a hiss of burning air through it.
+    abilityLance: { bus: 'sfx', priority: 3, cooldown: 0.5, max: 1, verb: 0.8, heat: 0.8, jitter: 0, layers: [
+      { wave: 'triangle', freq: 660, a: 0.02, h: 1.4, d: 0.6, gain: 0.3 },
+      { wave: 'triangle', freq: 990, a: 0.04, h: 1.3, d: 0.6, gain: 0.2 },
+      { wave: 'sine', freq: 55, a: 0.01, h: 1.5, d: 0.5, gain: 0.8, drive: 2 },
+      { noise: 'white', filter: { type: 'highpass', freq: 3500 }, a: 0.0005, d: 0.04, dv: 0.4, gain: 0.7 },
+      { noise: 'pink', filter: { type: 'bandpass', freq: 2400, q: 0.8 }, a: 0.05, h: 1.3, d: 0.5, gain: 0.15 },
+    ] },
+    // Frozen Lotus: ice growing with a glassy creak, a high bell; the flower shatters 2.7 s on.
+    abilityLotus: { bus: 'sfx', priority: 3, cooldown: 0.5, max: 1, verb: 0.75, heat: 0.6, jitter: 0, layers: [
+      { wave: 'sine', freq: 1760, a: 0.005, d: 1.4, gain: 0.25 },
+      { wave: 'sine', freq: 2637, a: 0.005, d: 1, gain: 0.12 },
+      { noise: 'white', filter: { type: 'bandpass', freq: 4200, to: 2400, q: 3 }, a: 0.08, h: 0.3, d: 0.4, gain: 0.25 },
+      { noise: 'white', filter: { type: 'highpass', freq: 3000, q: 0.7 }, at: 2.7, a: 0.0005, d: 0.25, dv: 0.5, gain: 0.8, drive: 2 },
+      { wave: 'sine', freq: 3520, to: 2200, at: 2.7, a: 0.002, d: 0.6, gain: 0.2 },
+    ] },
+    // Tempest: a howling wind rising and turning, long, under a far roll of thunder.
+    abilityTempest: { bus: 'sfx', priority: 3, cooldown: 1, max: 1, verb: 0.6, heat: 0.7, jitter: 0, layers: [
+      { noise: 'pink', filter: { type: 'bandpass', freq: 400, to: 1200, q: 2.5 }, a: 0.6, h: 3.2, d: 1.2, gain: 0.45 },
+      { noise: 'white', filter: { type: 'bandpass', freq: 1800, to: 900, q: 4 }, a: 0.8, h: 3, d: 1.2, gain: 0.18 },
+      { noise: 'brown', filter: { type: 'lowpass', freq: 300, to: 90 }, a: 0.2, h: 0.4, d: 2, gain: 0.7 },
     ] },
     // Each bolt: a split-second crack overhead, then thunder rolling away.
     abilityThunder: { bus: 'sfx', priority: 3, cooldown: 0.12, max: 3, verb: 0.6, heat: 0.9, jitter: 200, layers: [

@@ -52,6 +52,8 @@ const FILES = {
   'puppet-knight': { sources: ['puppet_knight'] },
   'ash-bear': { sources: ['ash_bear'] },
   'glass-mantis': { sources: ['glass_mantis'] },
+  'ice-lotus': { sources: ['ice_lotus'] },
+  'cataclysm-slabs': { sources: ['cataclysm_slabs'] },
 };
 
 function readGlb(file) {

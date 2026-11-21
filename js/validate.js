@@ -220,9 +220,13 @@ function validateData({ visual = true } = {}) {
       && [Tc.feather, Tc.frost, Tc.ink].every(o => o.fadeAt < o.life),
       'CONFIG.VISUALS.abilityFx.touch: edge, iron, feather, flask, ring, frost and ink, their times and sizes above 0, colours as hex, edge.bright 0 to 1, fadeAt before life, ring.gap at least 1/3 s.');
     // Batch 13: the impact frame (one a second at most: under 3 Hz), the crown, the cage, the twin's own model.
+    const U1 = CONFIG.VISUALS.abilityFx.ults1;   // Ultimates I's look (js/legend-fx-3.js)
+    need(U1 && Object.values(U1).every(x => num(x) && x > 0) && U1.see < 1 && Number.isInteger(U1.rain) && U1.rain <= 60 && Object.keys(U1).length === 27,
+      'CONFIG.VISUALS.abilityFx.ults1: every number above 0 (all 27 of them), see under 1, rain a whole number up to 60.');
     const IF = CONFIG.VISUALS.impactFrame, FX = CONFIG.VISUALS.abilityFx, CRn = FX.crown, CGn = FX.cage, TW = FX.twin;
-    need(pos(IF, ['time', 'calm', 'gap', 'near']) && IF.gap >= 1 && IF.time < IF.gap && num(IF.darken) && IF.darken > 0 && IF.darken < 1 && typeof IF.filter === 'string',
-      'CONFIG.VISUALS.impactFrame: time, calm, gap (at least 1 s) and near above 0, darken between 0 and 1, filter a CSS filter.');
+    need(pos(IF, ['time', 'calm', 'gap', 'near']) && IF.gap >= 1 && IF.time < IF.gap && num(IF.darken) && IF.darken > 0 && IF.darken < 1 && typeof IF.filter === 'string'
+      && num(IF.dim) && IF.dim > 0 && IF.dim < 1 && Number.isInteger(IF.dimSteps) && IF.dimSteps >= 1,
+      'CONFIG.VISUALS.impactFrame: time, calm, gap (at least 1 s) and near above 0, darken between 0 and 1, filter a CSS filter, dim between 0 and 1 in a whole number of dimSteps.');
     need(pos(CRn, ['fall', 'height', 'jitter', 'width', 'after', 'converge', 'cool', 'scorch', 'arcs']) && ['color', 'core', 'edge', 'ink'].every(c => hx(CRn[c])) && CRn.shards && CRn.burst
       && pos(CGn, ['n', 'size', 'pad', 'spin', 'climb', 'close', 'burst', 'out', 'see', 'slivers', 'light']) && Number.isInteger(CGn.n) && CGn.see <= 1 && CGn.close < CONFIG.abilities.cage.lead + 1e-9
       && ['color', 'edge', 'ink'].every(c => hx(CGn[c])),
@@ -300,6 +304,13 @@ function validateData({ visual = true } = {}) {
     if (b.power && b.power.then === 'shadeClone') need(pv.every(v => Number.isInteger(v.most) && v.most >= 1 && v.most <= CONFIG.abilities.summons.shadeClone.flanks.length),
       `${where}: shadeClone's most is a whole number from 1 to its flanks (${CONFIG.abilities.summons.shadeClone.flanks.length}).`);
     if (b.power && b.power.then === 'refillKeys') need(b.needs === 'ultimate', `${where}: refillKeys needs the ultimate key held (needs: 'ultimate').`);
+    // Ultimates I (pass 156): key 4's, each a whole number of blows.
+    const ult = b.power && ['dragon', 'quake', 'beam', 'iceLotus', 'tempest'].includes(b.power.then);
+    if (ult) need(b.key === 'ultimate' && b.power.when === 'press', `${where}: ${b.power.then} is an Ultimate's (key 'ultimate', when 'press').`);
+    if (ult && b.power.then === 'dragon') need(pv.every(v => Number.isInteger(v.strikes) && v.strikes >= 1 && v.lead > 0 && v.every > 0),
+      `${where}: dragon's strikes a whole number from 1, lead and every above 0.`);
+    if (ult && ['beam', 'iceLotus', 'tempest'].includes(b.power.then)) need(pv.every(v => v.every > 0 && Math.abs(v.time / v.every - Math.round(v.time / v.every)) < 1e-6 && v.time / v.every >= 1),
+      `${where}: ${b.power.then}'s time is a whole number of \`every\` (one blow each).`);
     // A common's perk (pass 114) is one js/common-fx.js draws: its cue in COMMON_PERKS (never a camera kick).
     if (b.perk && b.rarity === 'common') need(COMMON_PERKS.has(b.perk.when + '/' + b.perk.then) || b.perk.when + '/' + b.perk.then === 'revive/reviveHeal',
       `${where}: a common's perk is one of COMMON_PERKS (js/abilities.js) or revive/reviveHeal.`);
@@ -344,6 +355,9 @@ function validateData({ visual = true } = {}) {
   // Legendaries I (pass 151): Storm King's crown, Gale Crescent's cage, the rest after a hold.
   need(BL.crown && ['gap', 'reach'].every(k => num(BL.crown[k]) && BL.crown[k] > 0) && BL.cage && ['lead', 'reach'].every(k => num(BL.cage[k]) && BL.cage[k] > 0)
     && num(BL.holdRest) && BL.holdRest >= 0, 'CONFIG.abilities: crown { gap, reach } and cage { lead, reach } above 0, holdRest 0 or more.');
+  const UL = BL.ult;
+  need(UL && ['quake', 'beam', 'lotus', 'tempest', 'follow'].every(k => num(UL[k]) && UL[k] > 0) && num(UL.pinTurn) && UL.pinTurn >= 0 && UL.pinTurn <= 1,
+    'CONFIG.abilities.ult: quake, beam, lotus, tempest and follow above 0; pinTurn from 0 to 1.');
   const CS = BL.crescent, CY = BL.cyclone, MK = BL.mark;
   need(CS && num(CS.reach) && CS.reach > 0 && num(CS.width) && CS.width > 0, 'CONFIG.abilities.crescent: reach and width, each above 0.');
   need(CY && num(CY.gap) && CY.gap > 0, 'CONFIG.abilities.cyclone: gap above 0.');

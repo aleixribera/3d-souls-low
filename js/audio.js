@@ -399,11 +399,11 @@ const AUDIO_CUES = ['hitFlesh', 'hitHurt', 'hitBlock', 'riposteBoom', 'parry', '
   'abilityCrows', 'abilityPeck', 'abilityArcher', 'abilityArrow', 'abilityArrowHit', 'abilityHawk', 'abilityStoop', 'abilityStoopHit',
   'abilityOwl', 'abilityMark', 'abilityMarkBurst', 'abilityRonin', 'abilityRoninCut', 'abilitySerpent', 'abilityCoil', 'abilityHiss',
   'abilityPuppet', 'abilityPuppetBlow', 'abilityBear', 'abilityRear', 'abilityMaul', 'abilityRoar', 'abilityMantis', 'abilityScissor', 'abilityCrown', 'abilityCage', 'abilityCageCut',
-  'abilitySuns', 'abilityThunderStep', 'abilityFourfold', 'abilityShade'];
+  'abilitySuns', 'abilityThunderStep', 'abilityFourfold', 'abilityShade', 'abilityCrack', 'abilityLance', 'abilityLotus', 'abilityTempest'];
 // A power's sound by its `then`, its later blows' (`strike`: a lightning bolt, a twin's echo, a hound's bite) by
 // STRIKE_SOUNDS, a summon drawing the boss's eye (`draw`) by DRAW_SOUNDS; a rare's perk its own (ABILITY_PERK_SOUNDS,
 // at a pitch), a pick's pitch by its rarity.
-const ABILITY_SOUNDS = { blast: 'abilityBlast', lightning: 'abilityDragon', freeze: 'abilityFreeze', blades: 'abilityBlades', bloodMoon: 'abilityMoon',
+const ABILITY_SOUNDS = { blast: 'abilityBlast', dragon: 'abilityDragon', quake: 'abilityCrack', beam: 'abilityLance', iceLotus: 'abilityLotus', tempest: 'abilityTempest', freeze: 'abilityFreeze', blades: 'abilityBlades', bloodMoon: 'abilityMoon',
   twin: 'abilityTwin', gale: 'abilityGale', bladeCage: 'abilityCage', pyre: 'abilityPyre', flare: 'abilityFlare', spark: 'abilitySpark', hound: 'abilityHound',
   guardian: 'abilityGuardian', lancer: 'abilityLancer', fox: 'abilityFox', lantern: 'abilityLantern', crows: 'abilityCrows', archer: 'abilityArcher', hawk: 'abilityHawk', owl: 'abilityOwl', owlBurst: 'abilityMarkBurst',
   ronin: 'abilityRonin', serpent: 'abilitySerpent', puppet: 'abilityPuppet', bear: 'abilityBear', mantis: 'abilityMantis', wave: 'abilityWave', crescent: 'abilityMoonfall', cyclone: 'abilityCyclone', petals: 'abilityPetals',
@@ -411,7 +411,7 @@ const ABILITY_SOUNDS = { blast: 'abilityBlast', lightning: 'abilityDragon', free
   flurry: 'abilityFlurry', drill: 'abilityDrill', stitch: 'abilityStitch', boomerang: 'abilityBoomerang', clones: 'abilityClones', iai: 'abilitySheathe',
   ward: 'abilityWardBounce', answer: 'abilityAnswer', husk: 'abilityHusk', seal: 'abilitySeal',
   sunLines: 'abilitySuns', lightningDash: 'abilityThunderStep', shadeClone: 'abilityShade' };   // Echoing Blade armed: a soft chime (each echo: ABILITY_STRIKE_SOUNDS)
-const ABILITY_STRIKE_SOUNDS = { lightning: 'abilityThunder', bladeCage: 'abilityCageCut', twin: 'abilityEcho', hound: 'abilityBite', guardian: 'abilityBash', lancer: 'abilityThrust', fox: 'abilityFoxSlash', lantern: 'abilityLanternShot',
+const ABILITY_STRIKE_SOUNDS = { dragon: 'abilityThunder', bladeCage: 'abilityCageCut', twin: 'abilityEcho', hound: 'abilityBite', guardian: 'abilityBash', lancer: 'abilityThrust', fox: 'abilityFoxSlash', lantern: 'abilityLanternShot',
   crows: 'abilityPeck', archer: 'abilityArrow', hawk: 'abilityStoop', owl: 'abilityMark',
   ronin: 'abilityRoninCut', serpent: 'abilityCoil', puppet: 'abilityPuppetBlow', bear: 'abilityRear', mantis: 'abilityScissor',
   ghostBlade: 'abilityGhostBlade', flurry: 'abilityFlurryHit', stitch: 'abilityPierce' };
@@ -557,6 +557,17 @@ function registerAudioListeners() {
     if (d.then === 'refillKeys') { if (d.strike) audio.play('abilityFourfold', { pos: d.body === Game.player ? null : spot(d), vel: 1 }); return; }
     if (d.then === 'lightningDash' && d.strike) { audio.play('abilityBlade', { pos: d.enemy ? chest(d.enemy) : spot(d), pitch: 1.3, vel: 0.7 }); return; }
     if (d.then === 'shadeClone' && d.strike) { audio.play('abilityEcho', { pos: d.enemy ? chest(d.enemy) : spot(d), pitch: 1 + 0.07 * ((d.clone || 0) - 1), vel: 0.6 }); return; }
+    // Ultimates I: Cataclysm's crack at the press, its blast where it bursts; the Lance's and the Lotus's sounds land
+    // with the pillar and the first petal (CONFIG.abilities.ult), each petal a frost tick a little higher; Tempest's wind
+    // at the press, a far thunder with each small bolt (every 4th tick).
+    if (d.then === 'quake' || d.then === 'beam' || d.then === 'iceLotus' || d.then === 'tempest') {
+      const U = CONFIG.abilities.ult, pos = d.then !== 'quake' && d.enemy ? chest(d.enemy) : spot(d);
+      if (!d.strike) audio.play(ABILITY_SOUNDS[d.then], { pos, vel: 1, delay: d.then === 'beam' ? U.beam : d.then === 'iceLotus' ? U.lotus : 0 });
+      else if (d.then === 'quake') audio.play('abilityBlast', { pos, vel: 1 });
+      else if (d.then === 'iceLotus') audio.play('abilityFrost', { pos, vel: 0.5, pitch: 1 + 0.04 * d.strike });
+      else if (d.then === 'tempest' && d.strike % 4 === 0) audio.play('abilityThunder', { pos: spot(d), vel: 0.4, pitch: 0.8 });
+      return;
+    }
     const id = d.draw ? ABILITY_DRAW_SOUNDS[d.then] : d.then === 'iai' && d.strike ? (d.strike === 1 ? 'abilityIaiDraw' : 'abilityIai')
       : d.heal ? (d.body === Game.player ? 'abilityLanternHeal' : null)   // a lantern's shot healed you: a soft chime, only to you
       : d.land ? ABILITY_LAND_SOUNDS[d.then]

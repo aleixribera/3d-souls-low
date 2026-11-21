@@ -152,8 +152,22 @@ function abilityHeal(p, share, perk, target = null) {
 //                        `most` at once (one more renews the oldest); each stands at its own `flanks` place round the enemy
 //                        and lands `share` of every blow its holder lands, CONFIG.abilities.summons.shadeClone.delay s later.
 //                        It draws no eye.
-//   press/flare, press/gale, press/blades, press/lightning, press/blast: pressed (key 1 or 4), the power of that name
-//                        on the enemy (the blast round its holder).
+//   press/flare, press/gale, press/blades: pressed (key 1), the power of that name on the enemy.
+// Ultimates I (design/abilities batch 15), key 4; drawn by js/legend-fx-3.js. A hold (`pin`) roots the enemy it falls on
+// for `time` s (Enemy.pinned: it can't step, lunge, leap or be pushed, turns at half speed, swings in place), never one
+// that can't be held (invulnerable, held by a Finishing Blow) nor one resting from another hold (holdRest); the damage
+// lands all the same. CONFIG.abilities.ult holds each one's lead (s from the press to its first blow).
+//   press/dragon:        Thunder Call. A lightning dragon: `strikes` bolts on the enemy, the first `lead` s on, then every
+//                        `every` s. Its enemy gone, the bolts left go to the nearest live enemy within press.range.
+//   press/quake:         Cataclysm. Cracks run out round where its holder pressed; `ult.quake` s later every enemy within
+//                        `radius` m of that place takes `damage` (told as `strike` 1).
+//   press/beam:          Heaven's Lance. A pillar lands on the enemy `ult.beam` s on and pins it `time` s, burning it
+//                        every `every` s (`time` / `every` burns, the first as it lands).
+//   press/iceLotus:      Frozen Lotus. `ult.lotus` s on, a petal spears the enemy every `every` s for `time` s; the
+//                        first pins it for `time` s.
+//   press/tempest:       Tempest. A storm round the enemy for `time` s, its middle easing after it at up to
+//                        `ult.follow` m/s; `ult.tempest` s on, then every `every` s, every enemy within `radius` m of the
+//                        middle takes `damage` (each told as a `strike` with the middle's place).
 // The effect commons (design/abilities, batch 2: the blade), each a small blow of `damage` (CONFIG.abilities.commons):
 //   dashPast/spark:      a dash that went past an enemy (dashPastOf) sparks it, once every `cooldown` s.
 //   stringEnd/lick:      the last blow of a full light string (an attack with `stringEnd`) licks that enemy with flame.
@@ -229,8 +243,9 @@ const ABILITY_POWERS = {
   'press/puppet': ['charge', 'time', 'every', 'damage', 'draw'], 'press/bear': ['charge', 'time', 'every', 'damage', 'draw'],
   'press/mantis': ['charge', 'time', 'every', 'damage', 'draw'],
   'press/flare': ['charge', 'damage'], 'press/gale': ['charge', 'damage', 'reach', 'width'],
-  'press/blades': ['charge', 'time', 'every', 'damage'], 'press/lightning': ['charge', 'strikes', 'lead', 'every', 'damage'],
-  'press/blast': ['charge', 'radius', 'damage'],
+  'press/blades': ['charge', 'time', 'every', 'damage'], 'press/dragon': ['charge', 'strikes', 'lead', 'every', 'damage'],
+  'press/quake': ['charge', 'radius', 'damage'], 'press/beam': ['charge', 'time', 'every', 'damage'],
+  'press/iceLotus': ['charge', 'time', 'every', 'damage'], 'press/tempest': ['charge', 'time', 'every', 'damage', 'radius'],
   'dashPast/spark': ['damage', 'cooldown'], 'stringEnd/lick': ['damage'], 'fullHeavy/molten': ['damage'],
   'dashStrike/lateCut': ['damage'], 'dodge/afterimage': ['damage'], 'jump/whirl': ['damage', 'cooldown'],
   'block/thorns': ['damage', 'cooldown'], 'flask/burnHits': ['hits', 'damage'], 'crack/shards': ['damage'],
@@ -335,6 +350,14 @@ function enemyNear(enemies, x, y, z, r) {
     if (d <= r && d < near) { near = d; best = e; }
   }
   return best;
+}
+// An Ultimate's hold (Heaven's Lance, Frozen Lotus): enemy `e` pinned where it stands for `time` s (Enemy.pinned), unless
+// it can't be held now (invulnerable, through a Finishing Blow, already stopped in time) or rests from a hold (holdRest).
+// True if it holds.
+function abilityPin(e, time) {
+  if (!e || !e.alive() || e.invulnerable() || e.netExec || e.state === ES.EXECUTED || e.frozen > 0 || e.holdRest > 0) return false;
+  e.pinned = Math.max(e.pinned || 0, time);
+  return true;
 }
 
 // ---- The number keys (PLAN.md, the player rework's controls) --------------------------------------------------------
@@ -643,11 +666,11 @@ function abilityReport(body, when, ctx) {
 // its number), the first `lead` s after it fires (the time its dragon takes to reach the boss), then every `every` s; damage goes through Enemy.takeHit like any blow and `credit` (the server's) counts it to the holder.
 const ECHO_DELAY = 0.06;   // s from its holder's blow to the twin's: the two land as one
 // The powers that need a live enemy to strike (the one parried, struck, broken or dodged).
-const ON_ENEMY = new Set(['lightning', 'boltCrown', 'bladeCage', 'blades', 'flare', 'spark', 'gale', 'pyre', 'hound', 'lancer', 'fox', 'lantern', 'crows', 'archer', 'hawk', 'owl', 'ronin', 'serpent', 'puppet', 'bear', 'mantis', 'lick', 'molten', 'lateCut', 'afterimage',
+const ON_ENEMY = new Set(['dragon', 'beam', 'iceLotus', 'tempest', 'boltCrown', 'bladeCage', 'blades', 'flare', 'spark', 'gale', 'pyre', 'hound', 'lancer', 'fox', 'lantern', 'crows', 'archer', 'hawk', 'owl', 'ronin', 'serpent', 'puppet', 'bear', 'mantis', 'lick', 'molten', 'lateCut', 'afterimage',
   'thorns', 'shards', 'reflect', 'wave', 'spikes', 'fist', 'risingFire', 'clap',
   'flurry', 'drill', 'stitch', 'boomerang', 'clones', 'iai', 'seal']);
 // The powers whose blow lands a beat after they fire: each tells every browser again as it lands (`strike`).
-const DELAYED = new Set(['lightning', 'boltCrown', 'bladeCage', 'lateCut', 'afterimage', 'shards', 'reflect', 'ghostBlade', 'flurry', 'stitch']);
+const DELAYED = new Set(['dragon', 'beam', 'iceLotus', 'boltCrown', 'bladeCage', 'lateCut', 'afterimage', 'shards', 'reflect', 'ghostBlade', 'flurry', 'stitch']);
 const abilityPowers = (() => {
   // The powers still striking (lightning, blades, a pyre, a twin's echo): { pw, holder, enemy, left, next, n }, an echo
   // with its own `damage` and `twin`.
@@ -848,10 +871,14 @@ const abilityPowers = (() => {
         s.decoy = { decoy: true, holder, x: s.x, y: s.y, z: s.z, radius: K.radius, height: K[pw.then].height, state: null, alive: () => true, isAttacking: () => false };
         summons.set(holder, s); break;
       }
-      case 'freeze':   // an enemy still resting from a hold (`holdRest`) sees the rift but isn't stopped again
-        for (const o of enemies) if (near(o, x, y, z, v.radius) && !(o.holdRest > 0)) { o.frozen = Math.max(o.frozen || 0, v.time); o.hitbox = null; }
+      case 'freeze':   // an enemy still resting from a hold (`holdRest`), or pinned by an Ultimate, sees the rift but isn't stopped again
+        for (const o of enemies) if (near(o, x, y, z, v.radius) && !(o.holdRest > 0) && !(o.pinned > 0)) { o.frozen = Math.max(o.frozen || 0, v.time); o.hitbox = null; }
         break;
-      case 'lightning': running.push({ pw, holder, enemy: e, left: v.strikes, next: v.lead, n: 0 }); break;
+      case 'dragon': running.push({ pw, holder, enemy: e, left: v.strikes, next: v.lead, n: 0, chase: true }); break;
+      case 'quake': running.push({ pw, holder, body, enemy: null, left: 1, next: CONFIG.abilities.ult.quake, n: 0, x, y, z, quake: true }); break;
+      case 'beam': running.push({ pw, holder, enemy: e, left: Math.round(v.time / v.every), next: CONFIG.abilities.ult.beam, n: 0, pin: true }); break;
+      case 'iceLotus': running.push({ pw, holder, enemy: e, left: Math.round(v.time / v.every), next: CONFIG.abilities.ult.lotus, n: 0, pin: true }); break;
+      case 'tempest': running.push({ pw, holder, enemy: e, left: Math.round(v.time / v.every), next: CONFIG.abilities.ult.tempest, n: 0, x: e.x, y: e.y, z: e.z, storm: true }); break;
       case 'boltCrown': {   // the ring's first point faces the holder (`a0`, round the enemy from +x)
         const from = body || ctx, a0 = Math.atan2((from.z ?? e.z) - e.z, (from.x ?? e.x) - e.x);
         running.push({ pw, holder, body, enemy: e, left: v.strikes, next: v.lead, every: v.every, n: 0, crown: a0 || 0 });
@@ -1129,15 +1156,38 @@ const abilityPowers = (() => {
         ahead.splice(i, 1);
       }
     }
+    for (const r of running) if (r.storm && r.enemy.alive()) {   // Tempest's middle eases after its enemy
+      const dx = r.enemy.x - r.x, dz = r.enemy.z - r.z, d = Math.hypot(dx, dz), go = Math.min(d, CONFIG.abilities.ult.follow * dt);
+      if (d > 1e-6) { r.x += dx / d * go; r.z += dz / d * go; }
+      r.y = r.enemy.y;
+    }
     for (let i = running.length - 1; i >= 0; i--) {
-      const r = running[i], e = r.enemy;
+      const r = running[i];
+      let e = r.enemy;
       if (r.hold && !holding(r.holder, r.body, r.hold)) {   // a flurry cut short: the thrusts left are dropped
         events.emit('abilityPower', { power: r.pw.id, then: r.pw.then, holder: r.holder, body: r.body, enemy: e, x: e.x, y: e.y, z: e.z, v: r.pw.v, end: 'cut' });
         running.splice(i, 1); continue;
       }
       if ((r.next -= dt) > 0) continue;
       if (r.refill) { refill(r); running.splice(i, 1); continue; }
+      if (r.quake) {   // Cataclysm's burst, where its holder pressed
+        events.emit('abilityPower', { power: r.pw.id, then: r.pw.then, holder: r.holder, body: r.body, enemy: null, x: r.x, y: r.y, z: r.z, v: r.pw.v, strike: 1 });
+        for (const o of Game.enemies) if (near(o, r.x, r.y, r.z, r.pw.v.radius)) wound(o, r.pw.v.damage, r.holder, r.pw.id);
+        running.splice(i, 1); continue;
+      }
+      if (r.chase && !e.alive()) {   // the dragon's bolts left go on to the nearest live enemy, else end
+        const o = enemyNear(Game.enemies, e.x, e.y, e.z, CONFIG.abilities.press.range);
+        if (o) e = r.enemy = o;
+      }
       if (!e.alive()) { running.splice(i, 1); continue; }
+      if (r.storm) {   // the storm's tick: everything within its radius of the middle
+        r.next += r.pw.v.every; r.left--; r.n++;
+        events.emit('abilityPower', { power: r.pw.id, then: r.pw.then, holder: r.holder, body: null, enemy: e, x: r.x, y: r.y, z: r.z, v: r.pw.v, strike: r.n });
+        for (const o of Game.enemies) if (near(o, r.x, r.y, r.z, r.pw.v.radius)) wound(o, r.pw.v.damage, r.holder, r.pw.id);
+        if (r.left <= 0) running.splice(i, 1);
+        continue;
+      }
+      if (r.pin && r.n === 0) abilityPin(e, r.pw.v.time);   // the first burn or petal holds it
       r.next += r.every ?? r.pw.v.every ?? 0; r.left--; r.n++;
       if (r.reach !== undefined) {   // a thrust lands only while its enemy is in reach (the server's pose of the holder lags)
         const b = (api.bodyOf && api.bodyOf(r.holder)) || r.body;

@@ -749,7 +749,7 @@ globalThis.host = (() => {
       crowdClocks.set(id, crowd.sinceStart);
     }
     for (let i = 0; i < Game.enemies.length; i++) for (let j = i + 1; j < Game.enemies.length; j++) separatePair(Game.enemies[i], Game.enemies[j], 0.5);
-    abilityPowers.tick(dt);   // lightning and blades still striking
+    abilityPowers.tick(dt);   // powers still striking: blades, a dragon, a storm
     if (pendingClaims.length) retryClaims();
     for (const e of Game.enemies) if (!e.alive() && !e.rewarded) { e.rewarded = true; eventList.push({ type: 'enemyDeath', enemy: e.netId }); }
     progress(dt);

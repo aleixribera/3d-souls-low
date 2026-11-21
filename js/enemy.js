@@ -160,6 +160,7 @@ class Enemy {
     this.chainTime = Infinity;                       // time since the last landed hit (a boss's anti-mash)
     this.cracks = 0; this.crackTime = 0;             // its guard's cracks (js/finisher.js) and time since the last counter on it
     this.frozen = 0;   // s left stopped in time (Time Rift, js/abilities.js): no step, no blow, hit as it stands
+    this.pinned = 0;   // s left pinned where it stands (Heaven's Lance, Frozen Lotus: abilityPin): swings in place, never moved
     this.holdRest = 0;   // s left before a hold may stop it again (CONFIG.abilities.holdRest)
     this.blockTime = Infinity;                       // time since its shield last took a blow (the `shielded` reaction)
     this.struckTime = Infinity;                      // time since a blow last landed on it (the `struck` reaction, v5.9)
@@ -380,7 +381,14 @@ class Enemy {
     }
     if (this.holdRest > 0) this.holdRest = Math.max(0, this.holdRest - dt);
     if (this.sealed > 0) this.sealed = Math.max(0, this.sealed - dt);
-    this.step(dt, player);
+    if (this.pinned > 0 && (this.blinkLeft > 0 || this.state === ES.RETREAT)) this.pinned = 0;   // a blink or a retreat breaks the pin
+    if (this.pinned > 0) {   // pinned: it steps and swings, but where it stands (a lunge's step, a leap's travel, a shove: none), turning slower
+      const x = this.x, z = this.z, yaw = this.yaw;
+      this.step(dt, player);
+      this.x = x; this.z = z; this.vx = this.vz = this.kx = this.kz = 0;
+      this.yaw = yaw + angDiff(this.yaw, yaw) * CONFIG.abilities.ult.pinTurn;
+      this.pinned = Math.max(0, this.pinned - dt); if (this.pinned === 0) this.holdRest = CONFIG.abilities.holdRest;
+    } else this.step(dt, player);
     this.emitMarkers();
   }
   step(dt, player) {

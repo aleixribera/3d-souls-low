@@ -59,6 +59,7 @@ const cameraFeel = (() => {
   // A power: in full for its holder, less the further off it is for everyone else. A bolt's, a twin's or a striking summon's
   // blow kicks as itself (`strike`, `echo`, `bite`), a summon drawing the boss as `draw`.
   const LATE_KICK = { stitch: 1, iai: 2 };
+  const ULT_KICKS = new Set(['dragon', 'quake', 'beam', 'iceLotus', 'tempest']);
   events.on('abilityPower', d => {
     if (ABILITY_BY_ID[d.power] && ABILITY_BY_ID[d.power].rarity === 'common') return;   // commons never move the camera
     if (d.end || d.flight || (d.then === 'flurry' && d.strike)) return;   // a fireball kicks where it lands, not as it flies   // a flurry's thrusts are too many to kick; a cut-short power is still
@@ -77,6 +78,22 @@ const cameraFeel = (() => {
     if (d.then === 'boltCrown') {
       if (!d.strike) return;
       const C = F.powers[d.v && d.strike >= d.v.strikes ? 'boltCrown' : 'spark'], p = Game.player, k = !p ? 0 : isPlayer(d.body) ? 1 : clamp(1 - Math.hypot(p.x - d.x, p.z - d.z) / F.powerNear, 0, 1);
+      if (k > 0) { kick('fov', C[0] * k); kick('y', -C[1] * k); }
+      return;
+    }
+    // Batch 15 (Ultimates I): each kicks once, as it lands, never with every burn or tick. Thunder Call at the call
+    // and its first bite (`strike`); Cataclysm as it bursts; the Lance as the pillar lands; the Lotus at its first petal
+    // and as it shatters (`lotusBreak`); Tempest at the call, then each small bolt (every 4th tick) as `spark`.
+    if (ULT_KICKS.has(d.then)) {
+      const n = d.strike || 0, last = d.v && d.v.time && d.v.every ? Math.round(d.v.time / d.v.every) : 0;
+      const name = d.then === 'dragon' ? (n === 0 ? 'dragon' : n === 1 ? 'strike' : null)
+        : d.then === 'quake' ? (n ? 'quake' : null)
+        : d.then === 'beam' ? (n === 1 ? 'beam' : null)
+        : d.then === 'iceLotus' ? (n === 1 ? 'iceLotus' : n === last ? 'lotusBreak' : null)
+        : n === 0 ? 'tempest' : n % 4 === 0 ? 'spark' : null;
+      const C = name && F.powers[name], p = Game.player;
+      if (!C || !p) return;
+      const k = isPlayer(d.body) ? 1 : clamp(1 - Math.hypot(p.x - d.x, p.z - d.z) / F.powerNear, 0, 1);
       if (k > 0) { kick('fov', C[0] * k); kick('y', -C[1] * k); }
       return;
     }
