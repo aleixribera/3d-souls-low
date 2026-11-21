@@ -19,6 +19,20 @@ const versionOf = src => /const VERSION = '(v[\d.]+)'/.exec(src)?.[1] ?? '?';
   console.log(`${link}\n  players get ${live}; this checkout is ${repo}${live === repo ? '' : '   <- behind'}`);
 
   const gh = args => execFileSync('gh', args, { cwd: root, encoding: 'utf8' });
+  // A release or two behind is the normal ~30 minutes of CI and publishing; more is Broken (step 2). Why: players sat
+  // on v7.190.0 through nine releases while every pass saw only "<- behind" (retro 150).
+  const minor = v => Number(/^v\d+\.(\d+)\./.exec(v)?.[1]);
+  const behind = minor(repo) - minor(live);
+  if (behind > 2) {
+    let published = '?';
+    try {
+      const runs = JSON.parse(gh(['run', 'list', '-w', 'container.yaml', '-L', '30', '--json', 'conclusion,headBranch']));
+      published = runs.find(r => r.conclusion === 'success')?.headBranch ?? 'none of the last 30';
+    } catch { /* the line still names the gap */ }
+    console.log(`  BROKEN: players are ${behind} releases behind; the last container published was ${published}.` +
+      ' Find why the publish stalls (container.yaml, tools/ci-gate.sh) before anything else.');
+    process.exitCode = 1;
+  }
   for (const wf of ['ci.yaml', 'container.yaml']) {
     let runs;
     try { runs = JSON.parse(gh(['run', 'list', '-w', wf, '-L', '3', '--json', 'databaseId,displayTitle,status,conclusion,headBranch'])); }

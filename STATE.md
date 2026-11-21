@@ -8,9 +8,10 @@ The iterate loop's working note (`.claude/iterate.md`). Cap: 8,000 characters.
   Glass Mantis, as cel Blender models. CI fixed (counters stub, reconnect-browser timeout). Acceptance:
   `tests/summons-three.cjs`, in-page `summons` 4/4; clip `docs/scorecard/now/summons-three.mp4`. Next on track 2:
   batch 13, Legendaries I. Browser lock: `node tools/browser-lock.cjs run <pass> -- <cmd>` (docs/two-tracks.md).
-- Track 1, pass 149 (PLAN item 6, the Kindling Tree, pass 1 of 2), done in v7.199.0: audit said rework; new Wrack,
-  Bramble Sweep, Reaching Bough, Falling Tree; boughs parried, roll-only 2/11, 3/12; body check 0/27. Acceptance:
-  in-page `Ember Root` 9/9; clip `docs/scorecard/now/kindling-tree.mp4`. Next: its `bars-1` round, then the King's Blade.
+- Track 1, pass 150 (retro; Broken: players 9 releases behind): the container gate now takes the CI
+  run of a notes-only later commit (`tools/ci-gate.sh`), only its publish job queues, and an older tag never retakes
+  `:latest` (`tools/image-version.cjs`); `live-check` says `BROKEN` past 2 behind. Acceptance: v7.199.0 or
+  the next tag served. Next: the Kindling Tree's `bars-1`, then the King's Blade.
 
 ## Works
 
@@ -65,7 +66,7 @@ The iterate loop's working note (`.claude/iterate.md`). Cap: 8,000 characters.
 
 ## wip// branches
 
-`wip/p101-dash-clip`, `wip/p102-dash-lunge` (dashes, not adopted); `wip/p102-deflect-keys` (unjudged). Backlog: `BACKLOG.md`.
+`wip/p101-dash-clip`, `wip/p102-dash-lunge`, `wip/p102-deflect-keys`: not adopted, kept for reference.
 
 ## Needs Aleix
 
@@ -82,4 +83,4 @@ The iterate loop's working note (`.claude/iterate.md`). Cap: 8,000 characters.
 - Fight the Bell Warden too (Practice, `?style=cel`).
 - Fight the Pillager Captain (PLAN item 5's last gate; tried: six judge rounds, nothing left a judge can settle). Practice,
   with `?style=cel` in the address (cel is not yet every player's default); say what feels off or unfair.
-Answered: the art style is cel-shaded anime, for the whole game (Aleix, 2026-11-20; item 4 done). The home server's `/souls/` address is PUBLIC (Aleix, 2026-11-20).
+Answered: the art style is cel-shaded anime (Aleix, 2026-11-20). The home server's `/souls/` address is PUBLIC (Aleix, 2026-11-20).

@@ -8,12 +8,12 @@ on:
 permissions:
   contents: read
 
-concurrency:
-  group: publish-game-container
-  cancel-in-progress: false
-
 # CI tests the release commit on main; this workflow publishes only once that run is green (tools/ci-gate.sh),
-# then builds, smoke-tests the image and publishes it.
+# then builds, smoke-tests the image and publishes it. Only the publish job queues (one at a time, never cancelling
+# the one running; a newer pending tag replaces an older one): a workflow-wide group let a gate waiting 70 minutes
+# hold the queue while GitHub cancelled each newer tag (v7.192.0 to v7.198.0, players 9 versions back, pass 150).
+# Gates finishing out of order can still drop one newer pending tag; the next release catches up, and
+# tools/live-check.cjs calls more than two releases behind Broken.
 jobs:
   ci-green:
     name: CI passed on this commit
@@ -27,6 +27,7 @@ jobs:
         uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
         with:
           persist-credentials: false
+          fetch-depth: 0   # the gate looks for the later main commit whose CI run contains this one
       - name: Wait for CI on this commit and require success
         env:
           GH_TOKEN: ${{ github.token }}
@@ -34,6 +35,9 @@ jobs:
 
   publish:
     needs: ci-green
+    concurrency:
+      group: publish-game-container
+      cancel-in-progress: false
     runs-on: ubuntu-latest
     timeout-minutes: 25
     permissions:
@@ -100,7 +104,22 @@ jobs:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Skip when a newer version is already latest
+        id: newer
+        shell: bash
+        env:
+          IMAGE: ${{ steps.release.outputs.image }}
+          VERSION: ${{ steps.release.outputs.version }}
+        run: |
+          # Gates finish out of order; an older tag must not take :latest back from a newer one.
+          live="$(docker buildx imagetools inspect "$IMAGE:latest" --format '{{json .Image}}' 2>/dev/null | node tools/image-version.cjs || true)"
+          echo "latest published: ${live:-none}, this: $VERSION"
+          if [[ -n "$live" ]] && node tools/image-version.cjs --newer "$live" "$VERSION"; then
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+            echo "$live is newer than $VERSION: not publishing."
+          fi
       - name: Publish latest and versioned images
+        if: steps.newer.outputs.skip != 'true'
         uses: docker/build-push-action@10e90e3645eae34f1e60eeb005ba3a3d33f178e8 # v6
         with:
           context: .

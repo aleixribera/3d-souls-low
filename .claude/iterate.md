@@ -1,7 +1,7 @@
 # Iterate: Combat Arena 3D
 
 Model: opus, effort medium
-Skill synced: 646f0cf
+Skill synced: 6acf5c4
 Parts: judge (panel: `docs/scorecard/panel/`), review (weekly, from 2026-11-20), incidents (the game is played online).
 
 ## Vision and plan
@@ -41,7 +41,6 @@ node tools/pack-baked.cjs <stem>
 
 - Serve: `python -m http.server 8123 --bind 127.0.0.1`, open
   `combat-arena-3d.html#dev`, then `MODELLAB.open('<modelId>')` (F9): front, back, side and silhouette.
-- Check it in a level too: a frame with the enemy in play (e.g. Level 2 or 3 for the bowman).
 - A drawing that reads simulation state the snapshot lacks (`abilityPowers`) gets an online path, and its in-page test
   empties the page's copy (why: Ash Husk's ring showed only in Practice, pass 137's review, retro 140).
 - **Current frames:** `docs/scorecard/now/`. `node tools/now-frames.cjs [lobby|rush|crate]` retakes the lobby
@@ -58,7 +57,7 @@ node tools/pack-baked.cjs <stem>
 - Commit to `main` and push; CI runs on the push.
 - A release whenever a pass ships something players notice: `node tools/release.cjs "<title>" "<text>"` (AGENTS.md
   "Release"), commit, push, tag `v*`, push the tag, check that the container workflow started.
-- Don't wait on CI after your push; the next pass reads what players get with `node tools/live-check.cjs`.
+- Don't wait on CI after your push; the next pass reads what players get with `node tools/live-check.cjs` (its `BROKEN` line is step 2's Broken).
 - After many tests were added or removed, or when one shard runs far longer than the others, refresh the shard
   weights from a green run: `node tools/shard-weights.cjs`, and commit `tests/shard-weights.json`.
 
