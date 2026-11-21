@@ -3,10 +3,11 @@
 The iterate loop's working note (`.claude/iterate.md`). Cap: 8,000 characters.
 
 ## Now
-- Track 2, pass 157 (PLAN item 8, batch 16, Ultimates II, pass 1 of 1): Great Wave, Sky Blade, Phoenix Dive
-  (`Player.diveStart`), Black Star (`js/legend-fx-4.js`, Blender `great_wave.py`, `sky_blade.py`, `phoenix.py`).
-  Acceptance: `tests/ultimates-two.cjs`, in-page `ultimates two`; clip `docs/scorecard/now/ultimates-two.mp4`.
-  Fixed: CI 2/4 (audio peak; counter test luck), Cataclysm unseen online. v7.206.0 out, CI pending. Next: batch 17, Ultimates III.
+- Track 2, pass 158 (PLAN item 8, batch 17, Ultimates III, pass 1 of 1): World of Ink, Severance, Colossus, Ash
+  Legion (`js/legend-fx-5.js`, grade `uInk`/`uSplit`, Blender `colossus.py`, `ash_legion.py`). Acceptance:
+  `tests/ultimates-three.cjs`, in-page `ultimates three`; clip `docs/scorecard/now/ultimates-three.mp4`. CI on v7.206.0:
+  2/4 fixed, but the smoke's reconnect timed out (raised) and shard 1/4 ran past 25 min (weights refreshed); players
+  still on v7.202.0 until v7.207.0's CI is green. Next: batch 18 (Story's four), the last of PLAN items 5-8.
 - Track 1, pass 155 (Aleix's ask: cel the default, pass 1 of 1), v7.205.0: cel with no `?style=`, `classic` the way
   back. Acceptance: `tests/style-browser.cjs`; frames `docs/scorecard/now/cel-default-*`. Normal inks from the scene's
   depth (GPU +10%, was +90%); laptop unreachable, 60 fps there unmeasured. Track 1 has no plan item left.
@@ -53,6 +54,7 @@ The iterate loop's working note (`.claude/iterate.md`). Cap: 8,000 characters.
 - The Finishing Blow (pass 100-103, `js/finisher.js`, `js/finisher-fx.js`): the 3rd counter; its look is "Later".
 - Summons (pass 141-147): `js/summon-beasts.js` (hound, fox), `summon-lantern.js`, `summon-figures.js` (archer, ronin, puppet), `summon-birds.js`, `summon-crows.js`, `summon-brutes.js` (bear, mantis), `summon-coil.js`; `tests/summons-{one,two,three}.cjs`, in-page `summons`; clips `tools/ability-clips.cjs summons|summons2|summons3`, side views `tools/summon-closeups.cjs`.
 - Legendaries I, II (151, 154): `tests/legendaries-{one,two}.cjs`, in-page `legendaries one|two`, clips `legends1|2`.
+- Ultimates I-III (156-158): `tests/ultimates-{one,two,three}.cjs`, in-page `ultimates`, clips `ults1|2|3`.
 - Art style: cel by default (pass 155), `?style=classic|dark|paint`; `js/style-lab.js`, `sceneDepth` on Normal
   (`tools/style-cost.cjs`); `tests/style-browser.cjs`; frames `tools/now-frames.cjs cel`.
 - Body check (retro 130): `tools/body-check.cjs [bossId]`; `tests/body-check.cjs` holds every boss with a page.

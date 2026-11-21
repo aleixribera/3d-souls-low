@@ -3,7 +3,7 @@
 // each fired twice, its name in the corner: docs/scorecard/now/<set>-commons.mp4. The clock is stepped by hand
 // (Game.manualClock) and every other step is a frame, so a clip plays at real speed whatever the PC's speed. With
 // `--stills`, the guard set's current frames too (guard-*.jpg, desktop; -phone for two).
-// Usage: node tools/ability-clips.cjs [blade|guard|mirror|rares|triggers|echo|strikes|flashy|self|boss|summons|summons2|summons3|legends1|legends2|ults1|ults2 ...] [--stills]   (no set = all). One headless Edge; needs ffmpeg.
+// Usage: node tools/ability-clips.cjs [blade|guard|mirror|rares|triggers|echo|strikes|flashy|self|boss|summons|summons2|summons3|legends1|legends2|ults1|ults2|ults3 ...] [--stills]   (no set = all). One headless Edge; needs ffmpeg.
 require('../tests/low-priority.cjs');
 const fs = require('node:fs');
 const os = require('node:os');
@@ -196,6 +196,13 @@ const SETS = {
     ['Phoenix Dive', `(p, e) => { __far(6); __ult(); p.diveStart(e, p.kit.pressed.ultimate.v); }`, 140, 'ult-phoenix-dive', 48],
     ['Black Star', `(p, e) => { __far(6); __ult(); }`, 150, 'ult-black-star', 60],
   ] },
+  ults3: { ids: ['world-of-ink', 'severance', 'colossus', 'ash-legion'], solo: true,
+    file: 'ultimates-three', phone: 2, crf: 30, beats: [
+    ['World of Ink', `(p, e) => { __far(6); __ult(); for (let i = 0; i < 4; i++) __later(56 + i * 22, () => __hit()); }`, 170, 'ult-world-of-ink', 70],
+    ['Severance', `(p, e) => { __far(7); __ult(); }`, 110, 'ult-severance', 44],
+    ['Colossus', `(p, e) => { __far(7); __ult(); }`, 150, 'ult-colossus', 64],
+    ['Ash Legion', `(p, e) => { __far(8); __ult(); }`, 220, 'ult-ash-legion', 50],
+  ] },
   legends2: { ids: ['hundred-suns', 'thunder-god-step', 'fourfold', 'shade-host'], solo: true,
     file: 'legendaries-two', phone: 2, crf: 30, beats: [
     ['Hundred Suns', `(p, e) => { __face(); abilityPowers.trigger('self', p, p.kit, 'finisher', { enemy: e, x: e.x, y: e.y, z: e.z }); }`, 100, 'legend-hundred-suns', 14],
@@ -268,7 +275,7 @@ const SETS = {
             events.emit('strike', { strike: s, attacker: p, target: e, at: { x: e.x, y: e.y + 1.2, z: e.z }, blocked: false });
           };
           window.__reset = name => {
-            commonFx.clear(); rareFx.clear(); rareStrikeFx.clear(); strikeFx.clear(); strikeFx2.clear(); guardFx.clear(); guardFx2.clear(); abilityDomes.clear(); summonBeasts.clear(); summonLantern.clear(); summonFigures.clear(); summonBirds.clear(); summonCrows.clear(); summonBrutes.clear(); summonCoil.clear(); abilityFx.clear(); if (typeof legendFx2 !== 'undefined') legendFx2.clear(); if (typeof legendFx3 !== 'undefined') legendFx3.clear(); abilityPowers.reset(); e.pinned = 0; e.holdRest = 0; later.length = 0; tag.textContent = name; e.cracks = 0; events.emit('guardCrack', { enemy: e, cracks: 0 });
+            commonFx.clear(); rareFx.clear(); rareStrikeFx.clear(); strikeFx.clear(); strikeFx2.clear(); guardFx.clear(); guardFx2.clear(); abilityDomes.clear(); summonBeasts.clear(); summonLantern.clear(); summonFigures.clear(); summonBirds.clear(); summonCrows.clear(); summonBrutes.clear(); summonCoil.clear(); abilityFx.clear(); if (typeof legendFx2 !== 'undefined') legendFx2.clear(); if (typeof legendFx3 !== 'undefined') legendFx3.clear(); if (typeof legendFx4 !== 'undefined') legendFx4.clear(); if (typeof legendFx5 !== 'undefined') legendFx5.clear(); abilityPowers.reset(); e.pinned = 0; e.holdRest = 0; later.length = 0; tag.textContent = name; e.cracks = 0; events.emit('guardCrack', { enemy: e, cracks: 0 });
             p.hp = p.maxHp; p.lastHp = p.hp; p.perk = abilityPerkState(); p.tint = 0;
             for (let i = 0; i < 30; i++) Game.update(CONFIG.step);
             e.x = e.px = p.x + Math.sin(p.yaw + 0.6) * 2.8; e.z = e.pz = p.z + Math.cos(p.yaw + 0.6) * 2.8; e.y = p.y; e.yaw = Math.atan2(p.x - e.x, p.z - e.z);

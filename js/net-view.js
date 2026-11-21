@@ -11,7 +11,7 @@ const rushNow = () => (typeof replayView !== 'undefined' && replayView.rush) || 
 // enemy's suns, Fourfold's keys, a shade clone called on no one.
 // The Ultimates told with no enemy: Cataclysm and Great Wave always (they strike a place), Sky Blade and Black Star when
 // their enemy died before they landed (pass 157: Cataclysm was never drawn online, its test calling netView.ability).
-const NET_FREE_POWERS = new Set(['iai', 'husk', 'lightningDash', 'sunLines', 'refillKeys', 'shadeClone', 'quake', 'greatWave', 'skyBlade', 'blackStar']);
+const NET_FREE_POWERS = new Set(['iai', 'husk', 'lightningDash', 'sunLines', 'refillKeys', 'shadeClone', 'quake', 'greatWave', 'skyBlade', 'blackStar', 'inkWorld', 'worldCut', 'colossus', 'legion']);
 const netView = {
   // One enemy at `alpha` between snapshot values `s` and `q`; `since` s after `s` was taken (its clock runs on).
   enemy(e, s, q, alpha, since, ctx) {

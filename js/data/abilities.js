@@ -326,6 +326,19 @@ const ABILITIES = [
   { id: 'black-star', name: 'Black Star', rarity: 'legendary', key: 'ultimate', text: 'Holds the boss for {time}, then implodes.',
     power: { when: 'press', then: 'blackStar' },
     levels: [{ charge: 44, time: 1.5, damage: 320, radius: 5 }] },
+  // Ultimates III (pass 158, design/abilities batch 17), to the same bar; drawn by js/legend-fx-5.js.
+  { id: 'world-of-ink', name: 'World of Ink', rarity: 'legendary', key: 'ultimate', text: 'For {time}, every hit lands twice in ink.',
+    power: { when: 'press', then: 'inkWorld' },
+    levels: [{ charge: 44, time: 8, share: 1 }] },
+  { id: 'severance', name: 'Severance', rarity: 'legendary', key: 'ultimate', text: 'One arena-wide cut hits all on its line.',
+    power: { when: 'press', then: 'worldCut' },
+    levels: [{ charge: 46, damage: 360 }] },
+  { id: 'colossus', name: 'Colossus', rarity: 'legendary', key: 'ultimate', text: 'A giant of embers swings its sword once.',
+    power: { when: 'press', then: 'colossus' },
+    levels: [{ charge: 46, damage: 340, reach: 14 }] },
+  { id: 'ash-legion', name: 'Ash Legion', rarity: 'legendary', key: 'ultimate', text: 'A phantom army charges through the boss.',
+    power: { when: 'press', then: 'legion' },
+    levels: [{ charge: 44, time: 2.5, every: 0.1, damage: 15 }] },
 
   // ---- Two more rares (pass 71, once crate-only; since PLAN.md item 7 every ability outside the starter set comes from a
   // crate, js/data/crates.js) ----

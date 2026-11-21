@@ -438,7 +438,7 @@ globalThis.host = (() => {
       if (!pressOpen(slot, p, e, CONFIG.abilities.press.reachSlack)) return false;   // no enemy for it, or not near enough (Thunderclap)
       const over = abilityOver(kit, st, msg.key);   // Overcharge, by this server's own count
       st.charge[msg.key] = 0;
-      abilityPowers.trigger(id, body, kit, 'press', { key: msg.key, enemy: e, over });
+      abilityPowers.trigger(id, body, kit, 'press', { key: msg.key, enemy: e, over, yaw: p.yaw });   // an aim along their facing when no enemy is near (Colossus, Ash Legion)
       if (!slot.power) guardPressed(id, slot, p, over);
     } else if (msg.when === 'land') {
       const a = ArenaNet.own(PLAYER_DEF.moveset.air, msg.action);

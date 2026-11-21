@@ -127,6 +127,11 @@ const ABILITY_ICONS = {
   'sky-blade': '<path d="M21 4 H27 V30 L24 36 L21 30 Z"/><path d="M24 4 V30"/><path d="M14 30 H34"/><path d="M8 44 H40"/><path d="M24 36 V40 M16 42 L19 39 M32 42 L29 39"/>',
   'phoenix-dive': '<path d="M24 12 L30 22 L24 30 L18 22 Z"/><path d="M18 22 C10 14 6 10 4 4 C12 8 16 12 21 16"/><path d="M30 22 C38 14 42 10 44 4 C36 8 32 12 27 16"/><path d="M21 29 L16 44 M24 30 V44 M27 29 L32 44"/>',
   'black-star': '<circle cx="24" cy="24" r="8"/><path d="M24 4 L26 16 M24 44 L22 32 M4 24 L16 22 M44 24 L32 26"/><path d="M10 10 C14 14 16 14 18 18 M38 38 C34 34 32 34 30 30 M38 10 C34 14 34 16 30 18 M10 38 C14 34 16 32 18 30"/>',
+  // Ultimates III (batch 17)
+  'world-of-ink': '<path d="M38 10 C30 4 14 4 8 14 C2 24 6 38 18 42 C28 46 40 40 42 30"/><path d="M20 30 V20 M23 30 V17 M26 30 V18 M29 30 V21"/><path d="M18 30 C18 36 30 36 30 30"/>',
+  'severance': '<path d="M4 44 L44 4"/><path d="M14 22 A8 8 0 0 1 26 14"/><path d="M22 34 A8 8 0 0 0 34 26"/>',
+  'colossus': '<path d="M14 40 V20 C14 12 20 6 28 6 C36 6 42 12 42 20 V40"/><path d="M24 16 H32 M28 12 V22"/><path d="M22 34 L18 42 M20 38 L26 34"/><path d="M4 44 C16 38 32 38 46 44"/>',
+  'ash-legion': '<path d="M4 30 L22 22 M10 38 L28 30 M16 46 L34 38"/><path d="M22 22 L26 20 L24 24 Z M28 30 L32 28 L30 32 Z M34 38 L38 36 L36 40 Z"/><path d="M30 10 C34 8 38 10 40 14 L36 16 M38 18 C40 20 42 22 44 22"/><path d="M2 12 H8 M2 18 H10"/>',
 };
 const ABILITY_RARITY_WORD = { common: 'Common', rare: 'Rare', legendary: 'Legendary' };
 const ABILITY_LEVEL_MARK = ['I', 'II', 'III', 'IV', 'V', 'VI'];

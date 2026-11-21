@@ -364,6 +364,53 @@ const AUDIO = {
       { noise: 'brown', filter: { type: 'lowpass', freq: 900, to: 80 }, at: 0.08, a: 0.002, d: 1.1, gain: 0.9, drive: 2 },
       { noise: 'white', filter: { type: 'highpass', freq: 3500 }, at: 0.08, a: 0.0005, d: 0.05, dv: 0.4, gain: 0.6 },
     ] },
+    // Ultimates III (pass 158). World of Ink: a wet brush swipe at the palm, then a deep paper thump and a dry tear as the
+    // circle closes (0.7 s on).
+    abilityInkWorld: { bus: 'sfx', priority: 3, cooldown: 0.5, max: 1, verb: 0.6, heat: 0.6, jitter: 0, layers: [
+      { noise: 'pink', filter: { type: 'bandpass', freq: 1200, to: 4000, q: 1.4 }, a: 0.04, d: 0.3, gain: 0.45 },
+      { wave: 'sine', freq: 60, to: 35, at: 0.7, a: 0.003, d: 0.4, gain: 0.9, drive: 2 },
+      { noise: 'white', filter: { type: 'highpass', freq: 2500 }, at: 0.7, a: 0.0005, d: 0.02, dv: 0.4, gain: 0.5 },
+    ] },
+    // ...each echo: a short brush flick and a low ink tap.
+    abilityInkStroke: { bus: 'sfx', priority: 2, cooldown: 0.06, max: 3, verb: 0.4, heat: 0.4, jitter: 80, layers: [
+      { noise: 'pink', filter: { type: 'bandpass', freq: 2500, q: 2 }, a: 0.005, d: 0.08, gain: 0.45 },
+      { wave: 'sine', freq: 110, a: 0.002, d: 0.05, gain: 0.5 },
+    ] },
+    // Severance: a held breath, one very short high ring at the draw (0.35 s), then a dry, enormous cut over a sub drop at
+    // the snap (CONFIG.abilities.ult.cut, 0.75 s).
+    abilitySever: { bus: 'sfx', priority: 3, cooldown: 0.5, max: 1, verb: 0.7, heat: 0.8, jitter: 0, layers: [
+      { wave: 'sine', freq: 3200, at: 0.35, a: 0.005, d: 0.9, gain: 0.16 },
+      { wave: 'sine', freq: 8832, at: 0.35, a: 0.005, d: 0.5, gain: 0.05 },
+      { wave: 'sine', freq: 5400, at: 0.35, a: 0.005, d: 0.6, gain: 0.06 },
+      { noise: 'white', filter: { type: 'highpass', freq: 2000 }, at: 0.75, a: 0.001, d: 0.03, dv: 0.4, gain: 0.9, drive: 4 },
+      { wave: 'sine', freq: 70, to: 25, at: 0.75, a: 0.003, d: 0.6, gain: 1, drive: 2 },
+    ] },
+    // Colossus: stone grinding and a furnace roar as it rises, a huge breath in, the deep whoosh of the swing (1.15 s on),
+    // then a long fall of embers.
+    abilityColossus: { bus: 'sfx', priority: 3, cooldown: 0.5, max: 1, verb: 0.7, heat: 0.9, jitter: 0, layers: [
+      { noise: 'brown', filter: { type: 'lowpass', freq: 150, to: 600 }, a: 0.1, h: 0.3, d: 0.3, gain: 0.8, drive: 2 },
+      { noise: 'pink', filter: { type: 'bandpass', freq: 900, q: 0.8 }, a: 0.2, h: 0.3, d: 0.3, gain: 0.25 },
+      { noise: 'pink', filter: { type: 'bandpass', freq: 200, to: 1000, q: 1 }, at: 0.85, a: 0.28, d: 0.03, gain: 0.35 },
+      { noise: 'pink', filter: { type: 'bandpass', freq: 120, to: 900, q: 1.2 }, at: 1.12, a: 0.03, d: 0.2, gain: 0.9, drive: 2 },
+      { noise: 'brown', filter: { type: 'lowpass', freq: 300, to: 80 }, at: 1.45, a: 0.05, d: 0.7, gain: 0.4 },
+    ] },
+    // Ash Legion: a far war horn as they rise, then the rolling thunder of hooves for the charge (2.5 s: a low roll under
+    // hoof-beats) with a ghostly shout.
+    abilityLegion: { bus: 'sfx', priority: 3, cooldown: 0.5, max: 1, verb: 0.7, heat: 0.8, jitter: 0, layers: [
+      { wave: 'sawtooth', freq: 110, filter: { type: 'bandpass', freq: 700, q: 2 }, a: 0.25, h: 0.2, d: 0.2, gain: 0.25 },
+      { noise: 'brown', filter: { type: 'lowpass', freq: 300 }, at: 0.5, a: 0.1, h: 2.3, d: 0.6, gain: 0.6 },
+      { wave: 'sine', freq: 90, to: 40, at: 0.55, a: 0.003, d: 0.12, gain: 0.5 },
+      { wave: 'sine', freq: 80, to: 40, at: 0.82, a: 0.003, d: 0.12, gain: 0.5 },
+      { wave: 'sine', freq: 95, to: 40, at: 1.1, a: 0.003, d: 0.12, gain: 0.5 },
+      { wave: 'sine', freq: 85, to: 40, at: 1.36, a: 0.003, d: 0.12, gain: 0.5 },
+      { wave: 'sine', freq: 92, to: 40, at: 1.62, a: 0.003, d: 0.12, gain: 0.5 },
+      { wave: 'sine', freq: 80, to: 40, at: 1.9, a: 0.003, d: 0.12, gain: 0.5 },
+      { wave: 'sine', freq: 88, to: 40, at: 2.18, a: 0.003, d: 0.12, gain: 0.5 },
+      { wave: 'sine', freq: 82, to: 40, at: 2.46, a: 0.003, d: 0.12, gain: 0.5 },
+      { wave: 'sine', freq: 86, to: 40, at: 2.74, a: 0.003, d: 0.12, gain: 0.5 },
+      { noise: 'pink', filter: { type: 'bandpass', freq: 600, to: 1100, q: 3 }, at: 0.55, a: 0.1, h: 0.3, d: 0.4, gain: 0.25 },
+      { noise: 'pink', filter: { type: 'bandpass', freq: 800, to: 400, q: 1 }, at: 3, a: 0.1, d: 0.6, gain: 0.25 },
+    ] },
     // Each bolt: a split-second crack overhead, then thunder rolling away.
     abilityThunder: { bus: 'sfx', priority: 3, cooldown: 0.12, max: 3, verb: 0.6, heat: 0.9, jitter: 200, layers: [
       { noise: 'white', filter: { type: 'highpass', freq: [3000, 4500], q: 0.7 }, a: 0.0004, d: 0.025, dv: 0.4, gain: 1, drive: 4 },

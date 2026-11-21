@@ -57,6 +57,8 @@ const FILES = {
   'great-wave': { sources: ['great_wave'] },
   'sky-blade': { sources: ['sky_blade'] },
   'phoenix': { sources: ['phoenix'] },
+  'colossus': { sources: ['colossus'] },
+  'ash-legion': { sources: ['ash_legion'] },
 };
 
 function readGlb(file) {

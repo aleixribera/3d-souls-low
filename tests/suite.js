@@ -644,6 +644,68 @@
       expect.ok(fx().foam === 1 && fx().craters === 1 && fx().scorches === 1 && fx().birds === 1, `another's crash, blade, star and bird from the word (${JSON.stringify(fx())})`);
     } finally { audio.play = play; Game.lock = null; e.netId = netId0; wipe(); p.grantAbilities([]); }
   });
+  test('ultimates three: the ink world painting the picture and each echo, the cut splitting the view, the giant rising and swinging, the legion pouring down its lane; others\' from the server\'s word', () => {
+    Game.startLevel('test-abilities'); sim.begin(); sim.step(2);
+    const p = Game.player, e = Game.enemies.find(o => o.def.id === 'greatDummy'), played = [];
+    const play = audio.play; audio.play = (id, o) => { played.push(id); return play.call(audio, id, o); };
+    const heard = ids => expect.ok(ids.every(id => played.includes(id)), `heard ${ids.join(', ')} (${[...new Set(played)].join(', ')})`);
+    const wipe = () => { abilityPowers.reset(); legendFx5.clear(); impactFrame.clear(); p.perk.ink = 0; played.length = 0; };
+    const fx = () => legendFx5.state, count = () => impactFrame.info().count, frames = n => { for (let i = 0; i < n; i++) sim.step(1, 1); };
+    const press = id => { p.grantAbilities([id]); wipe(); abilityPowers.trigger('self', p, p.kit, 'press', { key: 'ultimate', enemy: e, yaw: p.yaw }); };
+    const netId0 = e.netId, U = CONFIG.abilities.ult, K = VIS.abilityFx.ults3, graded = !!(visuals.passes && visuals.passes.grade);
+    try {
+      p.x = e.x - 6; p.z = e.z; p.yaw = Math.PI / 2; Game.lock = e;
+      // World of Ink: the circle drawn shut round the boss on one impact frame, the picture inked (the grade pass, where
+      // the quality has one); each landed blow an ember stroke a beat later; at its end the ink runs away.
+      press('world-of-ink'); let n0 = count(), hp0 = e.hp;
+      frames(Math.ceil(K.close * 60) + 4);
+      expect.ok(fx().ensos === 1 && count() === n0 + 1 && (!graded || fx().ink > 0.9), `the circle closes, the picture in ink (${JSON.stringify(fx())})`);
+      abilityPowers.trigger('self', p, p.kit, 'hits', { enemy: e, strike: { damage: 40, poise: 1 } });
+      frames(Math.ceil(U.inkDelay * 60) + 2);
+      expect.ok(fx().strokes === 1 && e.hp < hp0, `an echo: the stroke, the boss hit (${JSON.stringify(fx())})`);
+      frames(Math.ceil((p.kit.pressed.ultimate.v.time + K.inkFade) * 60) + 10);
+      expect.ok(fx().ensos === 0 && fx().ink === 0, `the ink runs away (${JSON.stringify(fx())})`);
+      heard(['abilityInkWorld', 'abilityInkStroke']);
+      // Severance: the line across the arena at the draw; the view split on it just before the snap (the grade pass, not
+      // under reduced motion); the snap on one frame, the seam on the boss; the line gone.
+      press('severance'); n0 = count(); hp0 = e.hp;
+      frames(Math.ceil((U.cut - 0.1) * 60));
+      expect.ok(fx().lines === 1 && (!graded || reducedMotion() || fx().split > 0), `the line, the view split (${JSON.stringify(fx())})`);
+      frames(10);
+      expect.ok(count() === n0 + 1 && fx().seams === 1 && fx().split === 0 && e.hp < hp0, `the snap: one frame, the seam, the boss cut (${JSON.stringify(fx())})`);
+      frames(70); expect.ok(fx().lines === 0 && fx().seams === 0, `the line gone (${JSON.stringify(fx())})`);
+      heard(['abilitySever']);
+      // Colossus: the giant risen behind its holder, its arc on the floor; the swing on one frame, the smear; crumbled.
+      press('colossus'); n0 = count(); hp0 = e.hp;
+      frames(Math.ceil(0.8 * 60));
+      expect.ok(fx().giants === 1 && fx().arcs === 1 && fx().smears === 0, `the giant risen, its arc laid (${JSON.stringify(fx())})`);
+      let inked = 0;
+      scene.traverse(o => { if (o.isMesh && o.visible && o.material && o.material.uniforms && o.material.uniforms.uInk) inked++; });
+      expect.ok(inked >= 6, `the giant in ink, every piece (${inked})`);
+      frames(Math.ceil((U.giant - 0.8) * 60) + 4);
+      expect.ok(count() === n0 + 1 && fx().smears === 1 && e.hp < hp0, `the swing: one frame, the smear, the boss hit (${JSON.stringify(fx())})`);
+      frames(90); expect.ok(fx().giants === 0, `crumbled (${JSON.stringify(fx())})`);
+      heard(['abilityColossus', 'abilityBlast']);
+      // Ash Legion: the ranks risen and charging with their dust wall; the front rank's frame; gone to ash after.
+      press('ash-legion'); n0 = count(); hp0 = e.hp;
+      frames(Math.ceil((U.legion + 0.1) * 60));
+      expect.ok(fx().legions === 1 && fx().dust === 1 && count() === n0 + 1 && e.hp < hp0, `the legion charging, the front rank's frame (${JSON.stringify(fx())}, ${count() - n0})`);
+      frames(Math.ceil((p.kit.pressed.ultimate.v.time + 1.4) * 60));
+      expect.ok(fx().legions === 0 && fx().dust === 0, `gone to ash (${JSON.stringify(fx())})`);
+      heard(['abilityLegion']);
+      // Online: another's from the server's word alone (the local copy emptied): a cut, a swing and a charge on no enemy,
+      // an ink echo on the boss.
+      wipe(); p.grantAbilities([]); frames(70);
+      const other = { x: p.x + 1, y: p.y, z: p.z, yaw: 0, alive: () => true }, net = { self: 'me', bodyOf: id => (id === 'them' ? other : null) };
+      const word = (power, then, extra) => ({ type: 'abilityPower', power, then, holder: 'them', x: p.x, y: p.y, z: p.z, v: ABILITY_BY_ID[power].levels[0], ...extra });
+      e.netId = 'ult3-boss';
+      netView.events({ events: [word('severance', 'worldCut', { enemy: null, strike: 1, yaw: Math.PI / 2 }), word('colossus', 'colossus', { enemy: null, strike: 1, yaw: Math.PI / 2 }),
+        word('ash-legion', 'legion', { enemy: null, strike: 1, yaw: Math.PI / 2 }), word('world-of-ink', 'inkWorld', { enemy: e.netId, strike: 1 })], shots: [], value: {} }, net);
+      frames(3);
+      expect.ok(fx().lines === 1 && fx().seams >= 1 && fx().giants === 1 && fx().smears === 1 && fx().legions === 1 && fx().strokes === 1,
+        `another's cut, swing, charge and ink from the word (${JSON.stringify(fx())})`);
+    } finally { audio.play = play; Game.lock = null; e.netId = netId0; wipe(); p.grantAbilities([]); }
+  });
   test('regression: every duel runs 20 s and the enemy engages', () => {
     for (const d of [...A.ENEMY_DEFS, ...A.TEST_DEFS]) {
       Game.startFight(d.id); sim.begin();

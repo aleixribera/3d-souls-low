@@ -401,7 +401,8 @@ const AUDIO_CUES = ['hitFlesh', 'hitHurt', 'hitBlock', 'riposteBoom', 'parry', '
   'abilityOwl', 'abilityMark', 'abilityMarkBurst', 'abilityRonin', 'abilityRoninCut', 'abilitySerpent', 'abilityCoil', 'abilityHiss',
   'abilityPuppet', 'abilityPuppetBlow', 'abilityBear', 'abilityRear', 'abilityMaul', 'abilityRoar', 'abilityMantis', 'abilityScissor', 'abilityCrown', 'abilityCage', 'abilityCageCut',
   'abilitySuns', 'abilityThunderStep', 'abilityFourfold', 'abilityShade', 'abilityCrack', 'abilityLance', 'abilityLotus', 'abilityTempest',
-  'abilityGreatWave', 'abilitySkyBlade', 'abilitySkyLand', 'abilityPhoenix', 'abilityPhoenixPass', 'abilityBlackStar', 'abilityImplode'];
+  'abilityGreatWave', 'abilitySkyBlade', 'abilitySkyLand', 'abilityPhoenix', 'abilityPhoenixPass', 'abilityBlackStar', 'abilityImplode',
+  'abilityInkWorld', 'abilityInkStroke', 'abilitySever', 'abilityColossus', 'abilityLegion'];
 // A power's sound by its `then`, its later blows' (`strike`: a lightning bolt, a twin's echo, a hound's bite) by
 // STRIKE_SOUNDS, a summon drawing the boss's eye (`draw`) by DRAW_SOUNDS; a rare's perk its own (ABILITY_PERK_SOUNDS,
 // at a pitch), a pick's pitch by its rarity.
@@ -579,6 +580,17 @@ function registerAudioListeners() {
       else if (d.then === 'skyBlade') audio.play('abilitySkyLand', { pos, vel: 1 });
       else if (d.then === 'phoenix') audio.play('abilityPhoenixPass', { pos, vel: 0.8, pitch: 1 + 0.06 * d.strike });
       else if (d.then === 'blackStar') audio.play(d.strike === 1 ? 'abilityBlackStar' : 'abilityImplode', { pos, vel: 1 });
+      return;
+    }
+    // Ultimates III: each one's press carries its timed sound (the ink circle closing, Severance's draw and snap, the
+    // giant's swing, the legion's horn and hooves); the ink's echoes flick at the enemy, the giant's swing and the legion's
+    // first rank land with a blast and a clash.
+    if (d.then === 'inkWorld' || d.then === 'worldCut' || d.then === 'colossus' || d.then === 'legion') {
+      const pos = d.body === Game.player && !d.strike ? null : d.enemy ? chest(d.enemy) : spot(d);
+      if (!d.strike) audio.play(d.then === 'inkWorld' ? 'abilityInkWorld' : d.then === 'worldCut' ? 'abilitySever' : d.then === 'colossus' ? 'abilityColossus' : 'abilityLegion', { pos, vel: 1 });
+      else if (d.then === 'inkWorld') audio.play('abilityInkStroke', { pos, vel: 0.7 });
+      else if (d.then === 'colossus') audio.play('abilityBlast', { pos, vel: 0.8 });
+      else if (d.then === 'legion' && d.strike === 1) audio.play('abilityBlade', { pos, vel: 0.9, pitch: 0.85 });
       return;
     }
     const id = d.draw ? ABILITY_DRAW_SOUNDS[d.then] : d.then === 'iai' && d.strike ? (d.strike === 1 ? 'abilityIaiDraw' : 'abilityIai')

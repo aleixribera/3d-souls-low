@@ -59,7 +59,7 @@ const cameraFeel = (() => {
   // A power: in full for its holder, less the further off it is for everyone else. A bolt's, a twin's or a striking summon's
   // blow kicks as itself (`strike`, `echo`, `bite`), a summon drawing the boss as `draw`.
   const LATE_KICK = { stitch: 1, iai: 2 };
-  const ULT_KICKS = new Set(['dragon', 'quake', 'beam', 'iceLotus', 'tempest', 'greatWave', 'skyBlade', 'phoenix', 'blackStar']);
+  const ULT_KICKS = new Set(['dragon', 'quake', 'beam', 'iceLotus', 'tempest', 'greatWave', 'skyBlade', 'phoenix', 'blackStar', 'inkWorld', 'worldCut', 'colossus', 'legion']);
   events.on('abilityPower', d => {
     if (ABILITY_BY_ID[d.power] && ABILITY_BY_ID[d.power].rarity === 'common') return;   // commons never move the camera
     if (d.end || d.flight || (d.then === 'flurry' && d.strike)) return;   // a fireball kicks where it lands, not as it flies   // a flurry's thrusts are too many to kick; a cut-short power is still
@@ -96,6 +96,13 @@ const cameraFeel = (() => {
         : d.then === 'skyBlade' ? (n ? 'skyBlade' : null)
         : d.then === 'phoenix' ? (n && d.v && n === d.v.strikes ? 'phoenix' : null)
         : d.then === 'blackStar' ? (n === 1 ? 'starPull' : n === 2 ? 'blackStar' : null)
+        // Batch 17: the ink world pulls in as it is cast and each echo kicks as `echo`; Severance only at its snap (the
+        // stillness first is the point); the giant as it rises and at its swing; the legion at its first rank's blow,
+        // then two rumbles in the stampede.
+        : d.then === 'inkWorld' ? (n ? 'echo' : 'inkWorld')
+        : d.then === 'worldCut' ? (n ? 'worldCut' : null)
+        : d.then === 'colossus' ? (n ? 'colossus' : 'colossusRise')
+        : d.then === 'legion' ? (n === 1 ? 'legion' : n === 9 || n === 16 ? 'legionRumble' : null)
         : n === 0 ? 'tempest' : n % 4 === 0 ? 'spark' : null;
       const C = name && F.powers[name], p = Game.player;
       if (!C || !p) return;

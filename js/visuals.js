@@ -594,10 +594,15 @@ const GRADE_SHADER = {
     uSat: { value: 1 }, uContrast: { value: 1 }, uVig: { value: 0 }, uVigSoft: { value: 0.5 }, uGrain: { value: 0 },
     uTime: { value: 0 }, uLow: { value: 0 }, uRes: { value: new THREE.Vector2(1, 1) },
     uFlash: { value: 0 }, uFlashCol: { value: new THREE.Color() }, uHurt: { value: 0 }, uFxaa: { value: 0 },
+    // Ultimates III (js/legend-fx-5.js): World of Ink's grade (`uInk` its strength, `uInkAt` the ink circle's middle in
+    // uv and its radius in screen heights) and Severance's split (`uSplit` a point of the line in uv and its normal,
+    // `uSplitW` the gap in pixels). Both 0 when nothing casts them: one branch each.
+    uInk: { value: 0 }, uInkAt: { value: new THREE.Vector3(0.5, 0.5, 10) }, uSplit: { value: new THREE.Vector4(0.5, 0.5, 0, 1) }, uSplitW: { value: 0 },
   },
   vertexShader: `varying vec2 vUv; void main() { vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }`,
   fragmentShader: `uniform sampler2D tDiffuse; uniform vec3 uShadow, uHigh;
 uniform float uSat, uContrast, uVig, uVigSoft, uGrain, uTime, uLow, uFlash, uHurt, uFxaa; uniform vec3 uFlashCol; uniform vec2 uRes; varying vec2 vUv;
+uniform float uInk, uSplitW; uniform vec3 uInkAt; uniform vec4 uSplit;
 float hash(vec2 p) { p = fract(p * vec2(123.34, 456.21)); p += dot(p, p + 45.32); return fract(p.x * p.y); }
 // Edges smoothed in the grade (a preset's fxaa; Normal's, for a fraction of MSAA's cost): the light's edge found
 // from four diagonal neighbours, then two to four reads along it (FXAA, after Lottes). The scene is HDR here, so the
@@ -619,7 +624,15 @@ vec3 fxaa(vec2 uv) {
   return lB < lMin || lB > lMax ? a : b;
 }
 void main() {
-  vec3 c = uFxaa > 0.5 ? fxaa(vUv) : texture2D(tDiffuse, vUv).rgb;
+  // Severance's split: each side of the line pushed half the gap away from it, the gap a white void with an ember edge.
+  vec2 uv = vUv; float gap = 0.0;
+  if (uSplitW > 0.0) {
+    vec2 asp = vec2(uRes.x / uRes.y, 1.0);
+    float sd = dot((vUv - uSplit.xy) * asp, uSplit.zw), hw = uSplitW / uRes.y * 0.5;
+    uv -= sign(sd) * uSplit.zw / asp * hw;
+    gap = 1.0 - smoothstep(hw * 0.5, hw * 1.15, abs(sd));
+  }
+  vec3 c = uFxaa > 0.5 ? fxaa(uv) : texture2D(tDiffuse, uv).rgb;
   // Preserve the old order: HDR -> tone mapping -> output colour space -> artistic grade.
   ${GRADE_OUTPUT}
   float l = dot(c, vec3(0.2126, 0.7152, 0.0722));
@@ -634,6 +647,15 @@ void main() {
   c += (hash(vUv * uRes + fract(uTime * 7.13) * 91.7) - 0.5) * uGrain;
   float edge = smoothstep(0.3, 1.0, length(q) / 0.8);
   c = mix(c, c * vec3(1.25, 0.3, 0.25) + vec3(0.1, 0.0, 0.0), clamp(edge * uHurt, 0.0, 1.0));
+  // World of Ink: inside its circle the picture turns to ink on paper (black ink, a grey wash, paper white); ember, the
+  // scarf and the boss's red tells keep their colour.
+  if (uInk > 0.0) {
+    float inside = 1.0 - smoothstep(uInkAt.z * 0.9, uInkAt.z, length((vUv - uInkAt.xy) * vec2(uRes.x / uRes.y, 1.0)));
+    float lum = dot(c, vec3(0.2126, 0.7152, 0.0722)), warm = smoothstep(0.1, 0.3, c.r - c.b) * smoothstep(0.2, 0.4, c.r);
+    vec3 ink = mix(mix(vec3(0.043, 0.043, 0.059), vec3(0.54, 0.518, 0.47), smoothstep(0.1, 0.14, lum)), vec3(0.914, 0.894, 0.847), smoothstep(0.36, 0.42, lum));
+    c = mix(c, ink, uInk * inside * (1.0 - warm));
+  }
+  if (gap > 0.0) c = mix(mix(c, vec3(0.9, 0.6, 0.36), smoothstep(0.0, 0.35, gap)), vec3(1.0, 0.953, 0.863), smoothstep(0.55, 1.0, gap));
   c += uFlashCol * uFlash;
   gl_FragColor = vec4(c, 1.0);
 }`,

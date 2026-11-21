@@ -43,7 +43,8 @@ const CONFIG = {
             hurtRef: 40, hurtPush: 0.14, hurtRoll: 0.02, hurtFov: 1.2, blockMul: 0.45, punchFrom: 40, hitFov: -1.4, heavyHitFov: -2.2, counterFov: -1.6, counterHitFov: -3.4, counterRoll: 0.035, counterSwing: 0.16, flashPush: 0.3,
             parryFov: -3, parryPush: 0.06, breakFov: -1.8, executeFov: -2.2, phaseFov: 2.5, landDip: 0.1,
             strafeRoll: 0.012, moveFov: 1.2, moveRef: 5, maxRoll: 0.05, maxFov: 6, powerNear: 26, perkFov: -0.9,
-            powers: { blast: [4, 0.24], dragon: [2.4, 0.08], quake: [4, 0.24], beam: [-2.8, 0.1], iceLotus: [-2.2, 0.06], lotusBreak: [1.4, 0.04], tempest: [2.2, 0.08], greatWave: [3.6, 0.2], skyBlade: [4.6, 0.26], phoenix: [3.2, 0.1], blackStar: [-3, 0.04], starPull: [-1, 0], strike: [-1.8, 0.06], freeze: [-3.2, 0.05], blades: [-1.4, 0.04], bloodMoon: [3, 0.12],
+            powers: { blast: [4, 0.24], dragon: [2.4, 0.08], quake: [4, 0.24], beam: [-2.8, 0.1], iceLotus: [-2.2, 0.06], lotusBreak: [1.4, 0.04], tempest: [2.2, 0.08], greatWave: [3.6, 0.2], skyBlade: [4.6, 0.26], phoenix: [3.2, 0.1], blackStar: [-3, 0.04], starPull: [-1, 0],
+              inkWorld: [-2.6, 0.06], worldCut: [-3.4, 0.04], colossus: [4.4, 0.18], colossusRise: [1.2, 0], legion: [2.8, 0.12], legionRumble: [0.8, 0.02], strike: [-1.8, 0.06], freeze: [-3.2, 0.05], blades: [-1.4, 0.04], bloodMoon: [3, 0.12],
               twin: [2.6, 0.1], echo: [-0.6, 0.02], sunLines: [3.4, 0.1], lightningDash: [-1.2, 0.03], shadeClone: [1.4, 0.03], gale: [-2.4, 0.05], boltCrown: [-2.4, 0.08], bladeCage: [-1.6, 0.03], pyre: [3.2, 0.16], flare: [-1.1, 0.03], spark: [-0.8, 0.02],
               hound: [1.4, 0.05], bite: [-0.5, 0.02], draw: [1.2, 0.03], guardian: [2.2, 0.1], lancer: [1.2, 0.04], fox: [1, 0.03], lantern: [0.6, 0],
               crows: [0.8, 0.02], archer: [0.8, 0.02], hawk: [1.2, 0.04], stoop: [-0.6, 0.02], owl: [0.6, 0], owlBurst: [-0.4, 0.02],
@@ -338,7 +339,12 @@ const CONFIG = {
     // Ultimates II (pass 157): Great Wave crashes `wave` s on, Sky Blade drops `sky` s on and hits all within `skyRadius` m
     // of its point, Black Star flies `star` s and draws small enemies in at `pull` m/s, a Phoenix Dive pass burns all
     // within `diveReach` m of the boss's edge.
-    ult: { quake: 0.45, beam: 0.55, lotus: 0.45, tempest: 0.5, follow: 8, pinTurn: 0.5, wave: 0.95, sky: 1.1, skyRadius: 3, star: 0.35, pull: 3, diveReach: 1.5 },
+    // Ultimates III (pass 158): World of Ink's echo lands `inkDelay` s after the blow; Severance cuts `cut` s on, a line
+    // `cutLength` m each way of its holder, `cutWidth` m either side; Colossus swings `giant` s on over a `giantArc` degree
+    // arc; Ash Legion's lane starts `legionBack` m behind its holder, `legionLength` long and `legionWidth` wide, its
+    // first blow `legion` s on.
+    ult: { quake: 0.45, beam: 0.55, lotus: 0.45, tempest: 0.5, follow: 8, pinTurn: 0.5, wave: 0.95, sky: 1.1, skyRadius: 3, star: 0.35, pull: 3, diveReach: 1.5,
+      inkDelay: 0.25, cut: 0.75, cutLength: 40, cutWidth: 1.2, giant: 1.15, giantArc: 150, legion: 0.55, legionBack: 6, legionLength: 26, legionWidth: 6 },
     // Phoenix Dive's flight (Player.diveStart), s and m: a crouch of `burst`, up `rise` m in `up`, then each dive `dive`
     // long through the boss from `past` m beyond its far edge, a turn of `gap` between, the landing `land`; untouchable
     // from the burst to `grace` after the landing. The server's passes keep the same clock.
@@ -891,6 +897,14 @@ const CONFIG = {
       ults2: { waveAhead: 2.5, waveHeight: 0.42, waveCrash: 0.45, sword: 0.3, skyHigh: 11, form: 0.4, drop: 0.16, bury: 1.2, planted: 1.3, cool: 1.1, sink: 2.5,
         see: 0.4, seeNear: 2, markSize: 4, crater: 6, bird: 0.5, birdUp: 0.9, flap: 16, trail: 0.9, landRing: 2.2, kindle: 0.9, sphere: 1.4, corona: 4.2,
         starUp: 1.6, scorch: 7, fade: 0.4 },
+      // Ultimates III (pass 158, js/legend-fx-5.js), m and s: the ink circle `enso` m across, closing `close` s after the
+      // press, its grade `half` as strong for a viewer who isn't its holder, fading over `inkFade`; each echo a brush stroke
+      // `stroke` m long; Severance's line `cutUp` off the floor, its split `split` px (`splitNormal` on Normal) for
+      // `splitTime` s; the giant `giantAhead` before its holder and `giantSide` to its left (in the chase camera's sight),
+      // its arms `chest` up its body, see-through (`see`) while an enemy in its reach winds up, its arc's smear `smearUp` off the floor; the legion `riders` and `spearmen` strong,
+      // charging at `speed` m/s, `ranks` deep in `rankGap` m rows.
+      ults3: { enso: 14, close: 0.7, half: 0.5, inkFade: 0.5, stroke: 2.4, cutUp: 1.2, split: 6, splitNormal: 4, splitTime: 0.15,
+        giantAhead: 10, giantSide: 6, chest: 8.5, see: 0.35, smearUp: 2.2, riders: 8, spearmen: 10, speed: 10, ranks: 6, rankGap: 2.2 },
       legends2: { sunHeight: 2.2, sunOpen: 0.08, sunBurn: 0.6, sunFade: 0.7, line: 0.26, lineInk: 0.44, lineHold: 0.14, lineBurn: 0.5, lineUp: 0.9,
         scorch: 1.6, lineFrame: 3, waist: 1.0, waistRing: 1.4, threads: 0.3, eyes: 0.15, sink: 0.4, slash: 2.2, slashLife: 0.28 },
       guard2: { pane: 1.3, paneOff: 0.75, star: 1, huskRing: 1.3, scorch: 2.6, dial: 1.8, answer: 4, waist: 1.1, rewindRing: 1.6, seal: 1.2, sealUp: 0.85 },

@@ -33,7 +33,7 @@ const t0 = Date.now(), step = name => console.log(`[${((Date.now() - t0) / 1000)
   }
   async function ready(page) {
     await page.waitForFunction(() => multiplayer.info.ready && Game.loading <= 0 && multiplayer.info.receivedFrames > 2,
-      null, { timeout: 90000 });
+      null, { timeout: 180000 });   // CI's software GL: a joiner's first frames took over 90 s once (v7.206.0)
   }
 
   const wait = ms => new Promise(resolve => setTimeout(resolve, ms));
