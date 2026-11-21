@@ -25,11 +25,14 @@ function watch() {
   process.once('exit', () => { try { watcher.kill(); } catch (e) { /* gone */ } });
 }
 const softwareGL = process.env.ARENA_SOFTWARE_GL === '1';
-if (lowered || softwareGL) {
+// A Linux test machine without Edge (the Fedora laptop that runs remote-test) uses Playwright's own Chromium instead.
+const noEdge = process.platform === 'linux' && !require('node:fs').existsSync('/opt/microsoft/msedge/msedge');
+if (lowered || softwareGL || noEdge) {
   const launch = playwright.chromium.launch.bind(playwright.chromium);
   playwright.chromium.launch = async (options = {}) => {
     const args = softwareGL ? [...new Set([...(options.args || []), '--use-angle=swiftshader', '--enable-unsafe-swiftshader'])] : options.args;
-    const browser = await launch({ ...options, args });
+    const { channel, ...rest } = options;
+    const browser = await launch({ ...rest, ...(noEdge && channel === 'msedge' ? {} : { channel }), args });
     if (lowered) watch();
     return browser;
   };
