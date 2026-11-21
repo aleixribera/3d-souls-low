@@ -14,7 +14,8 @@
 //     cleared: [placement keys of enemies beaten at the checkpoint, Game.placementKey], shortcuts: [gate ids opened],
 //     zones: [won zone ids, v5.1, optional], traps: [trap ids sprung], seen: [sightings already gone], bosses: [enemy def ids beaten, ever],
 //     progress: { inventory: { <item id>: { max } }, currency, equipment, upgrades }, completed: bool, savedAt: ms,
-//     finds: [ids of the flasks found on the road, pass 79, optional] }
+//     finds: [ids of the flasks found on the road, pass 79, optional], gifts: [ids of the abilities given on the road, pass 159, optional] }
+// Pass 159: a save from before `gifts` holds every ability given before its level (roadGifts).
 // Pass 79: a save from before `finds` (its flasks granted by the levels) counts every flask before its level as found,
 // and holds at least the flasks they give (roadFlasks); one at the road's start is unchanged.
 // A save that is missing, unreadable or names something that no longer exists is treated as no save (New Game).
@@ -70,6 +71,7 @@ function makeCampaign(C) {
     if (![d.cleared, d.shortcuts, d.traps, d.seen, d.bosses].every(strs)) return null;
     if ('zones' in d && !strs(d.zones)) return null;   // v5.1: optional (older saves derive won zones from `cleared`)
     if ('finds' in d && !strs(d.finds)) return null;   // pass 79: optional (older saves: every flask before their level)
+    if ('gifts' in d && !strs(d.gifts)) return null;   // pass 159: optional (older saves: every ability given before their level)
     if (!record(d.progress) || !record(d.progress.inventory)) return null;
     for (const saved of Object.values(d.progress.inventory))
       if (!record(saved) || !Number.isSafeInteger(saved.max) || saved.max < 0) return null;
@@ -80,7 +82,8 @@ function makeCampaign(C) {
       d = { ...d, finds: roadFinds(d.level) };
       if (flask && least !== null && flask.max < least) d.progress = { ...d.progress, inventory: { ...d.progress.inventory, flask: { ...flask, max: least } } };
     }
-    return { ...d, ...checkpoint(d, L), completed: !!d.completed };
+    const gifts = ('gifts' in d ? d.gifts : roadGifts(d.level) || []).filter(id => Object.hasOwn(ABILITY_BY_ID, id) && CONFIG.abilities.rarity[ABILITY_BY_ID[id].rarity].given);   // one this build lacks, or not a gift: dropped
+    return { ...d, gifts, ...checkpoint(d, L), completed: !!d.completed };
   }
   function load() {
     const raw = readRaw();
@@ -139,6 +142,7 @@ function makeCampaign(C) {
       seen: finale.seenSightings(),
       bosses: [...new Set([...(data ? data.bosses : []), ...beatenBosses])],
       finds: [...Game.found],
+      gifts: [...Game.given],
       progress: captureProgress(),
       completed: !!(data && data.completed),
       savedAt: Date.now(),
@@ -167,19 +171,20 @@ function makeCampaign(C) {
   function begin(levelId) {
     Game.story = true; beatenBosses.clear();
     Game.found = new Set(data ? data.finds || [] : []);   // before the level starts: its own found flasks lie there no more
+    Game.given = new Set(data ? data.gifts || [] : []);   // and the abilities given so far are held from its start
     Game.startLevel(levelId);
   }
   function newGame() {
     erase();
     data = { v: S().saveVersion, level: chapterIds()[0], bonfire: null, spawn: null, cleared: [], shortcuts: [], traps: [], seen: [], bosses: [],
-             progress: freshProgress(), completed: false, savedAt: Date.now(), finds: [] };
+             progress: freshProgress(), completed: false, savedAt: Date.now(), finds: [], gifts: [] };
     begin(chapterIds()[0]);
   }
   // Developer jump (#dev): a fresh story starting at any chapter, every flask before it found.
   function jumpTo(levelId) {
     newGame();
     if (levelId === chapterIds()[0]) return;
-    data.finds = roadFinds(levelId); data.progress.inventory.flask = { max: roadFlasks(levelId) };
+    data.finds = roadFinds(levelId); data.gifts = roadGifts(levelId); data.progress.inventory.flask = { max: roadFlasks(levelId) };
     begin(levelId);
   }
   // Continue: the saved level, rebuilt to its checkpoint as if the player had just rested there.
@@ -271,6 +276,7 @@ const story = (() => {
   events.on('rest', d => { if (Game.story) A().save(d.bonfire.id); });
   events.on('gateOpened', () => A().autosave());
   events.on('flaskFound', () => A().autosave());   // pass 79: kept at once, as a gate opened
+  events.on('abilityGiven', () => A().autosave());   // pass 159: so is an ability given on the road
   window.addEventListener('pagehide', () => A().autosave());
   document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') A().autosave(); });
   events.on('endingDone', () => { if (Game.story) A().finish(); });

@@ -8,6 +8,7 @@
 //   abilities-desktop / -phone    the Abilities page (PLAN.md item 7) opened from the lobby: a few unlocked, one off;
 //   abilities-phone-end           the phone page scrolled to its legendaries; abilities-locked: opened during a run
 //   blade-*                       the blade commons' effects (pass 112) in the cel style, on the Pillager Captain
+//   story-given-desktop / -phone  Story: Scarlet Draw given on the road, its toast and story-coloured key (pass 159)
 //   cel-default-desktop / -phone  the default look (cel, no ?style=) in a Practice fight; cel-default-fight.mp4: 10 s of it
 require('../tests/low-priority.cjs');
 const fs = require('node:fs');
@@ -158,6 +159,23 @@ const shot = (page, name, clip) => page.screenshot({ path: path.join(out, name +
       await page.evaluate(() => { Game.player.dashes = 1.99; }); await page.waitForTimeout(110); await shot(page, 'touch-feather', { x: 440, y: 300, width: 400, height: 380 });
       await page.keyboard.press('j'); await page.waitForTimeout(230); await shot(page, 'touch-glint', { x: 440, y: 160, width: 400, height: 400 });
       await page.close(); console.log('touches', JSON.stringify(ink));
+    }
+    if (want('given')) for (const [w, h, tag] of [[1280, 720, 'desktop'], [390, 844, 'phone']]) {
+      // Story's road (pass 159): Scarlet Draw given in the Sunken Keep, the toast and its key on the row, in the story colour.
+      const page = await open(w, h);
+      await page.evaluate(async () => {
+        const key = CONFIG.story.saveKey; try { localStorage.removeItem(key); } catch (e) { /* none */ }
+        __arena.story.jumpTo('sunken-keep');
+        while (!(Game.player && Game.loading <= 0 && !Game.pendingLoad)) await new Promise(r => setTimeout(r, 100));
+        Game.worldWaiting = false;
+        for (const e of Game.enemies) if (e.alive()) e.x += 500;
+        const G = Game.level.giveAbility, p = Game.player;
+        p.x = p.px = (G.trigger[0] + G.trigger[1]) / 2; p.z = p.pz = (G.trigger[2] + G.trigger[3]) / 2; p.y = world.floorY(p.x, p.z, G.y ?? 0);
+        p.yaw = p.pyaw = Game.cam.yaw;
+      });
+      await page.waitForTimeout(900);
+      await shot(page, `story-given-${tag}`); await page.close();
+      console.log('given', tag);
     }
     if (want('blades')) for (const [w, h, tag] of [[1280, 720, ''], [390, 844, '-phone']]) {
       // The blade commons (pass 112) in the cel style, on a Pillager Captain held 2.8 m ahead and to the right. The clock is stepped by

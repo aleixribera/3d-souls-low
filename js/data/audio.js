@@ -411,6 +411,30 @@ const AUDIO = {
       { noise: 'pink', filter: { type: 'bandpass', freq: 600, to: 1100, q: 3 }, at: 0.55, a: 0.1, h: 0.3, d: 0.4, gain: 0.25 },
       { noise: 'pink', filter: { type: 'bandpass', freq: 800, to: 400, q: 1 }, at: 3, a: 0.1, d: 0.6, gain: 0.25 },
     ] },
+    // Story's four (pass 159). Scarlet Draw: a cloth snap at the press, a thin rising ring as the scarf hardens (0.55 s).
+    abilityScarf: { bus: 'sfx', priority: 3, cooldown: 0.3, max: 1, verb: 0.5, heat: 0.5, jitter: 0, layers: [
+      { noise: 'pink', filter: { type: 'bandpass', freq: 1800, to: 900, q: 1.5 }, a: 0.003, d: 0.12, gain: 0.6 },
+      { noise: 'white', filter: { type: 'highpass', freq: 3000 }, at: 0.05, a: 0.002, d: 0.05, gain: 0.3 },
+      { wave: 'sine', freq: 1400, to: 2600, at: 0.15, a: 0.3, d: 0.25, gain: 0.12 },
+    ] },
+    // Oath Guard: a low hum as the shield forms, an iron clank as it settles.
+    abilityOath: { bus: 'sfx', priority: 3, cooldown: 0.4, max: 1, verb: 0.6, heat: 0.4, jitter: 0, layers: [
+      { wave: 'sine', freq: 110, a: 0.15, h: 0.3, d: 0.6, gain: 0.35 },
+      { wave: 'sine', freq: 165, a: 0.2, h: 0.2, d: 0.5, gain: 0.15 },
+      { wave: 'sine', freq: 330, partials: [[1, 1, 1], [2.7, 0.4, 0.6]], at: 0.3, a: 0.002, d: 0.5, gain: 0.25 },
+      { noise: 'pink', filter: { type: 'bandpass', freq: 1500, q: 1.5 }, at: 0.3, a: 0.001, d: 0.06, gain: 0.3 },
+    ] },
+    // The Seven: a low drone of voices rising out of the ground over their arrival (1.3 s).
+    abilitySeven: { bus: 'sfx', priority: 3, cooldown: 0.5, max: 1, verb: 0.8, heat: 0.5, jitter: 0, layers: [
+      { wave: 'sawtooth', freq: 98, filter: { type: 'bandpass', freq: 500, to: 900, q: 3 }, a: 0.6, h: 0.5, d: 0.6, gain: 0.18 },
+      { wave: 'sawtooth', freq: 147, filter: { type: 'bandpass', freq: 700, to: 1100, q: 3 }, a: 0.7, h: 0.4, d: 0.6, gain: 0.12 },
+      { noise: 'brown', filter: { type: 'lowpass', freq: 200 }, a: 0.3, h: 0.6, d: 0.4, gain: 0.35 },
+    ] },
+    // Bell of Waking: a far bell's call as it falls (the tolls themselves are bellToll).
+    abilityBell: { bus: 'sfx', priority: 3, cooldown: 0.5, max: 1, verb: 0.9, heat: 0.4, jitter: 0, layers: [
+      { wave: 'sine', freq: 164, partials: [[1, 1, 1], [2.0, 0.5, 0.8], [2.76, 0.35, 0.6]], a: 0.01, d: 2.5, gain: 0.18 },
+      { noise: 'pink', filter: { type: 'lowpass', freq: 400, to: 1200 }, a: 0.8, d: 0.2, gain: 0.3 },
+    ] },
     // Each bolt: a split-second crack overhead, then thunder rolling away.
     abilityThunder: { bus: 'sfx', priority: 3, cooldown: 0.12, max: 3, verb: 0.6, heat: 0.9, jitter: 200, layers: [
       { noise: 'white', filter: { type: 'highpass', freq: [3000, 4500], q: 0.7 }, a: 0.0004, d: 0.025, dv: 0.4, gain: 1, drive: 4 },

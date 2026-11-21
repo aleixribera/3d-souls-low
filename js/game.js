@@ -24,6 +24,7 @@ const Game = {
   hazardTimers: new Map(),   // the human's hazard-floor tick clocks (Player.standInHazards)
   cleared: new Set(),    // checkpoints: keys of the enemies killed before the last rest (they stay dead until a restart)
   found: new Set(),      // Story: the ids of the flasks found on the road (a level's `flaskFinds`; js/story.js saves them)
+  given: new Set(),      // Story: the ids of the abilities given on the road (a level's `giveAbility`, pass 159; js/story.js saves them)
   loading: 0,            // s the loading screen still holds the world (CONFIG.loading)
   worldWaiting: false,   // true after a start or respawn until the player moves or acts (v7.160.0)
   zoomTarget: CONFIG.zoom.default, mouseHold: 0,
@@ -118,6 +119,14 @@ const Game = {
       visuals.warmUp(this.cam);   // include enemies: prepare their shadows and materials behind the loading screen
     } finally { for (const b of retired) b.rig.dispose(); }
   },
+  // The player's kit made of the given abilities `ids`. `only`: a gift mid-level, its key alone filled and the body's
+  // health where it is; without it a fresh body, every key full.
+  giveKit(ids, only) {
+    const p = this.player, hp = p.hp;
+    p.grantAbilities(ids);
+    if (only) p.hp = p.lastHp = Math.min(hp, p.maxHp);
+    for (const key in p.kit.pressed) if (!only || key === only) p.perk.charge[key] = p.kit.pressed[key].v.charge;
+  },
   // A fresh player at the respawn point: full health and full flasks, after a death too.
   spawnPlayer() {
     if (this.player) this.player.rig.dispose();
@@ -128,6 +137,11 @@ const Game = {
     // every one so far would hold (roadFlasks); in Story they are the ones carried and found.
     const fl = this.kind === 'level' && !this.story && roadFlasks(this.level.id, true), it = fl && this.player.inventory.flask;
     if (it && it.max < fl) it.max = it.count = fl;
+    // Pass 159: the abilities given on the road (a level's `giveAbility`), every key full. In Story the ones given so far;
+    // off it, alone (Practice's levels), a chapter holds every one given through it. Never online.
+    const solo = !(typeof multiplayer !== 'undefined' && multiplayer.active());
+    const gifts = this.kind !== 'level' || !solo ? [] : this.story ? [...this.given] : roadGifts(this.level.id, true) || [];
+    if (gifts.length) this.giveKit(gifts);
     companions.reset(this);
     this.deathTimer = 0; this.hitstop = 0; this.hazardTimers.clear();   // a new body: no death sequence or hit-pause carries over
     // the sparring ring runs at once: its teacher shows each drill before the player does it

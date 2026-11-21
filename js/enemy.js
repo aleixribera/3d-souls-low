@@ -160,6 +160,7 @@ class Enemy {
     this.chainTime = Infinity;                       // time since the last landed hit (a boss's anti-mash)
     this.cracks = 0; this.crackTime = 0;             // its guard's cracks (js/finisher.js) and time since the last counter on it
     this.frozen = 0;   // s left stopped in time (Time Rift, js/abilities.js): no step, no blow, hit as it stands
+    this.kneel = 0; this.kneelFor = 0;   // the Bell of Waking: s left of a hold spent on one knee (drawn as a kneel, not a bubble), of `kneelFor`
     this.pinned = 0;   // s left pinned where it stands (Heaven's Lance, Frozen Lotus: abilityPin): swings in place, never moved
     this.holdRest = 0;   // s left before a hold may stop it again (CONFIG.abilities.holdRest)
     this.blockTime = Infinity;                       // time since its shield last took a blow (the `shielded` reaction)
@@ -377,6 +378,7 @@ class Enemy {
   update(dt, player) {
     if (this.frozen > 0) {   // let go, it rests CONFIG.abilities.holdRest s before a hold can stop it again
       this.frozen = Math.max(0, this.frozen - dt); if (this.frozen === 0) this.holdRest = CONFIG.abilities.holdRest;
+      this.kneel = Math.min(this.kneel, this.frozen);
       this.updateFeedback(dt); return;
     }
     if (this.holdRest > 0) this.holdRest = Math.max(0, this.holdRest - dt);
@@ -1259,7 +1261,11 @@ class Enemy {
     r.reset(); r.setOpacity(1); r.root.visible = true;
     let warn = 0, glint = -1, heavy = 0;
     const a = this.attack;
-    switch (this.state) {
+    if (this.kneel > 0 && this.alive() && this.state !== ES.EXECUTED) {   // knelt by the Bell of Waking: down over 0.4 s, head bowed, up in the last 0.4 s
+      const k = ease(clamp((this.kneelFor - this.kneel) / 0.4, 0, 1)) * ease(clamp(this.kneel / 0.4, 0, 1));
+      r.kneel(k); r.lean(0.4 * k); r.head.rotation.x = 0.6 * k;
+      r.armR.rotation.x = lerp(-0.4, 0.3, k); r.armL.rotation.x = lerp(-0.1, 0.4, k); r.weapon.rotation.x = lerp(0.5, 1.6, k);
+    } else switch (this.state) {
       case ES.CHASE: case ES.PATROL: case ES.RETURN: case ES.SEARCH: r.walk(this.walkPhase, 0.5); r.weightLean(this.vx, this.vz, ctx.yaw, ctx.dt); break;
       case ES.LURK:
         r.crouch(0.38); r.tip.rotation.x = 0.3; r.armL.rotation.x = -0.9; r.armR.rotation.x = -0.7; break;

@@ -75,8 +75,8 @@ const progress = (() => {
     save();
     return { xp, before, after, crates };
   }
-  // The abilities a crate can hold: every one but the starter set.
-  const prizes = () => ABILITIES.filter(b => !CRATES.starter.includes(b.id));
+  // The abilities a crate can hold: every one but the starter set and the given ones.
+  const prizes = () => ABILITIES.filter(b => !CRATES.starter.includes(b.id) && !CONFIG.abilities.rarity[b.rarity].given);   // a story ability is given on the road
   // One ability drawn by the odds from `pool`: a rarity by its weight among those `pool` holds, then one of it.
   function drawFrom(pool, rng) {
     if (!pool.length) return null;

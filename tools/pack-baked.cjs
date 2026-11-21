@@ -59,6 +59,8 @@ const FILES = {
   'phoenix': { sources: ['phoenix'] },
   'colossus': { sources: ['colossus'] },
   'ash-legion': { sources: ['ash_legion'] },
+  'seven-founder': { sources: ['seven_founder'] },
+  'ghost-bell': { sources: ['ghost_bell'] },
 };
 
 function readGlb(file) {

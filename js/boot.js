@@ -58,6 +58,7 @@ function registerListeners() {
   legendFx3.attach();    // Ultimates I drawn: the dragon, the cataclysm, the lance, the lotus, the tempest, the world dim (js/legend-fx-3.js)
   legendFx4.attach();    // Ultimates II drawn: the wave, the sky blade, the firebird, the black star (js/legend-fx-4.js; after legendFx3, whose dim it adds to)
   legendFx5.attach();    // Ultimates III drawn: the ink world, the cut, the giant, the legion (js/legend-fx-5.js)
+  storyFx.attach();      // Story's four drawn: the scarf, the shield, the Seven, the bell (js/story-fx.js); after legendFx5, its ink the stronger
   legendFx2.attach();    // Legendaries II drawn: the suns, the lightning dash, Fourfold's threads, the shade clones (js/legend-fx-2.js)
   summonFigures.attach(); // the Stone Guardian, the Lancer of Ash, the Bone Archer, the Ronin Shade and the Puppet Knight drawn (js/summon-figures.js)
   summonBrutes.attach(); // the Ash Bear and the Glass Mantis drawn (js/summon-brutes.js)

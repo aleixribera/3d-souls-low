@@ -7,7 +7,7 @@
 // ============================================================================
 const abilityLab = (() => {
   const held = new Map();   // ability id -> level on (absent: off); kept across restarts and deaths, until the page closes
-  const RARITIES = ['common', 'rare', 'legendary'];
+  const RARITIES = ['common', 'rare', 'legendary', 'story'];
   let root = null, grid = null, worn = null, open = false, owner = null, firing = null;
   const here = game => !!(game.level && game.level.abilityLab) && !(typeof multiplayer !== 'undefined' && multiplayer.active());
   const make = (tag, cls, text) => { const n = document.createElement(tag); if (cls) n.className = cls; if (text) n.textContent = text; return n; };
@@ -102,9 +102,9 @@ const abilityLab = (() => {
   #abilityLab h2{margin:0;font:400 var(--ui-size-head)/1.1 var(--ui-display)}
   #abilityLab .lab-tools{display:flex;flex-wrap:wrap;align-items:center;gap:6px}
   #abilityLab .lab-close{margin-left:10px}
-  #abilityLab .lab-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px 22px;align-items:start}
+  #abilityLab .lab-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px 22px;align-items:start}
   #abilityLab h3{margin:0 0 8px;padding-bottom:6px;border-bottom:1px solid var(--ui-line);font:500 var(--ui-size-hint)/1.4 var(--ui-text);color:var(--rc)}
-  #abilityLab .lab-col{--rc:var(--body)}#abilityLab [data-rarity=rare]{--rc:var(--rare)}#abilityLab [data-rarity=legendary]{--rc:var(--leg)}
+  #abilityLab .lab-col{--rc:var(--body)}#abilityLab [data-rarity=rare]{--rc:var(--rare)}#abilityLab [data-rarity=legendary]{--rc:var(--leg)}#abilityLab [data-rarity=story]{--rc:#d8545a}
   #abilityLab .lab-row{display:flex;align-items:stretch;gap:6px;margin-bottom:4px}
   #abilityLab .lab-pick{all:unset;box-sizing:border-box;flex:1;min-width:0;display:flex;align-items:flex-start;gap:12px;min-height:44px;padding:9px 12px;cursor:pointer;
     border:1px solid transparent;border-left:3px solid transparent;touch-action:manipulation;-webkit-tap-highlight-color:transparent}

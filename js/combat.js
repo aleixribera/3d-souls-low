@@ -90,7 +90,7 @@ function parryTiming(p, e, extra) {
   else if (e.state === ES.ACTIVE) rem = -e.stateTime;
   else return null;
   if (rem > P.lead * wide + extra || rem < -P.grace * wide) return null;
-  if (!isInFront(p, e.x, e.z) || gateBetween(p, e)) return null;   // same front rule as blocking
+  if (!(p.perk && p.perk.oath > 0) && !isInFront(p, e.x, e.z) || gateBetween(p, e)) return null;   // same front rule as blocking (Oath Guard turns blows from any side)
   // Its reach either way (pass 133: a kick behind, `fwd` below 0, is parried from behind).
   const b = e.attack.box;
   if (Math.hypot(e.x - p.x, e.z - p.z) > Math.abs(b.fwd) + b.d / 2 + p.radius + P.reach) return null;
@@ -103,7 +103,7 @@ const blowKey = e => (e.attackNo || 0) * 64 + (e.hitIndex || 0);
 // `perk.stance` s left) deflects every blow a guard could, untimed, mid-swing or drinking too.
 const STANCE_STATES = new Set([PS.BLOCK, PS.ATTACK, PS.USE_ITEM]);
 const canDeflectNow = p => p.alive() && (p.deflect > 0 && (p.state === PS.BLOCK || p.isFree()) ||
-  p.perk && p.perk.stance > 0 && (p.isFree() || STANCE_STATES.has(p.state)));
+  p.perk && (p.perk.stance > 0 || p.perk.oath > 0) && (p.isFree() || STANCE_STATES.has(p.state)));   // Oath Guard: the same, from any side
 
 // A perfect dodge (pass 85; pass 98, Aleix's bug: the cue fired, then the blow it announced landed). Decided on the
 // first frame the dash's i-frames meet a blow, so the cue is instant: a dodge only if the blow ends no later than the
@@ -156,7 +156,7 @@ function resolveCombat(game) {
       const res = typeof multiplayer !== 'undefined' && multiplayer.active() ? multiplayer.parry(target, untimed) : target.getDeflected();
       p.deflected(target, key, res.opened);
       p.gainCharge(CONFIG.abilities.press.gain.deflect + abilityKeysFor(p.kit, 'parry'), untimed ? 'guard' : null);   // Kindling's too
-      if (untimed) events.emit('abilityPerk', { body: p, perk: 'stance/deflect', target });
+      if (untimed && p.perk.stance > 0) events.emit('abilityPerk', { body: p, perk: 'stance/deflect', target });   // Oath Guard's answers are its own
       game.hitstop = Math.max(game.hitstop, P.hitstop * (res.opened ? 1.3 : 1));
       events.emit('parry', { target, player: p, opened: res.opened });
       if (p.perk) abilityParried(p, target);   // Iron Mercy, Ringing Steel, Kindling

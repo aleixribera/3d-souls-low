@@ -72,10 +72,10 @@ const notices = [];
 const campaignContext = vm.createContext({
   CONFIG: { story: { saveVersion: 1, saveKeys: { test: 'save' } } },
   ALL_LEVELS: [{ id: 'hall', bonfires: [] }], PLAYER_DEF: { inventory: [] }, ITEMS: { flask: {} },
-  roadFlasks: () => 6, roadFinds: () => ['before-hall'],   // pass 79: the road before 'hall' holds two flasks to find
+  roadFlasks: () => 6, roadFinds: () => ['before-hall'], roadGifts: () => [], ABILITY_BY_ID: {},   // pass 79: the road before 'hall' holds two flasks to find
   localStorage: { getItem: () => stored, setItem(k, v) { if (refuseWrite) throw new Error('Quota exceeded'); stored = v; } },
   events: { emit: type => notices.push(type) },
-  Game: { story: true, kind: 'level', level: { id: 'hall' }, player: { inventory: {} }, cleared: new Set(), zones: [], found: new Set(['before-hall']) },
+  Game: { story: true, kind: 'level', level: { id: 'hall' }, player: { inventory: {} }, cleared: new Set(), zones: [], found: new Set(['before-hall']), given: new Set() },
   world: { gates: [], traps: [] }, finale: { seenSightings: () => [] },
 });
 const storySource = source('js/story.js');

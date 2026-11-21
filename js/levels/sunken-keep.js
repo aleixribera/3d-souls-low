@@ -42,6 +42,7 @@ const LEVEL_2 = {
   // Bonfires: `spawn` is where resting (and dying) puts the player back.
   // A flask found on the road (pass 79, Game.updateLevel): in the hand of the dead by the wall.
   flaskFinds: [{ id: 'keep-pilgrim', x: 35.6, z: -9.0 }],
+  giveAbility: { id: 'scarlet-draw', trigger: [66, 72, 37, 47] },   // the Seven's oath hall: Scarlet Draw (pass 159)
   bonfires: [{ id: 'keep-start', x: 3.5, z: -5.5, spawn: { x: 5, z: -3.4, yaw: Math.PI / 2 } },
              { id: 'keep-shrine', x: 78, z: 45, spawn: { x: 78, z: 42.4, yaw: Math.PI / 2 } }],
   gated: [

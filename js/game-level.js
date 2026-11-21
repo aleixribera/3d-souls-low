@@ -31,6 +31,13 @@ function roadFlasks(levelId, through = false) {
   const own = PLAYER_DEF.inventory.find(it => it.item === 'flask').max;
   return ids.slice(0, through ? i + 1 : i).reduce((n, id) => n + (ALL_LEVELS.find(l => l.id === id).flaskFinds || []).length, own);
 }
+// The abilities given on the road before `levelId` (and in it too, with `through`): its levels' `giveAbility` ids (pass
+// 159). Null off the road.
+function roadGifts(levelId, through = false) {
+  const ids = STORY.chapters.map(c => c.level), i = ids.indexOf(levelId);
+  if (i < 0) return null;
+  return ids.slice(0, through ? i + 1 : i).map(id => ALL_LEVELS.find(l => l.id === id).giveAbility).filter(Boolean).map(G => G.id);
+}
 // The ids of every flask found on the road before `levelId`.
 const roadFinds = levelId => STORY.chapters.slice(0, Math.max(0, STORY.chapters.findIndex(c => c.level === levelId)))
   .flatMap(c => (ALL_LEVELS.find(l => l.id === c.level).flaskFinds || []).map(f => f.id));
@@ -87,6 +94,14 @@ Object.assign(Game, {
       const it = p.inventory.flask;
       this.found.add(f.id); it.max++; it.count++;
       events.emit('flaskFound', { find: f, player: p, flasks: it.max });
+    }
+    // An ability given on the road (pass 159, Story alone; js/story.js saves it): first stood in its place, it joins the
+    // kit at once, its key full. Off Story's own road the chapter already gives it (spawnPlayer).
+    const G = this.level.giveAbility;
+    if (G && this.story && p.alive() && !this.given.has(G.id) && inRect(G.trigger, p.x, p.z) && Math.abs(p.y - (G.y ?? 0)) <= CONFIG.story.find.floorGap) {
+      this.given.add(G.id);
+      this.giveKit([...this.given], ABILITY_BY_ID[G.id].key);
+      events.emit('abilityGiven', { ability: ABILITY_BY_ID[G.id], player: p });
     }
     // Hazard floors (a level's `hazards`, Player.standInHazards). Enemies are of the rot and wade through it unharmed.
     p.standInHazards(dt, this.hazardTimers);

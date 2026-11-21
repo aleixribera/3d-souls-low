@@ -152,10 +152,12 @@ function validateData({ visual = true } = {}) {
     'Bot navigation needs integer search limits, fine floor samples and ordered recovery limits.');
   // Boss Rush's abilities (v7.70.0, js/abilities.js): every card can be drawn and read.
   const BL = CONFIG.abilities, RAR = BL.rarity || {};
+  const DRAWN = Object.keys(RAR).filter(r => !RAR[r].given);   // the rarities a pick or a crate draws (a `given` one is handed out by a level)
   need(Number.isInteger(BL.offer) && BL.offer >= 1 && num(BL.pickTime) && BL.pickTime > 0 && num(BL.pickHold) && BL.pickHold >= 0 && BL.pickHold < BL.pickTime,
     'CONFIG.abilities: offer a whole number of 1 or more, pickTime positive, pickHold 0 or more and under pickTime.');
-  need(['common', 'rare', 'legendary'].every(r => RAR[r]) && Object.values(RAR).every(R => Number.isInteger(R.levels) && R.levels >= 1 && num(R.weight) && R.weight >= 0 && num(R.grow) && R.grow >= 0),
-    'CONFIG.abilities.rarity: common, rare and legendary, each with whole levels of 1 or more and a weight and grow of 0 or more.');
+  need(['common', 'rare', 'legendary'].every(r => RAR[r]) && Object.values(RAR).every(R => Number.isInteger(R.levels) && R.levels >= 1 && num(R.weight) && R.weight >= 0 && num(R.grow) && R.grow >= 0
+    && [undefined, true].includes(R.given) && (!R.given || R.weight === 0 && R.grow === 0)),
+    'CONFIG.abilities.rarity: common, rare and legendary, each with whole levels of 1 or more and a weight and grow of 0 or more; a `given` one (only true) weighs 0.');
   need(Array.isArray(BL.first) && BL.first.length >= 1 && BL.first.every(r => RAR[r]) && ABILITIES.filter(b => BL.first.includes(b.rarity)).length >= BL.offer,
     'CONFIG.abilities: first a list of rarities with enough abilities for an offer.');
   need(num(BL.plainWeight) && BL.plainWeight > 0 && BL.plainWeight <= 1, 'CONFIG.abilities.plainWeight: above 0, at most 1 (a plain common against another common).');
@@ -232,6 +234,9 @@ function validateData({ visual = true } = {}) {
     need(U3 && Object.values(U3).every(x => num(x) && x > 0) && U3.see < 1 && U3.half <= 1 && Number.isInteger(U3.riders) && Number.isInteger(U3.spearmen)
       && Number.isInteger(U3.ranks) && U3.close > 0.45 && Object.keys(U3).length === 19,
       'CONFIG.VISUALS.abilityFx.ults3: every number above 0 (all 19 of them), close over 0.45 s (the circle draws from 0.45 s), see under 1, half at most 1, riders, spearmen and ranks whole numbers.');
+    const SF = CONFIG.VISUALS.abilityFx.story;   // Story's four's look (js/story-fx.js)
+    need(SF && Object.values(SF).every(x => num(x) && x > 0) && SF.half <= 1 && SF.bellMin <= 1 && Object.keys(SF).length === 10,
+      'CONFIG.VISUALS.abilityFx.story: every number above 0 (all 10 of them), half and bellMin at most 1.');
     const IF = CONFIG.VISUALS.impactFrame, FX = CONFIG.VISUALS.abilityFx, CRn = FX.crown, CGn = FX.cage, TW = FX.twin;
     need(pos(IF, ['time', 'calm', 'gap', 'near']) && IF.gap >= 1 && IF.time < IF.gap && num(IF.darken) && IF.darken > 0 && IF.darken < 1 && typeof IF.filter === 'string'
       && num(IF.dim) && IF.dim > 0 && IF.dim < 1 && Number.isInteger(IF.dimSteps) && IF.dimSteps >= 1,
@@ -342,8 +347,24 @@ function validateData({ visual = true } = {}) {
     const pressed = (b.perk || b.power || {}).when === 'press';
     need(pressed === (b.key !== undefined) && (b.key === undefined || ABILITY_KEYS.includes(b.key)),
       `${where}: a pressed ability (when: 'press') names exactly one key (${ABILITY_KEYS.join(', ')}), and only a pressed one names a key.`);
-    if (b.key !== undefined) need((b.key === 'ultimate') === (b.rarity === 'legendary'),
-      `${where}: key ultimate is a legendary's, strike, guard and summon a rare's.`);
+    if (b.key !== undefined && !(R && R.given)) need((b.key === 'ultimate') === (b.rarity === 'legendary'),
+      `${where}: key ultimate is a legendary's, strike, guard and summon a rare's (a given rarity's may be any key).`);
+    // A given ability (pass 159, Story's four) is handed out by a level in its chapter: one per key, never a starter.
+    if (R && R.given) {
+      const lvl = b.story && ALL_LEVELS.find(L => L.giveAbility && L.giveAbility.id === b.id);
+      need(b.story && Number.isInteger(b.story.chapter) && b.story.chapter >= 1 && typeof b.story.place === 'string' && b.story.place.trim() && b.key !== undefined,
+        `${where}: a ${b.rarity} ability names a key and a story { chapter (a whole number from 1), place }.`);
+      need(ABILITIES.filter(o => o.rarity === b.rarity && o.key === b.key).length === 1, `${where}: no other ${b.rarity} ability for key ${b.key}.`);
+      need(!!lvl && STORY.chapters.findIndex(c => c.level === lvl.id) + 1 === b.story.chapter, `${where}: the level of chapter ${b.story && b.story.chapter} gives it (giveAbility).`);
+      need(ALL_LEVELS.filter(L => L.giveAbility && L.giveAbility.id === b.id).length === 1, `${where}: one level gives it, no more.`);
+    } else need(b.story === undefined, `${where}: only a given rarity's ability has a story.`);
+    // Story's four (pass 159): each new power's numbers in their range.
+    if (b.power && b.power.then === 'scarfBlade') need(pv.every(v => v.damage > 0 && v.reach > 0), `${where}: scarfBlade's damage and reach above 0.`);
+    if (b.power && b.power.then === 'oathShield') need(pv.every(v => v.time > 0 && v.damage > 0), `${where}: oathShield's time and damage above 0.`);
+    if (b.power && b.power.then === 'seven') need(pv.every(v => v.every > 0 && v.damage > 0 && v.draw >= 0 && v.draw <= v.time
+      && Math.abs(v.time - v.every * (CONFIG.abilities.summons.seven.count + 2)) < 1e-6),
+      `${where}: seven's every and damage above 0, draw from 0 to time, time one \`every\` for each founder, the gather and the blow together (count + 2).`);
+    if (b.power && b.power.then === 'bellToll') need(pv.every(v => v.time > 0 && v.damage > 0), `${where}: bellToll's time and damage above 0.`);
     if (!R || kinds.length !== 1 || !Array.isArray(b.levels)) { need(Array.isArray(b.levels), `${where}: levels must be a list.`); continue; }
     need(b.levels.length === R.levels, `${where}: ${R.levels} levels for a ${b.rarity}.`);
     const plan = b.perk ? ABILITY_PERKS[b.perk.when + '/' + b.perk.then] : b.power ? ABILITY_POWERS[b.power.when + '/' + b.power.then] : null;
@@ -376,6 +397,10 @@ function validateData({ visual = true } = {}) {
   // Legendaries I (pass 151): Storm King's crown, Gale Crescent's cage, the rest after a hold.
   need(BL.crown && ['gap', 'reach'].every(k => num(BL.crown[k]) && BL.crown[k] > 0) && BL.cage && ['lead', 'reach'].every(k => num(BL.cage[k]) && BL.cage[k] > 0)
     && num(BL.holdRest) && BL.holdRest >= 0, 'CONFIG.abilities: crown { gap, reach } and cage { lead, reach } above 0, holdRest 0 or more.');
+  // Story's four (pass 159): the scarf's beat and band, the bell's first toll, the Seven's blow together and how many rise.
+  need(BL.story && ['scarf', 'scarfWidth', 'bell', 'together'].every(k => num(BL.story[k]) && BL.story[k] > 0) && Object.keys(BL.story).length === 4
+    && Number.isInteger(BL.summons.seven.count) && BL.summons.seven.count >= 1,
+    'CONFIG.abilities.story: scarf, scarfWidth, bell and together above 0; summons.seven.count a whole number from 1.');
   const UL = BL.ult;
   need(UL && ['quake', 'beam', 'lotus', 'tempest', 'follow'].every(k => num(UL[k]) && UL[k] > 0) && num(UL.pinTurn) && UL.pinTurn >= 0 && UL.pinTurn <= 1,
     'CONFIG.abilities.ult: quake, beam, lotus, tempest and follow above 0; pinTurn from 0 to 1.');
@@ -445,7 +470,7 @@ function validateData({ visual = true } = {}) {
   const CR = CRATES, whole0 = x => Number.isInteger(x) && x >= 0;
   need(CR && ['fight', 'crowned', 'minute', 'least'].every(k => whole0(CR.xp?.[k])) && ['first', 'step', 'most'].every(k => whole0(CR.level?.[k])) && CR.level.first > 0 && CR.level.most >= CR.level.first,
     'CRATES: xp fight, crowned, minute and least, and level first, step and most, whole numbers of 0 or more (first above 0, most at least first).');
-  need(Object.keys(RAR).every(r => num(CR.odds?.[r]) && CR.odds[r] >= 0) && Object.values(CR.odds).some(w => w > 0), 'CRATES.odds: a weight of 0 or more for each rarity, one above 0.');
+  need(DRAWN.every(r => num(CR.odds?.[r]) && CR.odds[r] >= 0) && Object.values(CR.odds).some(w => w > 0), 'CRATES.odds: a weight of 0 or more for each rarity, one above 0.');
   need(Number.isInteger(CR.roll?.tiles) && Number.isInteger(CR.roll.land) && CR.roll.land > 0 && CR.roll.land < CR.roll.tiles - 2 && num(CR.roll.time) && CR.roll.time > 0 && num(CR.roll.still) && CR.roll.still > 0,
     'CRATES.roll: whole tiles, the reward at a whole land with tiles after it, a time and a still above 0.');
   // The starter set (PLAN.md item 7): known abilities, each once, some of each rarity, every number key filled (a fresh
@@ -454,12 +479,12 @@ function validateData({ visual = true } = {}) {
   need(Array.isArray(STARTER) && STARTER.every(id => Object.hasOwn(ABILITY_BY_ID, id)) && new Set(STARTER).size === STARTER.length, 'CRATES.starter: ability ids, each once.');
   need(Number.isInteger(CR.save) && CR.save >= 1, 'CRATES.save: a whole version of 1 or more.');
   if (Array.isArray(STARTER)) {
-    need(Object.keys(RAR).every(r => CRATE_MIN[r] >= 1) && cratePool(STARTER)?.length === STARTER.length, 'CRATES.starter: at least one of each rarity.');
+    need(DRAWN.every(r => CRATE_MIN[r] >= 1) && cratePool(STARTER)?.length === STARTER.length, 'CRATES.starter: at least one of each rarity.');
     for (const key of ABILITY_KEYS) need(STARTER.some(id => ABILITY_BY_ID[id]?.key === key), `CRATES.starter: an ability for key ${key}.`);
     need(STARTER.filter(id => BL.first.includes(ABILITY_BY_ID[id]?.rarity)).length >= BL.offer, 'CRATES.starter: a whole offer for the first pick (CONFIG.abilities.first).');
     need(ABILITIES.length > STARTER.length, 'CRATES.starter: a crate needs abilities outside the starter set.');
   }
-  for (const r of Object.keys(RAR)) need(ABILITIES.filter(b => b.rarity === r).length >= BL.offer + CONFIG.swift.extra, `Abilities: at least ${BL.offer + CONFIG.swift.extra} of rarity ${r}, to fill an offer.`);
+  for (const r of DRAWN) need(ABILITIES.filter(b => b.rarity === r).length >= BL.offer + CONFIG.swift.extra, `Abilities: at least ${BL.offer + CONFIG.swift.extra} of rarity ${r}, to fill an offer.`);
   need(num(botConfig.parryChanceScale) && botConfig.parryChanceScale >= 0 && botConfig.parryChanceScale <= 1, 'Bot parryChanceScale must be 0..1.');
   for (const [group, fields] of Object.entries({ tempo: ['comboBase', 'comboAggression', 'punishCombo', 'finishBelow'],
     defence: ['walkMargin', 'walkLead', 'margin', 'clear'], string: ['outrun'], yieldTo: ['range', 'late'], jumpDodge: ['clearance', 'timingMargin', 'followMargin', 'maxSpeed'] }))
@@ -860,7 +885,7 @@ function validateData({ visual = true } = {}) {
     'CONFIG.pace: boss must be 1 or more, rise 0 or more, scale above 0, max at least boss, tell 0 or more, tellFloor in (0, 1], warm a whole number of 0 or more, warmFrom in (0, 1], steady a whole number of fights won, at least warm.');
   const SW = CONFIG.swift, KM = CONFIG.killMoment;   // v7.69.0: Boss Rush's par and swift kill, and the kill moment
   need(SW && num(SW.par) && SW.par > 0 && num(SW.late) && SW.late >= SW.par && num(SW.pair) && SW.pair >= 0 && num(SW.max) && SW.max >= SW.par && Number.isInteger(SW.extra) && SW.extra >= 0 && CONFIG.abilities.offer + SW.extra <= ABILITIES.length
-    && SW.might && Object.keys(RAR).every(r => num(SW.might[r]) && SW.might[r] >= 0),
+    && SW.might && DRAWN.every(r => num(SW.might[r]) && SW.might[r] >= 0),
     'CONFIG.swift: par above 0, late at least par, pair 0 or more, max at least par, extra a whole number of 0 or more that still fits the abilities there are, and a might of 0 or more for every rarity.');
   need(KM && num(KM.slow) && KM.slow > 0 && KM.slow <= 1 && ['time', 'embers', 'emberSpeed'].every(k => num(KM[k]) && KM[k] >= 0),
     'CONFIG.killMoment: slow in (0, 1], and time, embers and emberSpeed 0 or more.');
@@ -1502,6 +1527,13 @@ function validateRooms(L, where, need, num, visual = true) {
   need(!('flasks' in L), `${where}: flasks are found now (flaskFinds), not granted by a level.`);
   if ('flaskFinds' in L) need(Array.isArray(L.flaskFinds) && L.flaskFinds.every(f => f && typeof f.id === 'string' && f.id.length > 0 && onFloor(f.x, f.z, f.y)),
     `${where}: each of flaskFinds needs an id and x, z (and y) on a floor.`);
+  // Pass 159: a level of Story's road may give one ability of a given rarity, when the player first stands in `trigger`.
+  if ('giveAbility' in L) {
+    const G = L.giveAbility, b = G && Object.hasOwn(ABILITY_BY_ID, G.id) && ABILITY_BY_ID[G.id];
+    need(!!b && !!(CONFIG.abilities.rarity[b.rarity] || {}).given && rectOk(G.trigger) && (G.y === undefined || num(G.y))
+      && onFloor((G.trigger[0] + G.trigger[1]) / 2, (G.trigger[2] + G.trigger[3]) / 2, G.y ?? 0),
+      `${where}: giveAbility needs the id of a given rarity's ability and a trigger rect whose middle is on a floor (at y, if given).`);
+  }
   if ('hazards' in L) need(Array.isArray(L.hazards), `${where}: hazards must be a list.`);
   for (const h of Array.isArray(L.hazards) ? L.hazards : []) {
     const tag = `${where} hazard "${h && h.id}"`;

@@ -11,7 +11,7 @@ const rushNow = () => (typeof replayView !== 'undefined' && replayView.rush) || 
 // enemy's suns, Fourfold's keys, a shade clone called on no one.
 // The Ultimates told with no enemy: Cataclysm and Great Wave always (they strike a place), Sky Blade and Black Star when
 // their enemy died before they landed (pass 157: Cataclysm was never drawn online, its test calling netView.ability).
-const NET_FREE_POWERS = new Set(['iai', 'husk', 'lightningDash', 'sunLines', 'refillKeys', 'shadeClone', 'quake', 'greatWave', 'skyBlade', 'blackStar', 'inkWorld', 'worldCut', 'colossus', 'legion']);
+const NET_FREE_POWERS = new Set(['iai', 'husk', 'lightningDash', 'sunLines', 'refillKeys', 'shadeClone', 'quake', 'greatWave', 'skyBlade', 'blackStar', 'inkWorld', 'worldCut', 'colossus', 'legion', 'scarfBlade', 'oathShield']);
 const netView = {
   // One enemy at `alpha` between snapshot values `s` and `q`; `since` s after `s` was taken (its clock runs on).
   enemy(e, s, q, alpha, since, ctx) {
@@ -24,7 +24,7 @@ const netView = {
       ? lerp(s.stateTime, q.stateTime, alpha) : s.stateTime + Math.max(0, since);
     e.holdLeft = s.holdLeft; e.retreatHop = s.retreatHop; e.blinkLeft = s.blinkLeft;
     e.vx = s.vx; e.vy = s.vy; e.vz = s.vz;
-    e.hp = s.hp; e.poise = s.poise; e.frozen = s.frozen || 0;
+    e.hp = s.hp; e.poise = s.poise; e.frozen = s.frozen || 0; if ((s.kneel || 0) > (e.kneel || 0)) e.kneelFor = s.kneel; e.kneel = s.kneel || 0;
     e.sealed = s.sealed || 0; e.sealNo = s.seal ? s.serial : -1;   // Binding Seal: its strip, and the attack it spends
     if ((s.cracks || 0) !== e.cracks) {   // pass 100: the server's cracks; `by` the striker (this player, or another's id)
       const grew = (s.cracks || 0) > e.cracks;

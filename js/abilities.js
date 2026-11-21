@@ -194,6 +194,19 @@ function abilityHeal(p, share, perk, target = null) {
 //   press/legion:        Ash Legion. A lane from `ult.legionBack` m behind its holder along the aim, `ult.legionLength` m
 //                        long and `ult.legionWidth` m wide: from `ult.legion` s on, every `every` s for `time` s, every
 //                        enemy in it takes `damage` (each told as `strike` n, with the lane's foot and aim).
+// Story's four (design/abilities batch 18, rarity `story`: given on Story's road, never offered); drawn by js/story-fx.js.
+//   press/scarfBlade:    Scarlet Draw. A band `reach` m long and `story.scarfWidth` m wide from its holder toward the enemy
+//                        (else along its facing), fixed at the press; `story.scarf` s on every enemy in it takes `damage`
+//                        (`strike` 1, with the band's foot and aim).
+//   press/oathShield:    Oath Guard. For `time` s (its holder's perk clock `oath`) every blow a deflect could turn is turned
+//                        from any side, untimed (canDeflectNow, parryTiming), and each turned blow is answered with `damage`
+//                        to its striker (told as `strike` n on that enemy).
+//   press/seven:         The Seven. A summon (`seven`): seven founders in a ring round the enemy; from their arrival a beat
+//                        every `every` s: beats 1 to `count` each one founder's blow of `damage`, then the gather (no blow),
+//                        then all together, `damage` × `story.together`. Draws the enemy's eye for `draw` s.
+//   press/bellToll:      Bell of Waking. `story.bell` s on, the first toll kneels the enemy for `time` s (abilityKneel: a
+//                        hold, so a hold's rest spares it); at the kneel's end the second toll deals `damage`, never past
+//                        a boss's phase line (`strike` 1 and 2, with the enemy).
 // The effect commons (design/abilities, batch 2: the blade), each a small blow of `damage` (CONFIG.abilities.commons):
 //   dashPast/spark:      a dash that went past an enemy (dashPastOf) sparks it, once every `cooldown` s.
 //   stringEnd/lick:      the last blow of a full light string (an attack with `stringEnd`) licks that enemy with flame.
@@ -276,6 +289,8 @@ const ABILITY_POWERS = {
   'press/blackStar': ['charge', 'time', 'damage', 'radius'],
   'press/inkWorld': ['charge', 'time', 'share'], 'press/worldCut': ['charge', 'damage'], 'press/colossus': ['charge', 'damage', 'reach'],
   'press/legion': ['charge', 'time', 'every', 'damage'],
+  'press/scarfBlade': ['charge', 'damage', 'reach'], 'press/oathShield': ['charge', 'time', 'damage'], 'press/seven': ['charge', 'time', 'every', 'damage', 'draw'],
+  'press/bellToll': ['charge', 'time', 'damage'],
   'dashPast/spark': ['damage', 'cooldown'], 'stringEnd/lick': ['damage'], 'fullHeavy/molten': ['damage'],
   'dashStrike/lateCut': ['damage'], 'dodge/afterimage': ['damage'], 'jump/whirl': ['damage', 'cooldown'],
   'block/thorns': ['damage', 'cooldown'], 'flask/burnHits': ['hits', 'damage'], 'crack/shards': ['damage'],
@@ -295,7 +310,7 @@ function isComboHeavy(a) {
   if (!comboHeavies) comboHeavies = new Set(Object.values(PLAYER_DEF.moveset.attacks).map(x => x.next && x.next.heavy).filter(Boolean));
   return !!a && comboHeavies.has(a.id);
 }
-const SUMMONS = new Set(['twin', 'shadeClone', 'hound', 'guardian', 'lancer', 'fox', 'lantern', 'crows', 'archer', 'hawk', 'owl', 'ronin', 'serpent', 'puppet', 'bear', 'mantis']);
+const SUMMONS = new Set(['seven', 'twin', 'shadeClone', 'hound', 'guardian', 'lancer', 'fox', 'lantern', 'crows', 'archer', 'hawk', 'owl', 'ronin', 'serpent', 'puppet', 'bear', 'mantis']);
 // The summons that strike on their own, every `every` s from `reach` m off their enemy's body (the twin echoes its holder).
 const SUMMON_STRIKERS = new Set(['hound', 'guardian', 'lancer', 'fox', 'lantern', 'crows', 'archer', 'hawk', 'ronin', 'serpent', 'puppet', 'bear', 'mantis']);
 // The summons whose blow flies before it lands (a fireball, an arrow, a hawk's dive), or is wound up first (a bear's rear):
@@ -389,6 +404,13 @@ function enemyNear(enemies, x, y, z, r) {
 function abilityHold(e, time) {
   if (!e || !e.alive() || e.invulnerable() || e.netExec || e.state === ES.EXECUTED || e.pinned > 0 || e.holdRest > 0) return false;
   e.frozen = Math.max(e.frozen || 0, time); e.hitbox = null;
+  return true;
+}
+// The Bell of Waking's kneel: Time Rift's stop on `e` for `time` s, drawn as a kneel (`kneel`, s left), with the same
+// rules as a hold. True if it kneels.
+function abilityKneel(e, time) {
+  if (!abilityHold(e, time)) return false;
+  e.kneel = e.kneelFor = time;
   return true;
 }
 function abilityPin(e, time) {
@@ -580,6 +602,7 @@ function abilityKit(held) {
       powers.push({ id: b.id, when: b.power.when, then: b.power.then, once: !!b.power.once, action: b.power.action || null, key: b.key || null, v });
       whens.add(b.power.when);
       if (b.power.then === 'twin' || b.power.then === 'burnHits' || b.power.then === 'shadeClone' || b.power.then === 'inkWorld') whens.add('hits');   // the twin and the clones strike, the burn burns, as its holder lands a blow
+      if (b.power.then === 'oathShield') whens.add('parry');   // Oath Guard answers each blow it turns
       if (b.power.when === 'cast') { whens.add('press'); whens.add('hits'); }   // Echoing Blade: armed by any press, spent by landed blows
       if (b.power.when === 'castUltimate') whens.add('press');   // Fourfold: heard as the Ultimate's press
     }
@@ -606,7 +629,7 @@ function kitMight(held) {
 // Ember Mail's plates and s left (`plates`, `mail`). Batch 9's: Mirror Ward's s left (`ward`), Waiting Blade's (`wait`).
 const abilityPerkState = () => ({ calm: 0, vengeance: 0, bastion: 0, streak: 0, moon: 0, moonV: null, mercy: 0, stance: 0,
   charge: { strike: 0, guard: 0, summon: 0, ultimate: 0 }, bank: 0, ring: 0, veil: 0, iron: 0, hunt: 0, glint: 0, burn: 0, burnV: null, step: 0,
-  unshaken: 0, mark: null, markT: 0, rooted: 0, rootV: null, undying: 0, vanish: 0, plates: 0, mail: 0, ward: 0, wait: 0, ink: 0 });
+  unshaken: 0, mark: null, markT: 0, rooted: 0, rootV: null, undying: 0, vanish: 0, plates: 0, mail: 0, ward: 0, wait: 0, ink: 0, oath: 0 });
 // Losing health (any blow, a burn, a fall): the perks that wait for it. With the `body` (its owner's), the rares' cues:
 // Vengeance's blade lit (`hurt/armed`), Bloodthirst's motes scattered (`streak/lost`).
 function abilityHurt(kit, st, body) {
@@ -620,7 +643,7 @@ function abilityClocks(st, dt) {
   st.stance = Math.max(0, st.stance - dt); st.ring = Math.max(0, st.ring - dt); st.iron = Math.max(0, st.iron - dt); st.hunt = Math.max(0, st.hunt - dt);
   st.unshaken = Math.max(0, st.unshaken - dt); st.rooted = Math.max(0, st.rooted - dt); st.undying = Math.max(0, st.undying - dt);
   st.vanish = Math.max(0, st.vanish - dt); st.mail = Math.max(0, st.mail - dt); if (st.mail <= 0) st.plates = 0;
-  st.ward = Math.max(0, st.ward - dt); st.wait = Math.max(0, st.wait - dt); st.ink = Math.max(0, (st.ink || 0) - dt);
+  st.ward = Math.max(0, st.ward - dt); st.wait = Math.max(0, st.wait - dt); st.ink = Math.max(0, (st.ink || 0) - dt); st.oath = Math.max(0, (st.oath || 0) - dt);
   if (st.mark && (st.markT -= dt) <= 0) { st.mark = null; st.markT = 0; }
 }
 // A deflect, on the deflecting body (js/combat.js; a bot's on the server): Iron Mercy's heal, Ringing Steel's bank,
@@ -703,7 +726,7 @@ function abilityReport(body, when, ctx) {
 // its number), the first `lead` s after it fires (the time its dragon takes to reach the boss), then every `every` s; damage goes through Enemy.takeHit like any blow and `credit` (the server's) counts it to the holder.
 const ECHO_DELAY = 0.06;   // s from its holder's blow to the twin's: the two land as one
 // The powers that need a live enemy to strike (the one parried, struck, broken or dodged).
-const ON_ENEMY = new Set(['worldCut', 'skyBlade', 'phoenix', 'blackStar', 'dragon','beam', 'iceLotus', 'tempest', 'boltCrown', 'bladeCage', 'blades', 'flare', 'spark', 'gale', 'pyre', 'hound', 'lancer', 'fox', 'lantern', 'crows', 'archer', 'hawk', 'owl', 'ronin', 'serpent', 'puppet', 'bear', 'mantis', 'lick', 'molten', 'lateCut', 'afterimage',
+const ON_ENEMY = new Set(['seven', 'bellToll', 'worldCut', 'skyBlade', 'phoenix', 'blackStar', 'dragon','beam', 'iceLotus', 'tempest', 'boltCrown', 'bladeCage', 'blades', 'flare', 'spark', 'gale', 'pyre', 'hound', 'lancer', 'fox', 'lantern', 'crows', 'archer', 'hawk', 'owl', 'ronin', 'serpent', 'puppet', 'bear', 'mantis', 'lick', 'molten', 'lateCut', 'afterimage',
   'thorns', 'shards', 'reflect', 'wave', 'spikes', 'fist', 'risingFire', 'clap',
   'flurry', 'drill', 'stitch', 'boomerang', 'clones', 'iai', 'seal']);
 // The powers whose blow lands a beat after they fire: each tells every browser again as it lands (`strike`).
@@ -765,6 +788,7 @@ const abilityPowers = (() => {
   function trigger(holder, body, kit, when, ctx = {}) {
     if (when === 'ward' || when === 'answer') { guardAnswer(holder, body, kit, when, ctx); return; }
     if (when === 'hits') { echo(holder, body, ctx.enemy, ctx.strike); shadeEcho(holder, body, ctx.enemy, ctx.strike); burn(holder, body, kit, ctx.enemy); ghost(holder, body, kit, ctx.enemy); ink(holder, body, kit, ctx.enemy, ctx.strike); }
+    if (when === 'parry') oathTurn(holder, body, kit, ctx.enemy);
     if (when === 'press' && ctx.key === 'ultimate' && kit.pressed && kit.pressed.ultimate) trigger(holder, body, kit, 'castUltimate', {});   // Fourfold
     // A press arms Echoing Blade at once; Quick Draw's only at its draw (a stance cut short gives its charge back, so
     // arming at the press would re-arm the echoes for free).
@@ -897,8 +921,8 @@ const abilityPowers = (() => {
         return cut.length > 0;
       case 'refillKeys': running.push({ pw, holder, body, kit, enemy: null, left: 1, next: CONFIG.abilities.refill.delay, n: 0, refill: true }); break;
       case 'twin': case 'hound': case 'guardian': case 'lancer': case 'fox': case 'lantern': case 'crows': case 'archer': case 'hawk': case 'owl':
-      case 'ronin': case 'serpent': case 'puppet': case 'bear': case 'mantis': {
-        const out = summonOf(holder), from = out || at, K = CONFIG.abilities.summons;
+      case 'ronin': case 'serpent': case 'puppet': case 'bear': case 'mantis': case 'seven': {
+        const out = pw.then === 'seven' ? null : summonOf(holder), from = out || at, K = CONFIG.abilities.summons;   // the Seven always rise afresh
         const s = { kind: pw.then, pw, body, until: clock + v.time, n: out ? out.n : 0, x: from.x, y: from.y, z: from.z, yaw: from.yaw || 0,
           enemy: e, wait: out ? 0 : summonArrive(pw.then), bite: 0, drew: out ? out.drew : false, parried: !!(out && out.parried), lure: out ? out.lure : null, lureUntil: out ? out.lureUntil : 0, decoy: null,
           age: out ? out.age : 0, shots: (out && out.shots) || [] };
@@ -906,6 +930,7 @@ const abilityPowers = (() => {
         else if (!out) summonStart(s, foeOf(s), body);   // a lancer from the arena's edge
         s.mark = !!(kit && kit.perks['summonHit/empower']);   // Hunting Call: its blows mark the enemy
         s.decoy = { decoy: true, holder, x: s.x, y: s.y, z: s.z, radius: K.radius, height: K[pw.then].height, state: null, alive: () => true, isAttacking: () => false };
+        if (pw.then === 'seven') s.until = clock + summonArrive('seven') + v.time;   // the last beat falls `time` - `every` after they arrive, then they fade
         summons.set(holder, s); break;
       }
       case 'freeze':   // an enemy still resting from a hold (`holdRest`), or pinned by an Ultimate, sees the rift but isn't stopped again
@@ -935,12 +960,19 @@ const abilityPowers = (() => {
         if (st) st.ink = v.time;
         break;
       }
-      case 'worldCut': case 'colossus': case 'legion': {   // aimed at the enemy pressed at, else along the holder's facing; fixed now
+      case 'oathShield': {   // a clock on its holder (the server's with a claim's slack); the answers come from `parry` (oathTurn)
+        const st = (api.perkOf && api.perkOf(holder)) || (body && body.perk);
+        if (st) { st.oath = v.time + (api.perkOf ? CONFIG.abilities.guardSlack : 0); st.oathN = 0; }
+        break;
+      }
+      case 'bellToll': running.push({ pw, holder, body, enemy: e, left: 2, next: CONFIG.abilities.story.bell, n: 0, bell: true }); break;
+      case 'scarfBlade': case 'worldCut': case 'colossus': case 'legion': {   // aimed at the enemy pressed at, else along the holder's facing; fixed now
         const from = body || ctx, yaw = ctx.yaw ?? (body && body.yaw) ?? 0;
         let ux = Math.sin(yaw), uz = Math.cos(yaw);
         if (e && e.alive()) { const dx = e.x - from.x, dz = e.z - from.z, l = Math.hypot(dx, dz); if (l > 1e-6) { ux = dx / l; uz = dz / l; } }
         const U = CONFIG.abilities.ult;
-        if (pw.then === 'worldCut') running.push({ pw, holder, body, enemy: null, left: 1, next: U.cut, n: 0, x, y, z, ux, uz, sever: true });
+        if (pw.then === 'scarfBlade') running.push({ pw, holder, body, enemy: null, left: 1, next: CONFIG.abilities.story.scarf, n: 0, x, y, z, ux, uz, scarf: true });
+        else if (pw.then === 'worldCut') running.push({ pw, holder, body, enemy: null, left: 1, next: U.cut, n: 0, x, y, z, ux, uz, sever: true });
         else if (pw.then === 'colossus') running.push({ pw, holder, body, enemy: null, left: 1, next: U.giant, n: 0, x, y, z, ux, uz, giant: true });
         else running.push({ pw, holder, body, enemy: null, left: Math.round(v.time / v.every), next: U.legion, every: v.every, n: 0, x, y, z, ux, uz, legion: true });
         break;
@@ -1095,6 +1127,21 @@ const abilityPowers = (() => {
     if (--g.left <= 0) ghosts.delete(holder);
     running.push({ pw: g.pw, holder, body, enemy: e, left: 1, next: CONFIG.abilities.echo.delay, n, damage: g.pw.v.damage });
   }
+  // Oath Guard: while its holder's `oath` clock runs, each blow it turned (a deflect) is answered with `damage` to `e`.
+  function oathTurn(holder, body, kit, e) {
+    const st = (api.perkOf && api.perkOf(holder)) || (body && body.perk), pw = kit.powers.find(q => q.then === 'oathShield');
+    if (!st || !(st.oath > 0) || !pw || !e || !e.alive()) return;
+    st.oathN = (st.oathN || 0) + 1;
+    events.emit('abilityPower', { power: pw.id, then: pw.then, holder, body, enemy: e, x: e.x, y: e.y, z: e.z, v: pw.v, strike: st.oathN });
+    wound(e, pw.v.damage, holder, pw.id);
+  }
+  // The Bell's second toll on `e`: `damage`, but a boss with a phase after this one keeps every point past its phase line
+  // (a mid-bar phase's `at`, else the empty bar its next phase refills): it reaches the line, never crosses it.
+  function bellBlow(e, damage) {
+    if (!e.isBoss || !e.isBoss() || !e.phaseIds || e.lastPhase()) return damage;
+    const next = e.baseDef.phases[e.phaseIds[e.phase + 1]], line = next && next.at ? e.def.hp * next.at : 0;
+    return Math.max(0, Math.min(damage, e.hp - line));
+  }
   // World of Ink: while its holder's `ink` clock runs, a landed blow is painted again on `e` a beat later, `share` of it.
   function ink(holder, body, kit, e, strike) {
     const st = (api.perkOf && api.perkOf(holder)) || (body && body.perk), pw = kit.powers.find(q => q.then === 'inkWorld');
@@ -1148,6 +1195,17 @@ const abilityPowers = (() => {
     if (!s.drew && v.draw > 0 && !e.in('attacking') && !(e.frozen > 0) && !decoy(e)) {
       s.drew = true; s.lure = e; s.lureUntil = clock + v.draw;
       events.emit('abilityPower', { power: s.pw.id, then: s.kind, holder, body: s.body, enemy: e, x: s.x, y: s.y, z: s.z, v, draw: true });
+    }
+    // The Seven: a beat every `every` s from their arrival: each founder in turn, the gather, then all together.
+    if (s.kind === 'seven') {
+      const n7 = K.seven.count;
+      if (s.n < n7 + 2 && (s.bite -= dt) <= 0) {
+        s.bite = v.every; s.n++;
+        events.emit('abilityPower', { power: s.pw.id, then: s.kind, holder, body: s.body, enemy: e, x: s.x, y: s.y, z: s.z, v, strike: s.n });
+        if (s.n <= n7) wound(e, v.damage, holder, s.pw.id);
+        else if (s.n === n7 + 2) wound(e, v.damage * CONFIG.abilities.story.together, holder, s.pw.id);
+      }
+      return;
     }
     // A ronin meets the first blow its drawn enemy aims at it with a deflect (drawing only: the decoy is never hurt).
     if (s.kind === 'ronin' && !s.parried && s.lure === e && e.hitbox) {
@@ -1255,11 +1313,12 @@ const abilityPowers = (() => {
         line(r.x, r.y, r.z, r.ux, r.uz, r.pw.v.reach, r.pw.v.width / 2, r.pw.v.damage, r.holder, r.pw.id);
         running.splice(i, 1); continue;
       }
-      if (r.sever || r.giant || r.legion) {   // Ultimates III: a line, an arc, a lane, each fixed at the press
+      if (r.sever || r.giant || r.legion || r.scarf) {   // Ultimates III: a line, an arc, a lane, each fixed at the press; Scarlet Draw's band
         const U = CONFIG.abilities.ult, v = r.pw.v;
         r.n++; r.left--; r.next += r.every || 0;
         events.emit('abilityPower', { power: r.pw.id, then: r.pw.then, holder: r.holder, body: r.body, enemy: null, x: r.x, y: r.y, z: r.z, v, strike: r.n, yaw: Math.atan2(r.ux, r.uz) });
-        if (r.sever) line(r.x - r.ux * U.cutLength, r.y, r.z - r.uz * U.cutLength, r.ux, r.uz, 2 * U.cutLength, U.cutWidth, v.damage, r.holder, r.pw.id);
+        if (r.scarf) line(r.x, r.y, r.z, r.ux, r.uz, v.reach, CONFIG.abilities.story.scarfWidth / 2, v.damage, r.holder, r.pw.id);
+        else if (r.sever) line(r.x - r.ux * U.cutLength, r.y, r.z - r.uz * U.cutLength, r.ux, r.uz, 2 * U.cutLength, U.cutWidth, v.damage, r.holder, r.pw.id);
         else if (r.legion) line(r.x - r.ux * U.legionBack, r.y, r.z - r.uz * U.legionBack, r.ux, r.uz, U.legionLength, U.legionWidth / 2, v.damage, r.holder, r.pw.id);
         else {
           const half = U.giantArc * Math.PI / 360;
@@ -1272,6 +1331,20 @@ const abilityPowers = (() => {
         }
         if (r.left <= 0) running.splice(i, 1);
         continue;
+      }
+      if (r.bell) {   // the Bell of Waking: the first toll kneels its enemy, the second strikes it (never past a phase line)
+        const v = r.pw.v, live = e.alive() && Game.enemies.includes(e);
+        r.n++; r.left--;
+        if (!live) { events.emit('abilityPower', { power: r.pw.id, then: r.pw.then, holder: r.holder, body: r.body, enemy: null, x: r.x ?? e.x, y: e.y, z: e.z, v, strike: r.n, end: true }); running.splice(i, 1); continue; }
+        if (r.n === 1) {
+          const knelt = abilityKneel(e, v.time);
+          r.next += v.time;
+          events.emit('abilityPower', { power: r.pw.id, then: r.pw.then, holder: r.holder, body: r.body, enemy: e, x: e.x, y: e.y, z: e.z, v, strike: 1, knelt });
+          continue;
+        }
+        events.emit('abilityPower', { power: r.pw.id, then: r.pw.then, holder: r.holder, body: r.body, enemy: e, x: e.x, y: e.y, z: e.z, v, strike: 2 });
+        wound(e, bellBlow(e, v.damage), r.holder, r.pw.id);
+        running.splice(i, 1); continue;
       }
       if (r.sky) {   // Sky Blade lands: its enemy (if still there) and every enemy round the point
         const live = e.alive() && Game.enemies.includes(e);

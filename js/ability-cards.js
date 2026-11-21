@@ -132,8 +132,13 @@ const ABILITY_ICONS = {
   'severance': '<path d="M4 44 L44 4"/><path d="M14 22 A8 8 0 0 1 26 14"/><path d="M22 34 A8 8 0 0 0 34 26"/>',
   'colossus': '<path d="M14 40 V20 C14 12 20 6 28 6 C36 6 42 12 42 20 V40"/><path d="M24 16 H32 M28 12 V22"/><path d="M22 34 L18 42 M20 38 L26 34"/><path d="M4 44 C16 38 32 38 46 44"/>',
   'ash-legion': '<path d="M4 30 L22 22 M10 38 L28 30 M16 46 L34 38"/><path d="M22 22 L26 20 L24 24 Z M28 30 L32 28 L30 32 Z M34 38 L38 36 L36 40 Z"/><path d="M30 10 C34 8 38 10 40 14 L36 16 M38 18 C40 20 42 22 44 22"/><path d="M2 12 H8 M2 18 H10"/>',
+  // Story's four (batch 18): given on the road
+  'scarlet-draw': '<path d="M6 40 C12 30 18 34 22 26 C26 18 32 22 36 14"/><path d="M36 14 L44 4 L40 16 Z"/><path d="M4 34 C8 28 12 30 14 24"/>',
+  'oath-guard': '<path d="M24 4 L40 10 V24 C40 34 32 40 24 44 C16 40 8 34 8 24 V10 Z"/><path d="M24 12 V36 M16 20 H32"/>',
+  'the-seven': '<circle cx="8" cy="30" r="3"/><circle cx="13" cy="20" r="3"/><circle cx="20" cy="13" r="3"/><circle cx="28" cy="13" r="3"/><circle cx="35" cy="20" r="3"/><circle cx="40" cy="30" r="3"/><circle cx="24" cy="30" r="4"/><path d="M14 42 C20 38 28 38 34 42"/>',
+  'bell-of-waking': '<path d="M24 4 V8"/><path d="M12 36 C12 24 14 10 24 8 C34 10 36 24 36 36 Z"/><path d="M6 36 H42"/><path d="M26 12 L22 20 L27 26 L23 34"/><circle cx="24" cy="41" r="3"/>',
 };
-const ABILITY_RARITY_WORD = { common: 'Common', rare: 'Rare', legendary: 'Legendary' };
+const ABILITY_RARITY_WORD = { common: 'Common', rare: 'Rare', legendary: 'Legendary', story: 'Story' };
 const ABILITY_LEVEL_MARK = ['I', 'II', 'III', 'IV', 'V', 'VI'];
 // A pressed ability's bound key as the player reads it: "1", or a D-pad arrow after a controller press.
 const abilityKeyBind = key => bindLabel(ABILITY_ACTIONS[ABILITY_KEYS.indexOf(key)]).replace(/^\[\s*|\s*\]$/g, '');
@@ -216,7 +221,7 @@ function abilityHeldList(ids) {
   #abilityChoices{display:flex;justify-content:space-between;gap:12px}
   .bcard{--rc:var(--body);all:unset;box-sizing:border-box;display:flex;flex-direction:column;align-items:center;width:216px;min-height:330px;padding:20px 18px 16px;
     text-align:center;background:var(--ui-panel);border:1px solid var(--ui-line);cursor:pointer;touch-action:manipulation;-webkit-tap-highlight-color:transparent}
-  .bcard[data-rarity=rare]{--rc:var(--rare)}.bcard[data-rarity=legendary]{--rc:var(--leg)}
+  .bcard[data-rarity=rare]{--rc:var(--rare)}.bcard[data-rarity=legendary]{--rc:var(--leg)}.bcard[data-rarity=story]{--rc:#d8545a}
   .bcard-well{display:grid;place-items:center;flex:none;width:96px;height:96px;box-sizing:border-box;background:var(--ui-well);border:1px solid var(--ui-line);border-bottom:2px solid var(--rc)}
   .bcard-well svg{width:56px;height:56px;fill:none;stroke:var(--rc);stroke-width:1.4;stroke-linecap:round;stroke-linejoin:round}
   .bcard-words{display:flex;flex-direction:column;align-items:center;flex:1;width:100%}
@@ -257,7 +262,7 @@ function abilityHeldList(ids) {
   @media (max-height:560px) and (min-width:600px){#abilityScreen .ability-panel{width:min(100%,860px)}#abilityChoices{grid-template-columns:1fr 1fr}}
   .held-list{--rare:#8fb8dc;--leg:#e59a5c;--body:#cfc8b6;display:grid;gap:10px 24px;margin:0;padding:0;list-style:none}
   .held-list li{--rc:var(--body);display:grid;grid-template-columns:28px minmax(0,1fr);column-gap:12px;align-items:start}
-  .held-list li[data-rarity=rare]{--rc:var(--rare)}.held-list li[data-rarity=legendary]{--rc:var(--leg)}
+  .held-list li[data-rarity=rare]{--rc:var(--rare)}.held-list li[data-rarity=legendary]{--rc:var(--leg)}.held-list li[data-rarity=story]{--rc:#d8545a}
   .held-icon{grid-row:1/3;width:28px;height:28px;margin-top:1px}.held-icon svg{width:28px;height:28px;fill:none;stroke:var(--rc);stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
   .held-head{display:flex;align-items:baseline;gap:10px;min-width:0}
   .held-name{font:400 16px/1.25 var(--ui-display);color:var(--ui-ink);overflow-wrap:anywhere}.held-level{margin-left:7px;font:500 13px/1 var(--ui-text);color:var(--ui-accent)}

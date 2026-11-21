@@ -3,7 +3,7 @@
 // each fired twice, its name in the corner: docs/scorecard/now/<set>-commons.mp4. The clock is stepped by hand
 // (Game.manualClock) and every other step is a frame, so a clip plays at real speed whatever the PC's speed. With
 // `--stills`, the guard set's current frames too (guard-*.jpg, desktop; -phone for two).
-// Usage: node tools/ability-clips.cjs [blade|guard|mirror|rares|triggers|echo|strikes|flashy|self|boss|summons|summons2|summons3|legends1|legends2|ults1|ults2|ults3 ...] [--stills]   (no set = all). One headless Edge; needs ffmpeg.
+// Usage: node tools/ability-clips.cjs [blade|guard|mirror|rares|triggers|echo|strikes|flashy|self|boss|summons|summons2|summons3|legends1|legends2|ults1|ults2|ults3|story ...] [--stills]   (no set = all). One headless Edge; needs ffmpeg.
 require('../tests/low-priority.cjs');
 const fs = require('node:fs');
 const os = require('node:os');
@@ -202,6 +202,15 @@ const SETS = {
     ['Severance', `(p, e) => { __far(7); __ult(); }`, 110, 'ult-severance', 44],
     ['Colossus', `(p, e) => { __far(7); __ult(); }`, 150, 'ult-colossus', 64],
     ['Ash Legion', `(p, e) => { __far(8); __ult(); }`, 220, 'ult-ash-legion', 50],
+  ] },
+  // Story's four (pass 159, batch 18): docs/scorecard/now/story-four.mp4. Each pressed on its own key; the oath answers
+  // two blows it turns.
+  story: { ids: ['scarlet-draw', 'oath-guard', 'the-seven', 'bell-of-waking'], solo: true,
+    file: 'story-four', phone: 2, crf: 30, beats: [
+    ['Scarlet Draw', `(p, e) => { __far(7); __key(); }`, 90, 'story-scarlet-draw', 40],
+    ['Oath Guard', `(p, e) => { __far(3); __key2(); for (const n of [30, 60]) __later(n, () => { e.yaw = Math.atan2(p.x - e.x, p.z - e.z); __fire('parry'); }); }`, 130, 'story-oath-guard', 64],
+    ['The Seven', `(p, e) => { __far(6); __key3(); }`, 640, 'story-the-seven', 200],
+    ['Bell of Waking', `(p, e) => { __far(6); __ult(); }`, 260, 'story-bell-of-waking', 120],
   ] },
   legends2: { ids: ['hundred-suns', 'thunder-god-step', 'fourfold', 'shade-host'], solo: true,
     file: 'legendaries-two', phone: 2, crf: 30, beats: [

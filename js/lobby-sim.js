@@ -760,7 +760,7 @@ globalThis.host = (() => {
     const result = { epoch, time, complete: Game.complete, fought: Math.floor(fought * 10 + 1e-6) / 10,
       enemies: Game.enemies.map(e => ({
       id: e.netId, def: e.baseDef.id, x: e.x, y: e.y, z: e.z, yaw: e.yaw, state: e.state, stateTime: e.stateTime,
-      hp: e.hp, phase: e.phase, cracks: e.cracks, crackBy: e.crackBy ?? null, poise: e.poise, frozen: e.frozen,
+      hp: e.hp, phase: e.phase, cracks: e.cracks, crackBy: e.crackBy ?? null, poise: e.poise, frozen: e.frozen, kneel: e.kneel || 0,
       attack: e.attack?.id || null, serial: e.netAttack, hitIndex: e.hitIndex, hitbox: !!e.hitbox,
       ...netTargetOf(e), grounded: e.grounded, walkPhase: e.walkPhase, leaping: e.leaping,
       holdLeft: e.holdLeft || 0, retreatHop: e.retreatHop || 0, blinkLeft: e.blinkLeft || 0,

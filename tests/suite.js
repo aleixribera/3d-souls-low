@@ -706,6 +706,63 @@
         `another's cut, swing, charge and ink from the word (${JSON.stringify(fx())})`);
     } finally { audio.play = play; Game.lock = null; e.netId = netId0; wipe(); p.grantAbilities([]); }
   });
+  // Pass 159 (PLAN.md item 8, batch 18): Story's four, drawn (js/story-fx.js) and heard.
+  test('story four: the scarf lashing and cutting, the oath shield turning to answer, the Seven rising and striking, the bell falling, tolling and breaking; others\' from the server\'s word', () => {
+    Game.startLevel('test-abilities'); sim.begin(); sim.step(2);
+    const p = Game.player, e = Game.enemies.find(o => o.def.id === 'greatDummy'), played = [];
+    const play = audio.play; audio.play = (id, o) => { played.push(id); return play.call(audio, id, o); };
+    const heard = ids => expect.ok(ids.every(id => played.includes(id)), `heard ${ids.join(', ')} (${[...new Set(played)].join(', ')})`);
+    const wipe = () => { abilityPowers.reset(); storyFx.clear(); impactFrame.clear(); p.perk.oath = 0; played.length = 0; };
+    const fx = () => storyFx.state, frames = n => { for (let i = 0; i < n; i++) sim.step(1, 1); };
+    const press = (id, key) => { p.grantAbilities([id]); wipe(); abilityPowers.trigger('self', p, p.kit, 'press', { key, enemy: e, yaw: p.yaw }); };
+    const netId0 = e.netId, ST = CONFIG.abilities.story, S7 = CONFIG.abilities.summons.seven;
+    try {
+      p.x = e.x - 6; p.z = e.z; p.yaw = Math.PI / 2; Game.lock = e;
+      // Scarlet Draw: the scarf lashes out, then cuts on its beat; the boss hit, a clap on it.
+      press('scarlet-draw', 'strike'); let hp0 = e.hp;
+      frames(4); expect.ok(fx().scarves === 1, `the scarf lashes out (${JSON.stringify(fx())})`);
+      frames(Math.ceil(ST.scarf * 60) + 2);
+      expect.ok(e.hp < hp0 && fx().claps >= 1, `the cut: the boss hit, a clap (${JSON.stringify(fx())})`);
+      frames(90); expect.ok(fx().scarves === 0, `the scarf gone (${JSON.stringify(fx())})`);
+      heard(['abilityScarf', 'abilityBlade']);
+      // Oath Guard: the shield raised; a blow it turns answered, a clap and the boss hit; gone with its time.
+      press('oath-guard', 'guard'); hp0 = e.hp;
+      frames(10); expect.ok(fx().shields === 1 && p.perk.oath > 0, `the shield raised (${JSON.stringify(fx())}, ${p.perk.oath})`);
+      abilityPowers.trigger('self', p, p.kit, 'parry', { enemy: e });
+      frames(2); expect.ok(e.hp < hp0 && fx().claps >= 1, `answered: the boss hit, a clap (${JSON.stringify(fx())})`);
+      frames(Math.ceil((p.kit.pressed.guard.v.time + 1.5) * 60));
+      expect.ok(fx().shields === 0, `the shield gone (${JSON.stringify(fx())})`);
+      heard(['abilityOath', 'abilityStancePing']);
+      // The Seven: risen round the boss, each a blow in turn, then all together; sunk away.
+      press('the-seven', 'summon'); hp0 = e.hp;
+      frames(Math.ceil(S7.arrive * 60) + 10);
+      expect.ok(fx().sevens === 1, `the Seven risen (${JSON.stringify(fx())})`);
+      const v7 = p.kit.pressed.summon.v;
+      frames(Math.ceil((S7.count + 2) * v7.every * 60) + 10);
+      expect.ok(hp0 - e.hp >= v7.damage * (S7.count + ST.together) - 1, `seven blows and the one together (${hp0 - e.hp})`);
+      frames(Math.ceil((v7.time + 2) * 60)); expect.ok(fx().sevens === 0, `sunk away (${JSON.stringify(fx())})`);
+      heard(['abilitySeven', 'abilityBlade', 'abilityBlast']);
+      // Bell of Waking: it falls over the boss; the first toll kneels it, a ring; the second strikes and breaks it.
+      press('bell-of-waking', 'ultimate'); hp0 = e.hp;
+      frames(10); expect.ok(fx().bells === 1, `the bell falls (${JSON.stringify(fx())})`);
+      frames(Math.ceil(ST.bell * 60));
+      expect.ok(e.kneel > 0 && fx().rings >= 1, `the first toll: the boss kneels, a ring (${JSON.stringify(fx())}, ${e.kneel})`);
+      frames(Math.ceil(p.kit.pressed.ultimate.v.time * 60) + 2);
+      expect.ok(e.hp < hp0 && fx().shards > 0, `the second: the boss struck, the bell in shards (${JSON.stringify(fx())})`);
+      frames(Math.ceil((VIS.abilityFx.story.shardLife + 0.5) * 60)); expect.ok(fx().bells === 0 && fx().shards === 0, `the shards gone (${JSON.stringify(fx())})`);
+      heard(['abilityBell', 'bellToll']);
+      // Online: another's from the server's word alone (the local copy emptied): a cut, an answer, a beat, a toll.
+      wipe(); p.grantAbilities([]); frames(70);
+      const other = { x: p.x + 1, y: p.y, z: p.z, yaw: Math.PI / 2, perk: {}, alive: () => true }, net = { self: 'me', bodyOf: id => (id === 'them' ? other : null) };
+      const word = (power, then, extra) => ({ type: 'abilityPower', power, then, holder: 'them', x: p.x, y: p.y, z: p.z, v: ABILITY_BY_ID[power].levels[0], ...extra });
+      e.netId = 'story-boss';
+      netView.events({ events: [word('scarlet-draw', 'scarfBlade', { enemy: null, strike: 1, yaw: Math.PI / 2 }), word('oath-guard', 'oathShield', { enemy: e.netId, strike: 1 }),
+        word('the-seven', 'seven', { enemy: e.netId, strike: 1 }), word('bell-of-waking', 'bellToll', { enemy: e.netId, strike: 1 })], shots: [], value: {} }, net);
+      frames(3);
+      expect.ok(fx().scarves === 1 && fx().shields === 1 && fx().sevens === 1 && fx().bells === 1 && fx().rings >= 1,
+        `another's cut, answer, Seven and toll from the word (${JSON.stringify(fx())})`);
+    } finally { audio.play = play; Game.lock = null; e.netId = netId0; wipe(); p.grantAbilities([]); }
+  });
   test('regression: every duel runs 20 s and the enemy engages', () => {
     for (const d of [...A.ENEMY_DEFS, ...A.TEST_DEFS]) {
       Game.startFight(d.id); sim.begin();
@@ -3999,6 +4056,31 @@
     expect.ok(Game.player.inventory.flask.max === had + 1, `kept through a death (${Game.player.inventory.flask.max})`);
     S().quit(); S().resume(); sim.begin();
     expect.ok(Game.player.inventory.flask.max === had + 1 && Game.found.has(f.id) && A.lore.state.finds.length === 0, 'kept through Continue, and lies there no more');
+  }));
+  // Pass 159 (PLAN.md item 8): an ability given on the road joins the kit at once, its key full, saved; an older save
+  // holds every one given before its level; Practice's levels give each through their chapter.
+  test('Story: an ability given on the road is held at once with its key full, saved, and kept through Continue', withSave(() => {
+    S().jumpTo('sunken-keep'); sim.begin();
+    const G = Game.level.giveAbility, p = Game.player;
+    expect.ok(G && G.id === 'scarlet-draw' && !Game.given.has(G.id) && !(p.kit.pressed.strike), 'not held before its place');
+    for (const e of Game.enemies) if (e.alive()) e.x += 500;
+    const hp = p.hp - 10; p.hp = hp;
+    p.x = (G.trigger[0] + G.trigger[1]) / 2; p.z = (G.trigger[2] + G.trigger[3]) / 2; p.y = world.floorY(p.x, p.z, G.y ?? 0);
+    sim.seconds(0.2); Game.render(1, STEP);
+    const k = Game.player.kit.pressed.strike;
+    expect.ok(Game.given.has(G.id) && k && k.id === G.id && Game.player.perk.charge.strike === k.v.charge, `given: held, its key full (${k && k.id})`);
+    expect.ok(Game.player.hp === hp, `the body unchanged (${Game.player.hp}, ${hp})`);
+    expect.ok(S().data.gifts.includes(G.id), 'saved at once');
+    expect.ok(document.querySelector('.akey[data-rarity=story]'), 'its key shows, in the story colour');
+    S().quit(); S().resume(); sim.begin();
+    expect.ok(Game.given.has(G.id) && Game.player.kit.pressed.strike && Game.player.perk.charge.strike > 0, 'kept through Continue, full');
+    // a save from before gifts: every ability given before its level
+    S().jumpTo('the-church'); sim.begin();
+    const d = { ...S().data }; delete d.gifts;
+    localStorage.setItem(CONFIG.story.saveKey, JSON.stringify(d)); S().load(); S().resume(); sim.begin();
+    expect.ok(Game.given.has('scarlet-draw') && Game.given.has('oath-guard') && !Game.given.has('the-seven'), `an older save: the ones before its level (${[...Game.given]})`);
+    Game.story = false; Game.startLevel('still-mere'); sim.begin();
+    expect.ok(['strike', 'guard', 'summon', 'ultimate'].every(k2 => Game.player.kit.pressed[k2]), "Practice's last chapter holds all four");
   }));
   // Pass 79: every chapter is a step up; the lobby's story and Practice's levels grant the chapter's flasks.
   test('Story road: flasks and enemies climb chapter by chapter, Boss Rush untouched', () => {

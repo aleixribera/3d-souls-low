@@ -64,6 +64,7 @@ const LEVEL_14 = {
   ],
   // Masonry under the white gate's floor, so the stair stands on stone.
   blocks: [{ rect: [92, 116, -12, 12], y0: -10, y1: 15.5, wall: 0xa8acb0 }],
+  giveAbility: { id: 'bell-of-waking', trigger: [3, 13, -6, 4], y: 24 },   // Ysolde, on the still water: the Bell of Waking (pass 159)
   bonfires: [{ id: 'mere-bough', x: 3, y: 24, z: -4.5, spawn: { x: 5, y: 24, z: -3, yaw: Math.PI / 2 } },
              { id: 'mere-yard', x: 90, z: -52, spawn: { x: 92, z: -50.5, yaw: Math.PI / 2 } },
              { id: 'mere-shore', x: 186, z: -38, spawn: { x: 188, z: -40, yaw: Math.PI / 2 } }],

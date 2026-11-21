@@ -685,6 +685,7 @@ class Player {
         abilityReport(this, 'press', { key, enemy: e, over });
         if (slot.then === 'husk') this.huskStep(e);   // Ash Husk: its husk is left where it stood
         if (slot.then === 'phoenix') this.diveStart(e, slot.v);   // Phoenix Dive: this body becomes the bird
+        if (slot.then === 'oathShield') this.perk.oath = slot.v.time;   // Oath Guard: this body deflects from any side (online too: the browser owns its defence)
       } else { abilityPressPerk(this, slot, over, this.id || 'self'); abilityReport(this, 'press', { key, over }); }   // a Guard's press arms Echoing Blade too
     }
   }

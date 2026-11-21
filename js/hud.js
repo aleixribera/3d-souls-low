@@ -166,7 +166,7 @@ const hud = {
       const style = document.createElement('style'); style.id = 'abilityKeys';
       style.textContent = `#aBR{left:50%;bottom:var(--my);transform:translateX(-50%);flex-direction:row;align-items:flex-end;gap:8px}#aBR.off{display:none}
   .akey{--rc:#cfc8b6;position:relative;width:50px;height:50px;box-sizing:border-box;background:#0b0c10b8;border:1px solid #6e5d36;box-shadow:0 0 0 1px #000000c0;overflow:hidden}
-  .akey[data-rarity=rare]{--rc:#8fb8dc}.akey[data-rarity=legendary]{--rc:#e59a5c}
+  .akey[data-rarity=rare]{--rc:#8fb8dc}.akey[data-rarity=legendary]{--rc:#e59a5c}.akey[data-rarity=story]{--rc:#d8545a}
   .akey.empty{background:#0b0c1060;border-color:#6e5d3660}
   .akey-fill{position:absolute;left:0;right:0;bottom:0;height:100%;background:color-mix(in srgb,var(--rc) 26%,transparent);transform:scaleY(var(--k,0));transform-origin:bottom}
   .akey-icon{position:absolute;inset:7px}.akey-icon svg{width:100%;height:100%;fill:none;stroke:var(--rc);stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round;opacity:.55}
@@ -459,6 +459,7 @@ function registerHudListeners() {
   events.on('trapWarning', () => hud.toast(H.toasts.trapWarning));
   events.on('saveFailed', () => hud.toast(H.toasts.saveFailed));
   events.on('flaskFound', d => hud.toast(H.toasts.flaskFound.replace('{n}', d.flasks)));   // pass 79: the flask row grows by one too
+  events.on('abilityGiven', d => (hud.keyPressed(d.ability.key, true), hud.toast(H.toasts.abilityGiven.replace('{name}', d.ability.name).replace('{key}', abilityKeyBind(d.ability.key)))));   // pass 159: its key lights in the row
 }
 // Always-visible FPS counter: its own animation-frame loop, so it also counts in menus; refreshed every
 // CONFIG.hud.fps.interval s. Drawing only.

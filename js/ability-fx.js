@@ -350,9 +350,9 @@ const abilityFx = (() => {
     for (const b of bubbles) if (b.e && !game.enemies.includes(b.e)) b.e = null;
     for (const e of game.enemies) {
       let b = bubbleOf(e);
-      if (!b && e.frozen > 0 && e.alive()) { b = bubbleOf(null); if (b) { b.e = e; b.k = 0; b.broke = false; } }
+      if (!b && e.frozen > 0 && !(e.kneel > 0) && e.alive()) { b = bubbleOf(null); if (b) { b.e = e; b.k = 0; b.broke = false; } }
       if (!b) continue;
-      const on = e.frozen > 0 && e.alive();
+      const on = e.frozen > 0 && !(e.kneel > 0) && e.alive();
       b.k = clamp01(b.k + (on ? dt / 0.25 : -dt / 0.3));
       if (!on && !b.broke) {   // time runs again: the bubble shatters
         b.broke = true; const c = chestOf(e);

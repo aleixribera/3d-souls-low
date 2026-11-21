@@ -27,7 +27,7 @@ function fixture(save = valid, bonfires = [checkpoint]) {
   const context = vm.createContext({
     CONFIG: { story: { saveVersion: 1, saveKeys: { test: 'save' } }, rest: { respawnOffset: 1.2 } },
     ALL_LEVELS: [level], PLAYER_DEF: { inventory: [] }, ITEMS: { flask: {} },
-    roadFinds: () => [], roadFlasks: () => 4,
+    roadFinds: () => [], roadFlasks: () => 4, roadGifts: () => [], ABILITY_BY_ID: {},
     localStorage: { getItem: () => stored, setItem: (key, value) => { stored = value; } },
     events: { emit() {} }, Game, world,
     clamp: (v, low, high) => Math.max(low, Math.min(high, v)),

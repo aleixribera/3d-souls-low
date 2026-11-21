@@ -339,6 +339,24 @@ const ABILITIES = [
   { id: 'ash-legion', name: 'Ash Legion', rarity: 'legendary', key: 'ultimate', text: 'A phantom army charges through the boss.',
     power: { when: 'press', then: 'legion' },
     levels: [{ charge: 44, time: 2.5, every: 0.1, damage: 15 }] },
+  // Story's four (pass 159, design/abilities batch 18): rarity `story`, never offered nor in a crate; each given on the
+  // road in Story (its chapter's level `giveAbility`) and kept for good. Drawn by js/story-fx.js.
+  { id: 'scarlet-draw', name: 'Scarlet Draw', rarity: 'story', key: 'strike', text: 'Your scarf lashes out as a blade.',
+    story: { chapter: 2, place: "The Sunken Keep, the Seven's oath hall" },
+    power: { when: 'press', then: 'scarfBlade' },
+    levels: [{ charge: 14, damage: 120, reach: 12 }] },
+  { id: 'oath-guard', name: 'Oath Guard', rarity: 'story', key: 'guard', text: 'A great shield turns and answers every blow.',
+    story: { chapter: 5, place: "The Final Castle's chapel, the defaced statue" },
+    power: { when: 'press', then: 'oathShield' },
+    levels: [{ charge: 16, time: 3, damage: 40 }] },
+  { id: 'the-seven', name: 'The Seven', rarity: 'story', key: 'summon', text: 'The Seven rise and strike the boss.',
+    story: { chapter: 6, place: 'The Church in the Pass, the painted faces' },
+    power: { when: 'press', then: 'seven' },
+    levels: [{ charge: 24, time: 9, every: 1, damage: 24, draw: 3 }] },
+  { id: 'bell-of-waking', name: 'Bell of Waking', rarity: 'story', key: 'ultimate', text: 'The Bell falls, tolls, and calls the boss down.',
+    story: { chapter: 14, place: 'The Still Mere, given by Ysolde' },
+    power: { when: 'press', then: 'bellToll' },
+    levels: [{ charge: 48, time: 2, damage: 480 }] },
 
   // ---- Two more rares (pass 71, once crate-only; since PLAN.md item 7 every ability outside the starter set comes from a
   // crate, js/data/crates.js) ----

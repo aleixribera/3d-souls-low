@@ -22,8 +22,10 @@ const sorted = list => [...list].sort();
 // A browser's progress in its own realm, over `storage` (a Map, or a store whose calls throw).
 function browser(storage) {
   const ctx = vm.createContext({ console, Math, JSON, localStorage: storage });
-  for (const f of ['js/net-protocol.js', 'js/data/abilities.js', 'js/data/crates.js', 'js/progress.js']) vm.runInContext(fs.readFileSync(path.join(root, f), 'utf8'), ctx, { filename: f });
-  return vm.runInContext('({ progress, CRATES, CRATE_MIN, ABILITIES, ABILITY_BY_ID })', ctx);
+  for (const f of ['js/net-protocol.js', 'js/config.js', 'js/data/abilities.js', 'js/data/crates.js', 'js/progress.js']) vm.runInContext(fs.readFileSync(path.join(root, f), 'utf8'), ctx, { filename: f });
+  const all = vm.runInContext('({ progress, CRATES, CRATE_MIN, ABILITIES, ABILITY_BY_ID, CONFIG })', ctx);
+  // A story ability (a `given` rarity, pass 159) is given on the road, never in a crate: the crates' pool is the rest.
+  return { ...all, ABILITIES: all.ABILITIES.filter(b => !all.CONFIG.abilities.rarity[b.rarity].given) };
 }
 const store = () => { const m = new Map(); return { m, getItem: k => m.has(k) ? m.get(k) : null, setItem: (k, v) => m.set(k, String(v)) }; };
 // A seeded random, so the odds below are the same every run.

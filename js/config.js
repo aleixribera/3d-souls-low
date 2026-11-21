@@ -44,6 +44,7 @@ const CONFIG = {
             parryFov: -3, parryPush: 0.06, breakFov: -1.8, executeFov: -2.2, phaseFov: 2.5, landDip: 0.1,
             strafeRoll: 0.012, moveFov: 1.2, moveRef: 5, maxRoll: 0.05, maxFov: 6, powerNear: 26, perkFov: -0.9,
             powers: { blast: [4, 0.24], dragon: [2.4, 0.08], quake: [4, 0.24], beam: [-2.8, 0.1], iceLotus: [-2.2, 0.06], lotusBreak: [1.4, 0.04], tempest: [2.2, 0.08], greatWave: [3.6, 0.2], skyBlade: [4.6, 0.26], phoenix: [3.2, 0.1], blackStar: [-3, 0.04], starPull: [-1, 0],
+              scarfBlade: [-1.6, 0.05], oathShield: [-1.2, 0.04], seven: [3.0, 0.12], bellCall: [-2.0, 0.08], bellToll: [5.0, 0.3],
               inkWorld: [-2.6, 0.06], worldCut: [-3.4, 0.04], colossus: [4.4, 0.18], colossusRise: [1.2, 0], legion: [2.8, 0.12], legionRumble: [0.8, 0.02], strike: [-1.8, 0.06], freeze: [-3.2, 0.05], blades: [-1.4, 0.04], bloodMoon: [3, 0.12],
               twin: [2.6, 0.1], echo: [-0.6, 0.02], sunLines: [3.4, 0.1], lightningDash: [-1.2, 0.03], shadeClone: [1.4, 0.03], gale: [-2.4, 0.05], boltCrown: [-2.4, 0.08], bladeCage: [-1.6, 0.03], pyre: [3.2, 0.16], flare: [-1.1, 0.03], spark: [-0.8, 0.02],
               hound: [1.4, 0.05], bite: [-0.5, 0.02], draw: [1.2, 0.03], guardian: [2.2, 0.1], lancer: [1.2, 0.04], fox: [1, 0.03], lantern: [0.6, 0],
@@ -315,7 +316,9 @@ const CONFIG = {
     // at least 1 - `slack` of the charge it counted (a claim it refused is a point the browser still counted). A bot
     // presses a full key with its foe within `botReach` m (Guard's heal under `botHeal` of its bar, its stance at a wind-up).
     press: { gain: { hit: 1, skill: 2, deflect: 3, dodge: 3, finisher: 6 }, range: 18, slack: 0.25, reachSlack: 1.5, botReach: 6, botHeal: 0.6 },
-    rarity: { common: { levels: 4, weight: 75, grow: 0 }, rare: { levels: 3, weight: 22, grow: 1.2 }, legendary: { levels: 1, weight: 3, grow: 0.25 } },
+    // `story` (pass 159, Story's four): given on the road in Story, never offered in a pick nor held in a crate.
+    rarity: { common: { levels: 4, weight: 75, grow: 0 }, rare: { levels: 3, weight: 22, grow: 1.2 }, legendary: { levels: 1, weight: 3, grow: 0.25 },
+      story: { levels: 1, weight: 0, grow: 0, given: true } },   // `given`: never in a pick, a crate or the Abilities page
     // A plain common (a bare number, `plain: true`) is drawn at `plainWeight` of another common's chance (PLAN.md item 6).
     plainWeight: 0.5,
     // The effect commons (design/abilities, batch 2): a dash passes an enemy when its path comes within `pastGap` m of
@@ -345,6 +348,9 @@ const CONFIG = {
     // first blow `legion` s on.
     ult: { quake: 0.45, beam: 0.55, lotus: 0.45, tempest: 0.5, follow: 8, pinTurn: 0.5, wave: 0.95, sky: 1.1, skyRadius: 3, star: 0.35, pull: 3, diveReach: 1.5,
       inkDelay: 0.25, cut: 0.75, cutLength: 40, cutWidth: 1.2, giant: 1.15, giantArc: 150, legion: 0.55, legionBack: 6, legionLength: 26, legionWidth: 6 },
+    // Story's four (pass 159): Scarlet Draw's band opens `scarf` s after the press, `scarfWidth` m wide; the Bell of
+    // Waking's first toll (the kneel) `bell` s after it; the Seven strike all together for `together` times a founder's blow.
+    story: { scarf: 0.55, scarfWidth: 1.6, bell: 1.0, together: 3 },
     // Phoenix Dive's flight (Player.diveStart), s and m: a crouch of `burst`, up `rise` m in `up`, then each dive `dive`
     // long through the boss from `past` m beyond its far edge, a turn of `gap` between, the landing `land`; untouchable
     // from the burst to `grace` after the landing. The server's passes keep the same clock.
@@ -413,6 +419,9 @@ const CONFIG = {
       // Batch 14 (pass 154): Shade Host's clones, clone n at `flanks[n]` rad round from the holder's side (two pincer, the
       // third from behind), flash-stepping there at `speed` m/s; each lands its echo `delay` s after its holder's blow.
       shadeClone: { gap: 1.0, flank: 1.3, flanks: [1.3, -1.3, 3.14], speed: 18, height: 1.8, delay: 0.08 },
+      // Story's four (pass 159): The Seven stand in a ring of `count` round the enemy, `gap` m off its body, founder 1
+      // opposite the holder; they rise where they stand (`arrive`: the 0.6 s pose and their rise) and keep the ring as it moves.
+      seven: { gap: 2.4, flank: 0, speed: 30, height: 2.6, rises: true, count: 7, arrive: 1.3 },
       mantis: { gap: 1.3, flank: 1.1, speed: 9, height: 2.4, reach: 2, rises: true } } },
   // A boss fights the group (v7.35.0, the server's targeting): anyone drinking a flask within `healReach` m of its
   // body draws it at once (the closest drinker); otherwise it turns on whoever hurt it most lately, else on the closest.
@@ -590,7 +599,7 @@ const CONFIG = {
                              'Tip: resting at a bonfire keeps every enemy you have beaten dead.',
                              'Tip: a boss that glows amber as it winds up will knock you down. Dash it.'] },
          toasts: { portcullis: 'The gate opens', barricade: 'The barricade falls', shortcut: 'A shortcut opens', trapWarning: 'The floor trembles…',
-                   saveFailed: 'Progress could not be saved. Closing this page may lose progress.', flaskFound: 'A flask: {n} now' } },
+                   saveFailed: 'Progress could not be saved. Closing this page may lose progress.', flaskFound: 'A flask: {n} now', abilityGiven: '{name}: key {key}' } },
   fx: { tintTime: 0.22, particleLife: 0.5, particleCount: 180, particleGravity: 12,
         recoilTime: 0.25, recoilLean: 0.26, windupGlowTime: 0.08, crackTime: 0.5, idleBlendRate: 5, haftBlendRate: 9,
         trailDrain: 0.22, deadTargetTime: 1.5,
@@ -905,6 +914,11 @@ const CONFIG = {
       // charging at `speed` m/s, `ranks` deep in `rankGap` m rows.
       ults3: { enso: 14, close: 0.7, half: 0.5, inkFade: 0.5, stroke: 2.4, cutUp: 1.2, split: 6, splitNormal: 4, splitTime: 0.15,
         giantAhead: 10, giantSide: 6, chest: 8.5, see: 0.35, smearUp: 2.2, riders: 8, spearmen: 10, speed: 10, ranks: 6, rankGap: 2.2 },
+      // Story's four (pass 159, js/story-fx.js), m and s: the scarf `scarfUp` off the floor; the shield `shield` m tall,
+      // `shieldOut` before its holder; the Seven sinking over `sevenSink`; the bell hung `bellHigh` over the boss's head,
+      // never smaller than `bellMin` of its model, its shards for `shardLife`, a toll's ring `tollRing` m across, its ink
+      // `inkReach` m round the boss and `half` as strong for a viewer who isn't its holder.
+      story: { scarfUp: 1.3, shield: 2.4, shieldOut: 1.0, sevenSink: 0.8, bellHigh: 3, bellMin: 0.4, shardLife: 1.4, tollRing: 9, inkReach: 10, half: 0.5 },
       legends2: { sunHeight: 2.2, sunOpen: 0.08, sunBurn: 0.6, sunFade: 0.7, line: 0.26, lineInk: 0.44, lineHold: 0.14, lineBurn: 0.5, lineUp: 0.9,
         scorch: 1.6, lineFrame: 3, waist: 1.0, waistRing: 1.4, threads: 0.3, eyes: 0.15, sink: 0.4, slash: 2.2, slashLife: 0.28 },
       guard2: { pane: 1.3, paneOff: 0.75, star: 1, huskRing: 1.3, scorch: 2.6, dial: 1.8, answer: 4, waist: 1.1, rewindRing: 1.6, seal: 1.2, sealUp: 0.85 },

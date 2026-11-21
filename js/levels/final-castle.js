@@ -98,6 +98,7 @@ const LEVEL_5 = {
   blocks: [{ rect: [200, 212, -6, 6], y0: 7.5, y1: 15.5, wall: 0x4a4a42 }, { rect: [204, 208, 8, 30], y0: 0, y1: 7.5, wall: 0x4a4a42 },
            { rect: [226, 228, -5, 5], y0: 9.5, y1: 15.5, wall: 0x4a4a42 }, { rect: [240, 242, -5, 5], y0: 9.5, y1: 15.5, wall: 0x4a4a42 }],
   // Bonfire 1 is cold until the field is won (`litBy`): Aldric gone, his gate open.
+  giveAbility: { id: 'oath-guard', trigger: [198, 214, -7, 7], y: 0 },   // the chapel's defaced statue: Oath Guard (pass 159)
   bonfires: [{ id: 'castle-gate', x: 88, z: -6, litBy: 'zone-field', spawn: { x: 89.5, z: -3.5, yaw: Math.PI / 2 } },
              { id: 'castle-barracks', x: 112, z: -34, spawn: { x: 113.5, z: -32, yaw: Math.PI / 2 } },
              { id: 'castle-chapel', x: 211, y: 0, z: -5, spawn: { x: 209, y: 0, z: -3, yaw: Math.PI / 2 } },

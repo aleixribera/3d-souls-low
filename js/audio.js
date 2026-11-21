@@ -402,7 +402,7 @@ const AUDIO_CUES = ['hitFlesh', 'hitHurt', 'hitBlock', 'riposteBoom', 'parry', '
   'abilityPuppet', 'abilityPuppetBlow', 'abilityBear', 'abilityRear', 'abilityMaul', 'abilityRoar', 'abilityMantis', 'abilityScissor', 'abilityCrown', 'abilityCage', 'abilityCageCut',
   'abilitySuns', 'abilityThunderStep', 'abilityFourfold', 'abilityShade', 'abilityCrack', 'abilityLance', 'abilityLotus', 'abilityTempest',
   'abilityGreatWave', 'abilitySkyBlade', 'abilitySkyLand', 'abilityPhoenix', 'abilityPhoenixPass', 'abilityBlackStar', 'abilityImplode',
-  'abilityInkWorld', 'abilityInkStroke', 'abilitySever', 'abilityColossus', 'abilityLegion'];
+  'abilityInkWorld', 'abilityInkStroke', 'abilitySever', 'abilityColossus', 'abilityLegion', 'abilityScarf', 'abilityOath', 'abilitySeven', 'abilityBell'];
 // A power's sound by its `then`, its later blows' (`strike`: a lightning bolt, a twin's echo, a hound's bite) by
 // STRIKE_SOUNDS, a summon drawing the boss's eye (`draw`) by DRAW_SOUNDS; a rare's perk its own (ABILITY_PERK_SOUNDS,
 // at a pitch), a pick's pitch by its rarity.
@@ -591,6 +591,19 @@ function registerAudioListeners() {
       else if (d.then === 'inkWorld') audio.play('abilityInkStroke', { pos, vel: 0.7 });
       else if (d.then === 'colossus') audio.play('abilityBlast', { pos, vel: 0.8 });
       else if (d.then === 'legion' && d.strike === 1) audio.play('abilityBlade', { pos, vel: 0.9, pitch: 0.85 });
+      return;
+    }
+    // Story's four (pass 159): the scarf's snap and ring, then its cut; the shield's hum, then a clang for each blow it
+    // turns; the Seven's rising voices, a blade for each founder and a blast together; the bell's far call, its toll at
+    // the kneel and a deeper one with the blow.
+    if (d.then === 'scarfBlade' || d.then === 'oathShield' || d.then === 'seven' || d.then === 'bellToll') {
+      if (d.end || (d.draw && d.then === 'seven')) return;
+      const pos = d.body === Game.player && !d.strike ? null : d.enemy ? chest(d.enemy) : spot(d), n = d.strike || 0;
+      if (!n) audio.play(d.then === 'scarfBlade' ? 'abilityScarf' : d.then === 'oathShield' ? 'abilityOath' : d.then === 'seven' ? 'abilitySeven' : 'abilityBell', { pos, vel: 1 });
+      else if (d.then === 'scarfBlade') audio.play('abilityBlade', { pos, vel: 1, pitch: 1.1 });
+      else if (d.then === 'oathShield') audio.play('abilityStancePing', { pos, vel: 0.9, pitch: 0.7 });
+      else if (d.then === 'seven') { const C = CONFIG.abilities.summons.seven.count; if (n <= C) audio.play('abilityBlade', { pos, vel: 0.7, pitch: 0.85 + 0.04 * n }); else if (n === C + 2) audio.play('abilityBlast', { pos, vel: 1 }); }
+      else audio.play('bellToll', { pos, vel: 1, pitch: n === 1 ? 1 : 0.75 });
       return;
     }
     const id = d.draw ? ABILITY_DRAW_SOUNDS[d.then] : d.then === 'iai' && d.strike ? (d.strike === 1 ? 'abilityIaiDraw' : 'abilityIai')
