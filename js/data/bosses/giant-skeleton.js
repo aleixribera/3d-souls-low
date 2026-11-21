@@ -124,6 +124,14 @@ MODEL_DEFS.giantSkeleton = {
   ATTACK_POSES.giantTaking = { ease: { windup: 'inOutSine', active: 'outCubic', follow: 'outExpo', recovery: 'inOutCubic' }, lag: { armL: 0.04, elbowL: 0.06 },
     hits: [{ windup: reachBack, strike: scooped, follow: lifted }] };
 
+  // Claw and Taking (pass 125, the moveset audit: its gaol phase had one string): the Long Claw, and where the rake ends,
+  // low at its right knee, the hand stays open and comes straight back along the floor for you. Parry the rake, then roll:
+  // a second parry is a hand closing on you.
+  const clawLow = { ...reachBack, spin: [0, -0.55, 0], chest: [0.15, -0.3, 0], neck: [0, 0.3, 0], head: [0.1, 0.35, 0], armL: [-0.55, 0, -0.85], elbowL: [-0.25, 0, 0] };
+  ATTACK_POSES.giantClawTaking = { ease: swing, lag: { armL: 0.04, elbowL: 0.08 },
+    hits: [{ ...ATTACK_POSES.giantClaw.hits[0], follow: { ...raked, crouch: 0.32, armL: [-0.5, 0, -0.85] } },
+      { windup: clawLow, strike: scooped, follow: lifted }] };
+
   // Club and Claw: the club cocked across its chest to its left; a backhand out to its right (parry it); the claw raked
   // across from its left (parry it); then the club high over its right shoulder and down (roll it).
   const cocked = { crouch: 0.15, lean: 0.0, legL: [-0.35, 0, 0], legR: [0.35, 0, 0], spin: [0, 0.8, 0], chest: [-0.2, 0.4, 0], neck: [0, -0.35, 0], head: [0, -0.4, 0],
@@ -220,6 +228,11 @@ MODEL_DEFS.giantSkeleton = {
     hits: [{ startup: 1.05, active: 0.13, follow: 0.2, box: BACKHAND }, { startup: 0.85, active: 0.13, follow: 0.2, tell: 'claw', box: CLAW },
            { startup: 1.0, active: 0.13, follow: 0.45, noParry: true, damage: 42, hold: { at: 0.6, time: [0.2, 0.6], chance: 0.4 }, box: SLAM, impact: SHATTER }],
     recovery: 1.4, damage: 24, poise: 50, knock: 6, lunge: 1.0, range: 3.6, box: BACKHAND };
+  // Claw and Taking (pass 125): the rake (parry it), then the open hand back along the floor (roll it; caught, struggle).
+  const clawTaking = { id: 'giantClawTaking', name: 'Claw and Taking', anim: 'sweep', pose: 'giantClawTaking', tracking: { rate: 2.0, commit: 0.65 }, markers: glint(0), chance: 0.45,
+    hits: [{ startup: 1.15, active: 0.14, follow: 0.2, tell: 'claw', box: CLAW },
+           { startup: 0.85, active: 0.16, follow: 2.4, tell: 'claw', noParry: true, damage: 8, box: SCOOP, seize: GRIP }],
+    recovery: 1.1, damage: 28, poise: 55, knock: 7, lunge: 1.2, range: 4.0, box: CLAW };
   // Drinking where it can see you: the taking, sooner.
   const takingPunish = { ...JSON.parse(JSON.stringify(taking)), id: 'giantTakingPunish', when: 'healing', chance: 3,
     hits: [{ startup: 1.0, active: 0.16, follow: 2.4, tell: 'claw', seize: GRIP }], tracking: { rate: 2.4, commit: 0.7 }, range: 4.5 };
@@ -235,9 +248,11 @@ MODEL_DEFS.giantSkeleton = {
   const reach = { id: 'giantReach', name: 'The Reaching Hand', anim: 'overhead', pose: 'giantReach', tracking: { rate: 2.2, commit: 0.45 }, rollOnly: true, noParry: true, minRange: 4.5, chance: 0.5,
     hits: [{ startup: 1.3, active: 0.18, follow: 2.4, tell: 'claw', leap: { from: 0.5, max: 11, short: 1.6 }, seize: GRIP, impact: { ring: 2.6, crack: 0.8, dust: 12, shake: 0.1 } }], recovery: 1.1,
     damage: 10, poise: 50, knock: 0, lunge: 0, range: 11, box: SCOOP };
-  // The Bonewheel: the club straight out to its right, coiled to its left; whirled round twice. Roll it, or be out of reach.
-  const wheel = { id: 'giantWheel', name: 'The Bonewheel', anim: 'sweep', pose: 'giantWheel', tracking: { rate: 1.6, commit: 0.4 }, rollOnly: true, noParry: true, chance: 0.4,
-    hits: [{ startup: 1.35, active: 0.2, follow: 0.12 }, { startup: 0.12, active: 0.2, follow: 0.55 }], recovery: 1.5,
+  // The Bonewheel: the club straight out to its right, coiled to its left; whirled round twice. Parry the first turn (it
+  // breaks the wheel, as a counter breaks any string); the second only rolls. (Pass 125, the moveset audit: unparryable
+  // moves were 4 of his 10, over the system's quarter; the wheel's first turn is the club's, so it takes a parry.)
+  const wheel = { id: 'giantWheel', name: 'The Bonewheel', anim: 'sweep', pose: 'giantWheel', tracking: { rate: 1.6, commit: 0.4 }, markers: glint(0), chance: 0.4,
+    hits: [{ startup: 1.35, active: 0.2, follow: 0.12 }, { startup: 0.12, active: 0.2, follow: 0.55, noParry: true }], recovery: 1.5,
     damage: 26, heavy: true, poise: 60, knock: 10, lunge: 0.8, range: 3.8, box: WHEEL };
   // Pit Stomps: right, left, right toward you, hunched and marching, the third the hardest. Roll them, or jump them.
   const pitStomps = { id: 'giantPitStomps', name: 'Pit Stomps', anim: 'stomp', pose: 'giantPitStomps', tracking: { rate: 2.0, commit: 0.7 }, rollOnly: true, chance: 0.4,
@@ -255,14 +270,14 @@ MODEL_DEFS.giantSkeleton = {
     cooldown: [1.39, 2.62], flinchTime: 0, staggerTime: 1.5, parriedTime: 2.0,
     defaultPhases: ['gaol', 'gathered'],
     phases: {
-      gaol: { hp: 1920, attacks: ['sweep', 'stomp', 'giantClaw', 'giantSlam', 'giantTaking', 'giantClubClaw', 'giantTakingPunish'] },
+      gaol: { hp: 1920, attacks: ['sweep', 'stomp', 'giantClaw', 'giantSlam', 'giantTaking', 'giantClubClaw', 'giantClawTaking', 'giantTakingPunish'] },
       // At half its strength it drives both hands into the floor and the pit gives it more of its dead: the heat fills its ribs.
       gathered: { at: 0.5, name: 'The Giant Skeleton, Gathered', opener: 'giantGathering', reveal: ['heat'],
         revealBurst: { color: 0xffa040, count: 44, speed: 6 },
         cooldown: [1.15, 2.2], approach: 0.7, speed: 1.7, trackRate: 1.1,
-        attacks: ['giantGathering', 'sweep', 'stomp', 'giantClaw', 'giantSlam', 'giantTaking', 'giantClubClaw', 'giantReach', 'giantWheel', 'giantPitStomps', 'giantTakingPunish'] },
+        attacks: ['giantGathering', 'sweep', 'stomp', 'giantClaw', 'giantSlam', 'giantTaking', 'giantClubClaw', 'giantClawTaking', 'giantReach', 'giantWheel', 'giantPitStomps', 'giantTakingPunish'] },
     },
-    attacks: [sweep, stomp, claw, slam, taking, clubClaw, takingPunish, gathering, reach, wheel, pitStomps],
+    attacks: [sweep, stomp, claw, slam, taking, clubClaw, clawTaking, takingPunish, gathering, reach, wheel, pitStomps],
   };
   ENEMY_DEFS.push(GIANT); ENEMY_BY_ID[GIANT.id] = GIANT;
 }

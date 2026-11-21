@@ -9,11 +9,12 @@ The iterate loop's working note (`.claude/iterate.md`). Cap: 8,000 characters.
   `js/rare-strike-fx.js`. Acceptance: `tests/rare-triggers.cjs`, in-page `rare triggers`; clip
   `docs/scorecard/now/rare-triggers.mp4` (`node tools/ability-clips.cjs triggers`). Next on track 2: batch 5 pass 2,
   Echoing Blade and Overcharge. Browser lock: `node tools/browser-lock.cjs run <pass> -- <cmd>` (docs/two-tracks.md).
-- Track 1, pass 124, PLAN item 5's real check (the second boss through the system, pass 2 of ~3): the Bell Warden.
-  Moveset audit first (`docs/bosses/system.md` step 0, Aleix 2026-11-21: rework vs restyle): restyle, plus a third real
-  string, Sweep and Return. In-between keys on seven attacks (`via`; the Bronze Fall's coil and bell-overhead leap).
-  Acceptance: `tests/pose-via.cjs` (Warden: ends kept, keys bend, no jump); strips `docs/scorecard/now/warden-*.jpg`,
-  clip `warden-animation.mp4`. Next on track 1: the `edges-1` judge, then Aleix. The Pillager Captain is awaiting Aleix.
+- Track 1, pass 125, PLAN items 5-6 (pass 1 of the Giant): the Bell Warden's `edges-1` rounds 7-8 (caught 9/10, motion
+  4-5; one fix, his weight sinks after mouth-first blows), so he is awaiting Aleix, and item 5's second boss is through in
+  three passes. Then the Giant Skeleton's moveset audit (`docs/bosses/giant-skeleton.md`): restyle plus a string. New gaol
+  string Claw and Taking (rake, then the hand back along the floor), the Bonewheel's first turn parryable (noParry was 4
+  of 10). Acceptance: in-page `Giant Skeleton` (6), `boss-pages`, `fair-attacks`; clip `docs/scorecard/now/giant-claw-taking.mp4`.
+  Next on track 1: the Giant in cel (edge tells on club and claw, soft joints), in-between keys, the judge.
 
 ## Works
 
@@ -69,6 +70,7 @@ The iterate loop's working note (`.claude/iterate.md`). Cap: 8,000 characters.
 
 ## Needs Aleix
 
+- Fight the Bell Warden too (same: Practice, `?style=cel`; tried: two `edges-1` rounds, the judge repeats the Captain's gap).
 - Fight the Pillager Captain (PLAN item 5's last gate; tried: six judge rounds, nothing left a judge can settle). Practice,
   with `?style=cel` in the address (cel is not yet every player's default); say what feels off or unfair.
 Answered: the art style is cel-shaded anime, for the whole game (Aleix, 2026-11-20; item 4 done). The home server's `/souls/` address is PUBLIC (Aleix, 2026-11-20).

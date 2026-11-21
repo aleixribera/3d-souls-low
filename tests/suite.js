@@ -1391,6 +1391,18 @@
     sim.step(2);
     expect.ok(p2.state !== PS.HELD && freed.length === 1 && !freed[0].thrown, 'and its hand opens: dropped, not thrown');
   });
+  // Pass 125 (docs/bosses/giant-skeleton.md, the moveset audit): a second gaol string, the rake and then the open hand.
+  test('Giant Skeleton: Claw and Taking: the rake parries, the hand that follows takes you', () => {
+    Game.startFight('giant'); sim.begin();
+    const e = Game.duel, p = Game.player, a = e.def.attacks.find(x => x.id === 'giantClawTaking');
+    p.maxHp = p.hp = 400;
+    expect.ok(Game.duel.def.phases.gaol.attacks.includes('giantClawTaking'), 'in the gaol phase');
+    expect.ok(canParryHit(a, 0) && !canParryHit(a, 1) && makeStrike(a).rollOnly === false && a.hits[1].seize, 'the rake takes a parry, the hand only a roll');
+    const w = e.def.attacks.find(x => x.id === 'giantWheel') || A.ENEMY_BY_ID.giant.attacks.find(x => x.id === 'giantWheel');
+    expect.ok(canParryHit(w, 0) && !canParryHit(w, 1), 'the Bonewheel: its first turn takes a parry, its second only a roll');
+    taken(e, p, 'giantClawTaking');
+    expect.ok(p.state === PS.HELD && e.hitIndex === 1, `stood through both: the second blow closes on you (${p.state}, hit ${e.hitIndex})`);
+  });
   test('Giant Skeleton: a roll through the open hand is never caught, and a death in its hand is a death', () => {
     Game.startFight('giant'); sim.begin();
     const e = Game.duel, p = Game.player; sturdy(p);

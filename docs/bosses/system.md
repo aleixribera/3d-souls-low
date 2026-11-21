@@ -2,7 +2,8 @@
 
 How a boss is made, start to finish, so the next one takes about three passes and no new engine code. It replaces the
 Hollis bar and the old boss rules (`.claude/feedback.md` 2026-11-14). Proven first on the Pillager Captain
-(`pillager-captain.md`); the second is the Bell Warden (`bell-warden.md`, from pass 123). Each step names its tool and the check that closes it.
+(`pillager-captain.md`); the second is the Bell Warden (`bell-warden.md`, from pass 123); then the roster in PLAN item 6's order (the Giant
+Skeleton, `giant-skeleton.md`, from pass 125). Each step names its tool and the check that closes it.
 
 ## 0. The moveset audit: rework or restyle
 
@@ -12,6 +13,7 @@ signature moments a phase, a real phase two, and no move renamed from another bo
 sources (`godfrey.js`, `godrick.js`, `maliketh.js`, `radagon.js`, `crucible-knight.js`, `js/data/move-sources.js`).
 - All met: a **restyle** (model in cel, animation, effects, the judge).
 - One bar short by a move or a string: add it, then restyle.
+- `noParry` on more than a quarter of his moves (step 1's rule): give the move whose blow is a weapon's a parry.
 - More short, or any move borrowed or renamed: a **rework**: new moves, animation and phase two from a new one-page
   design, before any restyle.
 Write the verdict, bar by bar, at the top of the boss's page (`bell-warden.md` "Moveset audit").

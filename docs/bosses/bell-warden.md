@@ -3,7 +3,8 @@
 The second boss through the system (`system.md`; PLAN item 5's real check). Data: `js/data/bosses/bell-warden.js`; model:
 `tools/blender/bellwarden.py`. Status: pass 123, the design page and the cel look (dark bronze, the bell the one bright
 metal, the tell on the bell's lip, soft joints, a smear on his swings), all by data. Pass 124: the moveset audit (below),
-a second cold string, and in-between keys on seven attacks. Next: the `edges-1` judge, then Aleix.
+a second cold string, and in-between keys on seven attacks. Pass 125: the `edges-1` judge (rounds 7 and 8), one fix
+(his weight sinks after the blow lands). Awaiting Aleix.
 
 ## Idea
 
@@ -80,3 +81,9 @@ Bronze Fall and Three Tolls: his hips and chest lead and the bell trails, then w
 on. Every heave overhead goes through the pose library's `haftOverheadRaise` with a last arch (the load); the held
 hammers creep through their holds (`hold.creep`). The Bronze Fall now holds its coil on the ground (the tell) and swings
 the bell overhead in the air, knees tucked, instead of flipping it up from behind as it lands.
+
+Pass 125, from judge round 7 ("when the blow lands nothing reacts"): every mouth-first blow (the Hammerfall, the
+Backhand and Hammer's fall, the Bronze Fall, Three Tolls' last) ends in `landed`: his hips drop and his knees give
+after the bell hits, the arms raised a little so the bell stays on the floor. Round 8 read it within its noise
+(motion 4-5 both rounds) and named the same gap as the Captain's round 6, the body's coil and overshoot: the judge
+repeats itself, so he goes to Aleix (`system.md` section 6).
