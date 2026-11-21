@@ -66,6 +66,20 @@
   const claw = { windup: 'inOutCubic', active: 'outCubic', follow: 'outQuad', recovery: 'inOutCubic' };   // a swipe: drawn, then torn through
   const heavy = { windup: 'inOutSine', active: 'inQuad', follow: 'outCubic', recovery: 'inOutCubic' };   // a weight that gathers, then falls
   // (pass 132, tools/body-check.cjs) Follow-throughs below carry the body on past the strike (followOn, js/data/pose-library.js).
+  // In-between keys (pass 135, docs/bosses/system.md "Animation"; `via`, js/attack-anim.js), every one `rel` (an offset from
+  // the straight blend between its poses): a beast's weight leads and its claws trail. The shoulder and the chest turn
+  // first, the claw lags bent behind and then whips through; before the chop it sinks on its haunches (the load), and
+  // after a blow into the floor its hips keep sinking a moment.
+  const rakeVia = {
+    // (bars-1 judge, pass 135: its three wind-ups opened on the same crouch) the claw is up and the body turned from the
+    // first frames, the other fist planted; a last coil at the top
+    windup: [{ t: 0.2, rel: true, spin: [0, -0.2, 0], chest: [-0.12, -0.12, 0], armR: [-0.6, 0, -0.25], elbowR: [-0.3, 0, 0], armL: [0.15, 0, 0] },
+             { t: 0.85, rel: true, crouch: 0.03, spin: [0, -0.08, 0], chest: [-0.08, -0.05, 0], armR: [-0.12, 0, -0.1] }],
+    active: [{ t: 0.35, rel: true, crouch: 0.05, spin: [0, 0.25, 0], chest: [0.1, 0.15, 0], head: [0, -0.15, 0], armR: [-0.45, 0, -0.35], elbowR: [-0.4, 0, 0] }],
+    follow: [{ t: 0.3, rel: true, crouch: 0.04, spin: [0, 0.1, 0], armR: [0, 0, 0.12] }],
+  };
+  const mirrorVia = V => Object.fromEntries(Object.entries(V).map(([ph, L]) => [ph, L.map(mirror)]));
+  const sinkOn = [{ t: 0.25, rel: true, crouch: 0.06, lean: 0.04, kneeL: [0.15, 0, 0], kneeR: [0.15, 0, 0] }];   // the weight goes on down after the floor blow
 
   // Claw Rake: rearing back with the right claw raised high beside its skull, its body turned right, the left fist planted;
   // torn down and across before it to its left. Then the left, the same the other way.
@@ -75,7 +89,7 @@
     armR: [0.0, 0, 0.9], elbowR: [0.1, 0, 0], armL: [0.2, 0, 0.3], elbowL: [0.1, 0, 0] };
   const rakeRFollow = { ...rakeRDown, crouch: 0.25, spin: [0, 0.65, 0], armR: [0.25, 0, 1.0] };
   const rakeLUp = mirror(rakeRUp), rakeLDown = mirror(rakeRDown), rakeLFollow = mirror(rakeRFollow);
-  const RAKE_R = { windup: rakeRUp, strike: rakeRDown, follow: rakeRFollow }, RAKE_L = { windup: rakeLUp, strike: rakeLDown, follow: rakeLFollow };
+  const RAKE_R = { windup: rakeRUp, strike: rakeRDown, follow: rakeRFollow, via: rakeVia }, RAKE_L = { windup: rakeLUp, strike: rakeLDown, follow: rakeLFollow, via: mirrorVia(rakeVia) };
   ATTACK_POSES.hungerRake = { ease: claw, lag: { elbowR: 0.06, elbowL: 0.06 }, hits: [RAKE_R, RAKE_L] };
   // Learned: a third, held back for your roll. Both claws drawn back low and wide at its sides, its chest thrown open;
   // held; scissored shut across before it at waist height.
@@ -92,12 +106,18 @@
     neck: [0.45, 0.35, 0.25], head: [0.4, 0.25, 0.55], armL: [0.1, 0, 0.45], elbowL: [0.1, 0, 0], armR: [0.0, 0, -0.2], elbowR: [-0.2, 0, 0] };
   const hookUp = { crouch: 0.15, lean: 0.05, legL: [-0.45, 0, 0], legR: [0.3, 0, 0], spin: [0, -0.55, 0], chest: [-0.45, -0.3, -0.1], neck: [-0.35, -0.45, -0.2],
     head: [-0.45, -0.4, -0.55], armL: [-0.7, 0, 0.5], elbowL: [-0.4, 0, 0], armR: [-0.4, 0, -0.6], elbowR: [-0.4, 0, 0] };
-  const HOOK = { windup: hookLow, strike: hookUp, follow: { ...hookUp, spin: [0, -0.7, 0], chest: [-0.55, -0.35, -0.1] } };
+  // (pass 135) it sinks lower as the tines drag; then its shoulders heave round first and the skull comes up after them
+  const hookVia = {
+    windup: [{ t: 0.6, rel: true, crouch: 0.05, chest: [0.08, 0.05, 0], neck: [0.1, 0.05, 0], head: [0.1, 0.05, 0.08] }],
+    active: [{ t: 0.35, rel: true, spin: [0, -0.22, 0], chest: [0, -0.12, 0], neck: [0.25, 0.25, 0.1], head: [0.25, 0.2, 0.2] }],
+    follow: [{ t: 0.3, rel: true, crouch: 0.03, spin: [0, -0.08, 0] }],
+  };
+  const HOOK = { windup: hookLow, strike: hookUp, follow: { ...hookUp, spin: [0, -0.7, 0], chest: [-0.55, -0.35, -0.1] }, via: hookVia };
   ATTACK_POSES.hungerHook = { ease: { ...heavy, active: 'outCubic' }, lag: { head: 0.05, neck: 0.03 }, hits: [HOOK] };
   // Learned: the skull dipped to its right at once, and hooked back up across to its left.
   const hookBackUp = mirror(hookUp);
   ATTACK_POSES.hungerHookLearned = { ease: { ...heavy, active: 'outCubic' }, lag: { head: 0.05, neck: 0.03 },
-    hits: [HOOK, { windup: mirror(hookLow), strike: hookBackUp, follow: { ...hookBackUp, spin: [0, 0.7, 0] } }] };
+    hits: [HOOK, { windup: mirror(hookLow), strike: hookBackUp, follow: { ...hookBackUp, spin: [0, 0.7, 0] }, via: mirrorVia(hookVia) }] };
 
   // Rearing Pound: up on its hind legs, both claws high over it, the skull bowed to look down at you; pounded straight down
   // before it, squatting upright, its skull and antlers held high over its fists (the Fall sprawls; this does not).
@@ -107,7 +127,16 @@
     armL: [-1.45, 0, 0.12], elbowL: [0.05, 0, 0], armR: [-1.45, 0, -0.12], elbowR: [0.05, 0, 0] };
   const pound = { crouch: 0.5, lean: 0.12, legL: [-0.7, 0, 0.2], kneeL: [0.9, 0, 0], legR: [-0.7, 0, -0.2], kneeR: [0.9, 0, 0], chest: [0.15, 0, 0], neck: [0.05, 0, 0], head: [-0.25, 0, 0],
     armL: [-0.55, 0, 0.08], elbowL: [0.1, 0, 0], armR: [-0.55, 0, -0.08], elbowR: [0.1, 0, 0] };
-  const POUND = { windup: rear, strike: pound, follow: followOn(rear, pound, { crouch: 0.56, head: [-0.15, 0, 0] }) };
+  // (pass 135) it rears at once and arches at the top; the body drops first and the fists
+  // trail bent above it, then come down with it; on the floor its hips keep sinking
+  const poundVia = {
+    // (bars-1 judge, pass 135) up off its fists from the first frames: the rear shows before the rake's or the kick's would
+    windup: [{ t: 0.2, rel: true, lean: -0.12, chest: [-0.35, 0, 0], head: [0.15, 0, 0], armL: [-0.6, 0, 0], armR: [-0.6, 0, 0] },
+             { t: 0.85, rel: true, chest: [-0.12, 0, 0], head: [0.08, 0, 0], armL: [-0.15, 0, 0], armR: [-0.15, 0, 0] }],
+    active: [{ t: 0.4, rel: true, crouch: 0.05, chest: [0.12, 0, 0], armL: [-0.45, 0, 0], armR: [-0.45, 0, 0], elbowL: [-0.4, 0, 0], elbowR: [-0.4, 0, 0] }],
+    follow: sinkOn,
+  };
+  const POUND = { windup: rear, strike: pound, follow: followOn(rear, pound, { crouch: 0.56, head: [-0.15, 0, 0] }), via: poundVia };
   ATTACK_POSES.hungerHammer = { ease: heavy, hits: [POUND] };
   // Learned: up again at once, a stride on, and down again with the floor jumping round it.
   const rearAgain = { ...rear, lean: -0.3, chest: [-0.9, 0, 0] };
@@ -119,7 +148,13 @@
     armL: [-0.2, 0, 0.2], elbowL: [0.2, 0, 0], armR: [0.7, 0, -0.15], elbowR: [-0.2, 0, 0] };
   const ram = { crouch: 0.25, lean: 0.4, legL: [-0.95, 0, 0], kneeL: [0.35, 0, 0], legR: [0.95, 0, 0], kneeR: [0.5, 0, 0], chest: [0.2, 0, 0], neck: [0.45, 0, 0], head: [0.3, 0, 0],
     armL: [0.75, 0, 0.3], elbowL: [-0.7, 0, 0], armR: [0.75, 0, -0.3], elbowR: [-0.7, 0, 0] };
-  const RAM = { windup: paw, strike: ram, follow: { ...ram, lean: 0.35 } };
+  // (pass 135) the right fist scrapes the floor twice before it goes; its head drives and the body follows
+  const ramVia = {
+    windup: [{ t: 0.3, rel: true, armR: [-0.5, 0, 0], elbowR: [-0.2, 0, 0] }, { t: 0.6, rel: true, crouch: 0.03, armR: [0.3, 0, 0] },
+             { t: 0.8, rel: true, armR: [-0.3, 0, 0] }],
+    active: [{ t: 0.3, rel: true, lean: 0.1, neck: [0.12, 0, 0], head: [0.1, 0, 0], legL: [0.3, 0, 0], legR: [-0.3, 0, 0] }],
+  };
+  const RAM = { windup: paw, strike: ram, follow: { ...ram, lean: 0.35 }, via: ramVia };
   ATTACK_POSES.hungerCharge = { ease: { windup: 'inOutSine', active: 'outExpo', follow: 'outQuad', recovery: 'inOutCubic' }, hits: [RAM] };
   // Learned: past you it drops low on its haunches, swings round and comes again.
   const turned = { ...paw, crouch: 0.5, armR: [-0.2, 0, -0.2], armL: [0.6, 0, 0.15], spin: [0, 0.3, 0] };
@@ -131,7 +166,13 @@
     armL: [-0.6, 0, 0.25], elbowL: [0.2, 0, 0], armR: [-0.6, 0, -0.25], elbowR: [0.2, 0, 0] };
   const kicked = { crouch: 0.4, lean: 0.7, legL: [2.6, 0, 0.12], kneeL: [-0.15, 0, 0], legR: [2.6, 0, -0.12], kneeR: [-0.15, 0, 0], chest: [0.45, 0, 0], neck: [-0.1, 0, 0], head: [-0.2, 0, 0],
     armL: [-1.25, 0, 0.3], elbowL: [0.05, 0, 0], armR: [-1.25, 0, -0.3], elbowR: [0.05, 0, 0] };
-  const KICK = { windup: tucked, strike: kicked, follow: followOn(tucked, kicked) };
+  // (pass 135) it bunches tighter on its fists before the kick; the hips fire first and the hooves trail, bent, then snap out
+  const KICK = { windup: tucked, strike: kicked, follow: followOn(tucked, kicked), via: {
+    // (bars-1 judge) its skull drops between its forelegs and the hind legs draw up from the first frames
+    windup: [{ t: 0.2, rel: true, neck: [0.25, 0, 0], head: [0.35, 0, 0], legL: [-0.4, 0, 0], legR: [-0.4, 0, 0], kneeL: [0.5, 0, 0], kneeR: [0.5, 0, 0] },
+             { t: 0.6, rel: true, crouch: 0.05, chest: [0.08, 0, 0], kneeL: [0.2, 0, 0], kneeR: [0.2, 0, 0] }],
+    active: [{ t: 0.3, rel: true, lean: 0.08, legL: [-0.6, 0, 0], legR: [-0.6, 0, 0], kneeL: [0.5, 0, 0], kneeR: [0.5, 0, 0] }],
+  } };
   ATTACK_POSES.hungerKick = { ease: { windup: 'inOutSine', active: 'outExpo', follow: 'outQuad', recovery: 'inOutCubic' }, lag: { kneeL: 0.05, kneeR: 0.05 }, hits: [KICK] };
   // Learned: down off the kick it throws its right claw out wide and wheels a whole turn round.
   const wheelOut = { crouch: 0.25, lean: 0.1, spin: [0, -1.1, 0], chest: [0, -0.3, 0], neck: [0, 0.5, 0], head: [0, 0.5, 0], armR: [-1.2, 0, -1.2], elbowR: [0, 0, 0],
@@ -167,7 +208,11 @@
     armR: [-2.9, 0, -0.15], elbowR: [-0.25, 0, 0], armL: [-0.35, 0, 0.35], elbowL: [0.2, 0, 0] };
   const chopDown = { crouch: 0.38, lean: 0.45, legL: [-0.7, 0, 0], kneeL: [0.4, 0, 0], legR: [0.45, 0, 0], kneeR: [0.3, 0, 0], spin: [0, 0.25, 0], chest: [0.45, 0.15, 0], neck: [0.1, -0.1, 0], head: [0.1, -0.1, 0],
     armR: [-0.85, 0, 0.1], elbowR: [0.05, 0, 0], armL: [-0.35, 0, 0.45], elbowL: [0.2, 0, 0] };
-  const CHOP = { windup: chopUp, strike: chopDown, follow: followOn(chopUp, chopDown, { crouch: 0.44, armR: [-0.6, 0, 0.15] }) };
+  const CHOP = { windup: chopUp, strike: chopDown, follow: followOn(chopUp, chopDown, { crouch: 0.44, armR: [-0.6, 0, 0.15] }), via: {   // (pass 135) the load, and the claw trailing the body down
+    windup: [{ t: 0.35, rel: true, crouch: 0.06, chest: [0.15, 0, 0], armR: [0.35, 0, 0] }],
+    active: [{ t: 0.4, rel: true, crouch: 0.04, chest: [0.1, 0, 0], armR: [-0.4, 0, 0], elbowR: [-0.35, 0, 0] }],
+    follow: sinkOn,
+  } };
   ATTACK_POSES.hungerFrenzy = { ease: claw, lag: { elbowR: 0.06, elbowL: 0.06 }, hits: [RAKE_R, RAKE_L, RAKE_R, CHOP] };
 }
 

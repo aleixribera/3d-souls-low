@@ -5,7 +5,8 @@ The fifth boss through the system (`system.md`; PLAN item 6, the roster in the o
 Status: pass 132, the moveset audit (below), and every follow-through carries it on past the strike
 (`tools/body-check.cjs`: 11 hits flagged before, none after). Pass 133: the parries and a name of its own (below), and
 its cel look's first step: a heavy wind-up grows the halo on what strikes instead of washing its hide orange
-(`tellsGrow`). Next: the cel look (hide, quills, antlers in cel bands), in-between keys, then the `bars-1` judge.
+(`tellsGrow`). Pass 135: its cel look (a thin ribbon on its claws instead of a pale disc over its body), in-between
+keys on every plain move, and the `bars-1` judge round (below). Awaiting Aleix.
 
 ## Moveset audit (pass 132): restyle, plus three parries and a name
 
@@ -85,5 +86,17 @@ a heavy's wind-up there and never washed over its hide (`tellsGrow`, pass 133: i
 ## Animation
 
 Key poses per hit (`hunger*` in the data file), its learned forms built from the plain ones; pass 132 carries every
-follow-through on past the strike (`followOn`, `js/data/pose-library.js`). In-between keys and strips come with the cel
-pass.
+follow-through on past the strike (`followOn`, `js/data/pose-library.js`). Pass 135, in-between keys (`via`) on the
+rake (and so the frenzy's rakes), the hook, the pound, the charge, the kick and the frenzy's chop: the shoulders and
+chest turn first and the claw trails bent, then whips through; the fist scrapes the floor twice before a charge; after
+a floor blow the hips keep sinking. Strips: `docs/scorecard/now/hunger-rake.jpg`, `hunger-pound.jpg`, `hunger-kick.jpg`;
+clip `hunger-cel.mp4` (the rake twice, game camera, cel).
+
+## The judge (pass 135, `bars-1`)
+
+Its Rake, Rearing Pound and Hind Kick among the Captain's overhead, the Warden's Hammerfall, the Giant's Slam and
+Aldric's Gaol Sweep, unlabelled. No wind-up shared with another boss. Its own three opened on the same crouch with a lit
+claw (frames 0-1), and the kick's body read as a heap of quills: fixed, each now shows its own shape within the first
+fifth of its wind-up (the claw up and the body turned; up off its fists; the skull dropped between its forelegs and the
+hind legs drawn up). Rechecked in the strips. Left for Aleix: its black quill mane swallows the limbs in some poses (a
+lighter quill texture did not show through the ink lines in cel).

@@ -40,6 +40,11 @@ const BOSS_FX = {
     varnLeap: { impact: 'shatter' }, knellSweep: { element: 'fire' }, knellKey: { element: 'fire' }, knellLeap: { impact: 'blaze' },
     tollingChain: { element: 'toll' }, lastToll: { element: 'toll', impact: 'toll', windup: 'gather' },
     ashWave: { element: 'fire' }, burningAscent: { element: 'fire', impact: 'blaze', windup: 'gather' } } },
+  // The Antlered Hunger (Level 6): the floor it pounds and lands on, and the starving's embers (pass 135). Its claws have
+  // no blade, so the swing's ribbon is the thin edge alone: the default band from the elbow drew a pale disc over its body.
+  antlered: { element: 'earth', aura: 0xff7a28, trail: { edge: 0.22, life: 0.14 }, phases: { gorge: 'fire' }, attacks: {
+    slam: { impact: 'quake' }, slamLearned: { impact: 'quake' }, leap: { impact: 'quake' }, leapLearned: { impact: 'quake' },
+    roar: { impact: 'roar' }, frenzy: { impact: 'quake' } } },
   // Old Ostrey (Level 7): iron on iron, and coals from his lantern; once he opens it (the second phase), fire.
   ostrey: { element: 'steel', aura: 0xffb050, phases: { kindled: 'fire' }, attacks: {
     gateDrop: { impact: 'shatter', windup: 'gather' }, threeKnocks: { impact: 'shatter' }, shoulderGate: { impact: 'shatter' },

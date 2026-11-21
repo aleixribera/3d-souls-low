@@ -9,12 +9,13 @@ The iterate loop's working note (`.claude/iterate.md`). Cap: 8,000 characters.
   Acceptance: `tests/strike-flashy.cjs`, in-page `strike flashy`; clip `docs/scorecard/now/strike-flashy.mp4`
   (`node tools/ability-clips.cjs flashy`). CI flake in `tests/calling.cjs` (a spent legendary offered) hardened. Next on
   track 2: batch 8, Guard I. Browser lock: `node tools/browser-lock.cjs run <pass> -- <cmd>` (docs/two-tracks.md).
-- Track 1, pass 133 (PLAN item 6, the Antlered Hunger, pass 2 of its rework): parries on the Rearing Pound (its own name
-  now; "The Hammerfall" is the Warden's), the Antler Charge and the Hind Kick, learned forms too but the floor ring
-  (2 of 8 roll only); a kick behind it is parried from behind (`parryTiming` reach by `abs(fwd)`); a heavy wind-up grows
-  the claw's halo instead of washing its hide orange (`tellsGrow`). Acceptance: in-page `Church` 19/19, `Combat clarity`,
-  `Boss edge tells`; strips `docs/scorecard/now/hunger-pound.jpg`, `hunger-kick.jpg`; clip `hunger-parries.mp4`. Next on
-  track 1: the Hunger's cel bands (hide, quills, antlers), in-between keys, then the `bars-1` judge.
+- Track 1, pass 135 (PLAN item 6, the Antlered Hunger, pass 3: cel look, in-between keys, judge): a thin ribbon on its
+  claws (`BOSS_FX.antlered`; the default band drew a pale disc over it), `via` keys on every plain move, each wind-up its
+  own shape within its first fifth (`bars-1` round: its three opened on the same crouch). Acceptance: body-check 0/27,
+  in-page `Church` 19/19, `Combat clarity`, `Boss edge tells`; strips `docs/scorecard/now/hunger-rake.jpg`,
+  `hunger-pound.jpg`, `hunger-kick.jpg`; clip `hunger-cel.mp4`. Awaiting Aleix. Ostrey's audit (`docs/bosses/ostrey.md`):
+  restyle, plus a parry on the Burning Drop's landing (noParry 4 of 14) and the body check (8 of 27 flagged). Next on
+  track 1: those two, then Ostrey's cel look.
 
 ## Works
 
@@ -72,6 +73,7 @@ The iterate loop's working note (`.claude/iterate.md`). Cap: 8,000 characters.
 
 ## Needs Aleix
 
+- Fight the Antlered Hunger too (Practice, `?style=cel`; one `bars-1` round; its follow-ups parriable unless you say).
 - Fight Aldric too (Practice, `?style=cel`; the Turning Key ends on a pommel strike unless you say all blade).
 - Fight the Giant Skeleton too (Practice, `?style=cel`; tried: one `edges-1` round, the judge repeats the others' gaps).
 - Fight the Bell Warden too (same: Practice, `?style=cel`; tried: two `edges-1` rounds, the judge repeats the Captain's gap).
