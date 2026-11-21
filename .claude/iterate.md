@@ -1,7 +1,7 @@
 # Iterate: Combat Arena 3D
 
 Model: opus, effort medium
-Skill synced: aa63afa
+Skill synced: 0770cf8
 Parts: judge (panel: `docs/scorecard/panel/`), review (weekly, from 2026-11-20), incidents (the game is played online).
 
 ## Vision and plan
@@ -45,6 +45,7 @@ node tools/pack-baked.cjs <stem>
   every boss fighting in Practice.
 - **References for judges:** `.scratch/ref-clips` (never committed); the panel's lineup and prompt are
   `docs/scorecard/panel/` (`lineup.py`, `prompt.txt`).
+- **Boss judge:** `docs/bosses/system.md` section 6; after each round `node tools/boss-judge.cjs` (plot, `FLAT`).
 
 ## Ship and release
 

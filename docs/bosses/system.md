@@ -76,6 +76,21 @@ duel (`node tests/run-all.cjs bot-duel -- <id> 10`).
 A blind subagent sees a strip of each attack beside strips of reference-game boss attacks (`.scratch/bossjudge/`, cut
 from `.scratch/ref-clips` with ffmpeg: 14 frames over about 4 s, tiled 7x2), unlabelled, with
 `docs/bosses/judge-prompt.txt`. It guesses which are ours, scores motion, readability and spectacle 0 to 10 and names
-the single biggest giveaway. Fix that one gap and judge again; one row per round in `docs/scorecard/boss-judge.csv`.
-When the scores go flat over three rounds, start a fresh judge. Then **Aleix fights it**: "awaiting Aleix" in
-`STATE.md` until he has.
+the single biggest giveaway. Fix that one gap and judge again; one row per round in `docs/scorecard/boss-judge.csv`,
+then `node tools/boss-judge.cjs`: it plots the rounds (`boss-judge.svg`) and prints `FLAT` when the current judge has
+stopped telling us anything. A flat judge is replaced, not fixed against again: give the new set-up a new name in the
+`judge` column.
+
+- **Judge `sekiro-1`** (rounds 0-5, passes 111-118) went flat: caught 9/10 every round while motion crept 3 to 5, and
+  its last giveaways were about rendering (a flat white blade beside lit steel), because the references are realistic
+  and we are now cel-shaded. "Which is ours" against another render style can't move.
+- **Judge `edges-1`**, the fresh one: every strip, ours and the references alike, goes through the same ffmpeg filter
+  (`format=gray,edgedetect=low=0.08:high=0.2,negate`; lower both until the dark Sekiro figures read, the same values
+  for every strip), so the judge compares line drawings of the motion and the
+  render style is out of the comparison. Use at least three references (`.scratch/ref-clips`: both Sekiro clips and
+  `stellar-dodge.mp4`) and two of our attacks, so one guess is not the whole verdict. Its question is motion and
+  readability; spectacle and the look wait for a judge against cel-shaded references (clips not yet in `ref-clips`).
+- **Once a judge goes flat, the boss gets one fix and one round with the fresh judge, then goes to Aleix** (why: Aleix's fight is
+  the real bar, and six rounds of one judge spent five track-1 passes with no plan check met, retro 120).
+
+Then **Aleix fights it**: "awaiting Aleix" in `STATE.md` until he has.
