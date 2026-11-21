@@ -6,6 +6,7 @@
 //   title    a few words
 //   text     one to three sentences, shown under the list when the entry is selected
 const CHANGELOG = [
+  { version: 'v7.221.0', title: 'Every button in reach', text: 'After a long Boss Rush run, the results screen keeps its buttons on screen and the bosses in a list that scrolls, so a controller reaches everything. The ability pick stays reachable however many abilities you hold.' },
   { version: 'v7.220.0', title: 'The Finishing Blow in ink', text: 'The Finishing Blow keeps the world\'s colour now: each flash step leaves a sharp ink slash across the foe, and they open in red, with no white flash.' },
   { version: 'v7.219.0', title: 'The Night Gaol, Aurel in Ash and the Burning Town relit', text: 'The Night Gaol\'s cells glow warm against its cold bridges, and Aurel in Ash is a smoke-grey night with the fire in its houses, lamps and embers. Fog gates are drifting fog now, not white walls. The Burning Town\'s houses differ: painted plaster, slate and tile roofs, bay windows and dormers. The Keyless and the Cinderfolk wear new colours.' },
   { version: 'v7.218.0', title: 'Boss Rush, no wall', text: 'Two bosses at once now take turns: one attacks while the other waits. The run gets harder more gently, fight by fight, and fights 5 to 7 ease you in after the warm-up. A rare crash when one blow began a Finishing Blow with two bosses in reach is fixed.' },
