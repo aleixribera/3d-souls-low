@@ -2,7 +2,7 @@
 
 The tenth boss through the system (`system.md`; PLAN item 6, the roster in the order players meet them). Data:
 `js/data/bosses/oswin.js` (boss id `oswin`, model `oswinFirstCrown`); model: `tools/blender/oswin.py`. Status: pass 145,
-the audit and the rework (below); the `bars-1` round (pass 2) and Aleix's fight to come.
+the audit and the rework (below); pass 146, the `bars-1` round and its fixes (below); awaiting Aleix's fight.
 
 ## Moveset audit (pass 145): rework
 
@@ -104,3 +104,18 @@ Key poses per hit (`oswin*` in the data file, haft angles as `pitch`). Pass 145:
 again of the blow's lean, bend and turn past the strike (`carry`), the leap and the hold rear up before they fall, and
 every hit gets in-between keys from its own poses (all `rel`, as the Regent's) with `outCubic` wind-ups. Strips
 (`STYLE=cel`): `docs/scorecard/now/oswin-*.jpg`; clip `oswin-cel.mp4`.
+
+## `bars-1` round (pass 146)
+
+Ten cel strips blind (four of his uncrowned moves: Empty Reign, the Royal Progress, the Sworn Fist, the Open Hand, beside
+the Regent's Pavane, Ostrey's Drop, the Ringer's stamp, the castellans' Crown Cleave, the Hunger's Pound and Aldric's
+Key). Its biggest problem was his: the Sworn Fist and the Open Hand "share" a wind-up, his whole body washed red, so a
+fist to parry and a palm to parry read like an eruption to roll. The cause was not a tint but the shared effect light
+(`js/effect-lighting.js`): a burning boss's wind-up lights from his weapon's tip, and uncrowned his axe is cast down
+but still hangs at his side, so the light sat on him through every wind-up. Now, with the weapon cast off, a blow lights only
+as it lands, from the part that strikes (a hit's `tell`), and a blow with no part lights nothing; the fists' halos are a size down (0.34),
+so the Sworn Fist's no longer hides his head. Also: Empty Reign winds only part way round (from the player's camera his
+hands and front show through it; from the side camera the mantle still stands between them for a beat, `BACKLOG.md`).
+Rechecked in cel strips (`oswin-swornFist.jpg`, `oswin-openHand.jpg`, `oswin-emptyReign.jpg`); in-page
+`Guiding light: with the weapon cast off` fails before the light fix and passes after; body check 0/31; clip
+`oswin-uncrowned.mp4`.

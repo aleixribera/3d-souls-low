@@ -59,6 +59,6 @@ them (`git show 88f1abd:BACKLOG.md`).
 - Hollis's mantle (pass 143, `bars-1`): from the side camera it still fills the frame for a beat after the Pavane's first
   cut and through Ravenous's turns, his back turned; the game camera sees him. A shorter or split mantle on the model.
 - Oswin's mantle (pass 145): it still turns as one board through the Royal Progress's turn from the side camera; a
-  split mantle, as Hollis's.
+  split mantle, as Hollis's. Pass 146 (`bars-1`): the same through Empty Reign's wind-up and after the Sworn Fist.
 - Deferred from item 8 batch 1 (pass 109): Iron Blood veins, Quick Draught smear, the level-IV streak, card hover
   loops (design/abilities/BUILD-ORDER.md).

@@ -66,6 +66,29 @@
       }
     } finally { settings.graphics = saved; applySettings(); }
   });
+  test('Guiding light: with the weapon cast off, a blow lights only as it lands, from the fist (pass 146)', () => {
+    const saved = settings.graphics;
+    try {
+      sim.begin(); visuals.setQuality('normal'); Game.startFight('oswin'); Game.loading = 0;
+      const e = Game.enemies[0], p = Game.player;
+      e.enterPhase(e.phaseIds.indexOf('uncrowned')); e.rig.concealed = true;
+      const a = e.attackById('swornFist'), fist = new THREE.Vector3();
+      expect.ok(ultraBoss.look(e) && VIS.effectLight.elements.includes(ultraBoss.look(e).name), 'uncrowned, he burns: an element that lights');
+      e.x = p.x + 4; e.z = p.z; e.rig.root.visible = true;
+      e.attack = a; e.hitIndex = 0; e.setState(ES.WINDUP); e.stateTime = a.hits[0].startup * 0.8;
+      for (let i = 0; i < 12; i++) Game.render(1, CONFIG.step);
+      expect.ok(effectLighting.info().activeEffects === 0, 'the wind-up: the fist\'s halo tells it, no light bathes him');
+      e.attack = e.attackById('emptyReign'); e.hitIndex = 0; e.attack = { ...e.attack, hits: [{ ...e.attack.hits[0], tell: undefined }] };
+      e.setState(ES.ACTIVE); e.stateTime = 0;
+      for (let i = 0; i < 30; i++) Game.render(1, CONFIG.step);
+      expect.ok(effectLighting.info().activeEffects === 0, 'with no tell and the axe cast down, nothing lights');
+      e.attack = a; e.setState(ES.ACTIVE); e.stateTime = 0;
+      for (let i = 0; i < 12; i++) Game.render(1, CONFIG.step);
+      e.rig.tellGlows.fistR.getWorldPosition(fist);
+      const lit = effectLighting.lights.filter(l => l.visible && l.intensity > 0.5);
+      expect.ok(lit.some(l => Math.hypot(l.position.x - fist.x, l.position.z - fist.z) < 0.5), 'the blow lights from the fist');
+    } finally { settings.graphics = saved; applySettings(); }
+  });
   test('Guiding light: reaching or resting at a bonfire advances the route, including default checkpoint spawns', () => {
     start('the-tower');
     const p = Game.player, b = Game.level.bonfires.find(b => b.id === 'tower-bait');

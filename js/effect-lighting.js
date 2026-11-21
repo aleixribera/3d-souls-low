@@ -100,6 +100,14 @@ const effectLighting = (() => {
         const f = a.breath ? a.breath.len / 2 : a.sphere.fwd;
         tip.set(e.x + Math.sin(e.yaw) * f, e.y, e.z + Math.cos(e.yaw) * f);
         offer(p, e, tip, tint, power * C.breath);
+      } else if (e.rig.concealed && e.def.conceal && e.def.conceal.includes('weapon')) {
+        // (pass 146) the weapon cast off (a phase's `conceal`): it lit him from where it still hangs at his side, his whole
+        // body red through every wind-up (the bars-1 judge, Oswin uncrowned). Now only a blow lights, as it lands, from
+        // the part that strikes (a hit's `tell`); its halo alone tells the wind-up.
+        const part = hit.tell && e.rig.tellGlows && e.rig.tellGlows[hit.tell];
+        if (!part || e.state !== ES.ACTIVE) continue;
+        part.getWorldPosition(tip); tip.y -= C.floor;   // offer() lifts every source by `floor`
+        offer(p, e, tip, tint, power);
       } else {
         e.rig.weapon.updateWorldMatrix(true, false); tip.set(0, 0, C.tip).applyMatrix4(e.rig.weapon.matrixWorld);
         offer(p, e, tip, tint, power);

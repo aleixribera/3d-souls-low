@@ -67,9 +67,9 @@ MODEL_DEFS.oswinFirstCrown = {
   // names its own. A heavy grows that halo instead of washing him orange (`tellsGrow`). Bone-local at rest: the right
   // fist round the weapon bone's origin, the left 0.36 below the elbow, the feet 0.4 below the knees.
   edgeTell: { slot: 'iron', size: 0.6, along: 0.82 },
-  tells: { fistR: { bone: 'elbowR', at: [0, -0.36, 0.02], size: 0.45 }, fistL: { bone: 'elbowL', at: [0, -0.36, 0.02], size: 0.45 },
+  tells: { fistR: { bone: 'elbowR', at: [0, -0.36, 0.02], size: 0.34 }, fistL: { bone: 'elbowL', at: [0, -0.36, 0.02], size: 0.34 },
     footR: { bone: 'kneeR', at: [0, -0.4, 0.12], size: 0.5 }, footL: { bone: 'kneeL', at: [0, -0.4, 0.12], size: 0.5 } },
-  tellsGrow: true,
+  tellsGrow: true,   // (pass 146) the fists' halos a size down: grown for a heavy, the Sworn Fist's hid his head (bars-1)
   eyes: { color: 0xff8a3a, size: 0.011, spread: 0.034, at: [0, 0.12, 0.085] },   // deep under the brow
   anim: {
     idle: { breathRate: 0.55, breath: 0.016, headDrift: 0.025, sway: 0.01, twitch: 0 }, walk: { twist: 0.08, roll: 0.05, headNod: 0.025, elbow: 0.08, drag: 0.1 },
@@ -200,8 +200,9 @@ MODEL_DEFS.oswinFirstCrown = {
     armR: [-1.5, 0, 0.2], elbowR: [-0.05, 0, 0], armL: [-0.5, 0, -0.6], elbowL: [-1.6, 0, 0] };
   ATTACK_POSES.oswinOpenHand = { ease: { windup: 'inOutCubic', active: 'outExpo', follow: 'outCubic', recovery: 'inOutCubic' }, hits: [{ windup: opened, strike: palm, follow: palm }] };
   // Empty Reign (pass 145): his hands remember the axe. Both clasped high at his left shoulder where its haft lay, his head
-  // bowed to them; across at the waist with nothing in them, and back across.
-  const remember = { crouch: 0.2, lean: 0.05, legL: [-0.3, 0, 0], legR: [0.45, 0, 0], spin: [0, 0.85, 0], chest: [0.1, 0.3, 0], neck: [0.2, 0, 0], head: [0.3, 0, 0],
+  // bowed to them; across at the waist with nothing in them, and back across. (pass 146) He winds only part way round, so
+  // his mantle does not stand between you and his hands (the bars-1 judge).
+  const remember = { crouch: 0.2, lean: 0.05, legL: [-0.3, 0, 0], legR: [0.45, 0, 0], spin: [0, 0.55, 0], chest: [0.1, 0.25, 0], neck: [0.2, 0, 0], head: [0.3, 0, 0],
     armR: [-2.0, 0, 0.9], elbowR: [-1.3, 0, 0], armL: [-1.7, 0, 0.4], elbowL: [-1.5, 0, 0] };
   const emptyAcross = { crouch: 0.32, lean: 0.25, legL: [-0.6, 0, 0], legR: [0.45, 0, 0], spin: [0, -1.0, 0], chest: [0.15, -0.4, 0], head: [0.05, 0.3, 0],
     armR: [-1.4, 0, -0.9], elbowR: [-0.1, 0, 0], armL: [-1.3, 0, -0.4], elbowL: [-0.3, 0, 0] };
