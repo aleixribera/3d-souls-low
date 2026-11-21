@@ -2,7 +2,7 @@
 
 The thirteenth boss through the system (`system.md`; PLAN item 6, the roster in the order players meet them). Data:
 `js/data/bosses/kings-blade.js` (boss id `kingsBlade`, model `kingsBlade`); model: `tools/blender/kings_blade.py`; level:
-`js/levels/still-mere.js` (Level 14). Status: pass 152, the audit and the restyle (below); awaiting Aleix's fight.
+`js/levels/still-mere.js` (Level 14). Status: pass 152, the audit and the restyle (below); pass 153, its `bars-1` round (below); awaiting Aleix's fight.
 
 ## Moveset audit (pass 152): restyle, with three moves made fair
 
@@ -90,3 +90,11 @@ Key poses in `ATTACK_POSES.kb*`, with the blade's angle as a `pitch` and the shi
 angles by the loop after the poses. Since pass 152 that loop first carries every follow-through a fifth past the strike
 (lean, bend, turn) and settles a blow that neither drops nor leans, then adds in-between keys from each hit's own poses
 (`via`, all `rel`). `node tools/body-check.cjs kingsBlade`: 24 hits, 0 flagged.
+
+## `bars-1` round (pass 153)
+
+Three of its strips (the Ember Leaps, the Shield Burns, the Crown's Weight) blind among Gemini's and five other bosses'
+(`vesper.md`). The round's biggest problem was its: the Ember Leaps' landing blaze filled the frame and hid it whole for
+half a second, and the red tell before a fire eruption read as "parry the fire". Its landing is now a `shatter` (the
+Crown's Weight's, in fire), and the body reads through it (`docs/scorecard/now/kings-blade-emberLeap.jpg`). The Shield
+Burns' red swing then blue slam read as contradictory to the judge: it is two blows, by design (pass 152's call).

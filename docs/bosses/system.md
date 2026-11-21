@@ -3,7 +3,7 @@
 How a boss is made, start to finish, so the next one takes about three passes and no new engine code. It replaces the
 Hollis bar and the old boss rules (`.claude/feedback.md` 2026-11-14). Proven first on the Pillager Captain
 (`pillager-captain.md`); the second is the Bell Warden (`bell-warden.md`, from pass 123); then the roster in PLAN item 6's order (the Giant
-Skeleton, `giant-skeleton.md`, from pass 125; Aldric, `aldric.md`, from pass 127; the Antlered Hunger, `antlered-hunger.md`, from pass 132; Old Ostrey, `ostrey.md`, from pass 135; Hale and Harrow, `castellans.md`, from pass 138, the first rework; the Ringer, `ringer.md`, from pass 142; the Regent Hollis, `hollis.md`, from pass 143; Oswin, `oswin.md`, from pass 145, the second rework; Mother Agathe, `agathe.md`, from pass 146; the Kindling Tree, `kindling-tree.md`, from pass 149, the third rework; the King's Blade, `kings-blade.md`, from pass 152, a restyle). Each step names its tool and the check that closes it.
+Skeleton, `giant-skeleton.md`, from pass 125; Aldric, `aldric.md`, from pass 127; the Antlered Hunger, `antlered-hunger.md`, from pass 132; Old Ostrey, `ostrey.md`, from pass 135; Hale and Harrow, `castellans.md`, from pass 138, the first rework; the Ringer, `ringer.md`, from pass 142; the Regent Hollis, `hollis.md`, from pass 143; Oswin, `oswin.md`, from pass 145, the second rework; Mother Agathe, `agathe.md`, from pass 146; the Kindling Tree, `kindling-tree.md`, from pass 149, the third rework; the King's Blade, `kings-blade.md`, from pass 152, a restyle; Gemini, `vesper.md`, from pass 153, a restyle and the last of the roster). Each step names its tool and the check that closes it.
 
 ## 0. The moveset audit: rework or restyle
 

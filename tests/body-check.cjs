@@ -7,7 +7,7 @@ const assert = require('node:assert/strict');
 const { check } = require('../tools/body-check.cjs');
 
 const res = check();
-for (const id of ['varn', 'pillagerCaptain', 'bellWarden', 'giant', 'antlered', 'ringer', 'hollis', 'oswin', 'agathe', 'kindlingTree']) assert.ok(res[id] && res[id].length >= 15, `${id}: its keyed attacks are all measured`);
+for (const id of ['varn', 'pillagerCaptain', 'bellWarden', 'giant', 'antlered', 'ringer', 'hollis', 'oswin', 'agathe', 'kindlingTree', 'kingsBlade', 'vesper']) assert.ok(res[id] && res[id].length >= 15, `${id}: its keyed attacks are all measured`);
 for (const [id, rows] of Object.entries(res))
   assert.deepEqual(rows.filter(r => r.flags.length).map(r => `${r.attack}#${r.hit}: ${r.flags.join(', ')}`), [], `${id}: no hit flagged`);
 

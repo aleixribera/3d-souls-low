@@ -35,7 +35,7 @@ MODEL_DEFS.paleMeridian = {
     indigo:  { tex: 'midnightCloth', tint: 0xffffff, decay: 0.2, double: true, rim: 0.45 },
     silk:    { tex: 'midnightCloth', tint: 0xd8e0ff, decay: 0.18, double: true, rim: 0.5 },
     dark:    { tex: 'crackedLeather', tint: 0x262a3a, decay: 0.45 },
-    blade:   { tex: 'dentedSteel', tint: 0xf4f8ff, decay: 0.12, rim: 0.85 },
+    blade:   { tex: 'dentedSteel', tint: 0xf4f8ff, decay: 0.12, rim: 0.85, steel: true },   // (pass 153) the crescents banded as steel in cel
     crystal: { glow: 0x76d6ff },
     eclipse: { glow: 0xb874ff },
     eye:     { glow: 0x90dcff },
@@ -68,6 +68,7 @@ MODEL_DEFS.paleMeridian = {
   grip: { span: [-0.52, 0.62], rest: [-1.18, 0.14, 0.0] },
   weaponRest: -0.95,
   eyes: { color: 0x90dcff, size: 0.0085, spread: 0.032, at: [0, 0.105, 0.085], halo: 0.32 },
+  edgeTell: { slot: 'blade', size: 0.5, along: 0.9 },   // (pass 153) her wind-ups glow on the crescent, not as a wash behind her body
   tells: { hand: { bone: 'elbowL', at: [0, -0.34, 0.06], size: 0.7 } },
   halos: [
     { bone: 'chest', at: [0, 0.36, 0.17], color: 0x76d6ff, size: 0.36, opacity: 0.34 },
@@ -199,17 +200,48 @@ MODEL_DEFS.paleMeridian = {
     { windup: leapCoil, strike: skyFall, follow: { ...skyFall, crouch: 0.42, lean: 0.54 } },
   ] };
 
-  // 11. Lunar Tempest: relentless 4-hit anime flurry — forehand, backhand, low knee-sweep, and heavy rising-to-falling cleave!
-  const lowCoil = { crouch: 0.36, lean: 0.32, legL: [-0.62, 0, 0], kneeL: [0.45, 0, 0], legR: [0.52, 0, 0], spin: [0, -1.05, 0], chest: [0.22, -0.3, 0], head: [0, 0.55, 0],
-    armR: [-0.82, 0, -0.95], elbowR: [-0.15, 0, 0], haft: [0.38, -0.82, 4.71], armL: [-0.85, 0, -0.25], elbowL: [-0.6, 0, 0] };
+  // 11. Lunar Tempest (pass 153: its own opener; it began as the Waltz did, poised across the shoulders): sunk low in a
+  // sprinter's lunge, the glaive trailed back behind her right heel; a low rising sweep, a backhand, a spinning reverse
+  // cleave, then the moon rises: crouched under the blade, point down, and cut straight up.
+  const heelTrail = { crouch: 0.44, lean: 0.42, legL: [-0.78, 0, 0], kneeL: [0.6, 0, 0], legR: [0.62, 0, 0], spin: [0, 0.55, 0], chest: [0.32, 0.2, 0], head: [-0.25, -0.5, 0],
+    armR: [-0.25, 0, -0.35], elbowR: [-0.1, 0, 0], haft: [0.55, -2.35, 4.71], armL: [-0.55, 0, -0.45], elbowL: [-0.9, 0, 0] };
   const lowSweep = { crouch: 0.38, lean: 0.3, legL: [-0.65, 0, 0], kneeL: [0.48, 0, 0], legR: [0.55, 0, 0], spin: [0, 1.05, 0], chest: [0.22, 0.35, 0], head: [0, -0.45, 0],
     armR: [-1.05, 0, 0.85], elbowR: [0, 0, 0], haft: [0.44, 0.85, 4.71], armL: [-0.75, 0, 0.45], elbowL: [-0.5, 0, 0] };
+  const moonDraw = { crouch: 0.46, lean: 0.36, legL: [-0.72, 0, 0], kneeL: [0.6, 0, 0], legR: [0.5, 0, 0], spin: [0, 0.25, 0], chest: [0.34, 0.1, 0], head: [-0.3, 0, 0],
+    armR: [-0.3, 0, -0.25], elbowR: [-0.25, 0, 0], haft: [0.95, 0.1, 0.0], armL: [-0.4, 0, -0.1], elbowL: [-0.55, 0, 0] };
+  const moonRise = { crouch: 0.04, lean: -0.24, legL: [-0.38, 0, 0], legR: [0.34, 0, 0], spin: [0, -0.15, 0], chest: [-0.32, -0.08, 0], head: [-0.22, 0, 0],
+    armR: [-2.75, 0, 0.1], elbowR: [-0.15, 0, 0], haft: [-1.45, 0.05, 0.0], armL: [-2.5, 0, -0.2], elbowL: [-0.3, 0, 0] };
   ATTACK_POSES.vesperTempest = { ease: swing, lag: { weapon: 0.08, armR: 0.04 }, hits: [
-    { windup: poise, strike: waltz1, follow: waltz1 },
-    { windup: { ...waltz1, crouch: 0.24 }, strike: waltz2, follow: waltz2 },
-    { windup: lowCoil, strike: lowSweep, follow: lowSweep },
-    { windup: skyRaise, strike: skyFall, follow: { ...skyFall, crouch: 0.38, lean: 0.5 } },
+    { windup: heelTrail, strike: lowSweep, follow: { ...lowSweep, spin: [0, 1.2, 0] } },
+    { windup: { ...lowSweep, crouch: 0.3 }, strike: waltz2, follow: { ...waltz2, spin: [0, -1.05, 0] } },
+    { windup: { ...highL, crouch: 0.28 }, strike: revR, follow: { ...revR, spin: [0, -1.15, 0] } },
+    { windup: moonDraw, strike: moonRise, follow: { ...moonRise, lean: -0.3, crouch: 0.1 } },
   ] };
+
+  // (pass 153, tools/body-check.cjs; as the King's Blade's) every follow-through carries a fifth again of the blow's lean,
+  // bend and turn past the strike, where the pose written does not already go further; a blow that neither drops nor
+  // leans settles through its follow. Then in-between keys from each hit's own poses (all `rel`).
+  const get = (q, ch, i) => (i == null ? q[ch] || 0 : (q[ch] || [0, 0, 0])[i]);
+  const carry = h => {
+    const F = { ...h.follow };
+    for (const [ch, i] of [['lean'], ['chest', 0], ['chest', 1], ['spin', 1]]) {
+      const d = get(h.strike, ch, i) - get(h.windup, ch, i), want = get(h.strike, ch, i) + 0.2 * d;
+      if (Math.abs(d) < 0.05 || (get(F, ch, i) - want) * Math.sign(d) >= 0) continue;
+      if (i == null) F[ch] = want; else { const v = [...(F[ch] || [0, 0, 0])]; v[i] = want; F[ch] = v; }
+    }
+    if (get(F, 'crouch') <= get(h.strike, 'crouch') + 0.02 && Math.abs(get(h.strike, 'lean') - get(h.windup, 'lean')) < 0.1) F.crouch = get(h.strike, 'crouch') + 0.08;
+    return { ...h, follow: F };
+  };
+  const BODY = ['spin', 'chest'], LIMB = ['armR', 'elbowR', 'armL'];
+  const toward = (a, b, k, names) => Object.fromEntries(names.filter(n => a[n] && b[n])
+    .map(n => [n, a[n].map((v, i) => Math.max(-0.45, Math.min(0.45, k * (b[n][i] - v))))]));
+  const inBetween = h => ({
+    windup: [{ t: 0.8, rel: true, crouch: 0.02, ...toward(h.strike, h.windup, 0.08, [...BODY, ...LIMB]) }],
+    active: [{ t: 0.6, rel: true, crouch: 0.03, lean: 0.03, ...toward(h.windup, h.strike, 0.3, BODY), ...toward(h.windup, h.strike, -0.2, LIMB) }],
+    follow: [{ t: 0.5, rel: true, crouch: 0.04, lean: 0.05, ...toward(h.strike, h.follow, 0.3, [...BODY, ...LIMB]) }],
+  });
+  for (const [id, P] of Object.entries(ATTACK_POSES)) if (id.startsWith('vesper'))
+    P.hits = P.hits.map(carry).map(h => ({ ...h, via: { ...inBetween(h), ...(h.via || {}) } }));
 }
 
 // ---- the boss -----------------------------------------------------------------------------------------------------------
@@ -305,13 +337,12 @@ MODEL_DEFS.paleMeridian = {
                { startup: 0.98, active: 0.16, follow: 0.48, leap: { from: 0.34, max: 11.5, short: 1.1 }, damage: 36, box: CHOP,
                  impact: { ring: 3.2, crack: 1.4, dust: 16, shake: 0.13 } }], recovery: 2.15,
         damage: 26, heavy: true, poise: 70, knock: 9, lunge: 0, range: 22, box: CHOP },
-      // Lunar Tempest: relentless 4-hit deflectable anime flurry planting 2 flanking Prisms on the final cleave!
+      // Lunar Tempest: sunk low, the glaive trailed behind her heel; four parried blows, the last a rising cut that plants 2 Prisms.
       { id: 'lunarTempest', name: 'Lunar Tempest', anim: 'sweep', pose: 'vesperTempest', tracking: { rate: 3.1, commit: 0.65 }, markers: glint(0, 1, 2, 3), chance: 0.8,
-        hits: [{ startup: 0.82, active: 0.13, follow: 0.32 },
+        hits: [{ startup: 0.86, active: 0.13, follow: 0.32, box: WIDE },
                { startup: 0.36, active: 0.13, follow: 0.32, step: { from: 0.12, speed: 3.2, side: 0 } },
-               { startup: 0.40, active: 0.14, follow: 0.36, box: WIDE, step: { from: 0.15, speed: 2.8, side: 0 } },
-               { startup: 0.62, active: 0.15, follow: 0.46, damage: 34, box: CHOP, prism: { at: [[2.5, -3.2], [2.5, 3.2]] },
-                 impact: { ring: 2.6, crack: 1.2, dust: 14, shake: 0.11 } }], recovery: 1.95,
+               { startup: 0.40, active: 0.14, follow: 0.36, step: { from: 0.15, speed: 2.8, side: 0 } },
+               { startup: 0.66, active: 0.15, follow: 0.46, damage: 34, box: CHOP, prism: { at: [[2.5, -3.2], [2.5, 3.2]] } }], recovery: 1.95,   // a rising cut: no ground impact
         damage: 22, poise: 40, knock: 6, lunge: 1.2, range: 4.4, box: ARC },
     ],
   };

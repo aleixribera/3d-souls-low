@@ -120,15 +120,16 @@ const BOSS_FX = {
   // (js/data/bosses/kings-blade.js, loaded after this file).
   kingsBlade: { element: 'steel', aura: 0xff8a40, trail: { edge: 0.25, life: 0.16, smear: 0.4 }, phases: { emberWorn: 'fire' }, attacks: {
     crownsWeight: { impact: 'shatter', windup: 'gather' }, torchTaken: { element: 'fire', impact: 'blaze', windup: 'gather' },
-    corvel: { element: 'fire', impact: 'blaze', windup: 'gather' }, emberLeap: { element: 'fire', impact: 'blaze', windup: 'gather' },
+    corvel: { element: 'fire', impact: 'blaze', windup: 'gather' }, emberLeap: { element: 'fire', impact: 'shatter', windup: 'gather' },   // (pass 153) shatter, not blaze: the fire hid it for half a second as it landed (bars-1)
     shieldBurns: { element: 'fire', impact: 'blaze' } } },
   // Vesper, the Pale Meridian (Boss Rush / Practice): cold moonlight silver & ice-cyan glass prisms; past half her
-  // strength the eclipse opens, her rings flare violet-silver and her blade trails dark astral mist.
-  vesper: { element: 'lunar', aura: 0x98dcff, phases: { eclipse: 'eclipse' }, attacks: {
-    zenithFall: { impact: 'prism', windup: 'gather' }, prismSeed: { impact: 'prism' },
+  // strength the eclipse opens, her rings flare violet-silver and her blade trails dark astral mist. (pass 153) Her parried
+  // heavies gather nothing: a cyan or violet glow over the crescent read as a roll against its red edge tell (bars-1).
+  vesper: { element: 'lunar', aura: 0x98dcff, trail: { edge: 0.3, life: 0.16, smear: 0.35 }, phases: { eclipse: 'eclipse' }, attacks: {
+    zenithFall: { impact: 'prism' }, prismSeed: { impact: 'prism' },
     starAlignment: { impact: 'prism', windup: 'gather' },
     eclipseOpen: { element: 'eclipse', impact: 'prism', aura: 0xb874ff, windup: 'gather' },
     mirrorStep: { element: 'eclipse', impact: 'gale' },
     eclipseCross: { element: 'eclipse', impact: 'prism', windup: 'gather' },
-    lunarTempest: { element: 'eclipse', impact: 'prism', windup: 'gather' } } },
+    lunarTempest: { element: 'eclipse', impact: 'prism' } } },
 };
