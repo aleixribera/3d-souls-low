@@ -394,19 +394,20 @@ const AUDIO_CUES = ['hitFlesh', 'hitHurt', 'hitBlock', 'riposteBoom', 'parry', '
   'abilityMend', 'abilityStance', 'abilityStancePing', 'abilityRoot', 'abilityRootThud', 'abilityUnbroken', 'abilityUnbrokenHeld', 'abilityVanish',
   'abilityMail', 'abilityMailShatter', 'abilityPool',
   'abilityWard', 'abilityWardBounce', 'abilityHusk', 'abilityHuskBurst', 'abilityDome', 'abilityDomeStop', 'abilityWait', 'abilityAnswer',
-  'abilityRewind', 'abilityRewindEnd', 'abilitySeal', 'abilitySealSputter'];
+  'abilityRewind', 'abilityRewindEnd', 'abilitySeal', 'abilitySealSputter',
+  'abilityFox', 'abilityFoxSlash', 'abilityYip', 'abilityLantern', 'abilityLanternShot', 'abilityLanternHeal'];
 // A power's sound by its `then`, its later blows' (`strike`: a lightning bolt, a twin's echo, a hound's bite) by
 // STRIKE_SOUNDS, a summon drawing the boss's eye (`draw`) by DRAW_SOUNDS; a rare's perk its own (ABILITY_PERK_SOUNDS,
 // at a pitch), a pick's pitch by its rarity.
 const ABILITY_SOUNDS = { blast: 'abilityBlast', lightning: 'abilityDragon', freeze: 'abilityFreeze', blades: 'abilityBlades', bloodMoon: 'abilityMoon',
   twin: 'abilityTwin', gale: 'abilityGale', pyre: 'abilityPyre', flare: 'abilityFlare', spark: 'abilitySpark', hound: 'abilityHound',
-  guardian: 'abilityGuardian', lancer: 'abilityLancer', wave: 'abilityWave', crescent: 'abilityMoonfall', cyclone: 'abilityCyclone', petals: 'abilityPetals',
+  guardian: 'abilityGuardian', lancer: 'abilityLancer', fox: 'abilityFox', lantern: 'abilityLantern', wave: 'abilityWave', crescent: 'abilityMoonfall', cyclone: 'abilityCyclone', petals: 'abilityPetals',
   ghostBlade: 'abilityChime', spikes: 'abilitySpikes', fist: 'abilityFist', risingFire: 'abilityFang', clap: 'abilityClap',
   flurry: 'abilityFlurry', drill: 'abilityDrill', stitch: 'abilityStitch', boomerang: 'abilityBoomerang', clones: 'abilityClones', iai: 'abilitySheathe',
   ward: 'abilityWardBounce', answer: 'abilityAnswer', husk: 'abilityHusk', seal: 'abilitySeal' };   // Echoing Blade armed: a soft chime (each echo: ABILITY_STRIKE_SOUNDS)
-const ABILITY_STRIKE_SOUNDS = { lightning: 'abilityThunder', twin: 'abilityEcho', hound: 'abilityBite', guardian: 'abilityBash', lancer: 'abilityThrust',
+const ABILITY_STRIKE_SOUNDS = { lightning: 'abilityThunder', twin: 'abilityEcho', hound: 'abilityBite', guardian: 'abilityBash', lancer: 'abilityThrust', fox: 'abilityFoxSlash', lantern: 'abilityLanternShot',
   ghostBlade: 'abilityGhostBlade', flurry: 'abilityFlurryHit', stitch: 'abilityPierce' };
-const ABILITY_DRAW_SOUNDS = { twin: 'abilityTaunt', hound: 'abilityHowl', guardian: 'abilityChallenge', lancer: 'abilityChallenge' };
+const ABILITY_DRAW_SOUNDS = { twin: 'abilityTaunt', hound: 'abilityHowl', guardian: 'abilityChallenge', lancer: 'abilityChallenge', fox: 'abilityYip' };
 const ABILITY_PERK_SOUNDS = { empower: ['abilityEmpower', 1], 'streak/heal': ['abilityHeal', 1],
   'dodge/flashBehind': ['abilityStep', 1.15], 'block/charge': ['abilityCharge', 1],
   'finisher/heal': ['abilityHeal', 0.8],
@@ -531,10 +532,11 @@ function registerAudioListeners() {
     // An Ash Husk bursting, a Binding Seal burning out: their own sounds, where they are.
     if (d.burst || d.sputter) { audio.play(d.burst ? 'abilityHuskBurst' : 'abilitySealSputter', { pos: d.sputter && d.enemy ? chest(d.enemy) : spot(d), vel: 1 }); return; }
     const id = d.draw ? ABILITY_DRAW_SOUNDS[d.then] : d.then === 'iai' && d.strike ? (d.strike === 1 ? 'abilityIaiDraw' : 'abilityIai')
+      : d.heal ? (d.body === Game.player ? 'abilityLanternHeal' : null)   // a lantern's shot healed you: a soft chime, only to you
       : d.strike ? ABILITY_STRIKE_SOUNDS[d.then] : ABILITY_SOUNDS[d.then];
     if (!id) return;
     // A summon's howl or taunt comes from the summon (`x`, `z`), never from its holder's ears.
-    const mine = d.body === Game.player, pos = d.draw ? spot(d) : mine && !d.strike ? null : d.enemy && d.then !== 'blast' ? chest(d.enemy) : spot(d);
+    const mine = d.body === Game.player, pos = d.draw || d.flight ? spot(d) : mine && (!d.strike || d.heal) ? null : d.enemy && d.then !== 'blast' ? chest(d.enemy) : spot(d);
     const lotus = d.then === 'flare' && d.v && d.v.charge > 0 && !d.strike;   // Fire Burst's press: the lotus opens, its close bursts 0.35 s on
     if (lotus) audio.play('abilityBloom', { pos });
     audio.play(id, lotus ? { pos, vel: 1, delay: 0.35 } : { pos, vel: 1 });

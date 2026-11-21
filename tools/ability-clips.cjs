@@ -3,7 +3,7 @@
 // each fired twice, its name in the corner: docs/scorecard/now/<set>-commons.mp4. The clock is stepped by hand
 // (Game.manualClock) and every other step is a frame, so a clip plays at real speed whatever the PC's speed. With
 // `--stills`, the guard set's current frames too (guard-*.jpg, desktop; -phone for two).
-// Usage: node tools/ability-clips.cjs [blade|guard|mirror|rares|triggers|echo|strikes|flashy|self|boss ...] [--stills]   (no set = all). One headless Edge; needs ffmpeg.
+// Usage: node tools/ability-clips.cjs [blade|guard|mirror|rares|triggers|echo|strikes|flashy|self|boss|summons ...] [--stills]   (no set = all). One headless Edge; needs ffmpeg.
 require('../tests/low-priority.cjs');
 const fs = require('node:fs');
 const os = require('node:os');
@@ -141,6 +141,15 @@ const SETS = {
       __later(100, () => { if (abilityPowers.husks.size) { const hb = e.hitbox; e.hitbox = { overlaps: () => true }; abilityPowers.tick(0); e.hitbox = hb; } }); }`, 130, 'guard-boss-ash-husk', 20],
     ['Binding Seal', `(p, e) => { p.grantAbilities(['binding-seal']); __face(); __key2(); __later(16, () => { e.yaw = Math.atan2(p.x - e.x, p.z - e.z); __swing(); }); }`, 130, 'guard-boss-binding-seal', 84],
   ] },
+  // Summons I (pass 141, batch 10): docs/scorecard/now/summons-one.mp4, with --stills a frame of each (summons-<id>.jpg;
+  // -phone for the first two). Each called through key 3 (the guardian by its holder's low health), the Captain held still.
+  summons: { ids: [], file: 'summons-one', phone: 2, crf: 30, beats: [
+    ['Cinder Fox', `p => { p.grantAbilities(['cinder-fox']); __face(); __key3(); }`, 170, 'summons-cinder-fox', 90],
+    ['Lantern Spirit', `p => { p.grantAbilities(['lantern-spirit']); p.hp = p.lastHp = p.maxHp * 0.5; __face(); __key3(); }`, 170, 'summons-lantern-spirit', 76],
+    ['Grave Hound', `p => { p.grantAbilities(['grave-hound']); __face(); __key3(); }`, 150, 'summons-grave-hound', 70],
+    ['Lancer of Ash', `p => { p.grantAbilities(['ash-lancer']); __face(); __key3(); }`, 140, 'summons-ash-lancer', 64],
+    ['Stone Guardian', `p => { p.grantAbilities(['stone-guardian']); __face(); p.hp = p.lastHp = p.maxHp * 0.2; __fire('low'); }`, 170, 'summons-stone-guardian', 110],
+  ] },
 };
 
 (async () => {
@@ -185,6 +194,10 @@ const SETS = {
             const slot = p.kit.pressed.guard; if (slot) p.perk.charge.guard = slot.v.charge;
             const c = p.ctl.consume; p.ctl.consume = function (a) { if (a === 'ability2') { p.ctl.consume = c; return true; } return c.call(this, a); };
           };
+          window.__key3 = () => {   // key 3 (Summon) pressed with its charge full, through the player's own press
+            const slot = p.kit.pressed.summon; if (slot) p.perk.charge.summon = slot.v.charge;
+            const c = p.ctl.consume; p.ctl.consume = function (a) { if (a === 'ability3') { p.ctl.consume = c; return true; } return c.call(this, a); };
+          };
           window.__face = () => { p.yaw = p.pyaw = Math.atan2(e.x - p.x, e.z - p.z); };
           window.__far = d => {   // the Captain d m off, facing the player, who faces him
             e.x = e.px = p.x + Math.sin(p.yaw + 0.35) * d; e.z = e.pz = p.z + Math.cos(p.yaw + 0.35) * d; e.yaw = Math.atan2(p.x - e.x, p.z - e.z); __face(); Game.render(1, CONFIG.step);
@@ -197,7 +210,7 @@ const SETS = {
             events.emit('strike', { strike: s, attacker: p, target: e, at: { x: e.x, y: e.y + 1.2, z: e.z }, blocked: false });
           };
           window.__reset = name => {
-            commonFx.clear(); rareFx.clear(); rareStrikeFx.clear(); strikeFx.clear(); strikeFx2.clear(); guardFx.clear(); guardFx2.clear(); abilityDomes.clear(); abilityPowers.reset(); later.length = 0; tag.textContent = name; e.cracks = 0; events.emit('guardCrack', { enemy: e, cracks: 0 });
+            commonFx.clear(); rareFx.clear(); rareStrikeFx.clear(); strikeFx.clear(); strikeFx2.clear(); guardFx.clear(); guardFx2.clear(); abilityDomes.clear(); summonBeasts.clear(); summonLantern.clear(); summonFigures.clear(); abilityPowers.reset(); later.length = 0; tag.textContent = name; e.cracks = 0; events.emit('guardCrack', { enemy: e, cracks: 0 });
             p.hp = p.maxHp; p.lastHp = p.hp; p.perk = abilityPerkState(); p.tint = 0;
             for (let i = 0; i < 30; i++) Game.update(CONFIG.step);
             e.x = e.px = p.x + Math.sin(p.yaw + 0.6) * 2.8; e.z = e.pz = p.z + Math.cos(p.yaw + 0.6) * 2.8; e.y = p.y; e.yaw = Math.atan2(p.x - e.x, p.z - e.z);

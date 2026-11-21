@@ -11,9 +11,10 @@
 // lands, its key poses on the summon's own clock, then the strike, the impact (`impact`) and the recovery. The guard
 // pose fades out through the wind-up and back in through the recovery, so nothing snaps.
 // The guardian is lit stone with a cold glowing rim: it rises out of the floor where it will stand (`floor`), holds its
-// shield up, and raises its sword in a challenge as it draws the boss. The lancer is ash and charred plate with cinders of
-// violet light in it: it forms from the feet up at its holder's side, a glowing seam climbing it, charges the boss, and
-// thrusts. Both crumble or burn away from the head down. Four of each in the pool (one a player), made at attach and
+// tower shield up, bashes and slams with it, and plants it with a strike of its fist as it draws the boss (pass 141: no
+// sword). The lancer is ash and charred plate with cinders of blue light in it: it forms from the feet up at the arena's
+// edge on its holder's side (the engine's summonStart), a glowing seam climbing it, holds a breath (`hold`), charges
+// across, and thrusts. Both crumble or burn away from the head down. Four of each in the pool (one a player), made at attach and
 // warmed like the rest; nothing allocated per frame.
 const summonFigures = (() => {
   const KINDS = ['guardian', 'lancer'], pool = [];
@@ -131,10 +132,11 @@ const summonFigures = (() => {
     const from = d.body || d;
     f.x = from.x; f.z = from.z; f.yaw = d.body ? d.body.yaw || 0 : 0;
     if (K.rises) summonStep(f, foe(f, from), d.body, 60);   // it comes up where it will stand
+    else summonStart(f, foe(f, from), d.body);              // a lancer forms far off and charges in
     f.y = ground(f.x, f.z, from.y);
     at.x = f.x; at.y = f.y + 0.5; at.z = f.z;
     groundFx.ring(f.x, f.z, F.solid ? 2.2 : 1.5, F.color, 0.8, f.y); spawnBurst(at, F.burst);
-    if (F.solid) ultraFx.sparkBurst(at, 22, 'ember', [0, 1, 0], 0.7, 0.8);
+    if (F.solid) ultraFx.sparkBurst(at, 22, 'lunar', [0, 1, 0], 0.7, 0.8);
     ultraFx.moteBurst(at, 36, F.color, { r: 0.6, speed: 0.9, lift: 2, life: [0.6, 1.3], up: 1 }); light(at, F.color, 8, 10);
     if (near(f.x, f.z)) Game.addShake(F.shake[0], F.shake[1]);
   }
@@ -169,7 +171,7 @@ const summonFigures = (() => {
     if (!e || !e.alive()) return;
     const dx = f.x - e.x, dz = f.z - e.z, l = Math.hypot(dx, dz) || 1, r = (e.radius || 1) * 0.85;
     at.x = e.x + dx / l * r; at.y = e.y + Math.min(1.2, (e.height || 1.8) * 0.5); at.z = e.z + dz / l * r;
-    ultraFx.sparkBurst(at, 14, 'ember', [dx / l, 0.3, dz / l], 0.5, 0.8);
+    ultraFx.sparkBurst(at, 14, 'lunar', [dx / l, 0.3, dz / l], 0.5, 0.8);
     ultraFx.moteBurst(at, 10, F.color, { r: 0.2, speed: 2, lift: 0.5, life: [0.3, 0.6] });
     spawnBurst(at, F.hitBurst); light(at, F.color, 4, 6);
   }
@@ -223,7 +225,7 @@ const summonFigures = (() => {
       if (alive) f.left -= dt; else f.left = Math.min(f.left, F.fade);
       if (f.left <= 0 || f.enemies !== Game.enemies) { f.body = null; f.rig.root.visible = f.rig.shadow.visible = false; continue; }   // a new fight ends it too
       const e = foe(f, b), x0 = f.x, z0 = f.z, yaw0 = f.yaw;
-      if (K.rises || f.time - f.left > A.arrive * 0.5) summonStep(f, e, alive ? b : null, dt);   // a runner climbs out first
+      if (K.rises || f.time - f.left > (K.hold ?? A.arrive * 0.5)) summonStep(f, e, alive ? b : null, dt);   // a runner forms first
       const moved = Math.hypot(f.x - x0, f.z - z0) / Math.max(dt, 1e-4);
       f.speed += (moved - f.speed) * (1 - Math.exp(-8 * dt));
       f.yaw = yaw0 + angDiff(f.yaw, yaw0) * (1 - Math.exp(-F.turn * dt));

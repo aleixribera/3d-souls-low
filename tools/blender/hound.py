@@ -1,6 +1,6 @@
 # The Grave Hound, a summon (the ability of the same name, js/data/abilities.js): a gaunt spectral hound that bounds out
 # of its holder's shadow and harries the boss. Not a rig figure: one rigid mesh per joint of its own, named
-# hound:<part>__<material slot>[.n], each built at its rest place; js/summon-hound.js hangs each on a pivot (HOUND_JOINTS
+# hound:<part>__<material slot>[.n], each built at its rest place; js/summon-beasts.js hangs each on a pivot (BEAST_JOINTS.hound
 # there, the same numbers as JOINT below) and runs its gait, its lunge and bite, and its howl itself.
 # Game axes (x = the hound's left, y up, z forward: its nose points +z), written to Blender through G().
 # Joints at rest: body (0, .74, 0); neck (0, .9, .4) on the body; head (0, 1.08, .66) on the neck; jaw (0, 1.03, .74) on
@@ -10,7 +10,7 @@
 # the ribs standing out, a ridge of spine spurs and a ragged mane of torn fur down the neck and back; a long narrow skull
 # whose bone shows through over the muzzle and brow (the `bone` slot), deep sockets, swept-back torn ears, long fangs; long
 # thin legs with knuckled paws and hooked claws; a long ragged tail. The game draws it as cold spectral fire (a fresnel
-# shader), so the shapes carry it: silhouette first. Summon budget: about 8,000 triangles.
+# shader), so the shapes carry it: silhouette first. About 10,800 triangles (pass 141: the ribs cut out as bone bars).
 import sys, math, random
 sys.path.insert(0, r"C:/Users/Aleix/Documents/CLAUDE/3d-souls-low/tools/blender")
 import importlib, snow_lib, figure_lib; importlib.reload(snow_lib); importlib.reload(figure_lib)
@@ -37,17 +37,21 @@ def tuft(bm, base, lay, ln, r, n, spread=.04):   # torn fur: a fan of bent spike
 
 # ---- body: keel chest, tucked waist, haunch, ribs and the spine's spurs -------------------------------------------------
 def body(bm):
-    blob(bm, (0, .76, .22), .23, (.64, 1.08, 1.0), 2)        # the deep chest
+    blob(bm, (0, .76, .22), .23, (.5, 1.0, .95), 2)          # the deep chest, starved narrow inside its ribs
     blob(bm, (0, .63, .28), .14, (.6, 1.0, .95), 2)           # the keel under it
     blob(bm, (0, .85, -.1), .15, (.66, .72, 1.25), 2)        # the waist, high and tucked
     blob(bm, (0, .82, -.42), .19, (.85, .9, 1.0), 2)         # the haunch
     for s in (-1, 1):
         blob(bm, (s * .1, .84, .28), .11, (.8, 1.0, 1.0), 1)   # the shoulder blades
         blob(bm, (s * .11, .78, -.46), .13, (.75, 1.05, 1.0), 1)   # the thighs' tops
-        for k in range(6):   # the ribs stand out of the starved flank
-            z = .3 - k * .075; top = .93 - k * .006; bot = .64 + k * .045
-            tube(bm, [(s * .1, top, z), (s * (.165 - k * .006), (top + bot) / 2 + .02, z - .02), (s * .1, bot, z - .05)], [.022, .026, .018], 6)
-body_ob = soft('body__hide', body, 2300, voxel=.014, noise=.008)
+body_ob = soft('body__hide', body, 2000, voxel=.014, noise=.008)
+
+def ribs(bm):   # pass 141: the hide over the ribcage cut away into five bars of bone, dark gaps between them
+    for s in (-1, 1):
+        for k in range(5):
+            z = .32 - k * .085; top = .95 - k * .008; bot = .6 + k * .05
+            tube(bm, [(s * .07, top, z), (s * (.17 - k * .007), (top + bot) / 2 + .03, z - .03), (s * .06, bot, z - .06)], [.02, .024, .016], 6)
+hard('body__bone.1', ribs)
 
 def spine(bm):   # spurs along the back, raking backwards
     for k in range(9):
@@ -72,7 +76,7 @@ def neck(bm):
 soft('neck__hide', neck, 1000, voxel=.012, noise=.006)
 
 # ---- head: a long narrow skull, the bone showing over brow and muzzle, swept torn ears ---------------------------------------
-EYES = [(s * .055, 1.13, .8) for s in (-1, 1)]   # HOUND_EYES in js/summon-hound.js
+EYES = [(s * .055, 1.13, .8) for s in (-1, 1)]   # BEAST_EYES.hound in js/summon-beasts.js
 def skull(bm):
     blob(bm, (0, 1.1, .7), .09, (.95, .85, 1.1), 2)          # the cranium
     tube(bm, [(0, 1.1, .74), (0, 1.08, .86), (0, 1.055, .98), (0, 1.04, 1.06)], [.07, .062, .05, .036], 10, )   # the muzzle
@@ -149,6 +153,7 @@ def tail(bm):
     tube(bm, pts, [.05, .04, .03, .018], 8)
     for k in range(4):
         p = Vector(pts[k]); tuft(bm, p, (0, -.2, -1), .14, .022, 2, .03)
-soft('tail__hide', tail, 450, voxel=.01)
+    tuft(bm, pts[3], (0, -.45, -1), .2, .03, 6, .04)   # pass 141: the tip a ragged ink brush
+soft('tail__hide', tail, 520, voxel=.01)
 
 result = tally()

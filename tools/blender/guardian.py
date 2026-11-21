@@ -4,13 +4,13 @@
 # Rest pose: upright, arms hanging (the model's posture bends the elbows in the game).
 # Game axes (x = the figure's left, y up, z forward), written to Blender through G().
 # Bones at rest: spin (0, .95, 0), chest (0, 1.0, 0), neck (0, 1.62, 0), head (0, 1.69, 0); arms at x +-.38, y 1.55,
-# elbows y 1.25, wrists y .95 (the sword's grip runs along z through the right fist); hips x +-.15, y .90, knees .45;
+# elbows y 1.25, wrists y .95 (the right fist closed, empty); hips x +-.15, y .90, knees .45;
 # loinF (0, .93, .16) and loinB (0, .93, -.16) for the two carved panels of its tabard.
 # The look: a knight carved for a tomb, its stone come awake. A deep hood instead of a helm, the face inside it smooth and
 # dark with two slits of cold light; a mantle over squared shoulders of cut stone blocks; a faceted breast split by a
 # glowing crack; a heavy tabard carved in folds; legs and arms in stone drums bound at the knees and elbows by rings of
-# light. It carries its own headstone as a shield, an arched slab with a ring-cross cut into it, and a broad stone sword
-# with a lit fuller. Three slots, drawn by the summon's shader (VIS.abilityFx.guardian.slots): `stone` (pale carved
+# light. No sword (pass 141, design/abilities/stone-guardian.md): a tower shield of cut stone on its left arm is its
+# weapon, carved with a ring-cross, blue runes in its seams; it bashes and slams with it. Three slots, drawn by the summon's shader (VIS.abilityFx.guardian.slots): `stone` (pale carved
 # stone), `worn` (darker, weathered stone: the face, the tabard, the joints, the shield's frame) and `rune` (the light).
 # No enemy wears this: a summon must never be mistaken for a foe.
 # Budget: about 3,000 triangles.
@@ -133,46 +133,31 @@ for s, n in ((1, 'L'), (-1, 'R')):
     hard(f'knee{n}__worn', lambda bm, hx=hx: loft(bm, [(.125, hx, .05, .1, .2), (.0, hx, .06, .11, .225)], 4, cap=True,
                                                   a0=math.pi / 4, a1=math.pi / 4 + math.tau))
 
-# ---- the headstone shield, on the left forearm: an arched slab, a carved panel, a ring-cross of light --------------------
-SCX, SY0, SY1, SW = .47, .36, 1.4, .32   # its middle, its foot, where the arch springs, its half-width
-ZB, ZF = .215, .29                       # its back and front
-def outline(cx, y0, y1, hw, k=10):
-    """Counter-clockwise seen from the front (+x, the figure's left, is on the viewer's right): the foot, then the arch
-    from the right side over the top to the left."""
-    pts = [(cx - hw, y0), (cx + hw, y0)]
-    for i in range(k + 1):
-        a = math.pi * i / k; pts.append((cx + hw * math.cos(a), y1 + hw * math.sin(a)))
-    return pts
+# ---- the tower shield, on the left forearm: a tall slab of cut stone (1.8 m by .9 m in the game, at the summon's scale
+# 1.37), its rim a raised frame, a carved panel with a ring-cross, blue runes cut into its seams. It is its weapon. -------
+SCX, SY0, SY1, SW = .4, .1, 1.42, .33    # its middle, its foot, its top, its half-width
+ZB, ZF = .2, .28                         # its back and front
+def outline(cx, y0, y1, hw, taper=.025):
+    """Counter-clockwise seen from the front: the foot, the right side up, the top's shallow peak, the left side down."""
+    return [(cx - hw, y0), (cx + hw, y0), (cx + hw + taper, y1 - .1), (cx + hw * .55, y1), (cx, y1 + .035), (cx - hw * .55, y1), (cx - hw - taper, y1 - .1)]
 hard('elbowL__stone.1', lambda bm: slab(bm, outline(SCX, SY0, SY1, SW), ZB, ZF))   # the slab, its edge a frame round the panel
-CX, CY, ZP = SCX, 1.28, ZF + .012   # the cross's heart; the panel's face
-hard('elbowL__worn.1', lambda bm: slab(bm, outline(SCX, SY0 + .05, SY1, SW - .05), ZF - .004, ZP))   # the panel, darker, a little proud
-def relief(bm):   # a grave cross carved standing out of the panel, its arms broad
-    slab(bm, [(CX - .042, .84), (CX + .042, .84), (CX + .036, 1.58), (CX - .036, 1.58)], ZP - .002, ZP + .026)
-    slab(bm, [(CX - .2, CY - .038), (CX + .2, CY - .038), (CX + .2, CY + .038), (CX - .2, CY + .038)], ZP - .002, ZP + .026)
+CX, CY, ZP = SCX, 1.02, ZF + .012   # the cross's heart; the panel's face
+hard('elbowL__worn.1', lambda bm: slab(bm, outline(SCX, SY0 + .06, SY1 - .05, SW - .055, .02), ZF - .004, ZP))   # the panel, darker, a little proud
+def relief(bm):   # a ring-cross standing out of the panel, its arms broad, and a boss of stone at its heart
+    slab(bm, [(CX - .045, .3), (CX + .045, .3), (CX + .04, 1.3), (CX - .04, 1.3)], ZP - .002, ZP + .03)
+    slab(bm, [(CX - .24, CY - .042), (CX + .24, CY - .042), (CX + .24, CY + .042), (CX - .24, CY + .042)], ZP - .002, ZP + .03)
+    blob(bm, (CX, CY, ZP + .035), .07, (1, 1, .5), 1)
 hard('elbowL__stone.2', relief)
-def cross(bm):   # the ring of light behind the cross's arms, and three cut lines of an inscription under it
+def runes(bm):   # the ring of light behind the cross, runes cut down the panel's seams and across its foot
     z = ZP + .006
-    tube(bm, [(CX + .125 * math.cos(math.tau * k / 20), CY + .125 * math.sin(math.tau * k / 20), z) for k in range(21)], [.013] * 21, 4)
-    for k, w in enumerate((.12, .08, .1)):
-        tube(bm, [(CX - w, .72 - k * .06, z), (CX + w, .72 - k * .06, z)], [.006, .006], 4)
-hard('elbowL__rune.1', cross)
-
-# ---- the sword (on the weapon bone): a broad stone blade with a lit fuller --------------------------------------------
-BX, BY = -SX, WR - .045
-def blade(bm):
-    rows = [(.15, .07, .026), (.3, .068, .026), (1.12, .058, .022), (1.33, .036, .016), (1.47, .004, .004)]
-    rings = [[bm.verts.new(G(BX + dx * t, BY + dy * w, z)) for dx, dy in ((1, 0), (0, 1), (-1, 0), (0, -1))] for z, w, t in rows]
-    bridge(bm, rings, True, True)
-hard('weapon__stone', blade)
-def hilt(bm):
-    tube(bm, [(BX, BY, -.15), (BX, BY, .11)], [.025, .025], 6)   # the grip
-    blob(bm, (BX, BY, -.19), .046, (1.0, 1.0, .9), 1)               # the pommel
-    loft_bar = [(BX, BY - .2, .13), (BX, BY + .2, .13)]
-    tube(bm, loft_bar, [.032, .032], 4)                              # the guard, a squared bar across the blade
-hard('weapon__worn', hilt)
-def fuller(bm):
-    for s in (1, -1):
-        tube(bm, [(BX + s * .024, BY, .24), (BX + s * .021, BY, 1.1)], [.0075, .0065], 4)
-hard('weapon__rune', fuller)
+    tube(bm, [(CX + .16 * math.cos(math.tau * k / 24), CY + .16 * math.sin(math.tau * k / 24), z) for k in range(25)], [.014] * 25, 4)
+    for sd in (1, -1):
+        x = CX + sd * (SW - .075)
+        for k in range(5):
+            y0 = .32 + k * .2
+            tube(bm, [(x, y0, z), (x + sd * .02, y0 + .06, z), (x, y0 + .12, z)], [.007, .007, .007], 4)
+    for k, w in enumerate((.18, .12)):
+        tube(bm, [(CX - w, .22 + k * .05, z), (CX + w, .22 + k * .05, z)], [.007, .007], 4)
+hard('elbowL__rune.1', runes)
 
 result = tally()

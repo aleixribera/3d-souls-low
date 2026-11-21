@@ -61,7 +61,7 @@ const cameraFeel = (() => {
   const LATE_KICK = { stitch: 1, iai: 2 };
   events.on('abilityPower', d => {
     if (ABILITY_BY_ID[d.power] && ABILITY_BY_ID[d.power].rarity === 'common') return;   // commons never move the camera
-    if (d.end || (d.then === 'flurry' && d.strike)) return;   // a flurry's thrusts are too many to kick; a cut-short power is still
+    if (d.end || d.flight || (d.then === 'flurry' && d.strike)) return;   // a fireball kicks where it lands, not as it flies   // a flurry's thrusts are too many to kick; a cut-short power is still
     // Shadow Stitch kicks at its first spike, Quick Draw at its split, never at the press (the stance is still).
     const late = LATE_KICK[d.then];
     if (late !== undefined && (d.strike || 0) !== late) return;

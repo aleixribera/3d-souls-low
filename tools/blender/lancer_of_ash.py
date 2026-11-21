@@ -25,7 +25,7 @@ from figure_lib import *
 import bpy, bmesh
 from mathutils import Vector
 
-begin({'ash': (0.56, 0.54, 0.52), 'char': (0.15, 0.14, 0.14), 'cinder': (0.78, 0.68, 1.0)}, prefix='ashlancer:')
+begin({'ash': (0.56, 0.54, 0.52), 'char': (0.15, 0.14, 0.14), 'cinder': (0.56, 0.72, 0.86)}, prefix='ashlancer:')
 
 SX, EL, WR = .33, 1.25, .95
 

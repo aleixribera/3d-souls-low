@@ -725,8 +725,8 @@ MODEL_DEFS.saltKnight = {
 // ---- Summons ----------------------------------------------------------------------------------------------------------
 // The Stone Guardian (pass 78, built in Blender: tools/blender/guardian.py): the Stone Guardian ability's summon, a tomb
 // effigy come awake. A deep hood over a dark face with two slits of light, carved pauldrons, a faceted breast split by a
-// glowing crack, a tabard carved in folds, rings of light at the elbows and knees, an arched headstone for a shield and a
-// broad stone sword with a lit fuller. No enemy wears it. In a fight the summon draws it in its own shader, slot by slot
+// glowing crack, a tabard carved in folds, rings of light at the elbows and knees, and (pass 141) no sword: a tower shield
+// of cut stone on its left arm, carved with a ring-cross, is its weapon. No enemy wears it. In a fight the summon draws it in its own shader, slot by slot
 // (VIS.abilityFx.guardian.slots, js/summon-figures.js); these materials are what the model lab shows.
 MODEL_DEFS.stoneGuardian = {
   extends: 'ironKnight', fit: 1.0, budget: 'enemy',
@@ -745,10 +745,8 @@ MODEL_DEFS.stoneGuardian = {
     armL: ['worn', 'stone'], armR: ['worn', 'stone'],
     elbowL: ['stone', 'rune', 'worn', 'stone.1', 'worn.1', 'stone.2', 'rune.1'], elbowR: ['stone', 'rune', 'worn'],
     legL: ['stone'], legR: ['stone'], kneeL: ['rune', 'stone', 'worn'], kneeR: ['rune', 'stone', 'worn'],
-    weapon: ['stone', 'worn', 'rune'],
-  }).flatMap(([bone, list]) => list.map(s => ({ use: 'baked', mesh: `guardian:${bone}__${s}`, bone, slot: s.split('.')[0], tile: 0.42,
-    ...(bone === 'weapon' ? { weapon: true } : {}) }))),
-  weapon: null,   // the stone sword is part of the figure (the `weapon: true` pieces above)
+  }).flatMap(([bone, list]) => list.map(s => ({ use: 'baked', mesh: `guardian:${bone}__${s}`, bone, slot: s.split('.')[0], tile: 0.42 }))),
+  weapon: null,   // no sword: the shield on elbowL is its weapon
   eyes: null,     // its eyes are the hood's two slits of light (the `rune` slot)
   anim: { ...IRONBOUND_ANIM, cloth: [{ bone: 'loinF', gain: 0.04, k: 120, damp: 10, flutter: 0 }, { bone: 'loinB', gain: 0.05, k: 110, damp: 10, flutter: 0 }] },
 };
@@ -768,7 +766,7 @@ MODEL_DEFS.lancerOfAsh = {
   materials: {
     ash: { tex: 'stone', tint: 0xb4b0aa, decay: 0.6 },
     char: { tex: 'ashSoot', tint: 0x4a4644, decay: 0.85 },
-    cinder: { glow: 0xc8b8ff },
+    cinder: { glow: 0x8fb8dc },
   },
   body: { torso: null, pelvis: null, arms: null, legs: null, head: null, neck: null, hands: null, feet: null },
   bones: {

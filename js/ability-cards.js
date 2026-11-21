@@ -48,6 +48,9 @@ const ABILITY_ICONS = {
   'stone-guardian': '<path d="M24 6 L37 11 V23 C37 32 31 38 24 42 C17 38 11 32 11 23 V11 Z"/><path d="M24 6 V42"/><path d="M17 17 L20 22 L17 28"/><path d="M4 45 H44" stroke-dasharray="3 2"/>',
   'ash-lancer': '<path d="M7 41 L36 12"/><path d="M33 9 L44 4 L39 15 Z"/><path d="M12 42 L17 37"/><path d="M4 30 L11 23 M11 46 L18 39 M3 21 L8 16" stroke-dasharray="2 2"/>',
   'grave-hound': '<path d="M44 22 L31 20 L26 13 L23 19 L13 21 C9 22 8 27 12 29 L20 31 L15 39 L25 32 L32 34 L44 28"/><path d="M44 22 L36 25 L44 28"/><circle cx="30" cy="24" r="1.5"/><path d="M4 18 H9 M3 25 H7 M5 32 H10" stroke-dasharray="2 2"/>',
+  // Batch 10, Summons I (pass 141)
+  'cinder-fox': '<path d="M42 20 L40 14 L37 19 L30 20 L22 22 L18 28 M30 20 L34 27 L38 30 M24 23 L22 30 L18 32 M42 20 L46 23 L41 25 L37 19"/><path d="M18 28 C10 30 6 36 10 41 C14 46 30 46 38 40 C42 37 44 33 44 30" stroke-dasharray="3 2"/>',
+  'lantern-spirit': '<ellipse cx="20" cy="22" rx="11" ry="9"/><path d="M13 12 H27 M13 32 H27 M20 13 V31 M13 15 C11 20 11 25 13 30 M27 15 C29 20 29 25 27 30"/><path d="M20 18 C18 20 18 24 20 26 C22 24 22 20 20 18 Z"/><path d="M16 32 V42 M24 32 V44"/><circle cx="42" cy="16" r="2.5"/><path d="M32 20 L38 17" stroke-dasharray="2 2"/>',
   'static-edge': '<path d="M6 42 L28 20 L33 17 L30 22 L9 45"/><path d="M34 4 L27 13 L35 15 L29 25"/><path d="M39 19 L44 15 M40 26 L46 26"/>',
   // Crate rares (js/data/crates.js)
   'grave-feast': '<path d="M21 4 V17 L24 23 L27 17 V4 Z"/><path d="M16 8 H32"/><path d="M24 44 C15 38 10 33 10 28 A7 7 0 0 1 22 24 M26 24 A7 7 0 0 1 38 28 C38 33 33 38 24 44"/>',

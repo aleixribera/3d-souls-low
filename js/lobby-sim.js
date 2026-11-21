@@ -80,7 +80,7 @@ globalThis.host = (() => {
     // A legendary fired or striking, for every browser to draw (js/ability-fx.js).
     if (type === 'abilityPower') eventList.push({ type, power: d.power, then: d.then, holder: d.holder, enemy: d.enemy?.netId || null,
       x: d.x, y: d.y, z: d.z, v: d.v, strike: d.strike, draw: d.draw || undefined, path: d.path, flight: d.flight, mark: d.mark || undefined, yaw: d.yaw, over: d.over, end: d.end,
-      burst: d.burst || undefined, sputter: d.sputter || undefined });   // an Ash Husk bursting, a Binding Seal burning out
+      burst: d.burst || undefined, sputter: d.sputter || undefined, heal: d.heal || undefined });   // an Ash Husk bursting, a Binding Seal burning out, a lantern's heal
     const e = d.enemy || d.actor;
     if (type === 'attackStart' && e) e.netAttack = ++attackSerial;
     if (['attackStart', 'attackPhase', 'bossPhase', 'bossRetreat', 'bossGone', 'enemyBlink', 'impact'].includes(type))
@@ -494,6 +494,7 @@ globalThis.host = (() => {
       if (msg.when === 'answer' && p.state !== PS.IDLE) return wait();   // the stance stands still
       const e = struckNear(p, msg);
       if (!e) return false;
+      if (e.sealNo === e.attackNo && msg.serial === e.netAttack) return false;   // Binding Seal: a sealed attack strikes nothing to bounce or answer
       st[k] = 0;
       // a bounce is held to the struck attack's heaviest blow (the browser says which of its blows it was)
       const top = Math.max(0, ...struckAttack.hits.map(h => h.damage || struckAttack.damage || 0)) * (e.damageMul || 1);

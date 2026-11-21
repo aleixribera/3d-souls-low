@@ -15,7 +15,6 @@ them (`git show 88f1abd:BACKLOG.md`).
 - A pressed ability the server refuses spends the client's charge with no refund.
 - Server claim gaps (harmless among friends): flask use (`useItem`) is not checked; a parry claim during a gilt echo
   is not rejected; a bolt inside a parryable attack is checked with `canParryAttack`, not `canParryHit`.
-- Online, a ward or Waiting Blade claim against a sealed attack (Binding Seal) is not refused by the server (pass 137).
 - Online, a blow that hit a teammate while its target perfect-dodged still gives the boss the long recovery.
 - 92 of 197 boss attacks can't be deflected (area hits, leaps); PLAN 5's "`noParry` on a quarter at most" applies
   per boss as each is rebuilt (per-hit `noParry` exists).

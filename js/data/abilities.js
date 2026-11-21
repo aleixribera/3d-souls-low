@@ -122,6 +122,16 @@ const ABILITIES = [
     power: { when: 'press', then: 'lancer' },
     levels: [{ charge: 18, time: 6, every: 0.9, damage: 18, draw: 1 }, { charge: 16, time: 7, every: 0.8, damage: 22, draw: 1.2 },
       { charge: 14, time: 8, every: 0.7, damage: 26, draw: 1.5 }] },
+  // Batch 10 (design/abilities, Summons I): a fox of blue fire that circles the boss slashing its legs, and a paper
+  // lantern at its holder's shoulder that spits fireballs, each that lands healing its holder a sliver.
+  { id: 'cinder-fox', name: 'Cinder Fox', rarity: 'rare', key: 'summon', text: 'A fire fox circles the boss for {time}.',
+    power: { when: 'press', then: 'fox' },
+    levels: [{ charge: 16, time: 8, every: 1, damage: 12, draw: 1 }, { charge: 15, time: 9, every: 0.9, damage: 14, draw: 1.2 },
+      { charge: 14, time: 10, every: 0.8, damage: 16, draw: 1.4 }] },
+  { id: 'lantern-spirit', name: 'Lantern Spirit', rarity: 'rare', key: 'summon', text: 'A lantern burns the boss and heals you.',
+    power: { when: 'press', then: 'lantern' },
+    levels: [{ charge: 18, time: 10, every: 1.5, damage: 10, heal: 0.02 }, { charge: 17, time: 11, every: 1.4, damage: 12, heal: 0.025 },
+      { charge: 16, time: 12, every: 1.3, damage: 14, heal: 0.03 }] },
   // Key 1, Strike: a burst of attack on the boss.
   { id: 'fire-burst', name: 'Fire Burst', rarity: 'rare', key: 'strike', text: 'Fire bursts on the boss.',
     power: { when: 'press', then: 'flare' },

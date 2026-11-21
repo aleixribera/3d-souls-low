@@ -399,6 +399,47 @@ const AUDIO = {
       { wave: 'sine', freq: 140, to: 70, at: 0.06, a: 0.002, d: 0.14, gain: 0.7, drive: 2 },
       { noise: 'pink', filter: { type: 'bandpass', freq: 1100, to: 500, q: 1.2 }, at: 0.06, a: 0.003, d: 0.12, gain: 0.4 },
     ] },
+    // Cinder Fox (pass 141): a flame catching, a quick run of light paws over a soft roar, a short high yip.
+    abilityFox: { bus: 'sfx', priority: 3, cooldown: 0.4, max: 1, verb: 0.5, heat: 0.3, jitter: 40, layers: [
+      { noise: 'white', filter: { type: 'bandpass', freq: 2500, q: 2 }, a: 0.002, d: 0.025, gain: 0.6 },
+      { noise: 'pink', filter: { type: 'bandpass', freq: 700, q: 0.9 }, a: 0.05, h: 0.2, d: 0.25, gain: 0.45 },
+      { noise: 'white', filter: { type: 'bandpass', freq: 1500, q: 3 }, at: 0.1, a: 0.001, d: 0.02, gain: 0.35 },
+      { noise: 'white', filter: { type: 'bandpass', freq: 1500, q: 3 }, at: 0.18, a: 0.001, d: 0.02, gain: 0.35 },
+      { noise: 'white', filter: { type: 'bandpass', freq: 1500, q: 3 }, at: 0.26, a: 0.001, d: 0.02, gain: 0.35 },
+      { noise: 'white', filter: { type: 'bandpass', freq: 1500, q: 3 }, at: 0.34, a: 0.001, d: 0.02, gain: 0.35 },
+      { wave: 'sine', freq: 1400, to: 1900, glide: 0.1, at: 0.42, a: 0.005, d: 0.12, gain: 0.12 },
+    ] },
+    // Each of its slashes: a flick of flame and a light tear.
+    abilityFoxSlash: { bus: 'sfx', priority: 2, cooldown: 0.08, max: 2, verb: 0.2, heat: 0.15, jitter: 170, layers: [
+      { noise: 'white', filter: { type: 'bandpass', freq: 3000, q: 2 }, a: 0.002, d: 0.05, gain: 0.6 },
+      { wave: 'sawtooth', freq: 220, to: 160, filter: { type: 'lowpass', freq: 1200, to: 500 }, a: 0.003, d: 0.08, gain: 0.18 },
+    ] },
+    // Its yip as it draws the boss: a skid and two quick high barks.
+    abilityYip: { bus: 'sfx', priority: 3, cooldown: 0.4, max: 1, verb: 0.5, heat: 0.3, jitter: 40, layers: [
+      { noise: 'pink', filter: { type: 'bandpass', freq: 1800, to: 700, q: 1 }, a: 0.01, d: 0.2, gain: 0.35 },
+      { wave: 'sine', freq: 1300, to: 1900, glide: 0.08, at: 0.12, a: 0.004, d: 0.1, gain: 0.14 },
+      { wave: 'sine', freq: 1400, to: 2000, glide: 0.08, at: 0.3, a: 0.004, d: 0.12, gain: 0.12 },
+    ] },
+    // Lantern Spirit (pass 141): paper unfolding in four crinkles, a candle catching, a soft wind chime.
+    abilityLantern: { bus: 'sfx', priority: 3, cooldown: 0.4, max: 1, verb: 0.7, heat: 0.25, jitter: 20, layers: [
+      { noise: 'white', filter: { type: 'bandpass', freq: 3000, q: 2 }, a: 0.002, d: 0.03, gain: 0.35 },
+      { noise: 'white', filter: { type: 'bandpass', freq: 3200, q: 2 }, at: 0.08, a: 0.002, d: 0.03, gain: 0.3 },
+      { noise: 'white', filter: { type: 'bandpass', freq: 2800, q: 2 }, at: 0.16, a: 0.002, d: 0.03, gain: 0.3 },
+      { noise: 'white', filter: { type: 'bandpass', freq: 3100, q: 2 }, at: 0.24, a: 0.002, d: 0.03, gain: 0.25 },
+      { noise: 'pink', filter: { type: 'bandpass', freq: 600, q: 1 }, at: 0.25, a: 0.06, h: 0.1, d: 0.15, gain: 0.35 },
+      { wave: 'sine', freq: 1047, at: 0.45, a: 0.003, d: 0.8, gain: 0.07 },
+      { wave: 'sine', freq: 1319, at: 0.55, a: 0.003, d: 0.8, gain: 0.06 },
+      { wave: 'sine', freq: 1568, at: 0.65, a: 0.003, d: 0.8, gain: 0.05 },
+    ] },
+    // Each of its shots: a small puff and a whistle as the fireball flies.
+    abilityLanternShot: { bus: 'sfx', priority: 2, cooldown: 0.1, max: 2, verb: 0.3, heat: 0.15, jitter: 120, layers: [
+      { noise: 'brown', filter: { type: 'lowpass', freq: 400 }, a: 0.003, d: 0.06, gain: 0.5 },
+      { wave: 'sine', freq: 1800, to: 1200, glide: 0.2, a: 0.01, d: 0.2, gain: 0.06 },
+    ] },
+    // A shot that healed its holder: one soft chime, quieter than Mending.
+    abilityLanternHeal: { bus: 'sfx', priority: 1, cooldown: 0.2, max: 1, verb: 0.5, heat: 0.1, jitter: 10, layers: [
+      { wave: 'sine', freq: 784, a: 0.005, d: 0.3, gain: 0.06 },
+    ] },
     // Each of the twin's blows: a short hiss of fire and a crackle on top of the blow itself.
     abilityEcho: { bus: 'sfx', priority: 2, cooldown: 0.06, max: 2, verb: 0.3, heat: 0.25, jitter: 180, layers: [
       { noise: 'pink', filter: { type: 'bandpass', freq: 1400, to: 600, q: 0.9 }, a: 0.005, d: 0.22, gain: 0.55 },

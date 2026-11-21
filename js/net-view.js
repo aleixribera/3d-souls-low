@@ -86,6 +86,12 @@ const netView = {
     if (!ArenaNet.own(ABILITY_BY_ID, d.power) || !d.v || typeof d.v !== 'object') return;
     const body = d.holder === ctx.self ? Game.player : ctx.bodyOf(d.holder);
     if (d.then === 'bloodMoon' && body === Game.player && ctx.self) { body.perk.moon = d.v.time; body.perk.moonV = d.v; }
+    // A lantern's fireball landed: its holder's browser heals its own body (the client owns its health), held to the
+    // ability's own top share; the server told it with the shot.
+    if (d.then === 'lantern' && Number.isFinite(d.heal) && d.heal > 0 && body === Game.player && ctx.self && body.alive()) {
+      const top = Math.max(...ABILITY_BY_ID[d.power].levels.map(v => v.heal || 0));
+      body.hp = Math.min(body.hpCap(), body.hp + body.maxHp * Math.min(d.heal, top));
+    }
     if (d.end && d.end !== 'crumble' && body === Game.player && ctx.self) {   // (an Ash Husk crumbling leaves its holder be)   // a flurry or a stance the server cut short: off its feet at once
       body.root = 0;
       if (d.end === 'cancel' && Number.isFinite(d.v.charge)) {   // Quick Draw cut short: the key's charge back, as on the server

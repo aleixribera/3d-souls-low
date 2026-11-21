@@ -39,6 +39,8 @@ const FILES = {
   'hound': { sources: ['hound'] },
   'guardian': { sources: ['guardian'] },
   'lancer-of-ash': { sources: ['lancer_of_ash'] },
+  'cinder-fox': { sources: ['cinder_fox'] },
+  'lantern-spirit': { sources: ['lantern_spirit'] },
 };
 
 function readGlb(file) {

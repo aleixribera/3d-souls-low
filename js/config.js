@@ -45,7 +45,7 @@ const CONFIG = {
             strafeRoll: 0.012, moveFov: 1.2, moveRef: 5, maxRoll: 0.05, maxFov: 6, powerNear: 26, perkFov: -0.9,
             powers: { blast: [4, 0.24], lightning: [1.6, 0], strike: [-1.8, 0.06], freeze: [-3.2, 0.05], blades: [-1.4, 0.04], bloodMoon: [3, 0.12],
               twin: [2.6, 0.1], echo: [-0.6, 0.02], gale: [-2.4, 0.05], pyre: [3.2, 0.16], flare: [-1.1, 0.03], spark: [-0.8, 0.02],
-              hound: [1.4, 0.05], bite: [-0.5, 0.02], draw: [1.2, 0.03], guardian: [2.2, 0.1], lancer: [1.2, 0.04],
+              hound: [1.4, 0.05], bite: [-0.5, 0.02], draw: [1.2, 0.03], guardian: [2.2, 0.1], lancer: [1.2, 0.04], fox: [1, 0.03], lantern: [0.6, 0],
               wave: [0.8, 0], crescent: [-1.4, 0.06], cyclone: [1.2, 0.04], petals: [1.4, 0.04],
               spikes: [-1.2, 0.04], fist: [2.4, 0.12], risingFire: [1.6, 0.05], clap: [2.0, 0.08],
               flurry: [-0.8, 0.02], drill: [-1.0, 0.02], stitch: [-1.0, 0.03], boomerang: [-0.8, 0.02], clones: [-1.6, 0.04], iai: [-2.2, 0.05],
@@ -360,10 +360,17 @@ const CONFIG = {
     // `arrive` s after it is called (one that `rises` comes up where it will stand; the others run there); a hound,
     // a guardian or a lancer strikes from `reach` m off the enemy's body. With no enemy within `near` m
     // of its holder it stands `side` m to their right. While it draws an enemy, that enemy fights a body of `radius` m
-    // and its kind's `height` m (sight lines, shots aimed at it).
+    // and its kind's `height` m (sight lines, shots aimed at it). Batch 10: a kind's own `arrive` overrides the shared one;
+    // `from` (the lancer): it starts `from` m off the enemy on its holder's side, `fromTurn` rad round, stands `hold` s as it
+    // forms, then charges in; `orbit` (the fox): its flank turns on at that many rad/s, so it circles the enemy; `perch`
+    // (the lantern): it floats `side` m to its holder's left and `lift` m up, and shoots from up to `reach` m, each
+    // fireball flying at `shot` m/s.
     summons: { arrive: 0.7, near: 16, side: 1.4, radius: 0.5,
       twin: { gap: 1.1, flank: 0.85, speed: 14, height: 1.8, rises: true }, hound: { gap: 0.6, flank: -1.25, speed: 10, height: 1, reach: 1.3 },
-      guardian: { gap: 0.7, flank: 1.75, speed: 4, height: 2.3, reach: 1.5, rises: true }, lancer: { gap: 1.3, flank: -0.4, speed: 13, height: 1.9, reach: 2.2 } } },
+      guardian: { gap: 0.7, flank: 1.75, speed: 4, height: 2.3, reach: 1.5, rises: true },
+      lancer: { gap: 1.3, flank: -0.4, speed: 16, height: 1.9, reach: 2.2, arrive: 1.1, from: 12, fromTurn: 0.6, hold: 0.4 },
+      fox: { gap: 1.4, flank: 0, speed: 12, height: 0.6, reach: 1.6, orbit: 2.2 },
+      lantern: { gap: 0, flank: 0, speed: 9, height: 0.6, reach: 18, perch: true, side: 0.7, lift: 1.9, shot: 14 } } },
   // A boss fights the group (v7.35.0, the server's targeting): anyone drinking a flask within `healReach` m of its
   // body draws it at once (the closest drinker); otherwise it turns on whoever hurt it most lately, else on the closest.
   // Each player's score is their distance in m, less `damage` m per 1% of its bar they dealt lately (fading with a time
@@ -736,8 +743,8 @@ const CONFIG = {
     // and middle (`body`) burn and how much they `flicker`; it stands where the engine puts it (CONFIG.abilities.summons:
     // off the boss's far flank, so the boss never hides it from its holder's camera), turning at `turn` (1/s); it rises in `rise`
     // s and burns away in `fade` s, sheds a mote every `motes` s, glows `strikeBoost` brighter for `strikeGlow` s as
-    // it strikes, and its slash is `slashSize` m, gone in `slash` s. Hound (Grave Hound, js/summon-hound.js): its
-    // grave-fire's `color`, `core` and `eye`, edges (`rim`), hide (`body`) and `bone` brightness, `flicker`; turning at
+    // it strikes, and its slash is `slashSize` m, gone in `slash` s. Hound (Grave Hound, js/summon-beasts.js): its
+    // fire's `color`, `core` and `eye`, `flicker`; turning at
     // `turn`, up in `rise` s, gone in `fade` s; a full gallop from `gallopAt` m/s, `strideRate` strides a second at it and
     // `prowlRate` while it waits; a bite's lunge `lunge` s with the jaws closing `snapAt` of the way in, glowing
     // `biteBoost` brighter; a howl `howlTime` s; pulled straight to the engine's place past `snap` m off; a mote every
@@ -834,9 +841,23 @@ const CONFIG = {
       twin: { color: 0xff6a1e, core: 0xffd8a0, rim: 2.4, body: 0.3, flicker: 0.22, turn: 10,
         rise: 0.5, fade: 0.8, motes: 0.06, strikeBoost: 0.8, strikeGlow: 0.25, slash: 0.3, slashSize: 2.6, shake: [0.16, 0.08],
         burst: { count: 30, speed: 5, color: 0xff8a3a }, hitBurst: { count: 10, speed: 4, color: 0xffa050 } },
-      hound: { color: 0x3dffa0, core: 0xdcffe8, eye: 0xc8ffd8, rim: 2.6, body: 0.22, bone: 0.7, flicker: 0.18, turn: 9, rise: 0.55, fade: 0.7,
-        gallopAt: 5, strideRate: 2.6, prowlRate: 0.7, lunge: 0.42, snapAt: 0.3, howlTime: 1.1, biteBoost: 0.9, snap: 2.5, motes: 0.09,
-        shake: [0.12, 0.06], burst: { count: 24, speed: 4, color: 0x5cffb0 }, hitBurst: { count: 8, speed: 4, color: 0x7affc0 } },
+      // The beasts (js/summon-beasts.js, pass 141): cel ink with a hard `color` rim, lit in two bands (`ink` in shade, `lit`
+      // in the light), their bright slot (the hound's bone, the fox's flame) `color` at its edges and `core` inside, an ink
+      // outline `outline` m thick. `size`: the gait's lifts and reaches next to the hound's; `climb`: s before it moves. `pool`: the ink pool it climbs
+      // out of, m across. Fox: its flame `ring` on the floor, a tongue every `every` s, each `width` m and burning `life` s.
+      hound: { color: 0x8fb8dc, core: 0xf2f6fa, eye: 0xf2f6fa, ink: 0x0b0d12, lit: 0x26303e, bright: 'bone', outline: 0.012, size: 1, climb: 0.35, flicker: 0.12, turn: 9, rise: 0.55, fade: 0.7,
+        gallopAt: 5, strideRate: 2.6, prowlRate: 0.7, lunge: 0.42, snapAt: 0.3, howlTime: 1.1, biteBoost: 0.9, snap: 2.5, motes: 0.09, pool: 1.8,
+        shake: [0.12, 0.06], burst: { count: 24, speed: 4, color: 0x8fb8dc }, hitBurst: { count: 8, speed: 4, color: 0xcfe4f2 } },
+      fox: { color: 0x8fb8dc, core: 0xf2f6fa, eye: 0xf2f6fa, ink: 0x0b0d12, lit: 0x3a5068, bright: 'flame', outline: 0.01, size: 0.7, climb: 0, flicker: 0.3, turn: 14, rise: 0.4, fade: 0.6,
+        gallopAt: 3, strideRate: 3.6, prowlRate: 3.6, lunge: 0.25, snapAt: 0.45, howlTime: 0.8, biteBoost: 0.8, snap: 2.5, motes: 0.06, pool: 1.1,
+        ring: { every: 0.07, width: 0.3, life: 1.5 },
+        shake: [0.08, 0.04], burst: { count: 20, speed: 5, color: 0x8fb8dc }, hitBurst: { count: 6, speed: 5, color: 0xf2f6fa } },
+      // The Lantern Spirit (js/summon-lantern.js): its paper `color` lit from inside, the eye's `core`, ribs `ink`; it bobs
+      // `bob` m every `bobTime` s; it unfolds in `rise` s and folds in `fade` s; a fireball `ball` m across, its burst `burst`
+      // m on the boss; the warm line runs to its holder in `warm` s.
+      lantern: { color: 0x8fb8dc, core: 0xf2f6fa, deep: 0x2c5f8a, ink: 0x0b0d12, outline: 0.006, bob: 0.08, bobTime: 2.2, rise: 0.5, fade: 0.6, ball: 0.3, burstSize: 0.8,
+        warm: 0.25, puff: 0.2, sway: 0.35, turn: 8, motes: 0.5,
+        burst: { count: 8, speed: 4, color: 0x8fb8dc }, hitBurst: { count: 8, speed: 4, color: 0xf2f6fa } },
       // The Stone Guardian and the Lancer of Ash (js/summon-figures.js). Each is its own `model` (the guardian's since
       // pass 78, the lancer's since pass 80) at `scale` and `bulk`, each material slot drawn in its `slots` colour and its
       // `glows` lit, standing in the `idle` style. `solid`: lit (`stone`, or the slot's colour) with a glowing rim; else a
@@ -848,17 +869,20 @@ const CONFIG = {
       // `impact`: where the blow meets the floor, `ahead` m before it (a ring, a crack, dust, stone chunks, `shake` x the
       // kind's shake if the player is near).
       guardian: { model: 'stoneGuardian', idle: 'still', scale: 1.37, bulk: 1.06, floor: true,
-        slots: { stone: 0x8e897e, worn: 0x504d47 }, glows: ['rune'], solid: true, stone: 0x6e6a62, color: 0x7ab8ff, core: 0xe8f6ff, rim: 0.9, body: 0.25,
+        slots: { stone: 0x8e897e, worn: 0x504d47 }, glows: ['rune'], solid: true, stone: 0x6e6a62, color: 0x8fb8dc, core: 0xf2f6fa, rim: 0.9, body: 0.25,
         flicker: 0.08, turn: 6, rise: 0.9, fade: 0.9, strikeBoost: 0.9, strikeGlow: 0.3, motes: 0.14, cryTime: 1.2, shake: [0.22, 0.16],
-        guard: { armL: [-0.75, 0, -0.25] }, cry: { armR: [-2.3, 0, 0.3], armL: [-0.9, 0, -0.5], chest: [-0.25, 0, 0], head: [-0.3, 0, 0] },
+        guard: { armL: [-0.75, 0, -0.25] },
+        // The brace (pass 141): the shield planted before it, the right fist struck against its face.
+        cry: { armL: [-0.5, 0, -0.2], elbowL: [-0.25, 0, 0], armR: [-1.25, 0, -0.45], elbowR: [-0.7, 0, 0], chest: [0.22, 0, 0], head: [0.12, 0, 0] },
         moves: [
-          { name: 'Grave Cleave', pose: 'guardianCleave', hits: [{ startup: 0.5, active: 0.12, follow: 0.16 }], recovery: 0.55 },
-          { name: 'Headstone Slam', pose: 'guardianSlam', hits: [{ startup: 0.55, active: 0.14, follow: 0.2 }], recovery: 0.6,
+          { name: 'Shield Bash', pose: 'guardianBash', hits: [{ startup: 0.5, active: 0.12, follow: 0.16 }], recovery: 0.55,
+            impact: { ahead: 1.3, ring: 1.6, crack: 0, dust: 6, chunks: 0, shake: 0.6 } },
+          { name: 'Shield Slam', pose: 'guardianSlam', hits: [{ startup: 0.55, active: 0.14, follow: 0.2 }], recovery: 0.6,
             impact: { ahead: 1.1, ring: 2.6, crack: 2, dust: 12, chunks: 8, shake: 1 } },
         ],
-        burst: { count: 34, speed: 5, color: 0x9a9284 }, hitBurst: { count: 12, speed: 4, color: 0xbfe0ff } },
+        burst: { count: 34, speed: 5, color: 0x9a9284 }, hitBurst: { count: 12, speed: 4, color: 0xcfe4f2 } },
       lancer: { model: 'lancerOfAsh', idle: 'guard', scale: 1.1, slots: { ash: 0xaaa59e, char: 0x3a3534 }, glows: ['cinder'],
-        solid: true, stone: 0x4a4644, color: 0xa08cff, core: 0xf0eaff, rim: 1.25, body: 0.26,
+        solid: true, stone: 0x4a4644, color: 0x8fb8dc, core: 0xf2f6fa, rim: 1.25, body: 0.26,
         flicker: 0.2, turn: 11, rise: 0.4, fade: 0.6, strikeBoost: 0.9, strikeGlow: 0.22, motes: 0.07, cryTime: 0.9, shake: [0.14, 0.08],
         guard: {}, cry: { armR: [-2.6, 0, 0.2], chest: [-0.2, 0, 0], head: [-0.35, 0, 0] },
         moves: [
@@ -866,7 +890,7 @@ const CONFIG = {
           { name: 'Falling Pike', pose: 'lancerPike', hits: [{ startup: 0.32, active: 0.1, follow: 0.1 }], recovery: 0.18, hop: 0.9,
             impact: { ahead: 1.2, ring: 1.6, crack: 1.2, dust: 8, chunks: 0, shake: 0.7 } },
         ],
-        burst: { count: 26, speed: 6, color: 0xb8a8ff }, hitBurst: { count: 10, speed: 5, color: 0xd8ccff } },
+        burst: { count: 26, speed: 6, color: 0x9fc4e2 }, hitBurst: { count: 10, speed: 5, color: 0xcfe4f2 } },
       gale: { color: 0xc8fff0, core: 0xffffff, size: 5.2, lift: 1.3, speed: 34, roll: 0.9, fade: 0.18, shake: [0.14, 0.08],
         burst: { count: 26, speed: 8, color: 0xdafff6 } },
       pyre: { color: 0xff5a14, core: 0xffd890, height: 9, pad: 0.5, rise: 0.18, fade: 0.45, motes: 0.05, lightEvery: 0.8, shake: [0.3, 0.2],

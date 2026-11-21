@@ -252,6 +252,59 @@
     expect.ok(hopOff === 0, 'and only Falling Pike leaves the floor');
     Game.lock = null;
   });
+  // Pass 141 (PLAN.md item 8, batch 10): the Cinder Fox and the Lantern Spirit drawn, and drawn from the server's word.
+  test('summons one: the fox circles laying flame, the lantern shoots and heals; the server\'s word draws and heals the same', () => {
+    Game.startLevel('test-abilities'); sim.begin(); sim.step(2);
+    const p = Game.player, e = Game.enemies.find(o => o.def.id === 'greatDummy'), played = [];
+    const play = audio.play; audio.play = (id, o) => { played.push(id); return play.call(audio, id, o); };
+    try {
+      p.x = e.x - 6; p.z = e.z; Game.lock = e;
+      const ctx = { x: e.x, y: e.y, z: e.z, enemy: e, key: 'summon' };
+      p.grantAbilities(['cinder-fox']); abilityPowers.reset();
+      abilityPowers.trigger('self', p, p.kit, 'press', ctx);
+      let tongues = 0, fast = 0, turn = 0, last = null;
+      for (let i = 0; i < 3 * 60; i++) {
+        sim.step(1, 1);
+        const f = summonBeasts.info().find(q => q.kind === 'fox');
+        if (!f) continue;
+        tongues = Math.max(tongues, f.tongues); if (f.speed > 3) fast++;
+        const a = Math.atan2(f.x - e.x, f.z - e.z); if (last !== null) turn += Math.abs(angDiff(a, last)); last = a;
+      }
+      expect.above(fast, 60, `the fox is drawn running (${fast} frames above 3 m/s)`);
+      expect.above(turn, 2.5, `round the boss (${turn.toFixed(2)} rad)`);
+      expect.above(tongues, 5, `laying flame tongues on the floor (${tongues})`);
+      expect.ok(played.includes('abilityFox') && played.includes('abilityFoxSlash'), `heard as it comes and slashes (${[...new Set(played)].join(', ')})`);
+      abilityPowers.reset(); summonBeasts.clear(); played.length = 0;
+      p.grantAbilities(['lantern-spirit']); abilityPowers.reset(); p.hp = Math.floor(p.maxHp * 0.5);
+      const hp0 = p.hp;
+      abilityPowers.trigger('self', p, p.kit, 'press', ctx);
+      let balls = 0, warm = false, open = 0, side = Infinity;
+      for (let i = 0; i < 4 * 60; i++) {
+        sim.step(1, 1);
+        const l = summonLantern.info()[0];
+        if (!l) continue;
+        balls = Math.max(balls, l.balls); warm = warm || l.warm; open = Math.max(open, l.open); side = Math.min(side, Math.hypot(l.x - p.x, l.z - p.z));
+      }
+      expect.ok(open > 0.95 && side < 1.5, `the lantern unfolds at its holder's shoulder (open ${open.toFixed(2)}, ${side.toFixed(2)} m off)`);
+      expect.ok(balls > 0 && warm, `it spits fireballs and a warm line runs to its holder (${balls}, ${warm})`);
+      expect.above(p.hp, hp0, `the holder is healed (${hp0} to ${p.hp.toFixed(1)})`);
+      expect.ok(['abilityLantern', 'abilityLanternShot', 'abilityLanternHeal'].every(id => played.includes(id)), `heard (${[...new Set(played)].join(', ')})`);
+      // Online: another's fox and lantern drawn from the server's word; a heal only for this browser's own holder, capped.
+      abilityPowers.reset(); summonBeasts.clear(); summonLantern.clear(); p.grantAbilities([]);
+      const other = { x: p.x + 1, y: p.y, z: p.z, yaw: 0, alive: () => true }, net = { self: 'me', bodyOf: id => (id === 'them' ? other : null) };
+      const lv = id => ABILITY_BY_ID[id].levels[0];
+      netView.ability({ power: 'cinder-fox', then: 'fox', holder: 'them', x: other.x, y: other.y, z: other.z, v: lv('cinder-fox') }, e, net);
+      netView.ability({ power: 'lantern-spirit', then: 'lantern', holder: 'them', x: other.x, y: other.y, z: other.z, v: lv('lantern-spirit') }, e, net);
+      for (let i = 0; i < 30; i++) Game.render(1, STEP);
+      expect.ok(summonBeasts.info().some(q => q.kind === 'fox') && summonLantern.info().length === 1, 'another\'s fox and lantern are drawn');
+      p.hp = Math.floor(p.maxHp * 0.5); const h1 = p.hp;
+      netView.ability({ power: 'lantern-spirit', then: 'lantern', holder: 'them', x: e.x, y: e.y, z: e.z, v: lv('lantern-spirit'), strike: 1, heal: 0.02 }, e, net);
+      expect.ok(p.hp === h1, 'another\'s lantern heals only them');
+      netView.ability({ power: 'lantern-spirit', then: 'lantern', holder: 'me', x: e.x, y: e.y, z: e.z, v: lv('lantern-spirit'), strike: 1, heal: 5 }, e, net);
+      const top = Math.max(...ABILITY_BY_ID['lantern-spirit'].levels.map(v => v.heal));
+      expect.near(p.hp - h1, p.maxHp * top, 1e-6, 'its own holder\'s browser heals, never past the ability\'s top share');
+    } finally { audio.play = play; Game.lock = null; summonBeasts.clear(); summonLantern.clear(); p.grantAbilities([]); }
+  });
   test('regression: every duel runs 20 s and the enemy engages', () => {
     for (const d of [...A.ENEMY_DEFS, ...A.TEST_DEFS]) {
       Game.startFight(d.id); sim.begin();

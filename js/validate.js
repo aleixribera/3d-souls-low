@@ -162,6 +162,22 @@ function validateData({ visual = true } = {}) {
   need(SUM && [SUM.arrive, SUM.near, SUM.side, SUM.radius].every(x => num(x) && x >= 0) && [...SUMMONS].every(k => SUM[k] && num(SUM[k].gap) && SUM[k].gap >= 0
     && num(SUM[k].flank) && num(SUM[k].speed) && SUM[k].speed > 0 && num(SUM[k].height) && SUM[k].height > 0 && [undefined, true, false].includes(SUM[k].rises)) && [...SUMMON_STRIKERS].every(k => num(SUM[k].reach) && SUM[k].reach > 0),
     `CONFIG.abilities.summons: arrive, near, side and radius 0 or more; each summon (${[...SUMMONS].join(', ')}) a gap, a flank, a speed and a height above 0 (rises true or false); each that strikes (${[...SUMMON_STRIKERS].join(', ')}) a reach above 0.`);
+  // Batch 10's placements: a kind's own arrive, a charge's start (`from`, `fromTurn`, `hold`), a circle (`orbit`), a perch
+  // (its `side`, `lift` and `shot` speed; a perched kind never draws the boss: its levels carry no `draw`).
+  if (SUM) for (const k of SUMMONS) {
+    const S = SUM[k] || {}, opt = (key, lo = 0) => S[key] === undefined || (num(S[key]) && S[key] >= lo);
+    need(opt('arrive') && opt('from') && opt('hold') && (S.fromTurn === undefined || num(S.fromTurn)) && (S.orbit === undefined || num(S.orbit))
+      && [undefined, true, false].includes(S.perch) && opt('side') && opt('lift') && (S.shot === undefined || (num(S.shot) && S.shot > 0))
+      && (S.hold === undefined || S.hold < (S.arrive ?? SUM.arrive)) && (!S.perch || (num(S.side) && num(S.lift) && num(S.shot))),
+      `CONFIG.abilities.summons.${k}: arrive, from, hold, side and lift 0 or more, fromTurn and orbit numbers, perch true or false (a perch needs side, lift and shot), shot above 0, hold under its arrive.`);
+  }
+  for (const b of ABILITIES) {
+    const pw = b.power;
+    if (!pw || !SUMMONS.has(pw.then) || !SUM || !SUM[pw.then]) continue;
+    if (SUM[pw.then].perch) need(b.levels.every(v => v.draw === undefined), `Ability ${b.id}: a perched summon never draws the boss (no draw).`);
+    if (pw.then === 'lantern') need(b.levels.every(v => num(v.heal) && v.heal > 0 && v.heal <= 1) && SUM.lantern.shot > 0,
+      `Ability ${b.id}: heal a share above 0, at most 1, and CONFIG.abilities.summons.lantern a shot speed.`);
+  }
   // A summon drawn as a figure (js/summon-figures.js): its own model and its own moves (pass 81), each a timeline of key
   // poses no enemy or boss strikes with (VISION.md: no two share attacks).
   const enemyPoses = new Set(ENEMY_DEFS.flatMap(d => [...(d.attacks || []), ...Object.values(d.phases || {}).flatMap(P => P.attacks || [])])
@@ -197,6 +213,17 @@ function validateData({ visual = true } = {}) {
       && pos(Tc.frost, ['length', 'grow', 'flakeAt', 'fadeAt', 'life', 'flakes']) && hx(Tc.frost.color) && pos(Tc.ink, ['length', 'width', 'sweep', 'fadeAt', 'life']) && num(Tc.ink.tilt)
       && [Tc.feather, Tc.frost, Tc.ink].every(o => o.fadeAt < o.life),
       'CONFIG.VISUALS.abilityFx.touch: edge, iron, feather, flask, ring, frost and ink, their times and sizes above 0, colours as hex, edge.bright 0 to 1, fadeAt before life, ring.gap at least 1/3 s.');
+    // The beasts (js/summon-beasts.js: a kind with a `bright` slot) and the lantern (js/summon-lantern.js), pass 141.
+    for (const [k, F] of Object.entries(CONFIG.VISUALS.abilityFx)) if (F && F.bright !== undefined) {
+      need(['color', 'core', 'eye', 'ink', 'lit'].every(n => hx(F[n])) && typeof F.bright === 'string'
+        && pos(F, ['outline', 'size', 'turn', 'rise', 'fade', 'gallopAt', 'strideRate', 'prowlRate', 'lunge', 'howlTime', 'snap', 'motes', 'pool', 'biteBoost'])
+        && num(F.climb) && F.climb >= 0 && num(F.flicker) && F.flicker >= 0 && F.snapAt > 0 && F.snapAt < 1 && (F.ring === undefined || pos(F.ring, ['every', 'width', 'life']))
+        && [F.burst, F.hitBurst].every(B => B && pos(B, ['count', 'speed']) && hx(B.color)) && Array.isArray(F.shake) && F.shake.length === 2 && F.shake.every(num),
+        `CONFIG.VISUALS.abilityFx.${k}: a beast needs colours color, core, eye, ink and lit as hex, a bright slot's name, outline, size, turn, rise, fade, gallopAt, strideRate, prowlRate, lunge, howlTime, snap, motes, pool and biteBoost above 0, climb and flicker 0 or more, snapAt between 0 and 1, a ring (if any) with every, width and life above 0, burst and hitBurst with count, speed and a hex colour, and shake two numbers.`);
+    }
+    const L = CONFIG.VISUALS.abilityFx.lantern;
+    need(L && ['color', 'core', 'deep', 'ink'].every(n => hx(L[n])) && [L.burst, L.hitBurst].every(B => B && pos(B, ['count', 'speed']) && hx(B.color)) && pos(L, ['outline', 'bob', 'bobTime', 'rise', 'fade', 'ball', 'burstSize', 'warm', 'puff', 'sway', 'turn', 'motes']),
+      'CONFIG.VISUALS.abilityFx.lantern: color, core, deep and ink as hex, burst and hitBurst with count, speed and a hex colour; outline, bob, bobTime, rise, fade, ball, burstSize, warm, puff, sway, turn and motes above 0.');
   }
   // An ability's text is only its trigger and effect, in the fewest plain words (Aleix, 2026-11-14; a {key} is one word).
   const ABILITY_TEXT_MAX = { words: 9, chars: 56 };

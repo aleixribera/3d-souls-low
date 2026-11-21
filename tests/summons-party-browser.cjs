@@ -132,7 +132,7 @@ async function party(browser, mine, his) {
     let drew = false;
     const t0 = Date.now();
     while (Date.now() - t0 < 1400) { if (b.alive() && R.abilityPowers.decoy(b)) drew = true; await wait(30); }
-    const seen = await page.evaluate(() => ({ figures: summonFigures.info(), hounds: summonHound.info(), twins: abilityFx.info().twins }));
+    const seen = await page.evaluate(() => ({ figures: summonFigures.info(), hounds: summonBeasts.info(), twins: abilityFx.info().twins }));
     assert.deepEqual(seen.figures.map(f => f.kind).sort(), ['guardian', 'lancer'], 'the page draws the guardian and the lancer');
     assert.equal(seen.hounds.length, 1, 'the page draws the hound'); assert.equal(seen.twins, 1, 'and the twin');
     const server = Object.fromEntries([ash, bram.id, cole.id, dara.id].map(id => { const s = R.abilityPowers.summonOf(id); return [s.kind, { x: s.x, z: s.z }]; }));
@@ -151,7 +151,7 @@ async function party(browser, mine, his) {
     // Their time up, all four go, on the server and in the page.
     for (let t = 0; kinds().some(k => k); t++) { if (t > 400) throw new Error('summons outstayed: ' + kinds().join(', ')); await wait(50); }
     await wait(1500);
-    const after = await page.evaluate(() => summonFigures.info().length + summonHound.info().length + abilityFx.info().twins);
+    const after = await page.evaluate(() => summonFigures.info().length + summonBeasts.info().length + summonLantern.info().length + abilityFx.info().twins);
     assert.equal(after, 0, 'gone from the page too');
     assert.deepEqual(errors, [], 'no page errors');
     console.log(`summons-party-browser: ok, Ash holds ${mine}, four summons out at once; page vs server gap ${Object.entries(gaps).map(([k, g]) => k + ' ' + g.toFixed(2)).join(', ')} m; ${fps.toFixed(0)} fps with all four`);

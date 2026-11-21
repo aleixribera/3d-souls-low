@@ -281,21 +281,24 @@ ATTACK_POSES.clawPounce = { hits: [
 
 // ---- Summons' own moves (pass 81; drawn by js/summon-figures.js, timed by CONFIG.VISUALS.abilityFx.<kind>.moves) --------
 // No enemy or boss strikes with these. The Stone Guardian (sword in armR, a headstone shield on armL):
-// Grave Cleave: the sword hauled up behind the hood, the shield held out, then one heavy chop straight down.
-ATTACK_POSES.guardianCleave = {
+// Shield Bash (pass 141): the tower shield drawn back on the left arm, the body coiled, then driven forward from the
+// shoulder with the weight behind it.
+ATTACK_POSES.guardianBash = {
   ease: { windup: 'inOutCubic', active: 'outExpo', follow: 'outCubic', recovery: 'inOutSine' },
+  lag: { armL: 0.04, elbowL: 0.06 },
   hits: [{
-    windup: { crouch: 0.04, lean: -0.1, legL: [-0.25, 0, 0], legR: [0.2, 0, 0], spin: [0, -0.25, 0], chest: [-0.2, -0.15, 0], neck: [-0.05, 0.1, 0],
-              head: [-0.12, 0.12, 0], armR: [-2.3, 0, 0.15], elbowR: [-0.3, 0, 0], weapon: [-0.35, 0, 0], armL: [-0.55, 0, -0.3], elbowL: [-0.5, 0, 0] },
-    strike: { crouch: 0.14, lean: 0.32, legL: [-0.5, 0, 0], kneeL: [0.35, 0, 0], legR: [0.3, 0, 0], kneeR: [0.25, 0, 0], spin: [0, 0.22, 0],
-              chest: [0.34, 0.14, 0], neck: [0.08, -0.08, 0], head: [0.12, -0.1, 0], armR: [-1.0, 0, 0.05], elbowR: [-0.05, 0, 0], weapon: [0.9, 0, 0],
-              armL: [-0.45, 0, -0.4], elbowL: [-0.4, 0, 0] },
-    follow: { crouch: 0.16, lean: 0.36, legL: [-0.52, 0, 0], kneeL: [0.37, 0, 0], legR: [0.32, 0, 0], kneeR: [0.27, 0, 0], spin: [0, 0.26, 0],
-              chest: [0.38, 0.16, 0], neck: [0.08, -0.1, 0], head: [0.12, -0.12, 0], armR: [-0.85, 0, 0.05], elbowR: [-0.05, 0, 0], weapon: [1.0, 0, 0],
-              armL: [-0.42, 0, -0.42], elbowL: [-0.42, 0, 0] },
+    windup: { crouch: 0.06, lean: -0.12, legL: [0.15, 0, 0], legR: [-0.2, 0, 0], kneeR: [0.2, 0, 0], spin: [0, 0.35, 0], chest: [-0.12, 0.3, 0],
+              neck: [-0.02, -0.15, 0], head: [-0.05, -0.15, 0], armL: [-0.45, 0, -0.55], elbowL: [-1.2, 0, 0], armR: [-0.35, 0, 0.35], elbowR: [-0.5, 0, 0] },
+    strike: { crouch: 0.12, lean: 0.36, legL: [-0.55, 0, 0], kneeL: [0.4, 0, 0], legR: [0.38, 0, 0], kneeR: [0.2, 0, 0], spin: [0, -0.32, 0],
+              chest: [0.3, -0.3, 0], neck: [0.05, 0.15, 0], head: [0.08, 0.15, 0], armL: [-1.5, 0, -0.15], elbowL: [-0.1, 0, 0],
+              armR: [-0.2, 0, 0.4], elbowR: [-0.4, 0, 0] },
+    follow: { crouch: 0.14, lean: 0.4, legL: [-0.58, 0, 0], kneeL: [0.42, 0, 0], legR: [0.4, 0, 0], kneeR: [0.22, 0, 0], spin: [0, -0.36, 0],
+              chest: [0.34, -0.32, 0], neck: [0.05, 0.16, 0], head: [0.08, 0.16, 0], armL: [-1.55, 0, -0.12], elbowL: [-0.06, 0, 0],
+              armR: [-0.2, 0, 0.42], elbowR: [-0.4, 0, 0] },
   }],
 };
-// Headstone Slam: the headstone hoisted over the hood in the off hand, then driven rim-first into the floor before it.
+
+// Shield Slam: the tower shield hoisted over the hood on the left arm, then driven rim-first into the floor before it.
 ATTACK_POSES.guardianSlam = {
   ease: { windup: 'inOutCubic', active: 'inQuad', follow: 'outCubic', recovery: 'inOutSine' },
   lag: { armL: 0.06, elbowL: 0.08 },

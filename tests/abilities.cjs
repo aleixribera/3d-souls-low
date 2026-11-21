@@ -292,8 +292,8 @@ const realm = sim => name => sim.inspect().Game.update.constructor('return ' + n
   const lan = holder(['ash-lancer']), alv = BY['ash-lancer'].levels[0];
   powers.trigger('l', lan, lan.kit, 'press', { enemy: e, key: 'summon' });
   const als = powers.summonOf('l'); assert.ok(als && als.kind === 'lancer', 'its key sends the lancer');
-  assert.ok(Math.hypot(als.x - lan.x, als.z - lan.z) < 1e-6, 'from its holder');
-  step(1); assert.ok(Math.hypot(als.x - e.x, als.z - e.z) - e.radius <= K.lancer.reach, 'it charges to the boss');
+  assert.ok(Math.abs(Math.hypot(als.x - e.x, als.z - e.z) - K.lancer.from) < 1e-6, 'from the arena, `from` m off the boss (pass 141)');
+  step(K.lancer.arrive); assert.ok(Math.hypot(als.x - e.x, als.z - e.z) - e.radius <= K.lancer.reach, 'it charges to the boss');
   assert.ok(e.hp < e.def.hp && fired.some(f => f.power === 'ash-lancer' && f.draw), 'it thrusts and draws the boss');
   powers.trigger('l', lan, lan.kit, 'press', { enemy: e, key: 'strike' }); assert.equal(fired.filter(f => f.power === 'ash-lancer' && !f.strike && !f.draw).length, 1, "another key's press calls no lancer");
   // A pressed summon is its holder's choice: it sends another kind away (the twin here) instead of waiting.
