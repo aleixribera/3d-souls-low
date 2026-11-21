@@ -279,6 +279,8 @@ class Player {
     this.setState(PS.USE_ITEM);
     events.emit('itemUsed', { item: id, player: this });
     if (id !== 'flask') return;
+    const clad = this.kit.perks['flask/unshaken'];   // Ironclad: the drink and what follows it can't be knocked off
+    if (clad) { this.perk.unshaken = clad.time; events.emit('abilityPerk', { body: this, perk: 'flask/unshaken' }); }
     abilityReport(this, 'flask', {});   // Ember Twin
   }
   // Free on the ground: start the first action whose input is pressed. Returns true if one started.
@@ -400,8 +402,10 @@ class Player {
         // the light string (`flow`) steers through every phase.
         if ((a.flow || tl.phase === PHASE.STARTUP) && face === null && mv.has) this.yaw = turnToward(this.yaw, Math.atan2(mv.x, mv.z), (a.flow ? C.momentum.flowSteer : C.attackSteer) * dt);
         // A fresh hitbox (and hit list) for each strike of the attack.
-        if (tl.phase === PHASE.ACTIVE && (prev.phase !== PHASE.ACTIVE || prev.hitIndex !== tl.hitIndex))
+        if (tl.phase === PHASE.ACTIVE && (prev.phase !== PHASE.ACTIVE || prev.hitIndex !== tl.hitIndex)) {
           this.hitbox = new Hitbox(this, a.box, this.payload);
+          if (prev.phase !== PHASE.ACTIVE && tl.hitIndex === 0 && isComboHeavy(a)) abilityReport(this, 'comboHeavy', { x: this.x, y: this.y, z: this.z });   // Iron Cyclone
+        }
         if (tl.phase !== PHASE.ACTIVE) this.hitbox = null;
         // A chargeable swing lunges only after its charge point, and a held charge plants the feet.
         const lungeFrom = ch ? Math.max(C.lungeStart, ch.at) : C.lungeStart;
@@ -649,6 +653,17 @@ class Player {
       return { blocked: false };
     }
     if (strike.seize && !blocked && strike.seizeBy && this.hp > 0) { this.tint = 1; this.seize(strike.seizeBy, strike.seize, strike.seizeAttack); return { blocked: false }; }
+    if (!blocked && st.unshaken > 0 && P['flask/unshaken']) {   // Ironclad: the blow glances off, its damage taken; no knock, no flinch
+      this.tint = 1;
+      events.emit('abilityPerk', { body: this, perk: 'unshaken/glance', at: { x: from.x, y: from.y, z: from.z } });
+      if (this.hp <= 0) { this.die(); return { blocked: false, died: true }; }
+      if (strike.destined) {
+        const D = CONFIG.bossPowers.destined;
+        this.doomTime = D.time; this.doomDrain = this.maxHp * D.drain; this.hp = Math.min(this.hp, this.hpCap());
+        events.emit('destinedDeath', { body: this });
+      }
+      return { blocked: false };
+    }
     if (strike.pull && !blocked) {   // pass 63, a hook: dragged in to `pull` m from him instead of thrown back (the knock glides knock / friction m)
       const k = Math.max(0, d - strike.pull) * C.knockFriction;
       this.kx = -dx / d * k; this.kz = -dz / d * k;

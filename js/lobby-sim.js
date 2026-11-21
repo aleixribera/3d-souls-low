@@ -33,7 +33,7 @@ globalThis.host = (() => {
   // Boss Rush's abilities (CONFIG.abilities, js/abilities.js), kept across a run's fights: ids held (one per pick,
   // repeated by upgrades) and the open offer, by player id; each one's kit (kitOf); and, for people (a bot's body keeps
   // its own), the perk clocks and their last health (abilityHurt) and their last accepted perfect dodge (Counterstep).
-  const owned = new Map(), offers = new Map(), gear = new Map(), kits = new Map(), perks = new Map(), lastDodge = new Map(), stepDodge = new Map(), pendingClaims = [];
+  const owned = new Map(), offers = new Map(), gear = new Map(), kits = new Map(), perks = new Map(), lastDodge = new Map(), stepDodge = new Map(), cycloneAt = new Map(), pendingClaims = [];
   const trails = new Map();   // person id -> their recent poses' places and states: [{ t, x, y, z, state }]
   const DASH_ATTACKS = new Set(Object.values(PLAYER_DEF.moveset.dash));   // Petal Cut's dash attacks
   const AIRBORNE = new Set([PS.JUMP, PS.JUMP_ATTACK]);   // a jump's, not a fall off a ledge
@@ -63,6 +63,7 @@ globalThis.host = (() => {
   // A legendary's damage counts to its holder, as a blow would (a bot's own step already counts what it changed).
   abilityPowers.credit = (holder, e, amount) => { sleeping = false; if (!acting) { creditDamage(holder, amount); noteDamage(e, holder, amount); } };
   abilityPowers.bodyOf = id => players.find(p => p.id === id) || null;
+  abilityPowers.perkOf = id => { const h = holderOf(id); return h ? h.perk : null; };
   // Whom an enemy fights, for the snapshot: a player's id, or `summon` and the summon's place (`lure`) while one draws it.
   const netTargetOf = e => { const d = abilityPowers.decoy(e); return d ? { target: 'summon', lure: { x: d.x, y: d.y, z: d.z } } : { target: e.netTarget }; };   // a summon follows its holder's latest pose
   const enemyId = e => e.key || 'duel/' + e.baseDef.id;
@@ -75,7 +76,7 @@ globalThis.host = (() => {
     if (acting && type === 'finisherStart' && d.player === acting.body) feat(acting.id).finishers++;   // a bot's Finishing Blow
     // A legendary fired or striking, for every browser to draw (js/ability-fx.js).
     if (type === 'abilityPower') eventList.push({ type, power: d.power, then: d.then, holder: d.holder, enemy: d.enemy?.netId || null,
-      x: d.x, y: d.y, z: d.z, v: d.v, strike: d.strike, draw: d.draw || undefined, path: d.path, flight: d.flight });
+      x: d.x, y: d.y, z: d.z, v: d.v, strike: d.strike, draw: d.draw || undefined, path: d.path, flight: d.flight, mark: d.mark || undefined, yaw: d.yaw });
     const e = d.enemy || d.actor;
     if (type === 'attackStart' && e) e.netAttack = ++attackSerial;
     if (['attackStart', 'attackPhase', 'bossPhase', 'bossRetreat', 'bossGone', 'enemyBlink', 'impact'].includes(type))
@@ -243,7 +244,7 @@ globalThis.host = (() => {
     hitBudget.clear(); lastParry.clear(); spentOpening.clear(); defended.clear(); sleeping = false; settleCheck = 0;
     wipeOnly = isBossDef(d);
     if (!keepAbilities) { owned.clear(); offers.clear(); }
-    kits.clear(); perks.clear(); lastDodge.clear(); stepDodge.clear(); pendingClaims.length = 0;
+    kits.clear(); perks.clear(); lastDodge.clear(); stepDodge.clear(); cycloneAt.clear(); pendingClaims.length = 0;
     let index = 0;
     for (const b of bots.values()) { registerPlayer(b.id, b.name); spawnBot(b, index++); }
     return { epoch, kind, id, ...(partners.length ? { partners: [...partners] } : {}), spawn: checkpoint, teamWipeOnly: isBossDef(d) };
@@ -412,7 +413,7 @@ globalThis.host = (() => {
     } else if (msg.when === 'land') {
       const a = ArenaNet.own(PLAYER_DEF.moveset.air, msg.action);
       if (!a || !['land', 'jumpAttack'].includes(p.state) || p.attack !== a) return false;
-      abilityPowers.trigger(id, body, kit, 'land', { x: p.x, y: p.y, z: p.z, action: msg.action });
+      abilityPowers.trigger(id, body, kit, 'land', { x: p.x, y: p.y, z: p.z, yaw: p.yaw, action: msg.action });   // Moonfall Cut cuts along their facing
     } else if (msg.when === 'dodge') {
       const e = struckNear(p, msg);
       if (!e) return false;
@@ -454,6 +455,11 @@ globalThis.host = (() => {
       if (time - shot.at < (way - C.claimNear) / shot.speed - 0.1) return false;
       shot.left--;
       abilityPowers.trigger(id, body, kit, 'parryShot', { enemy: e, flight, x: p.x, y: p.y, z: p.z });
+    } else if (msg.when === 'comboHeavy') {   // Iron Cyclone: their pose in a string's heavy, no closer to the last than the shortest string
+      if (time - (cycloneAt.get(id) ?? -Infinity) < CONFIG.abilities.cyclone.gap) return false;
+      if (p.state !== PS.ATTACK || !isComboHeavy(ArenaNet.own(PLAYER_DEF.moveset.attacks, p.attack))) return wait();   // a pose's attack is its id
+      cycloneAt.set(id, time);
+      abilityPowers.trigger(id, body, kit, 'comboHeavy', { x: p.x, y: p.y, z: p.z });
     } else if (msg.when === 'flask') {
       if (p.state !== PS.USE_ITEM) return wait();
       abilityPowers.trigger(id, body, kit, 'flask', {});
@@ -750,7 +756,7 @@ globalThis.host = (() => {
     const hp = e.hp, cracks = e.cracks, result = e.takeHit(strike, p); sleeping = false;
     if (!Number.isFinite(e.hp)) e.hp = hp;   // a bar can never become NaN (alive yet unkillable)
     creditDamage(id, hp - e.hp); noteDamage(e, id, hp - e.hp);
-    if (!result.blocked) gainCharge(id, pressGain(strike));
+    if (!result.blocked) gainCharge(id, pressGain(strike)); else abilityBlocked(perkOf(id), e, strike);
     if (riposte && !result.blocked) {
       const enemies = spent && spent.opening === opening && spent.swing === swing ? spent.enemies : new Set();
       enemies.add(e.netId); spentOpening.set(id, { opening, swing, enemies });
@@ -847,6 +853,8 @@ globalThis.host = (() => {
     e.hp = Math.max(0, e.hp - damage); e.cracks = 0;
     if (e.hp <= 0) { if (!e.outlast()) e.die(); }
     else { e.poise = e.def.poise; e.setState(ES.STAGGER); }
+    const kit = kitOf(player), holder = holderOf(player);   // Petal Storm: round the finished foe, as it reels or falls
+    if (holder && holder.alive() && kit.whens.has('finisher')) abilityPowers.trigger(player, holder, kit, 'finisher', { enemy: e, x: e.x, y: e.y, z: e.z });
   }
   function endFinisher(id, enemyId) { const e = enemy(enemyId); if (e?.netExec?.player === id) finishFinisher(e); }
   function lifesteal(id, msg) {

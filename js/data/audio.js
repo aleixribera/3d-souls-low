@@ -495,6 +495,34 @@ const AUDIO = {
       { noise: 'white', filter: { type: 'bandpass', freq: 2600, q: 4 }, at: 0.19, a: 0.002, d: 0.07, gain: 0.18 },
       { noise: 'white', filter: { type: 'bandpass', freq: 2100, q: 4 }, at: 0.31, a: 0.002, d: 0.06, gain: 0.1 },
     ] },
+    // Riptide: a wave rearing up with a hollow boom, rushing out, and breaking in a hiss of spray.
+    abilityWave: { bus: 'sfx', priority: 3, cooldown: 0.25, max: 2, verb: 0.5, heat: 0.4, jitter: 40, layers: [
+      { wave: 'sine', freq: 80, to: 42, a: 0.01, d: 0.4, gain: 0.7, drive: 2 },
+      { noise: 'brown', filter: { type: 'lowpass', freq: 400, to: 1400 }, a: 0.06, h: 0.15, d: 0.35, gain: 0.8 },
+      { noise: 'pink', filter: { type: 'bandpass', freq: 900, to: 2600, q: 0.8 }, a: 0.12, d: 0.3, gain: 0.5 },
+      { noise: 'white', filter: { type: 'highpass', freq: 4200 }, at: 0.36, a: 0.01, d: 0.4, gain: 0.35 },
+    ] },
+    // Moonfall Cut: a high clean ring forming, then a heavy blade falling through, a sharp chop into the floor.
+    abilityMoonfall: { bus: 'sfx', priority: 3, cooldown: 0.25, max: 2, verb: 0.55, heat: 0.4, jitter: 30, layers: [
+      { wave: 'sine', freq: 1480, partials: [[1, 1, 1], [2.76, 0.3, 0.5]], a: 0.02, d: 0.5, gain: 0.12 },
+      { noise: 'white', filter: { type: 'bandpass', freq: 4000, to: 1200, q: 1.4 }, at: 0.08, a: 0.02, d: 0.14, gain: 0.55 },
+      { noise: 'white', filter: { type: 'highpass', freq: 3000 }, at: 0.2, a: 0.0005, d: 0.04, gain: 0.6, drive: 3 },
+      { wave: 'sine', freq: 90, to: 38, at: 0.2, a: 0.003, d: 0.3, gain: 0.7, drive: 2 },
+    ] },
+    // Iron Cyclone: blades scraping out of a turn, a fast whirr of steel swelling and gone.
+    abilityCyclone: { bus: 'sfx', priority: 3, cooldown: 0.25, max: 2, verb: 0.35, heat: 0.3, jitter: 50, layers: [
+      { noise: 'white', filter: { type: 'bandpass', freq: 3000, q: 3 }, a: 0.001, d: 0.05, gain: 0.5, drive: 2 },
+      { wave: 'sawtooth', freq: 34, fm: { ratio: 7.1, index: 3, decay: 0.4 }, filter: { type: 'bandpass', freq: 1800, q: 2 }, a: 0.04, h: 0.12, d: 0.25, gain: 0.25 },
+      { noise: 'pink', filter: { type: 'bandpass', freq: 700, to: 1800, q: 1.4 }, a: 0.05, h: 0.1, d: 0.25, gain: 0.55 },
+      { wave: 'sine', freq: 2200, to: 1700, glide: 0.3, a: 0.02, d: 0.3, gain: 0.06 },
+    ] },
+    // Petal Storm: a bright burst, then a long rushing flutter of many small blades whirling away.
+    abilityPetals: { bus: 'sfx', priority: 3, cooldown: 0.3, max: 1, verb: 0.6, heat: 0.4, jitter: 40, layers: [
+      { wave: 'sine', freq: 990, partials: [[1, 1, 1], [2, 0.5, 0.7], [3.3, 0.2, 0.5]], a: 0.002, d: 0.7, gain: 0.14 },
+      { noise: 'white', filter: { type: 'bandpass', freq: 2600, to: 5200, q: 1.2 }, a: 0.05, h: 0.4, d: 0.6, gain: 0.45 },
+      { noise: 'pink', filter: { type: 'bandpass', freq: 600, to: 1400, q: 1 }, a: 0.08, h: 0.3, d: 0.6, gain: 0.4 },
+      { wave: 'sine', freq: 70, to: 40, a: 0.004, d: 0.3, gain: 0.5 },
+    ] },
     // Dust Devil: a gritty scrape, then a short spinning whoosh that swells twice.
     abilityWhirl: { bus: 'sfx', priority: 2, cooldown: 0.2, max: 1, verb: 0.2, heat: 0.1, jitter: 50, layers: [
       { noise: 'white', filter: { type: 'bandpass', freq: 2000, q: 2 }, a: 0.0005, d: 0.02, gain: 0.5, drive: 2 },

@@ -180,5 +180,23 @@ const ABILITIES = [
     perk: { when: 'finisher', then: 'heal' }, levels: [{ heal: 0.25 }, { heal: 0.35 }, { heal: 0.45 }] },
   { id: 'iron-mercy', name: 'Iron Mercy', rarity: 'rare', text: 'Deflect: heal {heal}, once per {cooldown}.',
     perk: { when: 'parry', then: 'heal' }, levels: [{ heal: 0.06, cooldown: 3 }, { heal: 0.09, cooldown: 2.5 }, { heal: 0.12, cooldown: 2 }] },
+
+  // ---- The rares' new triggers (design/abilities batch 5), drawn in blue ink (js/rare-strike-fx.js) ----
+  { id: 'riptide', name: 'Riptide', rarity: 'rare', text: 'Counter: a wave follows the cut.',
+    power: { when: 'counter', then: 'wave' },
+    levels: [{ damage: 40, reach: 8, width: 2, cooldown: 0.5 }, { damage: 55, reach: 9, width: 2.2, cooldown: 0.5 }, { damage: 70, reach: 10, width: 2.4, cooldown: 0.5 }] },
+  { id: 'moonfall-cut', name: 'Moonfall Cut', rarity: 'rare', text: 'Light jump attack: a moon crescent cuts down.',
+    power: { when: 'land', then: 'crescent', action: 'light' },
+    levels: [{ damage: 45, cooldown: 4 }, { damage: 60, cooldown: 4 }, { damage: 75, cooldown: 4 }] },
+  { id: 'iron-cyclone', name: 'Iron Cyclone', rarity: 'rare', text: 'Heavy finisher: you spin a ring of steel.',
+    power: { when: 'comboHeavy', then: 'cyclone' },
+    levels: [{ damage: 50, radius: 3, cooldown: 4 }, { damage: 65, radius: 3.3, cooldown: 4 }, { damage: 80, radius: 3.6, cooldown: 4 }] },
+  { id: 'petal-storm', name: 'Petal Storm', rarity: 'rare', text: 'Finishing Blow: a storm of petals cuts all near.',
+    power: { when: 'finisher', then: 'petals' },
+    levels: [{ damage: 80, radius: 5 }, { damage: 110, radius: 5.5 }, { damage: 140, radius: 6 }] },
+  { id: 'ironclad', name: 'Ironclad', rarity: 'rare', text: 'Flask: no blow staggers you for {time}.',
+    perk: { when: 'flask', then: 'unshaken' }, levels: [{ time: 3 }, { time: 4 }, { time: 5 }] },
+  { id: 'hunting-call', name: 'Hunting Call', rarity: 'rare', text: 'Summon strikes: your next hit does {damage} more.',
+    perk: { when: 'summonHit', then: 'empower' }, levels: [{ damage: 0.2 }, { damage: 0.3 }, { damage: 0.4 }] },
 ];
 const ABILITY_BY_ID = Object.fromEntries(ABILITIES.map(b => [b.id, b]));

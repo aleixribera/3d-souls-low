@@ -45,7 +45,8 @@ const CONFIG = {
             strafeRoll: 0.012, moveFov: 1.2, moveRef: 5, maxRoll: 0.05, maxFov: 6, powerNear: 26, perkFov: -0.9,
             powers: { blast: [4, 0.24], lightning: [1.6, 0], strike: [-1.8, 0.06], freeze: [-3.2, 0.05], blades: [-1.4, 0.04], bloodMoon: [3, 0.12],
               twin: [2.6, 0.1], echo: [-0.6, 0.02], gale: [-2.4, 0.05], pyre: [3.2, 0.16], flare: [-1.1, 0.03], spark: [-0.8, 0.02],
-              hound: [1.4, 0.05], bite: [-0.5, 0.02], draw: [1.2, 0.03], guardian: [2.2, 0.1], lancer: [1.2, 0.04] } },
+              hound: [1.4, 0.05], bite: [-0.5, 0.02], draw: [1.2, 0.03], guardian: [2.2, 0.1], lancer: [1.2, 0.04],
+              wave: [0.8, 0], crescent: [-1.4, 0.06], cyclone: [1.2, 0.04], petals: [1.4, 0.04] } },
   },
   zoom: { min: 2.6, max: 12, default: 4.6, rate: 7,
           heightRatio: 0.5 },   // camera height = distance * heightRatio
@@ -322,6 +323,10 @@ const CONFIG = {
     // Counterstep (Player.flashBehind): a perfect dodge of an attacker within `range` m of its body steps its holder to
     // `gap` m behind that body, round it in `time` s, untouchable.
     flashBehind: { range: 6, gap: 1.2, time: 0.12 },
+    // Batch 5's rares: Moonfall Cut's crescent cuts `reach` m ahead of its holder, `width` m either side of their facing;
+    // the server takes Iron Cyclone's string heavy no sooner than `gap` s after the last (the shortest string); Hunting
+    // Call's mark waits `keep` s for its holder's blow.
+    crescent: { reach: 3.5, width: 1.2 }, cyclone: { gap: 1.2 }, mark: { keep: 4 },
     // Summons (js/abilities.js summonStep): each kind stands `gap` m off its enemy's body, `flank` rad round from the
     // side away from its holder (+ toward the enemy's left), and runs there at up to `speed` m/s. It has arrived
     // `arrive` s after it is called (one that `rises` comes up where it will stand; the others run there); a hound,
@@ -766,6 +771,11 @@ const CONFIG = {
         ring: { from: 0.5, to: 1.6, life: 0.5 },
         afterimage: 0x8fb8dc,   // Counterstep's step and a dash in Last Breath's band leave blue copies (js/afterimage.js)
       },
+      // The rares' new triggers (js/rare-strike-fx.js, batch 5), in m and s: Riptide's crest stands `crest` m tall; Moonfall's
+      // crescent is `moon` m tall, formed `moonLift` m up, its floor cut `cutWidth` m wide; Iron Cyclone's blades turn at
+      // `waist` m, its dust ring lives `dustLife` s; Petal Storm's star is `burst` m, its petals `petal` m, whirling `whirl`
+      // rad; Ironclad's shell is `shell` m across; Hunting Call's chevron `mark` m.
+      rareStrike: { crest: 1.6, moon: 3.2, moonLift: 1.6, cutWidth: 0.5, waist: 1, dustLife: 0.45, burst: 1.4, petal: 0.32, whirl: 3.5, shell: 1.9, mark: 0.75 },
       meteor: { color: 0xff7a2a, core: 0xffe6b8, column: 22, width: 1.8, glow: 1.8, fall: 0.5, ring: 0.55, crater: 3.2, shake: [0.45, 0.35],
         burst: { count: 40, speed: 9, color: 0xff8a3a } },
       storm: { color: 0xa9c9ff, core: 0xffffff, height: 16, jitter: 2.4, width: 0.14, life: 0.32, scorch: 1.6, shake: [0.18, 0.12],

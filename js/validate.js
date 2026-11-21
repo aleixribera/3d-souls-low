@@ -254,6 +254,13 @@ function validateData({ visual = true } = {}) {
     'CONFIG.abilities.commons: pastGap, lateCut, imageDelay, imageReach, whirlRadius, thornReach and shardDelay, each above 0.');
   const FB = BL.flashBehind;
   need(FB && ['range', 'gap', 'time'].every(k => num(FB[k]) && FB[k] > 0), 'CONFIG.abilities.flashBehind: range, gap and time, each above 0.');
+  const CS = BL.crescent, CY = BL.cyclone, MK = BL.mark;
+  need(CS && num(CS.reach) && CS.reach > 0 && num(CS.width) && CS.width > 0, 'CONFIG.abilities.crescent: reach and width, each above 0.');
+  need(CY && num(CY.gap) && CY.gap > 0, 'CONFIG.abilities.cyclone: gap above 0.');
+  need(MK && num(MK.keep) && MK.keep > 0, 'CONFIG.abilities.mark: keep above 0.');
+  const RS = CONFIG.VISUALS.abilityFx.rareStrike;   // js/rare-strike-fx.js's sizes and times
+  if (visual) need(RS && ['crest', 'moon', 'moonLift', 'cutWidth', 'waist', 'dustLife', 'burst', 'petal', 'whirl', 'shell', 'mark'].every(k => num(RS[k]) && RS[k] > 0),
+    'VIS.abilityFx.rareStrike: crest, moon, moonLift, cutWidth, waist, dustLife, burst, petal, whirl, shell and mark, each above 0.');
   for (const k of Object.keys(ABILITY_UNITS)) need(['s', 'm', 'n'].includes(ABILITY_UNITS[k]), `ABILITY_UNITS ${k}: s, m or n.`);
   const BP = BL.press, PG = BP && BP.gain;
   need(PG && ['hit', 'skill', 'deflect', 'dodge', 'finisher'].every(k => num(PG[k]) && PG[k] >= 0) && PG.hit > 0 && num(BP.range) && BP.range > 0

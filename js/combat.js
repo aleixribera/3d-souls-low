@@ -174,6 +174,7 @@ function resolveCombat(game) {
     if (strike.riposte && !strike.power && !res.blocked)
       for (let i = enemyHits.length - 1; i >= 0; i--) if (enemyHits[i].owner === e) enemyHits.splice(i, 1);
     game.hitstop = Math.max(game.hitstop, res.blocked ? CONFIG.block.hitstop : strike.hitstop);
+    if (res.blocked) abilityBlocked(p.perk, e, strike);
     events.emit('strike', { strike, attacker: p, target: e, at: contact(p.hitbox, e), blocked: !!res.blocked });
     if (strike.venge) events.emit('abilityPerk', { body: p, perk: 'empower', target: e });   // Vengeance
     if (strike.calm) events.emit('abilityPerk', { body: p, perk: 'unhurt/empower', target: e });   // Patience

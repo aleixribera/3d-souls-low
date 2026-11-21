@@ -52,6 +52,13 @@ const ABILITY_ICONS = {
   // Crate rares (js/data/crates.js)
   'grave-feast': '<path d="M21 4 V17 L24 23 L27 17 V4 Z"/><path d="M16 8 H32"/><path d="M24 44 C15 38 10 33 10 28 A7 7 0 0 1 22 24 M26 24 A7 7 0 0 1 38 28 C38 33 33 38 24 44"/>',
   'iron-mercy': '<path d="M8 38 L28 18 M40 38 L20 18"/><path d="M6 34 L12 40 M42 34 L36 40"/><path d="M24 3 V15 M18 9 H30"/>',
+  // Batch 5 rares (design/abilities: each card's icon line)
+  'riptide': '<path d="M6 38 C14 30 22 22 30 12"/><path d="M30 12 C36 10 42 14 40 20 C38 16 34 16 32 19 C36 20 38 24 35 27"/><path d="M8 44 C14 40 20 44 26 40 C32 36 38 40 44 36"/>',
+  'moonfall-cut': '<path d="M28 4 C14 8 10 26 18 40 C14 28 18 14 28 4 Z"/><path d="M36 6 L14 44"/><path d="M6 44 H42" stroke-dasharray="3 2"/>',
+  'iron-cyclone': '<ellipse cx="24" cy="26" rx="18" ry="8"/><circle cx="24" cy="26" r="2"/><path d="M8 22 L14 18 M18 18 L24 16 M30 17 L36 19 M40 23 L44 26 M38 32 L32 34 M18 34 L12 32"/><path d="M4 12 H14 M34 10 H44"/>',
+  'petal-storm': '<circle cx="24" cy="24" r="2"/><path d="M24 20 C22 14 26 8 30 6 C30 12 28 17 24 20 Z"/><path d="M28 24 C34 22 40 26 42 30 C36 30 31 28 28 24 Z"/><path d="M24 28 C26 34 22 40 18 42 C18 36 20 31 24 28 Z"/><path d="M20 24 C14 26 8 22 6 18 C12 18 17 20 20 24 Z"/><path d="M27 21 C31 16 37 16 40 12" stroke-dasharray="2 2"/>',
+  'ironclad': '<path d="M20 18 H28 V22 C32 24 34 28 34 32 C34 38 30 42 24 42 C18 42 14 38 14 32 C14 28 16 24 20 22 Z"/><path d="M19 12 H29 V18 H19 Z"/><path d="M36 10 C40 12 42 16 42 20 M38 24 C42 26 44 30 44 34 M6 14 C8 12 10 11 12 11"/>',
+  'hunting-call': '<path d="M8 12 L24 34 L40 12"/><path d="M8 12 L6 18 M40 12 L42 18"/><path d="M16 12 L24 24 L32 12"/>',
   // Legendaries
   'gale-crescent': '<path d="M12 5 C30 9 36 31 16 43 C27 30 25 15 12 5 Z"/><path d="M30 14 H42 M33 24 H46 M30 34 H41"/>',
   'pyre': '<path d="M24 4 C16 14 13 22 15 30 C16 36 32 36 33 30 C35 22 32 14 24 4 Z"/><path d="M24 18 C21 23 21 27 24 30 C27 27 27 23 24 18 Z"/><path d="M5 42 H43 M10 38 H38"/>',

@@ -996,6 +996,42 @@
       expect.ok(!left.ribbon && !left.bolt && !left.stroke && !left.tongues && !left.pops && !left.flakes && !left.motes && !left.blade, `all gone (${JSON.stringify(left)})`);
     } finally { audio.play = play; rareFx.clear(); p.grantAbilities([]); }
   });
+  // Pass 122 (PLAN.md item 8, batch 5): the rares' new triggers, each drawn in blue ink by js/rare-strike-fx.js and heard.
+  test('rare triggers: each is drawn and heard', () => {
+    Game.startFight('pillagerCaptain'); Game.loading = 0; sim.begin(); rareStrikeFx.clear(); abilityPowers.reset();
+    const p = Game.player, e = Game.duel, R = () => rareStrikeFx.state, played = [];
+    const play = audio.play; audio.play = (id, o) => { played.push(id); return play.call(audio, id, o); };
+    const fire = (power, then, more) => { events.emit('abilityPower', { power, then, holder: 'self', body: p, enemy: e, x: p.x, y: p.y, z: p.z, v: BY(power), ...more }); Game.render(1, STEP); };
+    const BY = id => ABILITY_BY_ID[id].levels[0];
+    try {
+      p.grantAbilities(['ironclad', 'hunting-call']);
+      sturdy(p); e.cooldown = 30; faceOff(e, p, 2);
+      fire('riptide', 'wave');
+      expect.ok(R().crest && played.includes('abilityWave'), `Riptide: a crest and its sound (${JSON.stringify(R())})`);
+      fire('moonfall-cut', 'crescent');
+      expect.ok(R().moon && played.includes('abilityMoonfall'), 'Moonfall Cut: a crescent');
+      for (let i = 0; i < 12; i++) Game.render(1, STEP);
+      expect.ok(R().cut && R().flakes > 0, `the crest throws spray, the floor is cut (${JSON.stringify(R())})`);
+      fire('iron-cyclone', 'cyclone');
+      expect.ok(R().cyclone && played.includes('abilityCyclone'), 'Iron Cyclone: a ring of blades');
+      fire('petal-storm', 'petals', { x: e.x, y: e.y, z: e.z });
+      for (let i = 0; i < 12; i++) Game.render(1, STEP);
+      expect.ok(R().petals >= 8 && played.includes('abilityPetals'), `Petal Storm: petals whirl (${R().petals})`);
+      p.inventory.flask.count = Math.max(1, p.inventory.flask.count); p.useItem('flask'); Game.render(1, STEP);
+      expect.ok(p.perk.unshaken > 0 && R().shell && played.includes('abilityClank'), 'Ironclad: a shell of plates');
+      p.takeHit({ damage: 1, knock: 6, poise: 0, heavy: true }, e); Game.render(1, STEP);
+      expect.ok(p.state === PS.USE_ITEM && R().pops > 0, `a heavy glances off; the drink goes on (${p.state})`);
+      fire('grave-hound', 'hound', { strike: 1, mark: true });
+      expect.ok(R().mark, 'Hunting Call: the boss marked');
+      events.emit('strike', { strike: { damage: 1 }, attacker: p, target: e, at: { x: e.x, y: e.y + 1, z: e.z }, blocked: false }); Game.render(1, STEP);
+      expect.ok(!R().mark, 'the holder\'s blow bursts it');
+      p.grantAbilities([]); p.perk = abilityPerkState();
+      for (let i = 0; i < 120; i++) Game.render(1, STEP);
+      const left = R();
+      expect.ok(!left.crest && !left.moon && !left.cut && !left.cyclone && !left.petals && !left.shell && !left.mark && !left.pops && !left.flakes && !left.rings,
+        `all gone (${JSON.stringify(left)})`);
+    } finally { audio.play = play; rareStrikeFx.clear(); p.grantAbilities([]); }
+  });
   // Pass 97 (PLAN.md 3d): the sparring scene. The player's part of each drill is the teacher's own demonstration, played
   // on the player's keys (a swing drill's steps from the moment the partner's blow begins), so a demo that cannot do
   // its drill fails here too.

@@ -3,7 +3,7 @@
 // each fired twice, its name in the corner: docs/scorecard/now/<set>-commons.mp4. The clock is stepped by hand
 // (Game.manualClock) and every other step is a frame, so a clip plays at real speed whatever the PC's speed. With
 // `--stills`, the guard set's current frames too (guard-*.jpg, desktop; -phone for two).
-// Usage: node tools/ability-clips.cjs [blade|guard|mirror|rares ...] [--stills]   (no set = all). One headless Edge; needs ffmpeg.
+// Usage: node tools/ability-clips.cjs [blade|guard|mirror|rares|triggers ...] [--stills]   (no set = all). One headless Edge; needs ffmpeg.
 require('../tests/low-priority.cjs');
 const fs = require('node:fs');
 const os = require('node:os');
@@ -65,6 +65,19 @@ const SETS = {
     ['Grave Feast', `(p, e) => { p.hp = p.lastHp = p.maxHp * 0.5; abilityHeal(p, 0.25, 'finisher/heal', e); }`, 44, 'rare-grave-feast', 10],
     ['Iron Mercy', `(p, e) => { p.hp = p.lastHp = p.maxHp * 0.5; abilityParried(p, e); }`, 44, 'rare-iron-mercy', 8],
   ] },
+  // The rares' new triggers (pass 122, batch 5): docs/scorecard/now/rare-triggers.mp4, and with --stills a frame of each
+  // (trig-<id>.jpg; -phone for the first two). Iron Cyclone and Ironclad through the body's own path (a string heavy
+  // swung, a flask drunk and two heavy blows taken in it); the rest fired as their trigger would.
+  triggers: { ids: ['riptide', 'moonfall-cut', 'iron-cyclone', 'petal-storm', 'ironclad', 'hunting-call', 'grave-hound'],
+    file: 'rare-triggers', phone: 2, crf: 30, beats: [
+    ['Riptide', `(p, e) => { __face(); __fire('counter'); }`, 36, 'trig-riptide', 10],
+    ['Moonfall Cut', `(p, e) => { __face(); abilityPowers.trigger('self', p, p.kit, 'land', { x: p.x, y: p.y, z: p.z, action: 'light' }); }`, 30, 'trig-moonfall-cut', 6],
+    ['Iron Cyclone', `(p, e) => { __face(); p.startAttack(PLAYER_DEF.moveset.attacks.finisher1, { x: 0, z: 0, has: false }, false, Game.enemies); }`, 50, 'trig-iron-cyclone', 24],
+    ['Petal Storm', `(p, e) => abilityPowers.trigger('self', p, p.kit, 'finisher', { enemy: e, x: e.x, y: e.y, z: e.z })`, 76, 'trig-petal-storm', 20],
+    ['Ironclad', `(p, e) => { p.inventory.flask.count = 4; p.useItem('flask'); for (const n of [16, 34]) __later(n, () => p.takeHit({ attackId: 'x', damage: 1, knock: 6, poise: 0, heavy: true, hitstop: 0 }, e)); }`, 56, 'trig-ironclad', 18],
+    ['Hunting Call', `(p, e) => { __face(); abilityPowers.trigger('self', p, p.kit, 'press', { key: 'summon', enemy: e }); let done = false;   // the holder's blow a beat after the hound's first bite marks the boss
+      for (let n = 40; n < 150; n++) __later(n, () => { if (!done && p.perk.mark) { done = true; __later(24, () => __landed()); } }); }`, 150, 'trig-hunting-call', 124],
+  ] },
 };
 
 (async () => {
@@ -101,8 +114,13 @@ const SETS = {
             const s = abilityStrike(p.kit, p.perk, e, { attackId: 'light', damage: 10, poise: 0, knock: 0, hitstop: 0 }); e.takeHit(s, p);
             for (const [k, perk] of [['venge', 'empower'], ['calm', 'unhurt/empower'], ['cracked', 'cracked/damage']]) if (s[k]) events.emit('abilityPerk', { body: p, perk, target: e });
           };
+          window.__face = () => { p.yaw = p.pyaw = Math.atan2(e.x - p.x, e.z - p.z); };
+          window.__landed = () => {   // a blow of the player's, told as js/combat.js tells it (the strike its cues listen for)
+            const s = abilityStrike(p.kit, p.perk, e, { attackId: 'light', damage: 10, poise: 0, knock: 0, hitstop: 0 }); e.takeHit(s, p);
+            events.emit('strike', { strike: s, attacker: p, target: e, at: { x: e.x, y: e.y + 1.2, z: e.z }, blocked: false });
+          };
           window.__reset = name => {
-            commonFx.clear(); rareFx.clear(); abilityPowers.reset(); later.length = 0; tag.textContent = name; e.cracks = 0; events.emit('guardCrack', { enemy: e, cracks: 0 });
+            commonFx.clear(); rareFx.clear(); rareStrikeFx.clear(); abilityPowers.reset(); later.length = 0; tag.textContent = name; e.cracks = 0; events.emit('guardCrack', { enemy: e, cracks: 0 });
             p.hp = p.maxHp; p.lastHp = p.hp; p.perk = abilityPerkState(); p.tint = 0;
             for (let i = 0; i < 30; i++) Game.update(CONFIG.step);
             e.x = e.px = p.x + Math.sin(p.yaw + 0.6) * 2.8; e.z = e.pz = p.z + Math.cos(p.yaw + 0.6) * 2.8; e.y = p.y; e.yaw = Math.atan2(p.x - e.x, p.z - e.z);

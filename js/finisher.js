@@ -66,17 +66,20 @@ const finisher = (() => {
 
   // The blow is over: its result. A lethal one kills (or starts the next bar, or the retreat); a survivor reels away,
   // its guard whole again. Online the server resolves it (Simulation.finishFinisher).
-  function resolve(X) {
+  function resolve(X, p) {
     const e = X.enemy, C = CONFIG.finisher;
     if (X.resolved) return;
     X.resolved = true; e.exec = null;
     if (net()) return;
     if (e.cracks) { e.cracks = 0; events.emit('guardCrack', { enemy: e, cracks: 0 }); }
     if (e.state !== ES.EXECUTED) return;
-    if (X.lethal) { e.hp = 0; if (!e.outlast()) e.die(); return; }
-    e.poise = e.def.poise;
-    e.kx -= Math.sin(e.yaw) * C.push; e.kz -= Math.cos(e.yaw) * C.push;
-    e.setState(ES.STAGGER);
+    if (X.lethal) { e.hp = 0; if (!e.outlast()) e.die(); }
+    else {
+      e.poise = e.def.poise;
+      e.kx -= Math.sin(e.yaw) * C.push; e.kz -= Math.cos(e.yaw) * C.push;
+      e.setState(ES.STAGGER);
+    }
+    if (p && p.alive()) abilityReport(p, 'finisher', { enemy: e, x: e.x, y: e.y, z: e.z });   // Petal Storm (online: Simulation.finishFinisher)
   }
 
   function impact(p, X) {
@@ -128,7 +131,7 @@ const finisher = (() => {
     p.exec = null; p.execGrace = CONFIG.finisher.grace;
     p.setState(PS.IDLE);
     events.emit('finisherEnd', { player: p, enemy: X.enemy });
-    resolve(X);   // its death, next bar or retreat starts only now, with the player back in control
+    resolve(X, p);   // its death, next bar or retreat starts only now, with the player back in control
   }
 
   // The striker died mid-blow (Destined Death's drain can kill through the untouchable frames): the foe never stays
@@ -138,7 +141,7 @@ const finisher = (() => {
     if (!X) return;
     p.exec = null;
     events.emit('finisherEnd', { player: p, enemy: X.enemy, abandoned: true });   // online: the server lets the foe go now
-    resolve(X);
+    resolve(X, p);
   }
   // Camera: 0..1, how far the push toward a Finishing Blow has gone (smoothed both ways).
   function cameraWeight(game, dt, snap) {
