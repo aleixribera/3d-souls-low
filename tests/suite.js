@@ -511,7 +511,7 @@
       abilityPowers.trigger('self', p, p.kit, 'hits', { enemy: e, strike: { damage: 10, poise: 0 } });
       frames(10); expect.ok(fx().slashes === 1, `its echo cuts (${JSON.stringify(fx())})`);
       heard(['abilityShade', 'abilityEcho']);
-      frames(6.2 * 60); expect.ok(fx().clones === 0, `gone when its time is up (${JSON.stringify(fx())})`);
+      frames((ABILITY_BY_ID['shade-host'].levels[0].time + 0.2) * 60); expect.ok(fx().clones === 0, `gone when its time is up (${JSON.stringify(fx())})`);
       // Online: another's line and suns from the server's word, with no enemy to name; your own keys refilled by it.
       wipe(); p.grantAbilities(['fourfold', 'thunder-call', 'fire-burst']); p.perk.charge.strike = 0;
       const other = { x: p.x + 1, y: p.y, z: p.z, yaw: 0, alive: () => true }, net = { self: 'me', bodyOf: id => (id === 'them' ? other : null) };
