@@ -104,6 +104,8 @@ const rush = 'calling/' + C.calling.id, weekly = 'calling/' + C.weekly.id, adven
     await navigate(b, 'lobbyReturn'); await pad(b, 0);
     await a.waitForFunction(() => !multiplayer.active());
     await a.locator('#publicLobby:not(.hidden)').waitFor();
+    await pad(a, 1);   // the run's summary closes into the lobby
+    assert.equal(await a.evaluate(() => document.getElementById('runSummary').hidden && multiplayer.panelOpen), true, 'B closes the summary');
     await pad(a, 1);
     assert.equal(await a.evaluate(() => multiplayer.connected), false, 'B leaves idle lobby for main menu');
     assert.deepEqual(errors, []);
