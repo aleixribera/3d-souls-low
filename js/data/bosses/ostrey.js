@@ -130,7 +130,7 @@ MODEL_DEFS.oldOstrey = {
   const carry = (lean, push) => ({ crouch: 0.3, lean, legL: [-0.6, 0, 0], legR: [0.5, 0, 0], spin: [0, 0.3, 0], chest: [0.35 + push * 0.2, -0.4, 0], neck: [0.15, 0.2, 0], head: [0.35, 0.2, 0],
     armR: [-1.2 - push * 0.3, 0, 0.85], elbowR: [-1.1 + push * 0.6, 0, 0], weapon: [1.4, 0, 0], armL: [-1.2 - push * 0.3, 0, -0.6], elbowL: [-1.2 + push * 0.7, 0, 0] });
   ATTACK_POSES.ostreyShoulderGate = { ease: { windup: 'inOutCubic', active: 'outExpo', follow: 'outCubic', recovery: 'inOutCubic' },
-    hits: [{ windup: carry(0.55, 0), strike: carry(0.68, 1), follow: carry(0.62, 0.8) }] };
+    hits: [{ windup: carry(0.55, 0), strike: carry(0.68, 1), follow: followOn(carry(0.55, 0), carry(0.68, 1), { lean: 0.76 }) }] };   // (pass 135, body check) his weight carries on through you
 
   // The coals: the lantern swung low and back past his hip, then flung forward underarm, its door knocked open.
   const fling = {
@@ -162,7 +162,7 @@ MODEL_DEFS.oldOstrey = {
   ATTACK_POSES.ostreyLanternBursts = { ease: { windup: 'inOutSine', active: 'inQuad', follow: 'outCubic', recovery: 'inOutCubic' }, hits: [
     { windup: { crouch: 0.05, lean: -0.2, legL: [-0.25, 0, 0], legR: [0.25, 0, 0], chest: [-0.3, 0, 0], neck: [-0.2, 0, 0], head: [-0.35, 0, 0],
                 armL: [-3.0, 0, 0.2], elbowL: [-0.1, 0, 0], armR: [0.1, 0, -0.5], elbowR: [-0.2, 0, 0], weapon: [0.8, 0, 0] },
-      strike: dashed, follow: { ...dashed, crouch: 0.44, lean: 0.52 } },
+      strike: dashed, follow: followOn({ lean: -0.2, chest: [-0.3, 0, 0] }, dashed, { crouch: 0.46 }) },   // (pass 135, body check) on down after the lantern
     { windup: { ...dashed, crouch: 0.4, lean: 0.4 }, strike: { ...dashed, crouch: 0.3, lean: 0.25, chest: [0.3, 0, 0], armL: [-1.3, 0, 0.3] },
       follow: { ...dashed, crouch: 0.26, lean: 0.2, chest: [0.25, 0, 0], armL: [-1.2, 0, 0.3] } },
   ] };
@@ -189,7 +189,8 @@ MODEL_DEFS.oldOstrey = {
     { windup: { crouch: 0.22, lean: 0.2, legL: [-0.35, 0, 0], legR: [0.35, 0, 0], spin: [0, -0.4, 0], chest: [0.25, -0.2, 0], neck: [0.3, 0, 0], head: [0.55, 0, 0],
                 armL: [-1.0, 0, -0.45], elbowL: [-1.5, 0, 0], armR: [-0.2, 0, -0.25], elbowR: [-0.3, 0, 0], weapon: [1.0, 0, 0] },
       strike: breath(-0.45), follow: breath(-0.42) },
-    ...sweepAcross.map(s => ({ windup: breath(s - 0.05), strike: breath(s), follow: breath(s + 0.03) })),
+    // (pass 135, body check) each breath out a heave: up a little, then down into it
+    ...sweepAcross.map(s => ({ windup: { ...breath(s - 0.05), crouch: 0.15, lean: 0.1 }, strike: breath(s), follow: { ...breath(s + 0.03), crouch: 0.22 } })),
   ] };
 
   // The burning drop: down in a deep crouch, the bar raised plumb and the lantern swung back; he leaps and drops the gate,

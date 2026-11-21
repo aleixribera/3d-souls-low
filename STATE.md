@@ -14,8 +14,8 @@ The iterate loop's working note (`.claude/iterate.md`). Cap: 8,000 characters.
   own shape within its first fifth (`bars-1` round: its three opened on the same crouch). Acceptance: body-check 0/27,
   in-page `Church` 19/19, `Combat clarity`, `Boss edge tells`; strips `docs/scorecard/now/hunger-rake.jpg`,
   `hunger-pound.jpg`, `hunger-kick.jpg`; clip `hunger-cel.mp4`. Awaiting Aleix. Ostrey's audit (`docs/bosses/ostrey.md`):
-  restyle, plus a parry on the Burning Drop's landing (noParry 4 of 14) and the body check (8 of 27 flagged). Next on
-  track 1: those two, then Ostrey's cel look.
+  restyle, plus a parry on the Burning Drop's landing (noParry 4 of 14); his body check done (8 hits, now 0; in-page
+  `Moor` 7/7). Next on track 1: that parry, then Ostrey's cel look (his wind-up washes body and bar: `edgeTell`).
 
 ## Works
 

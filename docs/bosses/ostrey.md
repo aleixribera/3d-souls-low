@@ -2,8 +2,9 @@
 
 The sixth boss through the system (`system.md`; PLAN item 6, the roster in the order players meet them). Data:
 `js/data/bosses/ostrey.js` (boss id `ostrey`, model `oldOstrey`); model: `tools/blender/ostrey.py`. Status: pass 135,
-the moveset audit (below). Next: a parry on the Burning Drop's landing, the body check's 8 hits, then the cel look,
-in-between keys and the `bars-1` judge.
+the moveset audit (below) and the body check (8 hits fixed). Next: a parry on the Burning Drop's landing, then the cel
+look (his wind-up today washes his body and the whole bar blue or red: the tell goes to the bar's edge), in-between keys
+and the `bars-1` judge.
 
 ## Moveset audit (pass 135): restyle, plus a parry and the body check
 
@@ -25,10 +26,11 @@ Against the system's bars (`system.md` section 0), with Aleix's word that some b
   chest for the drop, out ahead for the drive, low and back for the coals, out to the side for the knocks). No name is
   another boss's. The Gate Drop (raised plumb, held) is the one to watch beside the Captain's and the Warden's held
   overheads: the `bars-1` round decides it.
-- **The body check: missed.** `node tools/body-check.cjs ostrey`: 8 of 27 hits flagged (Shoulder the Gate and the
-  Lantern Opened stop dead on the strike; the Ember's Breath's six puffs carry no weight).
+- **The body check: missed, fixed in pass 135.** `node tools/body-check.cjs ostrey`: 8 of 27 hits flagged (Shoulder the
+  Gate and the Lantern Opened stopped dead on the strike; the Ember's Breath's six puffs carried no weight). Now his
+  weight carries on through both, and each breath out is a heave; 0 flagged.
 
-So he keeps his moves; the work is the Burning Drop's parry and the body check, then the look, the animation and the judge.
+So he keeps his moves; the work is the Burning Drop's parry, then the look, the animation and the judge.
 
 ## Idea
 
