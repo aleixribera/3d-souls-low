@@ -6,6 +6,7 @@
 //   title    a few words
 //   text     one to three sentences, shown under the list when the entry is selected
 const CHANGELOG = [
+  { version: 'v7.206.0', title: 'Ultimates II', text: 'Four new Ultimates: Great Wave crashes a wall of water down on the boss, Sky Blade drops a giant sword out of the sky, Phoenix Dive turns you into a firebird that dives through the boss three times, and Black Star holds everything near the boss, then implodes.' },
   { version: 'v7.205.0', title: 'The game is now cel-shaded', text: 'The whole game now draws in the cel-shaded style: banded light, ink outlines and bold flat colour, with no setting needed, at about the same frame rate as before. Add ?style=classic to the address to play in the old look.' },
   { version: 'v7.204.0', title: 'Ultimates I', text: 'Five Ultimates, made new: Thunder Call\'s dragon comes down out of the sky and coils the boss; Cataclysm cracks the ground where you stand and throws the stones up; Heaven\'s Lance drops a column of light that holds the boss in place; Frozen Lotus blooms ice round the boss, holds it and shatters; Tempest raises a storm that follows the boss and strikes it again and again.' },
   { version: 'v7.203.0', title: 'Legendaries II', text: 'Four new legendary abilities. Hundred Suns: a Finishing Blow bursts into a star of sun blades. Thunder God Step: your dash becomes a lightning bolt that cuts whatever it crosses. Fourfold: after your Ultimate, every other key refills. Shade Host: a perfect dodge calls ink shadows of you that echo your blows.' },
