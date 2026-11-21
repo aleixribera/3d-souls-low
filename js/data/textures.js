@@ -14,6 +14,7 @@ const TEXTURE_SETTINGS = {
   maxSize: 512,
   ultraMax: 1024,     // upper limit for explicit detail overrides; Ultra uses the native 256/512px model textures
   anisotropy: 4,
+  workers: 4,         // background bakers at most (fewer on a machine with few cores: hardwareConcurrency - 2)
   decayStep: 0.1,     // decay is rounded to this so near-equal requests share one texture
   scratchLength: [10, 48],
   cavityReach: 2,     // px: how far the crease / edge test looks

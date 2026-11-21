@@ -95,6 +95,9 @@ const Game = {
     // Keep the old materials alive only until the replacement rigs are prepared: disposing them first evicts
     // their shared WebGL programs and makes retries compile the same shaders again. Nothing survives this load.
     const retired = this.clearActors(true);
+    // A build outside a loading screen's deferred one (js/game-menus.js loadingFirst) cannot wait for the texture
+    // workers: anything still baking for an earlier one (the boot's effect pools) is finished here first.
+    if (typeof TEXLIB !== 'undefined' && !TEXLIB.deferring()) TEXLIB.settle();
     try {
       input.pressed.clear();
       this.hitstop = 0; this.shake = 0; this.complete = false; this.deathTimer = 0; this.restartArm = 0; this.nextTimer = 0;

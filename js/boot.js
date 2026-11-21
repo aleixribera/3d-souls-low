@@ -178,7 +178,8 @@ rootStyle.setProperty('--died-fade', CONFIG.death.textFade + 's');
 rootStyle.setProperty('--died-hint-delay', CONFIG.death.hintDelay + 's');
 rootStyle.setProperty('--dying-fade', CONFIG.death.slowTime + 's');
 rootStyle.setProperty('--fade-time', CONFIG.nextLevel.fadeTime + 's');
-registerListeners();
+// The effect pools' figures are built now; their textures bake in the background while the title is up (js/textures.js).
+TEXLIB.deferred(registerListeners);
 window.addEventListener('resize', resize);
 // Moving to a screen of another scale (or zooming) changes the pixel ratio without always resizing the window. The
 // scene follows the screen's own resolution (qualityDraw, js/visuals.js), so redraw at the new ratio.

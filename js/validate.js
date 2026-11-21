@@ -46,7 +46,8 @@ function validateData({ visual = true } = {}) {
     }
   }
   if (visual) {
-    const A = ANIM_SETTINGS, num = v => typeof v === 'number' && v > 0 && v < 1, rot = P => P && typeof P === 'object' && Object.values(P).every(v => Array.isArray(v) && v.length === 3 && v.every(Number.isFinite));
+    need(Number.isInteger(TEXTURE_SETTINGS.workers) && TEXTURE_SETTINGS.workers >= 1 && TEXTURE_SETTINGS.workers <= 16, 'TEXTURE_SETTINGS.workers: a whole number of background texture bakers, 1 to 16.');
+    const A = ANIM_SETTINGS, num =v => typeof v === 'number' && v > 0 && v < 1, rot = P => P && typeof P === 'object' && Object.values(P).every(v => Array.isArray(v) && v.length === 3 && v.every(Number.isFinite));
     need(A.settle && num(A.settle.time) && Object.entries(A.settle.into || {}).every(([s, t]) => Object.values(PS).includes(s) && num(t)), 'ANIM_SETTINGS.settle: time and every `into` time must be 0 to 1 s (states from PS).');
     const D = A.deflect;
     need(D && [D, D.clang].every(d => d && num(d.rise) && num(d.hold) && num(d.fall) && num(d.drop) && rot(d.pose)), 'ANIM_SETTINGS.deflect: rise, hold and fall (s), drop (m) and a pose of [x, y, z] per bone, for the press and its clang.');

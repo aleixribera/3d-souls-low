@@ -613,7 +613,8 @@ Object.assign(Game, {
     $('loading').classList.add('show'); $('menu').classList.add('hidden');
     requestAnimationFrame(() => requestAnimationFrame(() => {
       this.pendingLoad = false;
-      try { fn(); } finally { this.loadStarted = null; }
+      // The build's textures bake in the background (js/textures.js); tickLoading holds the screen until they are in.
+      try { if (typeof TEXLIB !== 'undefined') TEXLIB.deferred(fn); else fn(); } finally { this.loadStarted = null; }
     }));
   },
   // What a level's loading screen says: its chapter title and line in Story mode, else its name and description.
@@ -624,6 +625,7 @@ Object.assign(Game, {
   tickLoading(dt) {
     if (this.loading <= 0) return;
     this.loading = Math.max(0, this.loading - dt);
+    if (this.loading <= 0 && typeof TEXLIB !== 'undefined' && TEXLIB.waiting()) this.loading = 1e-3;   // textures still baking: hold
     if (this.loading <= 0) $('loading').classList.remove('show');
   },
   // R: instant on the death, win or level-complete screens; otherwise press twice.
