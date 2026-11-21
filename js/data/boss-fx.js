@@ -78,8 +78,9 @@ const BOSS_FX = {
     peal: { impact: 'toll' }, outOfTheRing: { impact: 'shatter' } } },
   // The Regent Hollis (Level 10): gold leaf and the light off it; past the worst of his hurt the gilt cracks and the
   // hunger burns through it (his hanging cuts themselves are drawn by js/gilt-echo.js, on every preset).
-  hollis: { element: 'holy', aura: 0xffc860, phases: { hungry: 'fire' }, attacks: {
-    salute: { element: 'steel' }, measure: { element: 'steel' }, turnCloak: { element: 'steel' }, judgement: { impact: 'pillar', windup: 'gather' },
+  // (pass 143) the ribbon is a thin arc at the blade's edge, its head smeared on the last frames, not a band over his gilt.
+  hollis: { element: 'holy', aura: 0xffc860, trail: { edge: 0.25, life: 0.16, smear: 0.3 }, phases: { hungry: 'fire' }, attacks: {
+    salute: { element: 'steel' }, pavane: { element: 'steel' }, measure: { element: 'steel' }, turnCloak: { element: 'steel' }, judgement: { impact: 'pillar', windup: 'gather' },
     giltCracks: { element: 'fire', impact: 'blaze', aura: 0xff6a20, windup: 'gather' }, ravenous: { element: 'fire' },
     callHome: { element: 'fire' }, feast: { element: 'fire', impact: 'blaze', windup: 'gather' } } },
   // Oswin, the First Crown (Level 11): the ash king's stomps and axe crack the floor, and the cracks stay open (drawn by

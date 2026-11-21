@@ -7,6 +7,22 @@
   const A = window.__arena, { Game, ES } = A, { sim, expect, test } = A.tests;
   const start = () => { Game.startLevel('aurel'); Game.loading = 0; sim.begin(); };
   const hollis = () => Game.enemies.find(e => e.baseDef.id === 'hollis');
+  // Pass 143 (docs/bosses/hollis.md, the moveset audit): a second string in his first phase, the Pavane, its three measures
+  // parried and the bow's line hanging; the Feast's blade parried as it comes down; a phase keeps roll-only moves to a
+  // quarter (docs/bosses/system.md 1); the tell on the Sword of State's edge.
+  test('Aurel: the Regent dances the Pavane, his blade is parried, his gilt is stepped out of, a quarter roll-only at most (pass 143)', () => {
+    const d = A.ENEMY_BY_ID.hollis, by = id => d.attacks.find(a => a.id === id), pav = by('pavane');
+    expect.ok(d.phases.gracious.attacks.includes('pavane') && d.phases.hungry.attacks.includes('pavane'), 'the Pavane in both phases');
+    expect.ok([0, 1, 2].every(i => canParryHit(pav, i)) && !canParryHit(pav, 3) && pav.hits[3].echo.of === 2, 'three measures parried, the bow\'s line hangs and cuts again');
+    expect.ok(pav.followUps.some(f => f.attack === 'salute' && f.if === 'far'), 'back off and the Salute answers');
+    const feast = by('feast');
+    expect.ok(canParryHit(feast, 0) && !canParryHit(feast, 1), 'the Feast\'s blade parried, its gilt not');
+    for (const [id, Ph] of Object.entries(d.phases)) {
+      const rolled = Ph.attacks.filter(x => !by(x).hits.some((h, i) => canParryHit(by(x), i)));
+      expect.ok(rolled.length <= Ph.attacks.length / 4, `${id}: ${rolled.length} of ${Ph.attacks.length} roll-only (${rolled.join(', ')})`);
+    }
+    expect.ok(KIT.resolve(d.model).edgeTell.slot === 'blade', 'the tell on the blade');
+  });
   test('Aurel: Level 10 follows the Night Gaol, as chapter 10 of the Story', () => {
     expect.ok(A.LEVELS[A.LEVELS.indexOf(A.LEVEL_10) - 1].id === 'night-gaol', 'listed after the Night Gaol');
     expect.ok(A.STORY.chapters[9].level === 'aurel' && A.STORY.chapters[9].title === 'AUREL, THE GILDED CITY', 'chapter 10 of the Story');

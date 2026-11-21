@@ -36,7 +36,7 @@ MODEL_DEFS.regentHollis = {
     fur: { tex: 'margitFur', tint: 0xe8e0d0, decay: 0.5 },
     hair: { tex: 'execPlumage', tint: 0xd0d0d4, decay: 0.45 },
     dark: { tex: 'crackedLeather', tint: 0x3a2e28, decay: 0.6 },
-    blade: { tex: 'dentedSteel', tint: 0xf0ece0, decay: 0.2, rim: 0.6 },
+    blade: { tex: 'dentedSteel', tint: 0xf0ece0, decay: 0.2, rim: 0.6, steel: true },   // (pass 143) banded as steel in cel, one hard glint
     burn: { glow: 0xff6a20, burn: true },
     eye: { glow: 0xffc860 },
   },
@@ -55,13 +55,16 @@ MODEL_DEFS.regentHollis = {
     ...(bone === 'weapon' ? { weapon: true } : {}) }))),
   weapon: null,          // the Sword of State is part of the figure (the `weapon: true` pieces above)
   weaponRest: 1.3,       // at rest its point is low before his right foot (the `sway` idle)
+  // (pass 143, docs/bosses/system.md 4) the wind-up's tell sits on the Sword of State's edge near its point, never over
+  // his gilt and crimson: a heavy's halo grows there.
+  edgeTell: { slot: 'blade', size: 0.55, along: 0.86 },
   eyes: { color: 0xffc860, size: 0.009, spread: 0.032, at: [0, 0.1, 0.1] },   // through the mask's eye slits
   anim: {
     idle: { breathRate: 0.7, breath: 0.012, headDrift: 0.03, sway: 0.008, twitch: 0 }, walk: { twist: 0.06, roll: 0.03, headNod: 0.02, elbow: 0.1, drag: 0.05 },
     flinch: { head: 0.3, chest: 0.3, arms: 0.25 }, death: { buckle: 0.8, slump: 0.9 },
     cloth: [{ bone: 'loinF', gain: 0.1, k: 60, damp: 5.4, flutter: 0.03 }, { bone: 'loinB', gain: 0.14, k: 52, damp: 5, flutter: 0.04 },
-      { bone: 'capeA', gain: 0.12, k: 40, damp: 4.4, flutter: 0.03 }, { bone: 'capeB', gain: 0.16, k: 34, damp: 3.8, flutter: 0.04 },
-      { bone: 'capeC', gain: 0.2, k: 28, damp: 3.2, flutter: 0.06 }],
+      { bone: 'capeA', gain: 0.12, k: 40, damp: 4.4, flutter: 0.03, plumb: 0.7, max: 0.4, sideways: 0.5 }, { bone: 'capeB', gain: 0.16, k: 34, damp: 3.8, flutter: 0.04, max: 0.3, sideways: 0.5 },
+      { bone: 'capeC', gain: 0.2, k: 28, damp: 3.2, flutter: 0.06, max: 0.3, sideways: 0.5 }],
   },
 };
 
@@ -73,7 +76,7 @@ MODEL_DEFS.regentHollis = {
     armR: [0.35, 0, -0.35], elbowR: [-0.15, 0, 0], pitch: 1.3, armL: [-0.7, 0, -0.5], elbowL: [-1.9, 0, 0] };
   const present = { crouch: 0.05, lean: -0.05, legL: [-0.3, 0, 0], legR: [0.2, 0, 0], spin: [0, 0.2, 0], chest: [-0.08, 0.1, 0], head: [-0.1, 0, 0],
     armR: [-0.3, 0, -0.15], elbowR: [-0.3, 0, 0], pitch: 1.1, armL: [-1.3, 0, 0.4], elbowL: [-0.6, 0, 0] };
-  const closeHand = { ...present, head: [0.08, 0, 0], armL: [-1.0, 0, 0.15], elbowL: [-1.4, 0, 0] };
+  const closeHand = { ...present, crouch: 0.12, lean: 0.06, head: [0.08, 0, 0], armL: [-1.0, 0, 0.15], elbowL: [-1.4, 0, 0] };   // (pass 143) he leans into the closing
   const echo = (open, shut) => ({ windup: open, strike: shut, follow: shut });
 
   // The Courtesy: a bow, the sword low at his right; a rising cut across to high on his left. The cut hangs; he offers
@@ -113,7 +116,7 @@ MODEL_DEFS.regentHollis = {
     armR: [-0.55, 0, 0.25], elbowR: [-0.6, 0, 0], pitch: 1.5, armL: [-0.55, 0, -0.25], elbowL: [-0.6, 0, 0] };
   ATTACK_POSES.hollisMeasure = { ease: swing, lag: { weapon: 0.08, armR: 0.05 }, hits: [
     { windup: wound, strike: fore, follow: { ...fore, spin: [0, 1.05, 0], armR: [-1.4, 0, 0.85] } },
-    { windup: { ...fore, spin: [0, 1.05, 0], crouch: 0.22 }, strike: back, follow: { ...back, spin: [0, -1.15, 0] } },
+    { windup: { ...fore, spin: [0, 1.05, 0], crouch: 0.22 }, strike: { ...back, crouch: 0.3, lean: 0.25 }, follow: { ...back, crouch: 0.32, lean: 0.28, spin: [0, -1.2, 0] } },   // (pass 143) the step back in sinks onto it
     echo(pommel, { ...pommel, head: [0.15, 0, 0] })] };
   // Called Home (hungry): his open left hand held out to you first, palm up, the blade high behind his shoulder (its own
   // tell); then the measuring cut, a leap back from you with a cut at nothing, and his hand draws the hanging line home to
@@ -122,9 +125,9 @@ MODEL_DEFS.regentHollis = {
     armR: [-0.4, 0, -0.6], elbowR: [-0.2, 0, 0], pitch: 0.6, armL: [-1.5, 0, 0.2], elbowL: [-0.1, 0, 0] };
   ATTACK_POSES.hollisCallHome = { ease: swing, lag: { weapon: 0.08, armR: 0.05 }, hits: [
     { windup: { ...wound, crouch: 0.1, armR: [-2.4, 0, -0.6], elbowR: [-0.6, 0, 0], armL: [-1.4, 0, -0.1], elbowL: [-0.2, 0, 0] }, strike: fore, follow: { ...fore, spin: [0, 1.05, 0], armR: [-1.4, 0, 0.85] } },
-    { windup: { ...fore, crouch: 0.35, lean: 0.3, spin: [0, 0.6, 0] }, strike: back, follow: { ...back, crouch: 0.3 } },
+    { windup: { ...fore, crouch: 0.35, lean: 0.3, spin: [0, 0.6, 0] }, strike: back, follow: { ...back, crouch: 0.3, spin: [0, -1.3, 0], chest: [0.05, -0.5, 0] } },
     { windup: reach, strike: { ...reach, lean: 0.1, chest: [0.1, -0.1, 0], armL: [-0.9, 0, -0.2], elbowL: [-1.9, 0, 0] },
-      follow: { ...reach, lean: 0.1, chest: [0.1, -0.1, 0], armL: [-0.9, 0, -0.2], elbowL: [-1.9, 0, 0] } }] };
+      follow: { ...reach, crouch: 0.22, lean: 0.2, chest: [0.22, -0.18, 0], armL: [-0.8, 0, -0.25], elbowL: [-2.0, 0, 0] } }] };   // (pass 143) the pull doubles him over it
 
   // The Long Table: a deep coil, the point trailing on the floor behind his right heel; a sweep at the knees, wide as a
   // banquet. He rises, and lays his open hand along it: it is swept again.
@@ -159,10 +162,36 @@ MODEL_DEFS.regentHollis = {
   // Largesse: the sword stood on its point, his left hand drawn to his breast, then flung open to you, palm up: a shower
   // of gold leaf hangs round where you stand. His fingers curl; it closes.
   const breast = { ...pommel, chest: [0.05, 0, 0], head: [0.05, 0, 0], armL: [-0.6, 0, -0.5], elbowL: [-2.0, 0, 0] };
-  const flung = { ...pommel, spin: [0, 0.25, 0], chest: [-0.05, 0.15, 0], armL: [-1.5, 0, 0.25], elbowL: [-0.1, 0, 0] };
-  ATTACK_POSES.hollisLargesse = { ease: { windup: 'inOutSine', active: 'outExpo', follow: 'linear', recovery: 'inOutCubic' },
-    hits: [{ windup: breast, strike: flung, follow: flung },
-      echo({ ...flung, head: [-0.1, 0, 0], armL: [-1.45, 0, 0.2], elbowL: [-0.25, 0, 0] }, { ...flung, armL: [-0.9, 0, 0.1], elbowL: [-1.5, 0, 0] })] };
+  // (pass 143) the whole body goes with the flung hand, a step and a turn on past it, and he leans in as his fingers curl.
+  const flung = { ...pommel, crouch: 0.1, lean: 0.14, legL: [-0.4, 0, 0], legR: [0.25, 0, 0], spin: [0, 0.4, 0], chest: [0.05, 0.3, 0], armL: [-1.5, 0, 0.25], elbowL: [-0.1, 0, 0] };
+  const flungOn = { ...flung, crouch: 0.12, lean: 0.18, spin: [0, 0.55, 0], chest: [0.08, 0.4, 0] };
+  ATTACK_POSES.hollisLargesse = { ease: { windup: 'inOutSine', active: 'outExpo', follow: 'outCubic', recovery: 'inOutCubic' },
+    hits: [{ windup: breast, strike: flung, follow: flungOn },
+      echo({ ...flungOn, lean: 0.05, crouch: 0.06, head: [-0.1, 0, 0], armL: [-1.45, 0, 0.2], elbowL: [-0.25, 0, 0] }, { ...flungOn, crouch: 0.16, lean: 0.24, armL: [-0.9, 0, 0.1], elbowL: [-1.5, 0, 0] })] };
+
+  // The Pavane (pass 143): a court dance in three measures. His left hand offered at shoulder height, palm down, as if to
+  // be kissed, the sword held low behind his right hip, its point trailing back (the tell). The greeting: a step and a
+  // quick cut rising out of it at your face; the turn: he turns on his heel and the blade comes round at the waist; the
+  // bow: a step in, a cut from high on his right down across you, and he ends it bowed low. The bow's line hangs; he rises
+  // with his hand open to it, and it cuts again.
+  const offer = { crouch: 0.05, lean: -0.1, legL: [-0.15, 0, 0], legR: [0.2, 0, 0], spin: [0, -0.4, 0], chest: [-0.1, -0.15, 0], neck: [-0.05, 0, 0], head: [-0.15, 0.25, 0],
+    armR: [0.5, 0, -0.3], elbowR: [-0.2, 0, 0], pitch: 2.3, armL: [-1.4, 0, 0.3], elbowL: [-0.3, 0, 0] };
+  const greet = { crouch: 0.2, lean: 0.25, legL: [-0.6, 0, 0], kneeL: [0.4, 0, 0], legR: [0.4, 0, 0], spin: [0, 0.4, 0], chest: [0.15, 0.25, 0], head: [-0.05, -0.2, 0],
+    armR: [-1.3, 0, 0.2], elbowR: [-0.1, 0, 0], pitch: -0.2, armL: [-0.5, 0, 0.5], elbowL: [-0.6, 0, 0] };
+  // (pass 143, the bars-1 round) wound only part way round, so the mantle does not swing over him before the turn
+  const turnFrom = { crouch: 0.15, lean: 0.1, legL: [-0.4, 0, 0], legR: [0.3, 0, 0], spin: [0, 0.6, 0], chest: [0, 0.3, 0], neck: [0, -0.3, 0], head: [0, -0.4, 0],
+    armR: [-1.2, 0, 0.85], elbowR: [-0.4, 0, 0], pitch: 0.2, armL: [-0.3, 0, 0.4], elbowL: [-0.5, 0, 0] };
+  const turned = { crouch: 0.3, lean: 0.2, legL: [-0.4, 0, 0], legR: [0.5, 0, 0], spin: [0, -1.3, 0], chest: [0.1, -0.45, 0], neck: [0, 0.3, 0], head: [0, 0.35, 0],
+    armR: [-1.4, 0, -1.0], elbowR: [0, 0, 0], pitch: 0.15, armL: [-0.4, 0, 0.7], elbowL: [-0.3, 0, 0] };
+  const bowFrom = { crouch: 0.1, lean: -0.1, legL: [-0.3, 0, 0], legR: [0.3, 0, 0], spin: [0, -0.7, 0], chest: [-0.15, -0.3, 0], neck: [0, 0.2, 0], head: [-0.1, 0.25, 0],
+    armR: [-2.5, 0, -0.7], elbowR: [-0.6, 0, 0], pitch: -1.8, armL: [-0.5, 0, 0.6], elbowL: [-0.6, 0, 0] };
+  const bowed = { crouch: 0.35, lean: 0.5, legL: [-0.7, 0, 0], kneeL: [0.5, 0, 0], legR: [0.45, 0, 0], spin: [0, 0.55, 0], chest: [0.45, 0.3, 0], neck: [0.2, 0, 0], head: [0.15, -0.2, 0],
+    armR: [-0.7, 0, 0.65], elbowR: [0, 0, 0], pitch: 1.0, armL: [0.4, 0, -0.3], elbowL: [-1.4, 0, 0] };
+  ATTACK_POSES.hollisPavane = { ease: swing, lag: { weapon: 0.08, armR: 0.04 }, hits: [
+    { windup: offer, strike: greet, follow: { ...greet, crouch: 0.22, lean: 0.3, spin: [0, 0.55, 0], chest: [0.2, 0.35, 0], armR: [-1.5, 0, 0.4], pitch: -0.4 } },
+    { windup: turnFrom, strike: turned, follow: { ...turned, crouch: 0.32, spin: [0, -1.55, 0], chest: [0.15, -0.55, 0] } },
+    { windup: bowFrom, strike: bowed, follow: { ...bowed, crouch: 0.37, lean: 0.56, spin: [0, 0.7, 0], chest: [0.5, 0.4, 0] } },
+    echo({ ...bowed, crouch: 0.24, lean: 0.3, head: [-0.2, 0, 0] }, { ...bowed, crouch: 0.3, lean: 0.34, head: [-0.1, 0, 0], armL: [-1.2, 0, 0.4], elbowL: [-0.3, 0, 0] })] };
 
   // ---- hungry (second phase) ----
   // The Gilt Cracks (the phase opener): he clutches his mask, doubled over, the sword dragging; then throws his head back
@@ -171,7 +200,8 @@ MODEL_DEFS.regentHollis = {
     armL: [-2.0, 0, -0.7], elbowL: [-2.3, 0, 0], armR: [0.1, 0, -0.3], elbowR: [-0.2, 0, 0], pitch: 1.4 };
   const burst = { crouch: 0.05, lean: -0.3, legL: [-0.2, 0, 0.1], legR: [0.2, 0, -0.1], chest: [-0.4, 0, 0], neck: [-0.3, 0, 0], head: [-0.5, 0, 0],
     armL: [-0.3, 0, 1.3], elbowL: [-0.1, 0, 0], armR: [-0.3, 0, -1.3], elbowR: [-0.1, 0, 0], pitch: 0.3 };
-  ATTACK_POSES.hollisGiltCracks = { ease: { windup: 'inOutSine', active: 'outExpo', follow: 'outCubic', recovery: 'inOutCubic' }, hits: [{ windup: clutch, strike: burst, follow: burst }] };
+  ATTACK_POSES.hollisGiltCracks = { ease: { windup: 'inOutSine', active: 'outExpo', follow: 'outCubic', recovery: 'inOutCubic' },
+    hits: [{ windup: clutch, strike: burst, follow: { ...burst, lean: -0.42, chest: [-0.55, 0, 0], head: [-0.65, 0, 0] } }] };   // (pass 143) thrown on back past it
 
   // Ravenous: hunched low, looking up at you, the point scraping the floor; four quick cuts, left and right, stepping in.
   // He reaches for the second where it hangs, and closes his fist on it.
@@ -179,10 +209,13 @@ MODEL_DEFS.regentHollis = {
   const fromR = { ...hunch, spin: [0, -0.8, 0], armR: [-0.9, 0, -0.9], elbowR: [-0.2, 0, 0], pitch: 0.3, armL: [-0.7, 0, 0.5], elbowL: [-0.8, 0, 0] };
   const toL = { ...hunch, spin: [0, 0.8, 0], armR: [-1.1, 0, 0.8], elbowR: [0, 0, 0], pitch: 0.3, armL: [-0.4, 0, 0.7], elbowL: [-0.4, 0, 0] };
   const toR = { ...fromR, armR: [-1.1, 0, -0.9], elbowR: [0, 0, 0] };
+  // (pass 143) each cut drops him into it and turns him on past it (the body check: they stopped dead on the strike)
+  const cutL = { ...toL, crouch: 0.43, lean: 0.56 }, cutR = { ...toR, crouch: 0.43, lean: 0.56 };
+  const onL = { ...cutL, crouch: 0.45, spin: [0, 1.0, 0], chest: [0.5, 0.2, 0] }, onR = { ...cutR, crouch: 0.45, spin: [0, -1.0, 0], chest: [0.5, -0.2, 0] };
   const grasp = { ...hunch, crouch: 0.25, lean: 0.3, armR: [-0.4, 0, -0.3], elbowR: [-0.2, 0, 0], pitch: 1.0, armL: [-1.3, 0, 0.35], elbowL: [-0.2, 0, 0] };
   ATTACK_POSES.hollisRavenous = { ease: { windup: 'inOutCubic', active: 'outExpo', follow: 'outQuad', recovery: 'inOutCubic' }, lag: { weapon: 0.08, armR: 0.05 },
-    hits: [{ windup: fromR, strike: toL, follow: toL }, { windup: toL, strike: toR, follow: toR }, { windup: toR, strike: toL, follow: toL },
-      { windup: { ...toL, crouch: 0.4 }, strike: toR, follow: { ...toR, spin: [0, -1.0, 0] } }, echo(grasp, { ...grasp, armL: [-0.8, 0, 0], elbowL: [-1.4, 0, 0] })] };
+    hits: [{ windup: fromR, strike: cutL, follow: onL }, { windup: toL, strike: cutR, follow: onR }, { windup: toR, strike: cutL, follow: onL },
+      { windup: { ...toL, crouch: 0.4 }, strike: { ...cutR, crouch: 0.48, lean: 0.62 }, follow: { ...onR, crouch: 0.5, lean: 0.64, spin: [0, -1.1, 0] } }, echo(grasp, { ...grasp, armL: [-0.8, 0, 0], elbowL: [-1.4, 0, 0] })] };
 
   // The Feast: the sword raised point-down in both hands, he leaps, and drives it into the floor where you were. Knelt
   // over it, he looks up at you; the gilt it threw up hangs round him, and cuts.
@@ -191,13 +224,31 @@ MODEL_DEFS.regentHollis = {
   const driven = { crouch: 0.5, lean: 0.5, legL: [-1.1, 0, 0], kneeL: [1.3, 0, 0], legR: [0.4, 0, 0], kneeR: [1.4, 0, 0], chest: [0.35, 0, 0], head: [0.2, 0, 0],
     armR: [-0.9, 0, 0.1], elbowR: [-0.3, 0, 0], pitch: 1.5, armL: [-0.9, 0, -0.1], elbowL: [-0.3, 0, 0] };
   ATTACK_POSES.hollisFeast = { ease: { windup: 'inOutCubic', active: 'inQuad', follow: 'outCubic', recovery: 'inOutCubic' }, lag: { weapon: 0.06 },
-    hits: [{ windup: plunge, strike: driven, follow: driven }, echo({ ...driven, neck: [-0.2, 0, 0], head: [-0.4, 0, 0] }, { ...driven, crouch: 0.3, lean: 0.2, head: [-0.3, 0, 0] })] };
+    hits: [{ windup: plunge, strike: driven, follow: { ...driven, lean: 0.62, chest: [0.48, 0, 0] } }, echo({ ...driven, neck: [-0.2, 0, 0], head: [-0.4, 0, 0] }, { ...driven, crouch: 0.3, lean: 0.2, head: [-0.3, 0, 0] })] };
 
   // Every blade angle above is a `pitch`, the way the sword points; here it becomes the weapon bone's angle.
   for (const [id, P] of Object.entries(ATTACK_POSES)) if (id.startsWith('hollis')) for (const h of P.hits) for (const k of ['windup', 'strike', 'follow']) {
     const q = h[k]; if (!q || !('pitch' in q)) continue;
     const { pitch, ...rest } = q, x = b => (rest[b] ? rest[b][0] : 0);
     h[k] = { ...rest, weapon: [pitch + 0.08 - x('armR') - x('elbowR') - x('chest') - (rest.lean || 0), 0, 0] };
+  }
+  // In-between keys (pass 143, docs/bosses/system.md 3; `via`, js/attack-anim.js), every one `rel`, from each hit's own key
+  // poses (as the Ringer's, pass 142): a last hand's breadth of wind before the cut; his hips and chest lead while the
+  // blade and his arms trail a beat and then whip through; his weight goes on after it. `toward(a, b, k)`: k of the way
+  // from pose a to pose b, per channel, each at most 0.45 rad.
+  const BODY = ['spin', 'chest'], LIMB = ['armR', 'elbowR', 'armL', 'elbowL', 'weapon', 'legL', 'legR', 'kneeL', 'kneeR'];
+  const toward = (a, b, k, names) => Object.fromEntries(names.filter(n => a[n] && b[n])
+    .map(n => [n, a[n].map((v, i) => Math.max(-0.45, Math.min(0.45, k * (b[n][i] - v))))]));
+  const inBetween = h => ({
+    windup: [{ t: 0.8, rel: true, crouch: 0.02, ...toward(h.strike, h.windup, 0.08, [...BODY, ...LIMB]) }],
+    active: [{ t: 0.6, rel: true, crouch: 0.04, lean: 0.03, ...toward(h.windup, h.strike, 0.3, BODY), ...toward(h.windup, h.strike, -0.25, LIMB) }],
+    follow: [{ t: 0.5, rel: true, crouch: 0.05, lean: 0.06, ...toward(h.strike, h.follow, 0.3, [...BODY, ...LIMB]) }],
+  });
+  // Every wind-up reaches its own pose fast and then gathers (outCubic; the Ringer's bars-1 round, pass 142: slow inOutSine
+  // starts from rest made a boss's wind-ups look alike for their first third).
+  for (const [id, P] of Object.entries(ATTACK_POSES)) if (/^hollis[A-Z]/.test(id)) {
+    P.ease = { ...P.ease, windup: 'outCubic' };
+    P.hits = P.hits.map(h => ({ ...h, via: { ...inBetween(h), ...(h.via || {}) } }));
   }
 }
 
@@ -213,6 +264,8 @@ MODEL_DEFS.regentHollis = {
   const TABLE = { w: 7.0, h: 0.9, d: 3.8, fwd: 1.8, y: 0.45 };     // at the knees: jump it, or roll
   const CHOP = { w: 1.6, h: 3.2, d: 4.2, fwd: 2.3, y: 1.2 };
   const SHOWER = { w: 4.6, h: 2.6, d: 6.0, fwd: 9.0, y: 1.3 };     // where you stand when he is far off
+  const GREET = { w: 1.8, h: 2.0, d: 3.6, fwd: 2.0, y: 1.4 };      // the Pavane's quick cut rising at your face
+  const BOW = { w: 2.6, h: 2.8, d: 3.8, fwd: 2.1, y: 1.2 };        // ... and its cut down across you into the bow
   const HOLLIS = {
     id: 'hollis', model: 'regentHollis', name: 'The Regent Hollis',
     description: 'The steward the hunger left to keep Aurel fed: gilded, gracious, cruel. His cuts hang in the air in gold leaf and cut again a beat later where they hang; he bows while it falls. Parry the man, never the gilt: step out of its line. Past the worst of his hurt the gilt cracks, his cuts hang as embers, and he calls them home to him through you.',
@@ -225,11 +278,11 @@ MODEL_DEFS.regentHollis = {
     defaultPhases: ['gracious', 'hungry'],
     phases: {
       gracious: { hp: 2600,
-        attacks: ['courtesy', 'salute', 'measure', 'longTable', 'judgement', 'turnCloak', 'largesse', 'salutePunish'] },
+        attacks: ['courtesy', 'salute', 'measure', 'pavane', 'longTable', 'judgement', 'turnCloak', 'largesse', 'salutePunish'] },
       // Past the worst of his hurt the gilt cracks: his cuts hang as embers, and the hunger calls them home.
       hungry: { at: 0.55, name: 'The Regent Hollis, the Gilt Cracked', opener: 'giltCracks', ignite: true, echoColor: 0xff7a30,
         cooldown: [1.12, 2.24], approach: 0.8, kite: 0.05, speed: 3.3, trackRate: 2.3,
-        attacks: ['courtesy2', 'salute', 'measure', 'longTable', 'judgement', 'turnCloak', 'largesse', 'salutePunish',
+        attacks: ['courtesy2', 'salute', 'measure', 'pavane', 'longTable', 'judgement', 'turnCloak', 'largesse', 'salutePunish',
                   'giltCracks', 'callHome', 'ravenous', 'feast'] },
     },
     attacks: [
@@ -253,6 +306,16 @@ MODEL_DEFS.regentHollis = {
                { startup: 0.45, active: 0.14, follow: 0.2, damage: 20, ...echo(0, 'sweep') }], recovery: 1.6,
         followUps: [{ attack: 'turnCloak', if: 'behind', chance: 0.37 }],
         damage: 28, poise: 45, knock: 6, lunge: 1.2, range: 3.8, box: WAIST },
+      // The Pavane (pass 143): his hand offered, the sword low behind him; a step and a cut rising at your face, a turn on
+      // his heel with the blade round at the waist, a step in and a cut down across you into a low bow. Parry each; the
+      // bow's line hangs and cuts again as he rises. Back off after the turn and he answers with the Salute's thrust.
+      { id: 'pavane', name: 'The Pavane', anim: 'sweep', pose: 'hollisPavane', tracking: { rate: 2.6, commit: 0.65 }, markers: glint(0, 1, 2), chance: 0.8,
+        hits: [{ startup: 0.9, active: 0.12, follow: 0.3, damage: 22, box: GREET, step: { from: 0.3, speed: 3, side: 0 } },
+               { startup: 0.5, active: 0.16, follow: 0.35, damage: 26, box: WAIST },
+               { startup: 0.55, active: 0.14, follow: 0.45, damage: 30, box: BOW, step: { from: 0.2, speed: 3, side: 0 } },
+               { startup: 0.55, active: 0.14, follow: 0.25, damage: 20, box: BOW, ...echo(2, 'sweep', {}, 0.45) }], recovery: 1.8,
+        followUps: [{ attack: 'salute', if: 'far', chance: 0.3 }, { attack: 'turnCloak', if: 'behind', chance: 0.37 }],
+        damage: 26, poise: 45, knock: 6, lunge: 1.4, range: 3.6, box: WAIST },
       // The Long Table: a sweep at the knees, wide as a banquet; he lays his hand along it and it is swept again. Jump each.
       { id: 'longTable', name: 'The Long Table', anim: 'sweep', pose: 'hollisLongTable', noParry: true, tracking: { rate: 2.2, commit: 0.6 }, chance: 0.6,
         hits: [{ startup: 1.15, active: 0.16, follow: 0.6 },
@@ -306,9 +369,9 @@ MODEL_DEFS.regentHollis = {
                { startup: 0.45, active: 0.12, follow: 0.5, step: { from: 0.1, speed: 3.5, side: 0 } },
                { startup: 0.4, active: 0.14, follow: 0.2, damage: 20, ...echo(1, 'sweep') }], recovery: 2.08,
         damage: 22, poise: 35, knock: 5, lunge: 1.0, range: 3.6, box: { w: 4.0, h: 1.6, d: 3.0, fwd: 1.6, y: 1.0 } },
-      // The Feast: the sword raised point-down, a leap, and it is driven into the floor where you were; the gilt it threw
-      // up hangs round him, and cuts.
-      { id: 'feast', name: 'The Feast', anim: 'chop', pose: 'hollisFeast', noParry: true, tracking: { rate: 2.4, commit: 0.5 }, minRange: 5, chance: 0.4,
+      // The Feast: the sword raised point-down, a leap, and it is driven into the floor where you were (parry the blade as
+      // it comes down, pass 143); the gilt it threw up hangs round him, and cuts (step out of it).
+      { id: 'feast', name: 'The Feast', anim: 'chop', pose: 'hollisFeast', markers: glint(0), tracking: { rate: 2.4, commit: 0.5 }, minRange: 5, chance: 0.4,
         hits: [{ startup: 1.3, active: 0.16, follow: 0.7, leap: { from: 0.4, max: 12, short: 1.2 }, impact: { ring: 4.0, crack: 2.0, dust: 20, shake: 0.16 } },
                { startup: 0.7, active: 0.2, follow: 0.3, damage: 30, box: { w: 4.0, h: 3.0, d: 4.0, fwd: 1.0, y: 1.5 }, ...echo(0, 'field') }], recovery: 2.56,
         damage: 46, heavy: true, poise: 85, knock: 10, lunge: 0, range: 12, box: { w: 3.0, h: 2.6, d: 3.0, fwd: 1.0, y: 1.0 } },

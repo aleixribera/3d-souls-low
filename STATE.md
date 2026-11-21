@@ -9,11 +9,12 @@ The iterate loop's working note (`.claude/iterate.md`). Cap: 8,000 characters.
   against a sealed attack refused. Acceptance: `tests/summons-one.cjs`, in-page `summons` 2/2; clip
   `docs/scorecard/now/summons-one.mp4`. Next on track 2: batch 11, Summons II. Browser lock:
   `node tools/browser-lock.cjs run <pass> -- <cmd>` (docs/two-tracks.md).
-- Track 1, pass 142 (PLAN item 6, the Ringer, pass 1 of 2), done in v7.191.0: step-0 audit a restyle (her own 11
-  moves, 5 strings, a real phase two; `noParry` 8 of 15 and body check 16/26 flagged): clapper and fetter blows parried,
-  knells jumped (roll-only 2/8, 3/12), tells on the ball (`edgeTell`) or the stamping foot, in-between keys, outCubic
-  wind-ups after the `bars-1` round (`docs/bosses/ringer.md`). Acceptance: in-page `Night Gaol|Boss edge tells` 16/16,
-  body-check 0/28; clip `docs/scorecard/now/ringer-cel.mp4`. She awaits Aleix. Next on track 1: Hollis's step-0 audit.
+- Track 1, pass 143 (PLAN item 6, the Regent Hollis, pass 1 of 2): step-0 audit a restyle plus a string (his own 11
+  moves, a real phase two, but one real string in phase one; hungry `noParry` 4/12; body check 11/30): the Pavane added,
+  the Feast's blade parried (roll-only 2/9, 3/13), tell on the blade (`edgeTell`), in-between keys, outCubic wind-ups,
+  the mantle hangs on a bowed back (cloth `plumb`) after the `bars-1` round (`docs/bosses/hollis.md`). Acceptance:
+  in-page `Aurel|Boss edge tells|Player look` 20/20, body-check 0/34; clip `docs/scorecard/now/hollis-cel.mp4`. He
+  awaits Aleix. The Ringer (pass 142) awaits Aleix too. Next on track 1: Oswin's step-0 audit.
 
 ## Works
 
@@ -72,6 +73,7 @@ The iterate loop's working note (`.claude/iterate.md`). Cap: 8,000 characters.
 
 ## Needs Aleix
 
+- Fight the Regent Hollis (Practice, `?style=cel`; the Pavane is new, and the Feast's blade is parried unless you say).
 - Fight the Ringer (Practice, `?style=cel`; her stamping foot and Over the Line's ball are parried unless you say).
 - Fight Hale and Harrow (Practice, `?style=cel`; Harrow's axe stays hidden until the whole phase unless you say).
 - Fight Old Ostrey too (Practice, `?style=cel`; one `bars-1` round; the Burning Drop's landing parried unless you say).

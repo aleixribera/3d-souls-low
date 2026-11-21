@@ -204,7 +204,7 @@ class ModelAnimator {
     const turn = (this.lastYaw === undefined || dt <= 0 ? 0 : angDiff(yaw, this.lastYaw) / dt) + twistV * G.clothTwist; this.lastYaw = yaw;
     // Pass 94: a strip lies on a back bent forward and swings out from there, so its outward limit (`clothClamp` from
     // plumb) shrinks by the body's forward pitch: a cape on a low dash trails, it doesn't stream out flat.
-    const L = G.clothClamp, hi = Math.max(0, L - Math.max(0, r.tip.rotation.x + r.spin.rotation.x + r.chest.rotation.x));
+    const pitch = Math.max(0, r.tip.rotation.x + r.spin.rotation.x + r.chest.rotation.x), L = G.clothClamp, hi = Math.max(0, L - pitch);
     let left = dt;
     while (left > 1e-5) {
       const h = Math.min(left, G.maxClothDt); left -= h;
@@ -222,7 +222,9 @@ class ModelAnimator {
     // A strip hung from another swings at most `clothClamp` from plumb all told, so a chain of three never stands on end.
     for (const c of this.cloth) {
       const ba = c.up ? c.up.da : 0, bs = c.up ? c.up.ds : 0;
-      const x = clamp(c.a, -L - ba, Math.min(hi, c.c.max ?? hi) - ba), z = clamp(c.s, -L - bs, L - bs);
+      // (pass 143, opt-in) a strip's `plumb` (0 to 1): that share of the body's forward bend is taken back off it, so a long
+      // mantle on a bowed back hangs down toward plumb instead of standing out behind him as a board over his body.
+      const x = clamp(c.a, -L - ba, Math.min(hi, c.c.max ?? hi) - ba) - (c.c.plumb || 0) * pitch, z = clamp(c.s, -L - bs, L - bs);
       c.bone.rotation.x = x; c.bone.rotation.z = z; c.da = ba + x; c.ds = bs + z;
     }
   }

@@ -1680,6 +1680,7 @@ const KIT = (() => {
     if ('hum' in M && !(M.hum && known(M.hum.bone) && Array.isArray(M.hum.at) && M.hum.at.length === 3 && Number.isInteger(M.hum.color) && M.hum.size > 0))
       bad('hum needs a bone, at [x, y, z], a color and a size above 0.');   // pass 68
     for (const c of M.anim?.cloth || []) if (!known(c.bone)) bad(`anim.cloth names unknown bone "${c.bone}" (a model's own \`bones\` replace the ones it extends).`);
+    for (const c of M.anim?.cloth || []) if ('plumb' in c && !(typeof c.plumb === 'number' && c.plumb >= 0 && c.plumb <= 1)) bad('anim.cloth plumb is a share from 0 to 1.');   // pass 143
     for (const h of M.anim?.hang || []) if (!(M.bones && h.bone in M.bones && h.k > 0 && h.damp >= 0 && h.gain >= 0))
       bad('anim.hang lists { bone (one of the model bones), k above 0, damp and gain 0 or more }.');
     for (const s of M.anim?.spin || []) if (!(M.bones && s.bone in M.bones && ['x', 'y', 'z'].includes(s.axis) && typeof s.speed === 'number' && Number.isFinite(s.speed) && (s.revealMul === undefined || (typeof s.revealMul === 'number' && s.revealMul > 0))))
