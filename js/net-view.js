@@ -20,6 +20,7 @@ const netView = {
     e.holdLeft = s.holdLeft; e.retreatHop = s.retreatHop; e.blinkLeft = s.blinkLeft;
     e.vx = s.vx; e.vy = s.vy; e.vz = s.vz;
     e.hp = s.hp; e.poise = s.poise; e.frozen = s.frozen || 0;
+    e.sealed = s.sealed || 0; e.sealNo = s.seal ? s.serial : -1;   // Binding Seal: its strip, and the attack it spends
     if ((s.cracks || 0) !== e.cracks) {   // pass 100: the server's cracks; `by` the striker (this player, or another's id)
       const grew = (s.cracks || 0) > e.cracks;
       e.cracks = s.cracks || 0; e.crack = e.cracks ? 1 : 0;
@@ -45,8 +46,9 @@ const netView = {
     if ((e.netParried === s.serial || counterPending) && [ES.WINDUP, ES.ACTIVE].includes(s.state)) { e.state = ES.PARRIED; e.stateTime = 0; }
     const boxKey = `${s.serial}/${s.hitIndex}`;
     // Each cut is noted where it was first seen striking, hitbox or not, so that a later `echo` of it hangs there.
-    if (e.state === ES.ACTIVE && e.attack && e.netCutKey !== boxKey) { e.netCutKey = boxKey; e.noteCut(); }
-    if (s.hitbox && e.state === ES.ACTIVE && e.attack && e.netParried !== s.serial && e.netJoinSerial !== s.serial) {
+    // A sealed attack (Binding Seal) cuts nothing: no fire, seam or prism is laid, as on the server.
+    if (e.state === ES.ACTIVE && e.attack && e.netCutKey !== boxKey && !s.seal) { e.netCutKey = boxKey; e.noteCut(); }
+    if (s.hitbox && !s.seal && e.state === ES.ACTIVE && e.attack && e.netParried !== s.serial && e.netJoinSerial !== s.serial) {
       if (e.netBoxKey !== boxKey || !e.hitbox) {
         e.hitbox = e.makeHitbox(); e.netBoxKey = boxKey;   // notes where it stands for a later `echo` too
       }
@@ -72,12 +74,19 @@ const netView = {
     const pool = abilityPools.place(d.holder, d.x, d.y, d.z, d.radius, Math.max(0, d.rate), d.time);
     events.emit('abilityPerk', { body: ctx.bodyOf(d.holder) || null, perk: 'press/pool', v, pool, remote: true });
   },
+  // Another's Moon Dome (the server's word): it shelters this browser's player too, and is drawn (js/guard-fx-2.js).
+  guardDome(d, ctx) {
+    if (![d.x, d.y, d.z, d.radius, d.time].every(Number.isFinite) || d.radius <= 0 || d.time <= 0 || typeof d.holder !== 'string') return;
+    const v = ArenaNet.own(ABILITY_BY_ID, d.ability)?.levels?.[0] || null;
+    const dome = abilityDomes.place(d.holder, d.x, d.y, d.z, Math.min(d.radius, 8), Math.min(d.time, 10));
+    events.emit('abilityPerk', { body: ctx.bodyOf(d.holder) || null, perk: 'press/dome', v, dome, remote: true });
+  },
   // A legendary, anyone's (js/ability-fx.js draws it).
   ability(d, e, ctx) {
     if (!ArenaNet.own(ABILITY_BY_ID, d.power) || !d.v || typeof d.v !== 'object') return;
     const body = d.holder === ctx.self ? Game.player : ctx.bodyOf(d.holder);
     if (d.then === 'bloodMoon' && body === Game.player && ctx.self) { body.perk.moon = d.v.time; body.perk.moonV = d.v; }
-    if (d.end && body === Game.player && ctx.self) {   // a flurry or a stance the server cut short: off its feet at once
+    if (d.end && d.end !== 'crumble' && body === Game.player && ctx.self) {   // (an Ash Husk crumbling leaves its holder be)   // a flurry or a stance the server cut short: off its feet at once
       body.root = 0;
       if (d.end === 'cancel' && Number.isFinite(d.v.charge)) {   // Quick Draw cut short: the key's charge back, as on the server
         const key = ABILITY_BY_ID[d.power].key; if (key && body.perk.charge) body.perk.charge[key] = Math.max(body.perk.charge[key] || 0, d.v.charge);
@@ -94,7 +103,7 @@ const netView = {
         if (attacker) events.emit('strike', { ...d, attacker, player: attacker, target: e });
       // A teammate's parry names its body (or id), so camera feedback for the local player's own parries stays theirs.
       } else if (d.type === 'parry' && d.player !== ctx.self && e) events.emit('parry', { target: e, player: ctx.bodyOf(d.player) || d.player });
-      else if (d.type === 'abilityPower' && (e || d.end || d.then === 'iai')) netView.ability(d, e || null, ctx);   // a stance's or a cut's word, even past its enemy
+      else if (d.type === 'abilityPower' && (e || d.end || d.then === 'iai' || d.then === 'husk')) netView.ability(d, e || null, ctx);   // a stance's or a cut's word, even past its enemy
       if (['attackStart', 'attackPhase', 'bossPhase', 'bossRetreat', 'bossGone', 'enemyBlink'].includes(d.type) && e) {
         const attack = sample.value.attack ? e.baseDef.attacks.find(a => a.id === sample.value.attack) : e.attack;
         events.emit(d.type, { enemy: e, actor: e, attack, phase: PHASE.ACTIVE, hitIndex: d.hitIndex, seamless: d.seamless, out: d.out });

@@ -677,6 +677,66 @@ const AUDIO = {
       { noise: 'white', filter: { type: 'bandpass', freq: 2000, q: 2 }, at: 0.02, a: 0.002, d: 0.06, gain: 0.2 },
       { wave: 'sine', freq: 330, partials: [[1, 1, 1], [1.5, 0.4, 1]], at: 0.05, a: 0.2, h: 1.2, d: 0.4, gain: 0.06 },
     ] },
+    // Guard II (batch 9). Mirror Ward: a pane of glass ringing into place; the bounce: glass cracking, a bright ring and a
+    // whoosh of shards flung back.
+    abilityWard: { bus: 'sfx', priority: 2, cooldown: 0.2, max: 1, verb: 0.45, heat: 0.15, jitter: 10, layers: [
+      { wave: 'sine', freq: 1760, partials: [[1, 1, 1], [2.76, 0.3, 0.5], [5.4, 0.12, 0.3]], a: 0.004, d: 0.7, gain: 0.08 },
+      { noise: 'white', filter: { type: 'bandpass', freq: 6000, q: 2 }, a: 0.05, d: 0.25, gain: 0.12 },
+    ] },
+    abilityWardBounce: { bus: 'sfx', priority: 3, cooldown: 0.12, max: 2, verb: 0.4, heat: 0.35, jitter: 15, layers: [
+      { noise: 'white', filter: { type: 'highpass', freq: 3500 }, a: 0.001, d: 0.18, gain: 0.4 },
+      { wave: 'sine', freq: 1320, partials: [[1, 1, 1], [2.76, 0.5, 0.5]], a: 0.001, d: 0.45, gain: 0.14 },
+      { noise: 'pink', filter: { type: 'bandpass', freq: 900, to: 2600, q: 1.2 }, at: 0.05, a: 0.03, d: 0.25, gain: 0.3 },
+      { wave: 'sine', freq: 90, to: 60, glide: 0.2, at: 0.08, a: 0.002, d: 0.25, gain: 0.25 },
+    ] },
+    // Ash Husk: a dry crackle as the ash shell sets; its burst: a deep blue-cored boom, ash scattering.
+    abilityHusk: { bus: 'sfx', priority: 2, cooldown: 0.2, max: 1, verb: 0.35, heat: 0.2, jitter: 15, layers: [
+      { noise: 'brown', filter: { type: 'bandpass', freq: 700, q: 1.4 }, a: 0.01, d: 0.3, gain: 0.35 },
+      { noise: 'white', filter: { type: 'bandpass', freq: 3000, q: 3 }, at: 0.05, a: 0.001, d: 0.12, gain: 0.18 },
+    ] },
+    abilityHuskBurst: { bus: 'sfx', priority: 4, cooldown: 0.15, max: 2, verb: 0.55, heat: 0.5, jitter: 10, layers: [
+      { wave: 'sine', freq: 70, to: 38, glide: 0.4, drive: 1.6, a: 0.002, d: 0.6, gain: 0.4 },
+      { noise: 'brown', filter: { type: 'lowpass', freq: 1800, to: 300 }, a: 0.002, d: 0.6, gain: 0.5 },
+      { wave: 'sine', freq: 880, partials: [[1, 1, 1], [1.5, 0.4, 0.7]], at: 0.02, a: 0.005, d: 0.5, gain: 0.06 },
+    ] },
+    // Moon Dome: a soft chord swelling up as the dome rises; a shot or a blast breaking on it: a muffled glassy ripple.
+    abilityDome: { bus: 'sfx', priority: 2, cooldown: 0.2, max: 1, verb: 0.6, heat: 0.15, jitter: 0, layers: [
+      { wave: 'sine', freq: 440, partials: [[1, 1, 1], [1.5, 0.5, 1], [2, 0.3, 1]], a: 0.25, h: 0.5, d: 0.8, gain: 0.07 },
+      { noise: 'pink', filter: { type: 'bandpass', freq: 1500, to: 4000, q: 1.5 }, a: 0.2, d: 0.4, gain: 0.08 },
+    ] },
+    abilityDomeStop: { bus: 'sfx', priority: 2, cooldown: 0.06, max: 3, verb: 0.4, heat: 0.15, jitter: 30, layers: [
+      { wave: 'sine', freq: 980, to: 740, glide: 0.15, partials: [[1, 1, 1], [2.4, 0.3, 0.6]], a: 0.002, d: 0.3, gain: 0.08 },
+      { noise: 'white', filter: { type: 'lowpass', freq: 1200 }, a: 0.002, d: 0.08, gain: 0.25 },
+    ] },
+    // Waiting Blade: a blade eased back into its stance, a low held hum; the answer: a huge whistling cut and a ring.
+    abilityWait: { bus: 'sfx', priority: 2, cooldown: 0.2, max: 1, verb: 0.35, heat: 0.15, jitter: 10, layers: [
+      { noise: 'white', filter: { type: 'bandpass', freq: 3000, to: 1500, q: 3 }, a: 0.02, d: 0.15, gain: 0.15 },
+      { wave: 'sine', freq: 196, a: 0.1, h: 0.6, d: 0.5, gain: 0.06 },
+    ] },
+    abilityAnswer: { bus: 'sfx', priority: 4, cooldown: 0.15, max: 2, verb: 0.45, heat: 0.5, jitter: 10, layers: [
+      { noise: 'white', filter: { type: 'bandpass', freq: 1800, to: 6000, q: 1.5 }, a: 0.01, d: 0.22, gain: 0.45 },
+      { wave: 'sine', freq: 2093, partials: [[1, 1, 1], [2.76, 0.35, 0.5]], at: 0.08, a: 0.001, d: 0.9, gain: 0.1 },
+      { wave: 'sine', freq: 82, to: 55, glide: 0.25, at: 0.08, a: 0.002, d: 0.35, gain: 0.3 },
+    ] },
+    // Hourglass: a sound pulled backwards (a swell cut short), ticks running back; arriving: a soft glass chime.
+    abilityRewind: { bus: 'sfx', priority: 3, cooldown: 0.2, max: 1, verb: 0.5, heat: 0.2, jitter: 0, layers: [
+      { noise: 'pink', filter: { type: 'bandpass', freq: 3000, to: 600, q: 1.2 }, a: 0.3, d: 0.02, gain: 0.3 },
+      { wave: 'sine', freq: 2400, at: 0.0, a: 0.001, d: 0.02, gain: 0.07 }, { wave: 'sine', freq: 2400, at: 0.08, a: 0.001, d: 0.02, gain: 0.07 },
+      { wave: 'sine', freq: 2400, at: 0.16, a: 0.001, d: 0.02, gain: 0.07 }, { wave: 'sine', freq: 2400, at: 0.24, a: 0.001, d: 0.02, gain: 0.07 },
+    ] },
+    abilityRewindEnd: { bus: 'sfx', priority: 2, cooldown: 0.2, max: 1, verb: 0.55, heat: 0.15, jitter: 0, layers: [
+      { wave: 'sine', freq: 1175, partials: [[1, 1, 1], [2, 0.3, 0.7]], a: 0.004, d: 0.6, gain: 0.08 },
+    ] },
+    // Binding Seal: a paper strip flicked and slapped on; burning out: a fizz and a puff of smoke, the blow gone.
+    abilitySeal: { bus: 'sfx', priority: 3, cooldown: 0.2, max: 1, verb: 0.3, heat: 0.25, jitter: 10, layers: [
+      { noise: 'white', filter: { type: 'bandpass', freq: 2500, q: 1 }, a: 0.01, d: 0.12, gain: 0.3 },
+      { noise: 'brown', filter: { type: 'lowpass', freq: 900 }, at: 0.14, a: 0.001, d: 0.06, gain: 0.5 },
+      { wave: 'sine', freq: 660, at: 0.14, a: 0.003, d: 0.35, gain: 0.06 },
+    ] },
+    abilitySealSputter: { bus: 'sfx', priority: 4, cooldown: 0.2, max: 2, verb: 0.4, heat: 0.35, jitter: 10, layers: [
+      { noise: 'white', filter: { type: 'highpass', freq: 2500 }, a: 0.02, h: 0.15, d: 0.4, gain: 0.3 },
+      { noise: 'brown', filter: { type: 'lowpass', freq: 600, to: 200 }, a: 0.05, d: 0.6, gain: 0.35 },
+    ] },
     abilitySheathe: { bus: 'sfx', priority: 3, cooldown: 0.25, max: 2, verb: 0.3, heat: 0.2, jitter: 20, layers: [
       { noise: 'white', filter: { type: 'bandpass', freq: 2000, to: 5000, q: 2 }, a: 0.02, h: 0.1, d: 0.18, gain: 0.3 },
       { wave: 'sine', freq: 2400, at: 0.28, a: 0.001, d: 0.08, gain: 0.06 },

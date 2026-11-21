@@ -8,8 +8,8 @@
 // attack data, so no enemy is special-cased. Tuning: CONFIG.bot; personalities: BOT_PROFILES (js/data/bots.js).
 // The lobby server runs bots (js/lobby-sim.js); the brain never touches game state, it only presses.
 
-// The Guard presses a bot keeps for a wound (a heal, a pool) or for a wind-up coming close (js/data/abilities.js `then`).
-const GUARD_HURT = new Set(['heal', 'pool']), GUARD_BRACE = new Set(['stance', 'root', 'undying', 'armour']);
+// The Guard presses a bot keeps for a wound (a heal, a pool, a rewind) or for a wind-up coming close (js/data/abilities.js `then`).
+const GUARD_HURT = new Set(['heal', 'pool', 'rewind']), GUARD_BRACE = new Set(['stance', 'root', 'undying', 'armour', 'ward', 'wait', 'dome', 'husk']);
 
 // The interface Player reads from `input`, keyed by action name. Presses age on the bot's own clock.
 class BotHands {

@@ -170,6 +170,9 @@ class Enemy {
     this.landed = false;                             // ... and whether the current attack has landed a blow on anyone
     this.dashedThrough = false;                      // ... and whether its player dashed through it as it struck (CONFIG.bossMove)
     this.recoverMul = 1;                             // how many times as long its recovery plays (a dashed-through boss's, CONFIG.bossMove)
+    // Binding Seal (js/abilities.js): s left in which the next attack it begins is sealed, who sealed it ({ power, holder,
+    // v }), and the attack (attackNo) that is: it plays its wind-up in full and strikes nothing.
+    this.sealed = 0; this.sealBy = null; this.sealNo = -1;
     this.circleDir = Math.random() < 0.5 ? 1 : -1; this.circleLeft = 0;   // a boss holding alone: which way it circles, and for how long
     this.respace = 0; this.sawDash = false;          // a boss: how long it still takes its distance again after its player's dash
     this.crack = 0;                                  // visual: a guard-crack flash
@@ -371,6 +374,7 @@ class Enemy {
   }
   update(dt, player) {
     if (this.frozen > 0) { this.frozen = Math.max(0, this.frozen - dt); this.updateFeedback(dt); return; }
+    if (this.sealed > 0) this.sealed = Math.max(0, this.sealed - dt);
     this.step(dt, player);
     this.emitMarkers();
   }
@@ -783,6 +787,7 @@ class Enemy {
     this.moveRun = base.id === this.lastMove ? (this.moveRun || 0) + 1 : 1; this.lastMove = base.id; this.landed = false; this.dashedThrough = false; this.recoverMul = 1;
     this.attack = attack; this.hitIndex = 0; this.stepIn = false; this.holdLeft = null; this.holdH = this.holdC = 0; this.leapHit = -1; this.blinkHit = -1; this.burrowHit = -1; this.setState(ES.WINDUP);
     this.attackNo++;
+    if (this.sealed > 0 && this.sealBy) { this.sealed = 0; this.sealNo = this.attackNo; }   // Binding Seal: this one is spent on nothing
     if (attack.when === 'resonant') { this.resonance = 0; this.resonanceRest = this.def.resonance ? this.def.resonance.rest || 0 : 0; }   // the answer gives the ringing back
     crowd.started(this);
     events.emit('attackStart', { enemy: this, attack: this.attack });
@@ -801,6 +806,7 @@ class Enemy {
   // The strike timeline shared by all enemies: windup -> active (per hit) -> recover. A bow looses a bolt
   // at the target instead of opening a hitbox.
   strike(target) {
+    if (this.sealNo === this.attackNo) { this.sealedStrike(); return; }
     // A hit may bring its own `box` (with `ring`: an expanding ring round the owner) and its own `impact`.
     const hit = this.attack.hits[this.hitIndex], box = hit.box || this.attack.box, impact = hit.impact || this.attack.impact;
     if (this.attack.projectile && target) { this.hitbox = null; projectiles.fire(this, this.attack, target); }
@@ -814,6 +820,17 @@ class Enemy {
     // where the hitbox is centred as it opens (the fallback if it has closed by the time the blade lands)
     if (impact) this.impactAt = this.hitbox ? this.hitbox.center() : { x: this.x + Math.sin(this.yaw) * box.fwd, z: this.z + Math.cos(this.yaw) * box.fwd };
     this.landImpact();
+  }
+  // A sealed attack's strike (Binding Seal): its moment comes, but no hitbox, bolt, mark or impact, for every hit. The first
+  // tells the seal burning out (`sputter`), drawn and heard by everyone (the server sends it on).
+  sealedStrike() {
+    this.hitbox = null; this.impactDue = null;
+    if (this.leaping) { this.vx = this.vz = 0; }
+    this.setState(ES.ACTIVE);
+    if (this.hitIndex === 0 && this.sealBy) {
+      const S = this.sealBy;
+      events.emit('abilityPower', { power: S.power, then: 'seal', holder: S.holder, body: null, enemy: this, x: this.x, y: this.y, z: this.z, v: S.v, sputter: true });
+    }
   }
   landImpact() {
     if (this.impactDue == null || this.state !== ES.ACTIVE || this.stateTime < this.impactDue - 1e-9) return;
@@ -974,7 +991,9 @@ class Enemy {
     if (this.stateTime < h.active + (h.follow || 0)) return;
     this.hitbox = null;
     if (this.hitIndex + 1 < this.attack.hits.length) { this.hitIndex++; this.holdLeft = null; this.holdH = this.holdC = 0; this.setState(ES.WINDUP); }
-    else if (!this.followUp()) {
+    else if (this.sealNo === this.attackNo) {   // a sealed attack: no follow-up, and CONFIG.abilities.seal.recover s longer to recover
+      this.recoverMul = 1 + CONFIG.abilities.seal.recover * this.pace / Math.max(0.05, this.attack.recovery || 0.05); this.setState(ES.RECOVER);
+    } else if (!this.followUp()) {
       this.recoverMul = 1; this.setState(ES.RECOVER);
       if (this.dashedThrough) this.dashedThroughBy();
     }
@@ -1002,7 +1021,7 @@ class Enemy {
   // form it names. A Finishing Blow makes it forget them all (Enemy.step). js/finale.js lights the model's `marks`.
   learn() {
     const a = this.attack;
-    if (a && a.learns && !this.landed && this.alive() && !this.learned.includes(a.id)) {
+    if (a && a.learns && !this.landed && this.sealNo !== this.attackNo && this.alive() && !this.learned.includes(a.id)) {   // (a sealed one never had a chance)
       this.learned.push(a.id);
       events.emit('enemyLearned', { enemy: this, attack: a });
     }

@@ -3,7 +3,7 @@
 // each fired twice, its name in the corner: docs/scorecard/now/<set>-commons.mp4. The clock is stepped by hand
 // (Game.manualClock) and every other step is a frame, so a clip plays at real speed whatever the PC's speed. With
 // `--stills`, the guard set's current frames too (guard-*.jpg, desktop; -phone for two).
-// Usage: node tools/ability-clips.cjs [blade|guard|mirror|rares|triggers|echo|strikes|flashy|self ...] [--stills]   (no set = all). One headless Edge; needs ffmpeg.
+// Usage: node tools/ability-clips.cjs [blade|guard|mirror|rares|triggers|echo|strikes|flashy|self|boss ...] [--stills]   (no set = all). One headless Edge; needs ffmpeg.
 require('../tests/low-priority.cjs');
 const fs = require('node:fs');
 const os = require('node:os');
@@ -126,6 +126,21 @@ const SETS = {
     ['Ember Mail', `(p, e) => { p.grantAbilities(['ember-mail', 'ember-mail']); __key2(); __later(40, () => p.takeHit({ attackId: 'x', damage: 20, knock: 4, poise: 20, hitstop: 0 }, e)); }`, 76, 'guard-self-ember-mail', 30],
     ['Still Water', `p => { p.grantAbilities(['still-water']); p.hp = p.lastHp = p.maxHp * 0.4; __key2(); }`, 110, 'guard-self-still-water', 50],
   ] },
+  // Guard II (pass 137, batch 9): docs/scorecard/now/guard-boss.mp4, with --stills a frame of each (guard-boss-<id>.jpg;
+  // -phone for the first two). Each pressed through key 2; the Captain's blows land as js/combat.js lands them, his bolts
+  // (a bowman's) fly at a dome from 7 m, and his real swings fall on the husk and are sealed.
+  boss: { ids: [], file: 'guard-boss', phone: 2, crf: 30, beats: [
+    ['Mirror Ward', `(p, e) => { p.grantAbilities(['mirror-ward']); __face(); __key2(); __later(26, () => p.takeHit({ attackId: 'x', damage: 20, knock: 4, poise: 20, hitstop: 0 }, e, { enemy: e, shot: false, area: false })); }`, 64, 'guard-boss-mirror-ward', 30],
+    ['Moon Dome', `(p, e) => { p.grantAbilities(['moon-dome']); __far(7); __key2(); const bow = ENEMY_BY_ID.bowman.attacks.find(a => a.projectile);
+      for (const n of [22, 40]) __later(n, () => projectiles.fire(e, bow, p)); }`, 76, 'guard-boss-moon-dome', 34],
+    ['Waiting Blade', `(p, e) => { p.grantAbilities(['waiting-blade']); __face(); __key2(); __later(34, () => p.takeHit({ attackId: 'x', damage: 20, knock: 4, poise: 20, hitstop: 0 }, e, { enemy: e, shot: false, area: false })); }`, 64, 'guard-boss-waiting-blade', 36],
+    ['Hourglass', `(p, e) => { p.grantAbilities(['hourglass']); __face(); const fx = Math.sin(p.yaw + 1.57), fz = Math.cos(p.yaw + 1.57);
+      for (let i = 1; i <= 30; i++) __later(i, () => { p.x += fx * 0.1; p.z += fz * 0.1; });
+      __later(31, () => { p.hp = p.lastHp = p.maxHp * 0.45; __key2(); }); }`, 76, 'guard-boss-hourglass', 38],
+    ['Ash Husk', `(p, e) => { p.grantAbilities(['ash-husk']); __face(); __key2(); __later(20, () => { const h = abilityPowers.husks.get('self'); if (h) e.yaw = Math.atan2(h.x - e.x, h.z - e.z); __swing(); });
+      __later(100, () => { if (abilityPowers.husks.size) { const hb = e.hitbox; e.hitbox = { overlaps: () => true }; abilityPowers.tick(0); e.hitbox = hb; } }); }`, 130, 'guard-boss-ash-husk', 20],
+    ['Binding Seal', `(p, e) => { p.grantAbilities(['binding-seal']); __face(); __key2(); __later(16, () => { e.yaw = Math.atan2(p.x - e.x, p.z - e.z); __swing(); }); }`, 130, 'guard-boss-binding-seal', 84],
+  ] },
 };
 
 (async () => {
@@ -171,12 +186,18 @@ const SETS = {
             const c = p.ctl.consume; p.ctl.consume = function (a) { if (a === 'ability2') { p.ctl.consume = c; return true; } return c.call(this, a); };
           };
           window.__face = () => { p.yaw = p.pyaw = Math.atan2(e.x - p.x, e.z - p.z); };
+          window.__far = d => {   // the Captain d m off, facing the player, who faces him
+            e.x = e.px = p.x + Math.sin(p.yaw + 0.35) * d; e.z = e.pz = p.z + Math.cos(p.yaw + 0.35) * d; e.yaw = Math.atan2(p.x - e.x, p.z - e.z); __face(); Game.render(1, CONFIG.step);
+          };
+          window.__swing = () => {   // Three Cuts where the boss has it (a short wind-up), else its first plain swing
+            const A = e.baseDef.attacks; e.beginAttack(A.find(a => a.id === 'captainCombo') || A.find(a => !a.projectile && !a.rollOnly && !a.seize && !a.learned));
+          };
           window.__landed = () => {   // a blow of the player's, told as js/combat.js tells it (the strike its cues listen for)
             const s = abilityStrike(p.kit, p.perk, e, { attackId: 'light', damage: 10, poise: 0, knock: 0, hitstop: 0 }); e.takeHit(s, p);
             events.emit('strike', { strike: s, attacker: p, target: e, at: { x: e.x, y: e.y + 1.2, z: e.z }, blocked: false });
           };
           window.__reset = name => {
-            commonFx.clear(); rareFx.clear(); rareStrikeFx.clear(); strikeFx.clear(); strikeFx2.clear(); guardFx.clear(); abilityPowers.reset(); later.length = 0; tag.textContent = name; e.cracks = 0; events.emit('guardCrack', { enemy: e, cracks: 0 });
+            commonFx.clear(); rareFx.clear(); rareStrikeFx.clear(); strikeFx.clear(); strikeFx2.clear(); guardFx.clear(); guardFx2.clear(); abilityDomes.clear(); abilityPowers.reset(); later.length = 0; tag.textContent = name; e.cracks = 0; events.emit('guardCrack', { enemy: e, cracks: 0 });
             p.hp = p.maxHp; p.lastHp = p.hp; p.perk = abilityPerkState(); p.tint = 0;
             for (let i = 0; i < 30; i++) Game.update(CONFIG.step);
             e.x = e.px = p.x + Math.sin(p.yaw + 0.6) * 2.8; e.z = e.pz = p.z + Math.cos(p.yaw + 0.6) * 2.8; e.y = p.y; e.yaw = Math.atan2(p.x - e.x, p.z - e.z);

@@ -49,7 +49,7 @@ const CONFIG = {
               wave: [0.8, 0], crescent: [-1.4, 0.06], cyclone: [1.2, 0.04], petals: [1.4, 0.04],
               spikes: [-1.2, 0.04], fist: [2.4, 0.12], risingFire: [1.6, 0.05], clap: [2.0, 0.08],
               flurry: [-0.8, 0.02], drill: [-1.0, 0.02], stitch: [-1.0, 0.03], boomerang: [-0.8, 0.02], clones: [-1.6, 0.04], iai: [-2.2, 0.05],
-              undying: [2, 0.08] } },
+              undying: [2, 0.08], ward: [-1.2, 0.03], answer: [-2, 0.06], husk: [1.6, 0.05], seal: [0.8, 0] } },
   },
   zoom: { min: 2.6, max: 12, default: 4.6, rate: 7,
           heightRatio: 0.5 },   // camera height = distance * heightRatio
@@ -348,6 +348,13 @@ const CONFIG = {
     // Still Water heals `shared.pool` of the holder's rate; at most `pools` pools at once (one a player); the server takes a
     // vanish or a pool pressed on `slack` s more than its time (a pose's lag).
     undying: { floor: 1 }, shared: { pool: 0.33 }, pools: 4, guardSlack: 0.5,
+    // Guard II (batch 9): Mirror Ward bounces `share` of the blow times `reflect.mul`; Ash Husk steps its holder `husk.step`
+    // m back (a knock, CONFIG.player.knockFriction) and leaves a husk `husk.body` m round and `husk.height` m tall that bursts on
+    // every enemy within `husk.radius` m; at most `domes` Moon Domes at once (one a player); Hourglass keeps a place every
+    // `rewind.every` s, `rewind.slots` of them, and glides back over `rewind.glide` s; Binding Seal's attack recovers
+    // `seal.recover` s longer.
+    reflect: { mul: 3 }, husk: { step: 1.6, body: 0.5, height: 1.8, radius: 2.5 }, domes: 4,
+    rewind: { every: 0.1, slots: 41, glide: 0.35 }, seal: { recover: 0.4 },
     // Summons (js/abilities.js summonStep): each kind stands `gap` m off its enemy's body, `flank` rad round from the
     // side away from its holder (+ toward the enemy's left), and runs there at up to `speed` m/s. It has arrived
     // `arrive` s after it is called (one that `rises` comes up where it will stand; the others run there); a hound,
@@ -805,6 +812,10 @@ const CONFIG = {
       // Guard I (js/guard-fx.js, batch 8), in m: Mending's ring `mend` across rising `mendRise` up in `mendTime` s; Iron
       // Stance's shell `shell` out from the body and its star `star`; Iron Root's roots `roots` across; Unbroken's flame
       // `flame` tall (`flare` at a blow held) and its ring `flareRing`; Ember Mail's plates `plate` across.
+      // Guard II (js/guard-fx-2.js, batch 9), in m: Mirror Ward's pane `pane` across, `paneOff` before the body; a burst's
+      // star `star`; Ash Husk's ring `huskRing` and scorch `scorch`; Waiting Blade's dial `dial` and answering arc `answer` at
+      // `waist` up; Hourglass's ring `rewindRing`; Binding Seal's strip `seal` tall, hung at `sealUp` of the boss's height.
+      guard2: { pane: 1.3, paneOff: 0.75, star: 1, huskRing: 1.3, scorch: 2.6, dial: 1.8, answer: 4, waist: 1.1, rewindRing: 1.6, seal: 1.2, sealUp: 0.85 },
       guard: { faint: 0.2, mend: 1.1, mendRise: 1.9, mendTime: 0.5, shell: 0.04, star: 0.9, roots: 2.4, flame: 1.2, flare: 2.2, flareRing: 3, plate: 0.55 },
       strike2: { fan: 2.6, drill: 1.4, drillTurn: 0.9, drillPitch: 0.35, spike: 2.5, disc: 1.4, waist: 1.1, clone: 2.2 },
       strike: { petal: 2.4, petalGap: 0.5, burst: 2.2, sweep: 2.4, crescent: 3.2, waist: 1, cutStar: 1.1, spike: 2.4, fist: 3, fang: 4, clapStar: 0.9 },

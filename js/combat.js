@@ -207,11 +207,19 @@ function resolveCombat(game) {
       if (p.state === PS.ROLL && !p.blink && !p.vanished() && hb.weighed !== p.dashNo) { hb.weighed = p.dashNo; if (dashOutlasts(p, hb)) perfectDodge(p, hb); }
       continue;
     }
+    // Moon Dome: a blast whose origin is outside a dome breaks on its skin before it reaches a body inside (a blow struck
+    // from inside lands). Its origin: where a wall of fire came nearest, where a storm's bolt fell, else the striker.
+    const area = isAreaHitbox(hb);
+    if (area && abilityDomes.list.length) {
+      const o = hb.lines ? hb.near : hb.anchor && hb.anchor.bolt ? hb.anchor.cut : hb.owner, dome = abilityDomes.shelter(p, o.x, o.y ?? p.y, o.z);
+      if (dome) { hb.markHit(p); hb.owner.landed = true; events.emit('abilityPerk', { body: p, perk: 'dome/stop', dome, at: { x: o.x, y: p.y + 1, z: o.z } }); continue; }   // (met, as a guard: nothing escaped to learn from)
+    }
     hb.markHit(p);   // (a blow dodged is marked too, so the counter out of it is never caught by it: perfectDodge)
     hb.owner.landed = true;   // pass 77: it landed (an attack's `learns`); online the server hears it from this player
     if (hb.owner.attack && hb.owner.attack.learns && typeof multiplayer !== 'undefined' && multiplayer.active()) multiplayer.landed(hb.owner);
     // A wall of fire pushes away from its seam, a bolt from where it fell, not from him.
-    const res = p.takeHit(hb.payload, hb.lines ? hb.near : hb.anchor && hb.anchor.bolt ? hb.anchor.cut : hb.owner);
+    const res = p.takeHit(hb.payload, hb.lines ? hb.near : hb.anchor && hb.anchor.bolt ? hb.anchor.cut : hb.owner, { enemy: hb.owner, shot: false, area });
+    if (res.warded || res.answered) continue;   // Mirror Ward, Waiting Blade: nothing reached the body (no blood, lifesteal or hurt; their own cues)
     // Thorn Guard: a blow on the raised guard from an enemy close enough to be pricked (not a bolt or a wall of fire).
     if (res.blocked && !hb.lines && !(hb.anchor && hb.anchor.bolt) && hb.owner.alive && hb.owner.alive()
       && Math.hypot(hb.owner.x - p.x, hb.owner.z - p.z) - (hb.owner.radius || 0) <= CONFIG.abilities.commons.thornReach)
@@ -225,6 +233,12 @@ function resolveCombat(game) {
   }
 }
 
+// A blast rather than a blow (Moon Dome stops it from outside; Waiting Blade never answers it): a wall of fire, a storm's
+// bolt, a ring or a round burst, or a box at least CONFIG.aggro.areaWidth wide.
+function isAreaHitbox(hb) {
+  const b = hb.box;
+  return !!(hb.lines || (hb.anchor && hb.anchor.bolt) || (b && (b.ring || b.round || b.w >= CONFIG.aggro.areaWidth)));
+}
 // Boss team combat uses the same hitboxes, shields, damage and phase transitions as a duel.
 // Capture active hitboxes before applying damage so simultaneous opposing swings can trade.
 function applyEnemyStrike(game, strike, attacker, target, at, projectile = false, from = attacker) {

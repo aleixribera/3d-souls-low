@@ -91,6 +91,13 @@ const ABILITY_ICONS = {
   'vanishing-step': '<path d="M14 30 C10 26 12 20 17 21 C17 16 23 15 24 20"/><path d="M30 14 C34 12 38 16 35 20"/><path d="M27 34 C31 32 35 36 32 40"/><path d="M8 42 H18 M22 42 H26 M30 42 H34"/>',
   'ember-mail': '<path d="M10 14 C16 9 32 9 38 14 L36 26 C34 34 29 38 24 41 C19 38 14 34 12 26 Z"/><path d="M24 12 V39"/><path d="M14 20 H34"/>',
   'still-water': '<ellipse cx="24" cy="32" rx="18" ry="7"/><ellipse cx="24" cy="32" rx="9" ry="3.5"/><path d="M24 8 C28 14 29 17 29 19 A5 5 0 0 1 19 19 C19 17 20 14 24 8 Z"/>',
+  // Guard II (batch 9)
+  'mirror-ward': '<path d="M26 5 H36 V43 H26 Z"/><path d="M30 13 L33 20 L29 26 M33 30 L30 36"/><path d="M4 18 H20 M15 14 L20 18 L15 22"/><path d="M20 32 H6 M11 28 L6 32 L11 36"/>',
+  'ash-husk': '<path d="M14 8 A4 4 0 1 1 14 16 A4 4 0 1 1 14 8" stroke-dasharray="2 2"/><path d="M14 18 V31 M8 22 H20 M14 31 L9 42 M14 31 L19 42" stroke-dasharray="3 2"/><circle cx="34" cy="14" r="3.5"/><path d="M34 18 V30 M30 22 L38 24 M34 30 L38 41 M34 30 L30 40"/><path d="M4 24 L1 22 M4 28 L1 30 M22 10 L25 7"/>',
+  'moon-dome': '<path d="M6 38 A18 18 0 0 1 42 38"/><path d="M4 38 H44"/><path d="M18 24 A8 8 0 0 0 22 33 A10 10 0 0 1 18 24"/><path d="M29 20 A6 6 0 0 0 32 27 A8 8 0 0 1 29 20"/><path d="M2 14 L6 18 M10 6 L12 11 M46 14 L42 18"/>',
+  'waiting-blade': '<path d="M3 44 C14 18 30 8 45 4"/><path d="M10 36 L34 30"/><path d="M33 27 L35 33"/><path d="M35 30 L42 28"/><circle cx="38" cy="29" r="3"/>',
+  'hourglass': '<path d="M8 40 C8 26 20 30 22 20 C24 10 34 8 40 8"/><circle cx="40" cy="6" r="2.5"/><path d="M40 10 V16"/><path d="M14 26 L18 30 M24 16 L28 19 M30 9 L32 13"/><path d="M14 40 L8 40 L8 34"/>',
+  'binding-seal': '<path d="M18 4 H30 V34 C30 38 26 40 24 40 C22 40 18 38 18 34 Z"/><path d="M21 10 L27 12 M21 17 L27 18 M22 24 L26 26"/><path d="M24 40 C20 43 21 46 24 46 C27 46 28 43 24 40"/>',
   'iron-stance': '<path d="M24 5 L39 11 V23 C39 33 32 39 24 43 C16 39 9 33 9 23 V11 Z"/><path d="M16 23 L24 16 L32 23 M16 31 L24 24 L32 31"/>',
   'thunder-call': '<path d="M16 4 L9 18 H15 L10 30"/><path d="M30 8 L22 23 H29 L23 38"/><path d="M41 4 L36 14 H40 L37 22"/><path d="M6 44 H42"/>',
   'cataclysm': '<circle cx="24" cy="24" r="5"/><circle cx="24" cy="24" r="12" stroke-dasharray="3 3"/><circle cx="24" cy="24" r="19"/><path d="M24 1 V7 M24 41 V47 M1 24 H7 M41 24 H47"/>',

@@ -51,6 +51,7 @@ function registerListeners() {
   strikeFx.attach();     // Strike I, the key-1 shapes on the ground drawn (js/strike-fx.js)
   strikeFx2.attach();    // Strike II, the flashy key-1 strikes drawn (js/strike-fx-2.js)
   guardFx.attach();      // Guard I, the key-2 guards on yourself drawn (js/guard-fx.js)
+  guardFx2.attach();     // Guard II, the key-2 guards that answer the boss drawn (js/guard-fx-2.js)
   summonFigures.attach(); // the Stone Guardian and the Lancer of Ash drawn (js/summon-figures.js)
   registerAudioListeners();
 }

@@ -275,9 +275,21 @@ function validateData({ visual = true } = {}) {
   need(BL.undying && num(BL.undying.floor) && BL.undying.floor > 0 && BL.shared && num(BL.shared.pool) && BL.shared.pool >= 0 && BL.shared.pool <= 1
     && Number.isInteger(BL.pools) && BL.pools >= 1 && num(BL.guardSlack) && BL.guardSlack >= 0,
     'CONFIG.abilities: undying.floor above 0, shared.pool from 0 to 1, pools a whole number from 1, guardSlack 0 or more.');
+  // Guard II (batch 9): the bounce's multiplier, the husk's step and body, how many domes, the rewind's trail, the seal's recovery.
+  const HK = BL.husk, RW = BL.rewind;
+  need(BL.reflect && num(BL.reflect.mul) && BL.reflect.mul > 0 && HK && ['step', 'body', 'height', 'radius'].every(k => num(HK[k]) && HK[k] > 0)
+    && Number.isInteger(BL.domes) && BL.domes >= 1 && RW && num(RW.every) && RW.every > 0 && Number.isInteger(RW.slots) && RW.slots >= 2
+    && num(RW.glide) && RW.glide > 0 && BL.seal && num(BL.seal.recover) && BL.seal.recover >= 0,
+    'CONFIG.abilities: reflect.mul, husk step, body, height and radius above 0, domes a whole number from 1, rewind.every and glide above 0 with slots a whole number from 2, seal.recover 0 or more.');
+  // Hourglass's trail must reach back as far as its longest rewind.
+  if (RW) for (const b of ABILITIES) if (b.perk && b.perk.then === 'rewind') need(b.levels.every(v => v.time <= (RW.slots - 1) * RW.every + 1e-9),
+    `Ability ${b.id}: a rewind of at most ${(RW.slots - 1) * RW.every} s (CONFIG.abilities.rewind slots and every).`);
   const GF = CONFIG.VISUALS.abilityFx.guard;   // js/guard-fx.js's sizes and times
   if (visual) need(GF && ['mend', 'mendRise', 'mendTime', 'shell', 'star', 'roots', 'flame', 'flare', 'flareRing', 'plate'].every(k => num(GF[k]) && GF[k] > 0) && num(GF.faint) && GF.faint >= 0 && GF.faint < 1,
     'VIS.abilityFx.guard: mend, mendRise, mendTime, shell, star, roots, flame, flare, flareRing and plate above 0; faint from 0 to under 1.');
+  const G2 = CONFIG.VISUALS.abilityFx.guard2;   // js/guard-fx-2.js's sizes
+  if (visual) need(G2 && ['pane', 'paneOff', 'star', 'huskRing', 'scorch', 'dial', 'answer', 'waist', 'rewindRing', 'seal'].every(k => num(G2[k]) && G2[k] > 0) && num(G2.sealUp) && G2.sealUp > 0 && G2.sealUp <= 1.5,
+    'VIS.abilityFx.guard2: pane, paneOff, star, huskRing, scorch, dial, answer, waist, rewindRing and seal above 0; sealUp above 0, at most 1.5.');
   const EC = BL.echo, OC = BL.overcharge;
   need(EC && num(EC.keep) && EC.keep > 0 && num(EC.delay) && EC.delay >= 0 && EC.delay <= 0.5, 'CONFIG.abilities.echo: keep above 0, delay from 0 to 0.5.');
   need(OC && num(OC.most) && OC.most > 0 && OC.most <= 2, 'CONFIG.abilities.overcharge: most above 0, at most 2.');

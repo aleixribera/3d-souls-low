@@ -76,9 +76,11 @@ globalThis.host = (() => {
     if (acting && type === 'finisherStart' && d.player === acting.body) feat(acting.id).finishers++;   // a bot's Finishing Blow
     // A bot's Still Water, for every browser (a person's: guardPressed).
     if (type === 'abilityPerk' && d.perk === 'press/pool' && d.pool && d.body && d.body.botId) tellPool(d.body.botId, d.ability, d.pool);
+    if (type === 'abilityPerk' && d.perk === 'press/dome' && d.dome && d.body && d.body.botId) tellDome(d.body.botId, d.ability, d.dome);   // a bot's Moon Dome
     // A legendary fired or striking, for every browser to draw (js/ability-fx.js).
     if (type === 'abilityPower') eventList.push({ type, power: d.power, then: d.then, holder: d.holder, enemy: d.enemy?.netId || null,
-      x: d.x, y: d.y, z: d.z, v: d.v, strike: d.strike, draw: d.draw || undefined, path: d.path, flight: d.flight, mark: d.mark || undefined, yaw: d.yaw, over: d.over, end: d.end });
+      x: d.x, y: d.y, z: d.z, v: d.v, strike: d.strike, draw: d.draw || undefined, path: d.path, flight: d.flight, mark: d.mark || undefined, yaw: d.yaw, over: d.over, end: d.end,
+      burst: d.burst || undefined, sputter: d.sputter || undefined });   // an Ash Husk bursting, a Binding Seal burning out
     const e = d.enemy || d.actor;
     if (type === 'attackStart' && e) e.netAttack = ++attackSerial;
     if (['attackStart', 'attackPhase', 'bossPhase', 'bossRetreat', 'bossGone', 'enemyBlink', 'impact'].includes(type))
@@ -121,10 +123,13 @@ globalThis.host = (() => {
     for (let i = flying.length - 1; i >= 0; i--) {
       const b = flying[i];
       b.vy -= b.g * dt; b.age += dt;
-      const dx = b.vx * dt, dy = b.vy * dt, dz = b.vz * dt, wall = boltStop(b.x, b.y, b.z, dx, dy, dz);
+      const dx = b.vx * dt, dy = b.vy * dt, dz = b.vz * dt;
+      let wall = boltStop(b.x, b.y, b.z, dx, dy, dz);
+      if (abilityDomes.list.length) wall = Math.min(wall, abilityDomes.crossing(b.x, b.y, b.z, dx, dy, dz));   // Moon Dome's skin
       let gone = false;
       for (const bb of bots.values()) {
         const p = bb.body; if (!p || !p.alive() || b.passed.has(p)) continue;
+        if (abilityDomes.list.length && abilityDomes.shelter(p, b.x, b.y, b.z)) continue;   // inside a dome it flies at: its skin stops it first
         const l2 = dx * dx + dz * dz, t = l2 > 1e-9 ? clamp(((p.x - b.x) * dx + (p.z - b.z) * dz) / l2, 0, 1) : 0;
         const cx = b.x + dx * t - p.x, cz = b.z + dz * t - p.z, cy = b.y + dy * t, r = p.radius + b.size;
         if (cx * cx + cz * cz > r * r || cy < p.y || cy > p.y + p.height || t > wall) continue;
@@ -135,7 +140,7 @@ globalThis.host = (() => {
           abilityReport(p, 'parryShot', { enemy: b.owner, flight: Math.max(0, Math.hypot(b.owner.x - p.x, b.owner.z - p.z) - (b.owner.radius || 0)) / Math.hypot(b.vx, b.vy, b.vz), x: p.x, y: p.y, z: p.z });
           break;
         }
-        p.takeHit(b.strike, { x: b.x, z: b.z }); break;
+        p.takeHit(b.strike, { x: b.x, z: b.z }, { enemy: b.owner, shot: true, area: false }); break;
       }
       if (!gone && wall <= 1) gone = true;
       b.x += dx; b.y += dy; b.z += dz;
@@ -399,11 +404,17 @@ globalThis.host = (() => {
   // slack) or a pool (every browser hears of it; its holder's heals at once, the others' and the bots' as they stand in it).
   function guardPressed(id, slot, p, over) {
     if (slot.then === 'vanish') perkOf(id).vanish = slot.v.time + CONFIG.abilities.guardSlack;
+    if (slot.then === 'ward') perkOf(id).ward = slot.v.time + CONFIG.abilities.guardSlack;   // Mirror Ward: its claim holds while this runs
+    if (slot.then === 'wait') perkOf(id).wait = slot.v.time + CONFIG.abilities.guardSlack;   // Waiting Blade's, as the stance
+    if (slot.then === 'dome') {   // Moon Dome: every browser hears of it (a teammate inside is covered); the bots stand in it here
+      tellDome(id, slot.id, abilityDomes.place(id, p.x, p.y, p.z, slot.v.radius, slot.v.time));
+    }
     if (slot.then === 'pool') {
       const v = slot.v, heal = Math.min(1, v.heal * abilityOverBy(kitOf(id), over));
       tellPool(id, slot.id, abilityPools.place(id, p.x, p.y, p.z, v.radius, heal / v.time, v.time));
     }
   }
+  function tellDome(holder, ability, q) { eventList.push({ type: 'guardDome', holder, ability, x: q.x, y: q.y, z: q.z, radius: q.radius, time: q.time }); }
   const tellPool = (holder, ability, q) => eventList.push({ type: 'guardPool', holder, ability, x: q.x, y: q.y, z: q.z, radius: q.radius, rate: q.rate, time: q.time });
   // Whether player `p` (a person's pose or a bot's body) is vanished now: the server's own count of the press it took.
   const vanished = p => (p.botId ? p.perk && p.perk.vanish : perkOf(p.id).vanish) > 0;
@@ -477,6 +488,16 @@ globalThis.host = (() => {
       if (p.state !== PS.ATTACK || !isComboHeavy(ArenaNet.own(PLAYER_DEF.moveset.attacks, p.attack))) return wait();   // a pose's attack is its id
       cycloneAt.set(id, time);
       abilityPowers.trigger(id, body, kit, 'comboHeavy', { x: p.x, y: p.y, z: p.z });
+    } else if (msg.when === 'ward' || msg.when === 'answer') {   // Mirror Ward, Waiting Blade: pressed lately (this server's clock), struck by that attack
+      const st = perkOf(id), k = msg.when === 'ward' ? 'ward' : 'wait';
+      if (!(st[k] > 0)) return false;
+      if (msg.when === 'answer' && p.state !== PS.IDLE) return wait();   // the stance stands still
+      const e = struckNear(p, msg);
+      if (!e) return false;
+      st[k] = 0;
+      // a bounce is held to the struck attack's heaviest blow (the browser says which of its blows it was)
+      const top = Math.max(0, ...struckAttack.hits.map(h => h.damage || struckAttack.damage || 0)) * (e.damageMul || 1);
+      abilityPowers.trigger(id, body, kit, msg.when, { enemy: e, damage: Number.isFinite(msg.damage) ? Math.min(msg.damage, top) : top, yaw: p.yaw });
     } else if (msg.when === 'flask') {
       if (p.state !== PS.USE_ITEM) return wait();
       abilityPowers.trigger(id, body, kit, 'flask', {});
@@ -652,7 +673,7 @@ globalThis.host = (() => {
     ageFires(Game, dt); updateBots(dt); flyBolts(dt);   // the fires enemies left (js/enemy.js) burn down here too
     for (const st of perks.values()) abilityClocks(st, dt);
     for (const p of players) if (!p.botId && VANISH_ENDS.has(p.state) && perks.has(p.id)) perks.get(p.id).vanish = 0;   // their attack or flask ends a vanish
-    abilityPools.tick(dt);   // Still Water's pools (the bots heal in them: Player.poolStep)
+    abilityPools.tick(dt); abilityDomes.tick(dt);   // Still Water's pools (the bots heal in them: Player.poolStep), Moon Dome's domes
     // Reservations and world timers belong to the run, even if their owner
     // disconnects or every remaining player is dead/stale.
     for (const e of Game.enemies) if (e.netExec) {
@@ -724,6 +745,7 @@ globalThis.host = (() => {
       vx: e.vx, vy: e.vy, vz: e.vz, ...(e.def.resonance ? { resonance: Math.round(e.resonance * 100) / 100 } : null),   // pass 68: his bronze's glow and ring
       ...(e.mendPool > 0 ? { mend: Math.round(e.mendPool) } : null),   // pass 75: Aldric's open wounds (his bar, his cracks)
       ...(e.learned.length ? { learned: e.learned.slice() } : null),   // pass 77: the attacks the Antlered Hunger has learned (its antlers)
+      ...(e.sealed > 0 || e.sealNo === e.attackNo ? { sealed: Math.round(e.sealed * 10) / 10, seal: e.sealNo === e.attackNo } : null),   // Binding Seal
       exec: e.netExec ? { player: e.netExec.player, time: e.stateTime } : null,
     })), events: drain ? eventList.splice(0) : [], shots: drain ? bolts.splice(0) : [],
       embers: [...embers].map(([id, m]) => ({ id, x: m.x, y: m.y, z: m.z, t: Math.min(1, m.t / CONFIG.revive.time), by: m.by })) };
@@ -796,6 +818,7 @@ globalThis.host = (() => {
     return true;
   }
   // The enemy whose blow (attack `msg.serial`, out lately: winding up or striking) could have reached player `p`, or null.
+  let struckAttack = null;   // the attack struckNear found (read at once)
   function struckNear(p, msg) {
     const e = enemy(msg.enemy);
     if (!e || !e.alive() || e.netExec || !Number.isSafeInteger(msg.serial)) return null;
@@ -803,6 +826,7 @@ globalThis.host = (() => {
       .map(f => f.enemies.find(s => s.id === msg.enemy));
     const a = recent.length && e.baseDef.attacks.find(a => a.id === recent[0].attackId);
     if (!a) return null;
+    struckAttack = a;
     const reach = Math.max(...a.hits.map(h => reachOf(h.box || a.box))) + p.radius;
     return within(p, e, reach, [-Infinity, Infinity], s => s.attack === msg.serial) ? e : null;
   }

@@ -42,6 +42,8 @@ class Player {
     // server bot's own; unset, abilityReport finds it). lastHp: the health last step, so losing any is noticed.
     this.kit = NO_KIT; this.perk = abilityPerkState(); this.onAbility = null; this.lastHp = this.hp; this.lowReported = false;
     this.blink = null; this.breathLow = false;   // Counterstep's step under way; Last Breath's band entered
+    // Hourglass (press/rewind): the places it keeps (a ring, made with a kit that holds it), and its glide back under way.
+    this.trail = null; this.rewind = null;
     this.savePrev();
   }
   // Boss Rush's abilities (ABILITIES): the kit of the ids held (one per pick, repeated by upgrades), with the health
@@ -52,6 +54,59 @@ class Player {
     const S = this.def.stats, m = this.kit.mods;
     this.maxHp = S.maxHp * (1 + m.maxHp);
     this.hp = this.lastHp = this.maxHp;
+    const R = CONFIG.abilities.rewind;   // Hourglass: a place every `every` s, made once (nothing allocated as it records)
+    this.trail = Object.values(this.kit.pressed).some(s => s.then === 'rewind')
+      ? { list: Array.from({ length: R.slots }, () => ({ x: 0, y: 0, z: 0, yaw: 0, hp: 0, safe: false })), i: 0, n: 0, acc: 0 } : null;
+  }
+  // Hourglass's place `k` steps back (1: the newest).
+  trailAt(k) { const T = this.trail; return T.list[(T.i - k + T.list.length * 2) % T.list.length]; }
+  // A place every CONFIG.abilities.rewind.every s: where it stands, faces and its health; safe only on the ground, free.
+  trailStep(dt) {
+    const T = this.trail, R = CONFIG.abilities.rewind;
+    if ((T.acc += dt) < R.every) return;
+    T.acc -= R.every;
+    const q = T.list[T.i];
+    q.x = this.x; q.y = this.y; q.z = this.z; q.yaw = this.yaw; q.hp = this.hp;
+    q.safe = this.alive() && this.grounded && !this.inPit && this.state !== PS.HELD && this.state !== PS.EXECUTE;
+    T.i = (T.i + 1) % T.list.length; T.n = Math.min(T.list.length, T.n + 1);
+  }
+  // Hourglass: back along its own way to where it stood `time` s ago (the nearest safe place to then, toward now), over
+  // CONFIG.abilities.rewind.glide s, untouchable; there its health is the greater of now and then. Returns where it goes
+  // ({ x, y, z }), or null with nothing to go back to (the press is spent all the same).
+  startRewind(time) {
+    const T = this.trail, R = CONFIG.abilities.rewind;
+    if (!T || !this.alive() || this.state === PS.HELD || this.state === PS.EXECUTE) return null;
+    let k = Math.min(T.n, Math.round(time / R.every));
+    while (k >= 1 && !this.trailAt(k).safe) k--;
+    if (k < 1) return null;
+    const to = this.trailAt(k);
+    this.rewind = { k, t: 0, time: R.glide, x0: this.x, y0: this.y, z0: this.z, hp: to.hp };
+    this.hitbox = null; this.vx = this.vy = this.vz = this.kx = this.kz = 0; this.root = 0;
+    if (this.state !== PS.IDLE) this.setState(PS.IDLE);
+    return { x: to.x, y: to.y, z: to.z };
+  }
+  // One step of the glide: along the kept places, eased; at its end, there, its health set and the trail begun afresh.
+  rewindStep(dt) {
+    const W = this.rewind;
+    W.t = Math.min(W.time, W.t + dt);
+    const k = W.t / W.time, f = k * k * (3 - 2 * k) * W.k, j = Math.min(W.k - 1, Math.floor(f)), u = f - j;
+    const a = j === 0 ? null : this.trailAt(j), b = this.trailAt(j + 1);
+    const ax = a ? a.x : W.x0, ay = a ? a.y : W.y0, az = a ? a.z : W.z0;
+    this.x = lerp(ax, b.x, u); this.y = lerp(ay, b.y, u); this.z = lerp(az, b.z, u);
+    this.vx = this.vy = this.vz = this.kx = this.kz = 0;
+    if (k < 1) return;
+    const to = this.trailAt(W.k), was = this.hp;
+    this.x = to.x; this.y = to.y; this.z = to.z; this.yaw = to.yaw; this.grounded = true; this.peak = this.y; this.fallHeight = 0;
+    this.hp = Math.max(this.hp, Math.min(W.hp, this.hpCap()));
+    this.rewind = null; this.trail.n = 0; this.trail.acc = 0;
+    events.emit('abilityPerk', { body: this, perk: 'rewind/end', healed: this.hp - was, at: { x: this.x, y: this.y, z: this.z } });
+  }
+  // Ash Husk: a step back as it is pressed, away from `e` (else from its facing), CONFIG.abilities.husk.step m (a knock).
+  huskStep(e) {
+    const k = CONFIG.abilities.husk.step * CONFIG.player.knockFriction;
+    let dx = -Math.sin(this.yaw), dz = -Math.cos(this.yaw);
+    if (e) { const l = Math.hypot(this.x - e.x, this.z - e.z); if (l > 1e-3) { dx = (this.x - e.x) / l; dz = (this.z - e.z) / l; } }
+    this.kx = dx * k; this.kz = dz * k;
   }
   // Last Breath (a `low/freeDash` perk): this low, dashes cost no charge; Hunter's Pace's first seconds of a fight too.
   freeDash() {
@@ -83,7 +138,7 @@ class Player {
     const doom = this.doomTime > 0 ? CONFIG.bossPowers.destined.cut : 0;
     return this.maxHp * Math.max(0.05, 1 - doom);
   }
-  invulnerable() { return this.iFramesLeft() > 0 || this.state === PS.EXECUTE || this.execGrace > 0 || !!this.blink || this.vanished(); }
+  invulnerable() { return this.iFramesLeft() > 0 || this.state === PS.EXECUTE || this.execGrace > 0 || !!this.blink || !!this.rewind || this.vanished(); }
   // Seconds of the dash's i-frames still to come (0 out of a dash; never past the dash's end, however long Long Shadow
   // makes them).
   iFramesLeft() {
@@ -329,6 +384,8 @@ class Player {
     this.bufferInputs();
     this.refillDashes(dt);
     this.poolStep(dt);
+    if (this.rewind && this.alive()) { if (this.kit !== NO_KIT) this.abilityStep(dt); this.rewindStep(dt); return; }   // Hourglass's glide: nothing else moves the body
+    if (this.trail) this.trailStep(dt);
     if (this.blink && this.alive()) { if (this.kit !== NO_KIT) this.abilityStep(dt); this.blinkStep(dt); return; }   // Counterstep's step: nothing else moves the body
     if (this.kit !== NO_KIT) { this.abilityStep(dt); this.pressAbilities(enemies, lock); }
     const fx = Math.sin(this.yaw), fz = Math.cos(this.yaw);
@@ -338,6 +395,9 @@ class Player {
       case PS.IDLE:
       case PS.WALK: {
         if (this.root > 0) {   // a held strike (pressRoot): planted, no attack; a dash cuts it short
+          if (this.rootKind === 'wait' && this.tryGroundAction(mv, face, enemies)) {   // Waiting Blade: any action ends the stance
+            this.root = 0; this.perk.wait = 0; events.emit('abilityPerk', { body: this, perk: 'wait/end' }); break;
+          }
           if (this.wantsRoll()) { this.root = 0; this.startRoll(mv); break; }
           approachVel(this, 0, 0, C.decel * dt);
           if (this.state !== PS.IDLE) this.setState(PS.IDLE);
@@ -509,7 +569,7 @@ class Player {
   // Still Water: standing in a pool heals (the best one; anyone's, a teammate's at its shared rate). The browser's own
   // player runs its realm's pool clocks; the server runs its own (js/lobby-sim.js).
   poolStep(dt) {
-    if (typeof Game !== 'undefined' && this === Game.player && !this.id) abilityPools.tick(dt);
+    if (typeof Game !== 'undefined' && this === Game.player && !this.id) { abilityPools.tick(dt); abilityDomes.tick(dt); }   // Moon Dome's domes too
     if (!abilityPools.list.length || !this.alive()) return;
     const rate = abilityPools.rate(this, this.id || 'self');
     if (rate > 0 && this.hp < this.hpCap()) { this.hp = Math.min(this.hpCap(), this.hp + this.maxHp * rate * dt); this.lastHp = Math.max(this.lastHp, this.hp); }
@@ -552,7 +612,7 @@ class Player {
       if (this.perk.charge[key] < slot.v.charge) { events.emit('abilityNotReady', { body: this, key }); continue; }
       const e = pressTarget(this, enemies, lock);
       // A rooting strike only from the feet: never mid-dash, mid-swing or in the air (it would be cut short at once).
-      const planted = !(slot.power && pressRoot(slot.then) > 0) || this.state === PS.IDLE || this.state === PS.WALK;
+      const planted = !((slot.power && pressRoot(slot.then) > 0) || (!slot.power && slot.then === 'wait')) || this.state === PS.IDLE || this.state === PS.WALK;   // Waiting Blade's stance too
       if (!planted || !pressOpen(slot, this, e)) { events.emit('abilityNotReady', { body: this, key }); continue; }
       if (slot.power && PRESS_TURN.has(slot.then)) this.yaw = Math.atan2(e.x - this.x, e.z - this.z);   // Thunderclap turns to its enemy
       if (slot.power && pressRoot(slot.then) > 0) {   // Sparrow Flurry, Quick Draw: rooted on its feet (a dash gets out)
@@ -562,8 +622,10 @@ class Player {
       const over = abilityOver(this.kit, this.perk, key);   // Overcharge: the share filled past full
       this.perk.charge[key] = 0;
       events.emit('abilityPress', { body: this, key, ability: slot.id, over: over > 0 ? over : undefined });
-      if (slot.power) abilityReport(this, 'press', { key, enemy: e, over });
-      else { abilityPressPerk(this, slot, over, this.id || 'self'); abilityReport(this, 'press', { key, over }); }   // a Guard's press arms Echoing Blade too
+      if (slot.power) {
+        abilityReport(this, 'press', { key, enemy: e, over });
+        if (slot.then === 'husk') this.huskStep(e);   // Ash Husk: its husk is left where it stood
+      } else { abilityPressPerk(this, slot, over, this.id || 'self'); abilityReport(this, 'press', { key, over }); }   // a Guard's press arms Echoing Blade too
     }
   }
   // Points toward the number keys (CONFIG.abilities.press.gain): a landed blow's, a deflect's, a dodge's, a Finishing Blow's.
@@ -598,7 +660,11 @@ class Player {
   }
   // Every way of dying ends here (blows, falls, pits, Destined Death's drain, hazard floors): no health, no hitbox,
   // the death state. The mode that owns this body notices the change (Game.update: onPlayerDeath).
-  die() { if (this.exec) finisher.abandon(this); if (this.held) this.releaseHold(false); this.blink = null; this.hp = 0; this.hitbox = null; this.setState(PS.DEAD); }
+  die() {
+    if (this.exec) finisher.abandon(this); if (this.held) this.releaseHold(false); this.blink = null; this.rewind = null;
+    if (this.trail) { this.trail.n = 0; this.trail.acc = 0; }   // Hourglass never reaches back past a death
+    this.hp = 0; this.hitbox = null; this.setState(PS.DEAD);
+  }
   // After moving: death in a pit, or damage from a hard landing (a brief stumble if it doesn't kill).
   checkFall() {
     if (!this.alive()) return;
@@ -678,13 +744,28 @@ class Player {
   // a guard facing the blow takes CONFIG.block's chip damage and never breaks, but holds nothing that can't be deflected
   // (a strike's `rollOnly`: a blue wind-up). An unblocked blow flinches a body that isn't mid-swing; only an attack
   // marked `heavy` (its wind-up shows it, Enemy.drawWindup) staggers, mid-swing too.
-  takeHit(strike, from) {
+  // `by` (an enemy's blow: js/combat.js, js/projectiles.js): { enemy, shot (a bolt), area (a blast, a wall of fire, a
+  // storm's bolt) }, for the Guards that answer the one who struck: Mirror Ward and Waiting Blade.
+  takeHit(strike, from, by = null) {
     const B = CONFIG.block, C = CONFIG.player;
     this.hitK = clamp(strike.damage / CONFIG.fx.flinchRef, 0.5, 1.6);   // how big the flinch looks
     const dx = this.x - from.x, dz = this.z - from.z, d = Math.hypot(dx, dz) || 1;
     let damage = strike.damage, knock = strike.shove ? strike.knock : Math.min(strike.knock, C.knockCap);
     const st = this.perk, P = this.kit.perks;
     const drinking = this.state === PS.USE_ITEM;
+    const foe = by && by.enemy && typeof by.enemy.alive === 'function' && by.enemy.alive() ? by.enemy : null;
+    if (st.ward > 0 && foe && !by.shot && damage > 0 && isInFront(this, from.x, from.z)) {   // Mirror Ward: the pane takes it whole, a grab too
+      st.ward = 0; this.brace = 1;
+      events.emit('abilityPerk', { body: this, perk: 'ward/bounce', target: foe, at: { x: from.x, y: from.y ?? this.y, z: from.z } });
+      abilityReport(this, 'ward', { enemy: foe, damage: strike.damage });
+      return { blocked: false, warded: true };
+    }
+    if (st.wait > 0 && this.root > 0 && this.rootKind === 'wait' && foe && !by.shot && !by.area && !strike.seize && !strike.pull && damage > 0) {   // Waiting Blade
+      st.wait = 0; this.root = 0;
+      events.emit('abilityPerk', { body: this, perk: 'wait/answer', target: foe });
+      abilityReport(this, 'answer', { enemy: foe });
+      return { blocked: false, answered: true };
+    }
     const blocked = this.state === PS.BLOCK && !strike.rollOnly && isInFront(this, from.x, from.z);
     if (st.plates > 0 && !blocked && damage > 0) {   // Ember Mail: a plate takes the blow whole (a grab breaks them all, and takes you)
       const grab = !!(strike.seize || strike.pull);

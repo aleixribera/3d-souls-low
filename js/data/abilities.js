@@ -186,6 +186,20 @@ const ABILITIES = [
     perk: { when: 'press', then: 'armour' }, levels: [{ charge: 15, hits: 1, time: 8 }, { charge: 14, hits: 2, time: 8 }, { charge: 13, hits: 2, time: 10 }] },
   { id: 'still-water', name: 'Still Water', rarity: 'rare', key: 'guard', text: 'A pool heals {heal} over {time}.',
     perk: { when: 'press', then: 'pool' }, levels: [{ charge: 16, time: 5, heal: 0.25, radius: 2.5 }, { charge: 15, time: 5, heal: 0.3, radius: 2.7 }, { charge: 14, time: 5, heal: 0.35, radius: 2.9 }] },
+  // Batch 9 (design/abilities, Guard II: on the boss): a pane that bounces the blow back, a husk left to be struck, a dome
+  // shots and blasts break on, a stance that answers a blow with a cut, a rewind of place and health, a seal on the next attack.
+  { id: 'mirror-ward', name: 'Mirror Ward', rarity: 'rare', key: 'guard', text: 'The next blow bounces back at the boss.',
+    perk: { when: 'press', then: 'ward' }, levels: [{ charge: 14, time: 1.5, share: 0.6 }, { charge: 13, time: 1.5, share: 0.8 }, { charge: 12, time: 1.5, share: 1 }] },
+  { id: 'ash-husk', name: 'Ash Husk', rarity: 'rare', key: 'guard', text: 'Leave a husk that explodes when struck.',
+    power: { when: 'press', then: 'husk' }, levels: [{ charge: 13, time: 3, damage: 40 }, { charge: 12, time: 3, damage: 55 }, { charge: 11, time: 3, damage: 70 }] },
+  { id: 'moon-dome', name: 'Moon Dome', rarity: 'rare', key: 'guard', text: 'A dome stops shots and blasts for {time}.',
+    perk: { when: 'press', then: 'dome' }, levels: [{ charge: 16, time: 4, radius: 3 }, { charge: 15, time: 4.5, radius: 3.2 }, { charge: 14, time: 5, radius: 3.4 }] },
+  { id: 'waiting-blade', name: 'Waiting Blade', rarity: 'rare', key: 'guard', text: 'Stance: the next blow is answered with a cut.',
+    perk: { when: 'press', then: 'wait' }, levels: [{ charge: 14, time: 1.2, damage: 120 }, { charge: 13, time: 1.3, damage: 145 }, { charge: 12, time: 1.4, damage: 170 }] },
+  { id: 'hourglass', name: 'Hourglass', rarity: 'rare', key: 'guard', text: 'Rewind place and health to {time} ago.',
+    perk: { when: 'press', then: 'rewind' }, levels: [{ charge: 18, time: 3 }, { charge: 17, time: 3.5 }, { charge: 16, time: 4 }] },
+  { id: 'binding-seal', name: 'Binding Seal', rarity: 'rare', key: 'guard', text: "Seal the boss's next attack.",
+    power: { when: 'press', then: 'seal' }, levels: [{ charge: 16, time: 6 }, { charge: 15, time: 7 }, { charge: 14, time: 8 }] },
   { id: 'static-edge', name: 'Static Edge', rarity: 'rare', text: 'Every {hits}th hit: a spark strikes the boss.',
     power: { when: 'hits', then: 'spark' }, levels: [{ hits: 5, damage: 30 }, { hits: 4, damage: 34 }, { hits: 4, damage: 44 }] },
 

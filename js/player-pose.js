@@ -135,6 +135,12 @@ function rootPose(r, kind, t) {
     r.weapon.rotation.set(0.5 + 1.3 * k, 0, 0); r.head.rotation.y = -0.45 * k;
     return;
   }
+  if (kind === 'wait') {   // Waiting Blade: settled still, the blade held low behind, the head turned to the foe
+    const k = clamp(t / 0.15, 0, 1);
+    r.lean(0.12 * k); r.spin.rotation.y = 0.4 * k; r.armR.rotation.set(0.35 * k, 0, -0.4 * k); r.armL.rotation.set(-0.45 * k, 0, 0.35 * k);
+    r.weapon.rotation.set(0.4 + 0.6 * k, 0, 0); r.head.rotation.y = -0.35 * k;
+    return;
+  }
   const jab = Math.abs(Math.sin(t * Math.PI * 7)), calm = reducedMotion() ? 0.4 : 1;   // seven jabs a second, the drawing alone
   r.lean(0.18); r.spin.rotation.y = -0.25 + 0.15 * jab * calm;
   r.armR.rotation.set(-1.45 + 0.35 * (1 - jab) * calm, 0, 0.1); r.weapon.rotation.set(1.5, 0, 0); r.armL.rotation.set(0.3, 0, 0.25);

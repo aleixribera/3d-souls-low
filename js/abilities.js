@@ -64,6 +64,8 @@ const ABILITY_PERKS = {
   'finisher/heal': ['heal'], 'parry/heal': ['heal', 'cooldown'], 'press/heal': ['charge', 'heal'], 'press/stance': ['charge', 'time'],
   'press/root': ['charge', 'time', 'cut'], 'press/undying': ['charge', 'time'], 'press/vanish': ['charge', 'time'],
   'press/armour': ['charge', 'hits', 'time'], 'press/pool': ['charge', 'time', 'heal', 'radius'],
+  'press/ward': ['charge', 'time', 'share'], 'press/dome': ['charge', 'time', 'radius'], 'press/wait': ['charge', 'time', 'damage'],
+  'press/rewind': ['charge', 'time'],
   'parry/freeDash': ['cooldown'], 'low/veil': ['below', 'cut'], 'hurt/ironSkin': ['cut', 'time'], 'parry/keys': ['charge'],
   'finisher/keys': ['charge'], 'ready/empower': ['damage'], 'fightStart/freeDash': ['time'], 'revive/reviveHeal': ['heal'],
   'flask/unshaken': ['time'], 'summonHit/empower': ['damage'], 'ready/overcharge': ['damage'],
@@ -74,7 +76,8 @@ const COMMON_PERKS = new Set(['parry/freeDash', 'freeDash/spent', 'low/veil', 'v
 // The rares' state cues (batch 4: a mote, a lit blade, a breath), drawn by js/rare-fx.js but too frequent or too quiet
 // for the rares' camera kick (camera-feel.js).
 const RARE_QUIET_PERKS = new Set(['streak/step', 'streak/lost', 'hurt/armed', 'unhurt/ready', 'low/freeDash', 'block/armed', 'cracked/damage',
-  'unshaken/glance', 'overcharge/step', 'root/bite', 'armour/crack', 'armour/broken', 'stance/deflect', 'vanish/end']);
+  'unshaken/glance', 'overcharge/step', 'root/bite', 'armour/crack', 'armour/broken', 'stance/deflect', 'vanish/end',
+  'ward/bounce', 'wait/answer', 'wait/end', 'dome/stop', 'rewind/end']);
 // A key's extra points from a commons' `<when>/keys` perk (Kindling's deflect, Tithe's Finishing Blow).
 const abilityKeysFor = (kit, when) => (kit.perks[when + '/keys'] || {}).charge || 0;
 // A heal of `share` of the bar from a perk (Grave Feast, Iron Mercy), told as that perk (`target`: the enemy it came from).
@@ -183,7 +186,7 @@ const ABILITY_POWERS = {
   'dashPast/spark': ['damage', 'cooldown'], 'stringEnd/lick': ['damage'], 'fullHeavy/molten': ['damage'],
   'dashStrike/lateCut': ['damage'], 'dodge/afterimage': ['damage'], 'jump/whirl': ['damage', 'cooldown'],
   'block/thorns': ['damage', 'cooldown'], 'flask/burnHits': ['hits', 'damage'], 'crack/shards': ['damage'],
-  'parryShot/reflect': ['damage'],
+  'parryShot/reflect': ['damage'], 'press/husk': ['charge', 'time', 'damage'], 'press/seal': ['charge', 'time'],
   'counter/wave': ['damage', 'reach', 'width', 'cooldown'], 'land/crescent': ['damage', 'cooldown'], 'comboHeavy/cyclone': ['damage', 'radius', 'cooldown'],
   'finisher/petals': ['damage', 'radius'], 'cast/ghostBlade': ['hits', 'damage'],
   'press/wave': ['charge', 'damage', 'reach', 'width'], 'press/spikes': ['charge', 'damage', 'reach'], 'press/fist': ['charge', 'damage'],
@@ -223,7 +226,9 @@ function summonStep(s, e, body, dt) {
 // A press is a key's power fired (below); the server checks it against its own count of that key's charge.
 // `parryShot` (Mirror Shard): a bolt deflected; each browser flies the shots at its own player (js/projectiles.js).
 // `comboHeavy` (Iron Cyclone): a string's heavy reached its blow, landed or not (a whiff the server can't see).
-const ABILITY_CLAIMS = ['land', 'dodge', 'low', 'flask', 'press', 'dashPast', 'jump', 'block', 'parryShot', 'comboHeavy'];
+// `ward` (Mirror Ward): a blow bounced off the pane; `answer` (Waiting Blade): a blow met in the stance. Each names the
+// enemy and its attack, checked as a dodge's is (struckNear), against the server's own clock of that press.
+const ABILITY_CLAIMS = ['land', 'dodge', 'low', 'flask', 'press', 'dashPast', 'jump', 'block', 'parryShot', 'comboHeavy', 'ward', 'answer'];
 // The enemy a dash from `from` to `to` (each { x, z }) went past (Spark Step's `dashPast`): the nearest live one whose
 // body's edge came within `gap` m of the path at a point strictly between its ends (past it, not into it), else null.
 function dashPastOf(from, to, enemies, gap = CONFIG.abilities.commons.pastGap) {
@@ -329,8 +334,49 @@ function abilityPressPerk(p, slot, over = 0, holder = 'self') {
       const heal = Math.min(1, v.heal * abilityOverBy(p.kit, over));
       tell({ pool: abilityPools.place(holder, p.x, p.y, p.z, v.radius, heal / v.time, v.time) }); return;
     }
+    case 'ward': st.ward = v.time; tell(); return;   // Mirror Ward: the next blow from the front bounces (Player.takeHit)
+    case 'wait':   // Waiting Blade: still on its feet (Player.root); any action, a dash or a blow it answers ends it
+      st.wait = v.time;
+      if (typeof p.setState === 'function') { p.root = v.time; p.rootKind = 'wait'; p.rootT = 0; p.vx = p.vz = 0; if (p.state === PS.WALK) p.setState(PS.IDLE); }
+      tell(); return;
+    case 'dome': tell({ dome: abilityDomes.place(holder, p.x, p.y, p.z, v.radius, v.time) }); return;
+    case 'rewind': { const to = typeof p.startRewind === 'function' ? p.startRewind(v.time) : null; tell({ to }); return; }
   }
 }
+// Moon Dome's domes (press/dome): { holder, x, y, z, radius, left (s), time }, at most CONFIG.abilities.domes, one a holder.
+// A dome is a half sphere fixed where it was raised. It stops a shot crossing its skin from outside (`crossing`) and a
+// blast whose origin is outside it from reaching a body inside (`shelter`); a blow from inside still lands. Each realm
+// keeps its own, as the pools: the browser its own and the server's word of others', the server every one.
+const abilityDomes = (() => {
+  const list = [];
+  let last = null;   // the dome the last `crossing` met (read at once)
+  function place(holder, x, y, z, radius, time) {
+    let d = list.find(o => o.holder === holder);
+    if (!d) { if (list.length >= CONFIG.abilities.domes) list.shift(); list.push(d = {}); }
+    return Object.assign(d, { holder, x, y, z, radius, left: time, time });
+  }
+  function tick(dt) { for (let i = list.length - 1; i >= 0; i--) if ((list[i].left -= dt) <= 0) list.splice(i, 1); }
+  const inside = (d, x, y, z) => (x - d.x) ** 2 + (z - d.z) ** 2 + Math.max(0, y - d.y) ** 2 < d.radius * d.radius && y > d.y - CONFIG.height.stepUp;
+  // The dome that keeps a blast from (ox, oy, oz) off body `b`: b stands inside it and the origin is outside. Else null.
+  function shelter(b, ox, oy, oz) {
+    for (const d of list) if (inside(d, b.x, b.y + 0.1, b.z) && !inside(d, ox, oy, oz)) return d;
+    return null;
+  }
+  // The fraction of the segment from (x, y, z) by (dx, dy, dz) where it enters a dome from outside, else Infinity.
+  function crossing(x, y, z, dx, dy, dz) {
+    let f = Infinity; last = null;
+    for (const d of list) {
+      if (inside(d, x, y, z) || !inside(d, x + dx, y + dy, z + dz)) continue;
+      // where the line meets the skin: the smaller root of |p + t v - c|^2 = r^2
+      const px = x - d.x, py = y - d.y, pz = z - d.z, a = dx * dx + dy * dy + dz * dz, b = px * dx + py * dy + pz * dz;
+      const c = px * px + py * py + pz * pz - d.radius * d.radius, disc = b * b - a * c;
+      const t = a > 1e-12 ? clamp((-b - Math.sqrt(Math.max(0, disc))) / a, 0, 1) : 0;
+      if (t < f) { f = t; last = d; }
+    }
+    return f;
+  }
+  return { list, place, tick, shelter, crossing, get last() { return last; }, clear() { list.length = 0; } };
+})();
 // Still Water's pools (press/pool): { holder, x, y, z, radius, rate (share of the bar a s, its holder's), left (s), time },
 // at most CONFIG.abilities.pools, one a holder (a new one replaces its old). Each realm keeps its own: the browser the
 // ones it heard of (its own and the server's word of others'), the server every one (its bots heal in them).
@@ -364,9 +410,10 @@ function abilityLevel(b, held) {
 // The numbers of ability `b` at `level` (1 = the first).
 const abilityAt = (b, level) => b.levels[clamp(level, 1, b.levels.length) - 1];
 
-// The Guard presses the server is told of (a perk is its holder's own, but these reach others): a vanish (no target)
-// and a pool (a teammate heals in it).
-const GUARD_CLAIMED = new Set(['vanish', 'pool']);
+// The Guard presses the server is told of (a perk is its holder's own, but these reach others): a vanish (no target),
+// a pool (a teammate heals in it), a dome (a teammate stands in it), and the ward and the stance (the server's own clock
+// of each, against which their claims are checked).
+const GUARD_CLAIMED = new Set(['vanish', 'pool', 'ward', 'wait', 'dome']);
 const NO_MODS = Object.freeze(Object.fromEntries(Object.keys(ABILITY_MODS).map(k => [k, 0])));
 const NO_KIT = Object.freeze({ ids: Object.freeze([]), mods: NO_MODS, perks: Object.freeze({}), powers: Object.freeze([]), whens: new Set(), pressed: Object.freeze({}) });
 // A body's kit from the ids it holds: { ids, mods: { key: fraction }, perks: { 'when/then': level numbers },
@@ -381,6 +428,8 @@ function abilityKit(held) {
     if (b.key) {   // a key's ability: fired by its key only (a second one for the same key, never offered, is idle)
       if (!pressed[b.key]) pressed[b.key] = Object.freeze({ id: b.id, then: (b.perk || b.power).then, power: !!b.power, v });
       if (b.perk && pressed[b.key].id === b.id && GUARD_CLAIMED.has(b.perk.then)) whens.add('press');   // the server must hear of a vanish or a pool
+      if (b.perk && pressed[b.key].id === b.id && b.perk.then === 'ward') whens.add('ward');   // the bounce, settled where the enemies are
+      if (b.perk && pressed[b.key].id === b.id && b.perk.then === 'wait') whens.add('answer');   // the answering cut
       if (b.perk || pressed[b.key].id !== b.id) continue;
     }
     if (b.mods) for (const [key, x] of Object.entries(v)) mods[key] += x;
@@ -411,10 +460,10 @@ function kitMight(held) {
 // Counterstep's s until it may step again (`step`), Ironclad's s left (`unshaken`), Hunting Call's marked enemy and s left
 // (`mark`, `markT`).
 // Batch 8's: Iron Root's s left with its level (`rooted`, `rootV`), Unbroken's (`undying`), Vanishing Step's (`vanish`),
-// Ember Mail's plates and s left (`plates`, `mail`).
+// Ember Mail's plates and s left (`plates`, `mail`). Batch 9's: Mirror Ward's s left (`ward`), Waiting Blade's (`wait`).
 const abilityPerkState = () => ({ calm: 0, vengeance: 0, bastion: 0, streak: 0, moon: 0, moonV: null, mercy: 0, stance: 0,
   charge: { strike: 0, guard: 0, summon: 0, ultimate: 0 }, bank: 0, ring: 0, veil: 0, iron: 0, hunt: 0, glint: 0, burn: 0, burnV: null, step: 0,
-  unshaken: 0, mark: null, markT: 0, rooted: 0, rootV: null, undying: 0, vanish: 0, plates: 0, mail: 0 });
+  unshaken: 0, mark: null, markT: 0, rooted: 0, rootV: null, undying: 0, vanish: 0, plates: 0, mail: 0, ward: 0, wait: 0 });
 // Losing health (any blow, a burn, a fall): the perks that wait for it. With the `body` (its owner's), the rares' cues:
 // Vengeance's blade lit (`hurt/armed`), Bloodthirst's motes scattered (`streak/lost`).
 function abilityHurt(kit, st, body) {
@@ -428,6 +477,7 @@ function abilityClocks(st, dt) {
   st.stance = Math.max(0, st.stance - dt); st.ring = Math.max(0, st.ring - dt); st.iron = Math.max(0, st.iron - dt); st.hunt = Math.max(0, st.hunt - dt);
   st.unshaken = Math.max(0, st.unshaken - dt); st.rooted = Math.max(0, st.rooted - dt); st.undying = Math.max(0, st.undying - dt);
   st.vanish = Math.max(0, st.vanish - dt); st.mail = Math.max(0, st.mail - dt); if (st.mail <= 0) st.plates = 0;
+  st.ward = Math.max(0, st.ward - dt); st.wait = Math.max(0, st.wait - dt);
   if (st.mark && (st.markT -= dt) <= 0) { st.mark = null; st.markT = 0; }
 }
 // A deflect, on the deflecting body (js/combat.js; a bot's on the server): Iron Mercy's heal, Ringing Steel's bank,
@@ -499,7 +549,7 @@ const ECHO_DELAY = 0.06;   // s from its holder's blow to the twin's: the two la
 // The powers that need a live enemy to strike (the one parried, struck, broken or dodged).
 const ON_ENEMY = new Set(['lightning', 'blades', 'flare', 'spark', 'gale', 'pyre', 'hound', 'lancer', 'lick', 'molten', 'lateCut', 'afterimage',
   'thorns', 'shards', 'reflect', 'wave', 'spikes', 'fist', 'risingFire', 'clap',
-  'flurry', 'drill', 'stitch', 'boomerang', 'clones', 'iai']);
+  'flurry', 'drill', 'stitch', 'boomerang', 'clones', 'iai', 'seal']);
 // The powers whose blow lands a beat after they fire: each tells every browser again as it lands (`strike`).
 const DELAYED = new Set(['lightning', 'lateCut', 'afterimage', 'shards', 'reflect', 'ghostBlade', 'flurry', 'stitch']);
 const abilityPowers = (() => {
@@ -526,17 +576,21 @@ const abilityPowers = (() => {
   // lureUntil, decoy (what that enemy fights: its place, never hurt) }.
   const summons = new Map();
   let clock = 0;
+  // holder -> Ash Husk's husk: { pw, holder, x, y, z, yaw, until, lure (the enemy it draws), drawing, began (that enemy's
+  // attack on it has started: one attack only), decoy (what that enemy fights, and what its blows must meet to burst it) }.
+  const husks = new Map();
   const summonOf = holder => { const s = summons.get(holder); return s && s.until > clock ? s : null; };
   const twinOf = holder => { const s = summonOf(holder); return s && s.kind === 'twin' ? s : null; };
   // The decoy enemy `e` fights instead of a player while a summon draws it (null: none).
   function decoy(e) {
+    for (const h of husks.values()) if (h.lure === e && h.drawing) return h.decoy;
     for (const s of summons.values()) if (s.lure === e) return s.decoy;
     return null;
   }
   // `bodyOf(holder)`: the holder's body now (the server's, whose bodies are remade each pose); else the one it was called with.
   // `perkOf(holder)`: the holder's perk clocks where its body carries none (the server's persons: Hunting Call's mark).
-  const api = { trigger, tick, reset, twinOf, summonOf, decoy, credit: null, bodyOf: null, perkOf: null, running, ahead };
-  function reset() { abilityPools.clear(); running.length = 0; ahead.length = 0; ready.clear(); counts.clear(); summons.clear(); waiting.clear(); ghosts.clear(); clock = 0; }
+  const api = { trigger, tick, reset, twinOf, summonOf, decoy, credit: null, bodyOf: null, perkOf: null, running, ahead, husks };
+  function reset() { abilityPools.clear(); abilityDomes.clear(); husks.clear(); running.length = 0; ahead.length = 0; ready.clear(); counts.clear(); summons.clear(); waiting.clear(); ghosts.clear(); clock = 0; }
   // A power's blow: magic, so it comes from behind the enemy's facing (a shield never takes it). Never a counter: the
   // Finishing Blow is the holder's to earn.
   function wound(e, damage, holder, power) {
@@ -553,6 +607,7 @@ const abilityPowers = (() => {
   // input), { strike } (a landed blow's, for `hits`: what a twin echoes), { key } (a press: that key's power only),
   // { yaw } (the holder's facing, where its body carries none: the server's), { over } (a press: Overcharge's share past full).
   function trigger(holder, body, kit, when, ctx = {}) {
+    if (when === 'ward' || when === 'answer') { guardAnswer(holder, body, kit, when, ctx); return; }
     if (when === 'hits') { echo(holder, body, ctx.enemy, ctx.strike); burn(holder, body, kit, ctx.enemy); ghost(holder, body, kit, ctx.enemy); }
     // A press arms Echoing Blade at once; Quick Draw's only at its draw (a stance cut short gives its charge back, so
     // arming at the press would re-arm the echoes for free).
@@ -682,8 +737,62 @@ const abilityPowers = (() => {
       case 'lightning': running.push({ pw, holder, enemy: e, left: v.strikes, next: v.lead, n: 0 }); break;
       case 'blades': running.push({ pw, holder, enemy: e, left: Math.round(v.time / v.every), next: v.every, n: 0 }); break;
       case 'bloodMoon': if (body && body.perk) { body.perk.moon = v.time; body.perk.moonV = v; } break;
+      case 'husk': {   // where its holder stood as it stepped back; it draws the enemy pressed at (else the nearest) once
+        const H = CONFIG.abilities.husk, yaw = ctx.yaw ?? (body && body.yaw) ?? 0;
+        const lure = e && e.alive() ? e : enemyNear(enemies, x, y, z, CONFIG.abilities.summons.near);
+        husks.set(holder, { pw, holder, x, y, z, yaw, until: clock + v.time, lure, drawing: false, began: false,
+          decoy: { decoy: true, holder, x, y, z, radius: H.body, height: H.height, grounded: true, state: null, alive: () => true, isAttacking: () => false } });
+        break;
+      }
+      case 'seal': e.sealed = v.time; e.sealBy = { power: pw.id, holder, v }; break;   // one seal at a time: a new press renews it
     }
     return true;
+  }
+  // The heaviest blow enemy `e` can deal (its attacks' hits, raised by its damage): what a claimed bounce is held to.
+  const HEAVIEST = new WeakMap();
+  function heaviest(e) {
+    const def = e.baseDef || e.def;
+    if (!HEAVIEST.has(def)) {
+      let most = 0;
+      for (const a of def.attacks || []) for (const h of (a && a.hits) || []) most = Math.max(most, h.damage || a.damage || 0);   // (phases name these by id)
+      HEAVIEST.set(def, most);
+    }
+    return HEAVIEST.get(def) * (e.damageMul || 1);
+  }
+  // Mirror Ward's bounce (`ward`: `ctx.damage`, the blow it took, held to the enemy's heaviest) or Waiting Blade's
+  // answering cut (`answer`), on the enemy whose blow it was. Each a Guard perk's: its numbers are the pressed slot's.
+  function guardAnswer(holder, body, kit, when, ctx) {
+    const then = when === 'ward' ? 'ward' : 'wait', e = ctx.enemy;
+    const slot = kit.pressed && Object.values(kit.pressed).find(q => !q.power && q.then === then);
+    if (!slot || !e || !e.alive()) return;
+    const v = slot.v, top = heaviest(e);
+    const damage = when === 'ward' ? clamp(Number.isFinite(ctx.damage) ? ctx.damage : top, 0, top) * v.share * CONFIG.abilities.reflect.mul : v.damage;
+    const from = body || e;
+    events.emit('abilityPower', { power: slot.id, then: when, holder, body, enemy: e, x: from.x, y: from.y, z: from.z, v, yaw: ctx.yaw });
+    if (damage > 0) wound(e, damage, holder, slot.id);
+  }
+  // Ash Husk's husks: each draws its enemy's next attack (once it is between attacks, never a swing under way), bursts
+  // as any enemy's blow meets it (every enemy within CONFIG.abilities.husk.radius m), else crumbles at its time.
+  function huskTick() {
+    for (const [holder, h] of husks) {
+      const e = h.lure;
+      if (e && (!e.alive() || !Game.enemies.includes(e))) { h.lure = null; h.drawing = false; }
+      else if (e && !h.began) {
+        if (!h.drawing && !e.in('attacking') && !(e.frozen > 0)) h.drawing = true;
+        else if (h.drawing && e.in('attacking')) h.began = true;
+      } else if (e && h.began && !e.in('attacking')) { h.lure = null; h.drawing = false; }   // its one attack is over
+      let struck = null;
+      for (const o of Game.enemies) if (o.alive() && o.hitbox && !o.hitbox.lines && o.hitbox.overlaps(h.decoy)) { struck = o; break; }
+      if (struck) {
+        husks.delete(holder);
+        events.emit('abilityPower', { power: h.pw.id, then: 'husk', holder, body: null, enemy: struck, x: h.x, y: h.y, z: h.z, v: h.pw.v, yaw: h.yaw, burst: true });
+        const R = CONFIG.abilities.husk.radius;
+        for (const o of Game.enemies) if (near(o, h.x, h.y, h.z, R)) wound(o, h.pw.v.damage, holder, h.pw.id);
+      } else if (h.until <= clock && !(h.drawing && h.began && h.lure)) {   // never gone from under a swing begun on it
+        husks.delete(holder);
+        events.emit('abilityPower', { power: h.pw.id, then: 'husk', holder, body: null, enemy: null, x: h.x, y: h.y, z: h.z, v: h.pw.v, yaw: h.yaw, end: 'crumble' });
+      }
+    }
   }
   // Bitter Draught: a landed blow of a holder whose blade burns burns `e` too, one flame spent (`strike`: its number).
   function burn(holder, body, kit, e) {
@@ -766,6 +875,7 @@ const abilityPowers = (() => {
   }
   function tick(dt) {
     clock += dt;
+    if (husks.size) huskTick();
     for (const [holder, s] of summons) summonTick(holder, s, dt);
     // A low-health summon kept out by another comes when that one is gone, while its holder lives and is still low.
     if (waiting.size) for (const [key, w] of waiting) {

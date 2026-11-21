@@ -1165,6 +1165,49 @@
         `all gone (${JSON.stringify(left)})`);
     } finally { audio.play = play; guardFx.clear(); abilityPools.clear(); }
   });
+  // Pass 137 (PLAN.md item 8, batch 9): Guard II, each key-2 guard that answers the boss drawn by js/guard-fx-2.js and
+  // heard, at the press and at its moment (a bounce, a stop, an answer, the arrival, a burst, the seal burning out).
+  test('guard boss: each is drawn and heard', () => {
+    Game.startFight('pillagerCaptain'); Game.loading = 0; sim.begin(); guardFx2.clear(); abilityPowers.reset(); abilityDomes.clear();
+    const p = Game.player, e = Game.duel, R = () => guardFx2.state, played = [];
+    const play = audio.play; audio.play = (id, o) => { played.push(id); return play.call(audio, id, o); };
+    const frames = n => { for (let i = 0; i < n; i++) Game.render(1, STEP); };
+    const grant = id => { played.length = 0; p.grantAbilities([id]); };
+    const press = id => { grant(id); abilityPressPerk(p, p.kit.pressed.guard, 0); frames(2); };
+    const blow = (damage = 10) => ({ attackId: 'test', damage, poise: 10, knock: 2, hitstop: 0 });
+    const swing = e.baseDef.attacks.find(a => !a.projectile && !a.rollOnly && !a.seize);
+    try {
+      sturdy(p); e.cooldown = 30; faceOff(e, p, 3); e.hp = e.maxHp = 1e9;
+      press('mirror-ward'); expect.ok(R().panes && played.includes('abilityWard'), `Mirror Ward: the pane (${JSON.stringify(R())})`);
+      played.length = 0; p.takeHit(blow(10), e, { enemy: e, shot: false, area: false }); frames(1);
+      expect.ok(R().cracked && R().stars && played.includes('abilityWardBounce'), `the bounce: cracked, a star (${JSON.stringify(R())})`);
+      press('moon-dome'); frames(15); expect.ok(R().domes && played.includes('abilityDome'), 'Moon Dome: the dome');
+      played.length = 0; events.emit('abilityPerk', { body: p, perk: 'dome/stop', dome: abilityDomes.list[0], at: { x: p.x + 5, y: p.y + 1, z: p.z } }); frames(1);
+      expect.ok(R().flash && played.includes('abilityDomeStop'), 'a stop flashes it');
+      press('waiting-blade'); frames(5); expect.ok(R().dials && played.includes('abilityWait'), 'Waiting Blade: the dial');
+      played.length = 0; p.takeHit(blow(10), e, { enemy: e, shot: false, area: false }); frames(1);
+      expect.ok(R().arcs && played.includes('abilityAnswer'), `the answer: the arc (${JSON.stringify(R())})`);
+      frames(15); expect.ok(!R().dials, 'the dial gone with the stance');
+      grant('hourglass'); for (let i = 0; i < 40; i++) { p.x += 0.05; p.grounded = true; p.trailStep(CONFIG.abilities.rewind.every); }
+      abilityPressPerk(p, p.kit.pressed.guard, 0); frames(3);
+      expect.ok(R().rewinds && R().glints > 0 && played.includes('abilityRewind'), `Hourglass: the way back (${JSON.stringify(R())})`);
+      for (let i = 0; i < 40 && p.rewind; i++) { sim.step(1); frames(1); }
+      expect.ok(!p.rewind && R().ghosts > 0 && played.includes('abilityRewindEnd'), `arrived, ghosts behind (${JSON.stringify(R())})`);
+      grant('ash-husk'); abilityReport(p, 'press', { key: 'guard', enemy: e }); frames(10);
+      expect.ok(R().husks && played.includes('abilityHusk'), `Ash Husk: the figure (${JSON.stringify(R())})`);
+      played.length = 0; const hb = e.hitbox; e.hitbox = { overlaps: () => true }; abilityPowers.tick(STEP); e.hitbox = hb; frames(2);
+      expect.ok(!R().husks && R().scorches && played.includes('abilityHuskBurst'), `struck: it bursts (${JSON.stringify(R())})`);
+      grant('binding-seal'); abilityReport(p, 'press', { key: 'guard', enemy: e }); frames(5);
+      expect.ok(R().seals && played.includes('abilitySeal'), 'Binding Seal: the strip');
+      played.length = 0; e.beginAttack(swing);
+      for (let i = 0; i < 240 && !R().burning; i++) { e.update(STEP, p); frames(1); }
+      expect.ok(R().burning && played.includes('abilitySealSputter') && !e.hitbox, `the attack spent: it burns (${JSON.stringify(R())})`);
+      abilityDomes.tick(30); frames(400);   // (the dome's time runs in the game's step, not the drawing)
+      const left = R();
+      expect.ok(!left.panes && !left.husks && !left.domes && !left.dials && !left.arcs && !left.glints && !left.ghosts && !left.seals && !left.flakes && !left.stars,
+        `all gone (${JSON.stringify(left)})`);
+    } finally { audio.play = play; guardFx2.clear(); abilityDomes.clear(); abilityPowers.reset(); }
+  });
   // Pass 97 (PLAN.md 3d): the sparring scene. The player's part of each drill is the teacher's own demonstration, played
   // on the player's keys (a swing drill's steps from the moment the partner's blow begins), so a demo that cannot do
   // its drill fails here too.

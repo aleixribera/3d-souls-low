@@ -146,7 +146,8 @@ const projectiles = (() => {
         b.vy -= b.g * dt;
         const dx = b.vx * dt, dy = b.vy * dt, dz = b.vz * dt;
         b.age += dt;
-        const wall = stop(b.x, b.y, b.z, dx, dy, dz);
+        let wall = stop(b.x, b.y, b.z, dx, dy, dz), dome = null;
+        if (abilityDomes.list.length) { const f = abilityDomes.crossing(b.x, b.y, b.z, dx, dy, dz); if (f < wall) { wall = f; dome = abilityDomes.last; } }   // Moon Dome's skin
         // The first opposing body stops the bolt; rolling/executing bodies let it pass on.
         const team = game.kind === 'bossBattle';
         let actors;
@@ -155,6 +156,7 @@ const projectiles = (() => {
         else { stepActors.length = 0; stepActors.push(p); actors = stepActors; }
         hits.length = 0;
         for (const actor of actors) if (actor.alive() && !b.passed.has(actor)) {
+          if (!team && abilityDomes.list.length && abilityDomes.shelter(actor, b.x, b.y, b.z)) continue;   // inside a dome it flies at: its skin stops it first
           const t = meets(actor, b.x, b.y, b.z, dx, dy, dz, actor.radius + b.size);
           if (t !== null && t <= wall) {
             const h = hitSlots[hits.length] || (hitSlots[hits.length] = { actor: null, t: 0 });
@@ -172,14 +174,18 @@ const projectiles = (() => {
           if (!team && reflects(actor, b)) { this.reflect(game, b, actor, at); break; }
           if (team) applyEnemyStrike(game, b.strike, b.owner, actor, at, true, { x: b.x, z: b.z });
           else {
-            const res = actor.takeHit(b.strike, { x: b.x, z: b.z });
+            const res = actor.takeHit(b.strike, { x: b.x, z: b.z }, { enemy: b.owner, shot: true, area: false });
             game.hitstop = Math.max(game.hitstop, res.blocked ? CONFIG.block.hitstop : b.strike.hitstop);
             events.emit('strike', { strike: b.strike, attacker: b.owner, target: actor, at, blocked: res.blocked, plated: res.plated, rooted: res.rooted, projectile: true });
           }
           this.kill(b); break;
         }
         if (!b.live) continue;
-        if (wall <= 1) { b.x += dx * wall; b.y += dy * wall; b.z += dz * wall; events.emit('boltStopped', { bolt: b }); this.kill(b); continue; }
+        if (wall <= 1) {
+          b.x += dx * wall; b.y += dy * wall; b.z += dz * wall; events.emit('boltStopped', { bolt: b });
+          if (dome) events.emit('abilityPerk', { body: p, perk: 'dome/stop', dome, at: { x: b.x, y: b.y, z: b.z } });
+          this.kill(b); continue;
+        }
         b.x += dx; b.y += dy; b.z += dz;
         if (b.age > P.life || b.y < world.killY) this.kill(b);
       }
