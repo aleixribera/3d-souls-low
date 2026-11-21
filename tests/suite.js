@@ -99,6 +99,30 @@
     below(a, b, msg) { if (!(a < b)) throw new Fail(`${msg || 'value'}: expected < ${b}, got ${typeof a === 'number' ? a.toFixed(3) : a}`); },
   };
 
+  // ---- frame time, for the tests that hold one level's frame against another's -----------------------------------
+  // CI draws in software (SwiftShader) on shared runners, where a neighbour can slow every frame for seconds: a level
+  // once measured 284 ms a frame against a usual third of that, on a docs-only commit (run 44843261653). Noise only
+  // ever adds time, so each measure keeps its fastest of three 30-frame batches, and a comparison that still fails
+  // measures both sides once more and keeps the better pair: a real regression fails both times.
+  const steadyFrameMs = () => {
+    const gl = A.renderer.getContext(), px = new Uint8Array(4);
+    for (let i = 0; i < 20; i++) { sim.step(1); Game.render(1, STEP); }   // warm-up: shaders compile here
+    let best = Infinity;
+    for (let b = 0; b < 3; b++) {
+      gl.readPixels(0, 0, 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, px);
+      const t0 = performance.now();
+      for (let i = 0; i < 30; i++) { sim.step(1); Game.render(1, STEP); }
+      gl.readPixels(0, 0, 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, px);   // wait for the GPU
+      best = Math.min(best, (performance.now() - t0) / 30);
+    }
+    return best;
+  };
+  // measurePair() returns [a, b] (objects with .ms); ok(a, b) says whether they pass. Retried once on a failure.
+  const framePair = (measurePair, ok) => {
+    const first = measurePair();
+    return ok(...first) ? first : measurePair();
+  };
+
   // ---- first, before any other test draws an effect: frame times around jump-attack landings -------------------
   // A shader compiles the first time something is drawn with it, which stalls that frame, so this test comes first:
   // its first landing is the first after the page loaded. Each frame is one step and one render, waiting for the GPU.
@@ -433,19 +457,13 @@
     }
   });
   test('culling: frame time on Test: Courtyard, culled and not', () => {
-    const gl = A.renderer.getContext(), px = new Uint8Array(4);
     const measure = def => {
       Game.kind = 'level'; Game.level = def; Game.enterPlay(); Game.reset(); sim.begin();
       sim.place(42, 0);
-      for (let i = 0; i < 20; i++) { sim.step(1); Game.render(1, STEP); }   // warm-up: shaders compile here
-      gl.readPixels(0, 0, 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, px);
-      const t0 = performance.now();
-      for (let i = 0; i < 90; i++) { sim.step(1); Game.render(1, STEP); }
-      gl.readPixels(0, 0, 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, px);   // wait for the GPU
-      return { ms: (performance.now() - t0) / 90, lights: A.visuals.info().pointLights, awake: Game.enemies.filter(e => !e.asleep).length };
+      return { ms: steadyFrameMs(), lights: A.visuals.info().pointLights, awake: Game.enemies.filter(e => !e.asleep).length };
     };
-    const off = measure({ ...A.TEST_COURTYARD, id: 'test-courtyard-uncull', cull: false });
-    const on = measure(A.TEST_COURTYARD);
+    const [off, on] = framePair(() => [measure({ ...A.TEST_COURTYARD, id: 'test-courtyard-uncull', cull: false }), measure(A.TEST_COURTYARD)],
+                                (off, on) => on.ms < off.ms * 1.25 + 1);
     metrics.courtyardFrame = { culledMs: +on.ms.toFixed(2), unculledMs: +off.ms.toFixed(2), culledLights: on.lights, unculledLights: off.lights,
                                culledAwake: on.awake, unculledAwake: off.awake };
     expect.ok(on.lights < off.lights, `fewer real lights when culled (${on.lights} vs ${off.lights})`);
@@ -2449,17 +2467,8 @@
     expect.ok(!K.landmark && K.smoke === 0 && K.embers === 0, `Level 2 has none of them (${JSON.stringify({ l: K.landmark, s: K.smoke, e: K.embers })})`);
   });
   test('town look: frame time on Test: Town against Test: Courtyard', () => {
-    const gl = A.renderer.getContext(), px = new Uint8Array(4);
-    const measure = (id, x, z) => {
-      Game.startLevel(id); sim.begin(); sim.place(x, z);
-      for (let i = 0; i < 20; i++) { sim.step(1); Game.render(1, STEP); }   // warm-up: shaders compile here
-      gl.readPixels(0, 0, 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, px);
-      const t0 = performance.now();
-      for (let i = 0; i < 90; i++) { sim.step(1); Game.render(1, STEP); }
-      gl.readPixels(0, 0, 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, px);   // wait for the GPU
-      return (performance.now() - t0) / 90;
-    };
-    const court = measure('test-courtyard', 42, 0), townMs = measure('test-town', 20, -6);
+    const measure = (id, x, z) => { Game.startLevel(id); sim.begin(); sim.place(x, z); return steadyFrameMs(); };
+    const [court, townMs] = framePair(() => [measure('test-courtyard', 42, 0), measure('test-town', 20, -6)], (c, t) => t < c * 2.5 + 3);
     metrics.townFrame = { townMs: +townMs.toFixed(2), courtyardMs: +court.toFixed(2) };
     expect.below(townMs, court * 2.5 + 3, `Test: Town frame (${townMs.toFixed(1)} ms) against Test: Courtyard (${court.toFixed(1)} ms)`);
   });
@@ -2800,17 +2809,12 @@
     expect.above(share, 0.5, `the castle seen from ${seen.length} of ${seen.length + hidden.length} points (hidden at ${hidden.slice(0, 12).join(' ')}…)`);
   });
   test('the burning town: frame time on the church square, against Test: Courtyard', () => {
-    const gl = A.renderer.getContext(), px = new Uint8Array(4);
     const measure = (id, x, z, y) => {
       Game.startLevel(id); sim.begin(); sim.place(x, z, y);
-      for (let i = 0; i < 20; i++) { sim.step(1); Game.render(1, STEP); }
-      gl.readPixels(0, 0, 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, px);
-      const t0 = performance.now();
-      for (let i = 0; i < 90; i++) { sim.step(1); Game.render(1, STEP); }
-      gl.readPixels(0, 0, 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, px);
-      return { ms: (performance.now() - t0) / 90, lights: A.visuals.info().pointLights };
+      const ms = steadyFrameMs();
+      return { ms, lights: A.visuals.info().pointLights };
     };
-    const court = measure('test-courtyard', 42, 0), town = measure('burning-town', 96, 62, 12);
+    const [court, town] = framePair(() => [measure('test-courtyard', 42, 0), measure('burning-town', 96, 62, 12)], (c, t) => t.ms < c.ms * 2.5 + 3);
     metrics.burningTownFrame = { churchSquareMs: +town.ms.toFixed(2), courtyardMs: +court.ms.toFixed(2), lights: town.lights };
     expect.ok(town.lights === CONFIG.cull.maxLights, `culled lights (${town.lights})`);
     expect.below(town.ms, court.ms * 2.5 + 3, `church square frame (${town.ms.toFixed(1)} ms) against Test: Courtyard (${court.ms.toFixed(1)} ms)`);
