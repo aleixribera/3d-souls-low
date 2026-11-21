@@ -6,6 +6,7 @@
 //   title    a few words
 //   text     one to three sentences, shown under the list when the entry is selected
 const CHANGELOG = [
+  { version: 'v7.179.0', title: 'Aldric\'s own sweep', text: 'Aldric sweeps from his left shoulder now, and a new string opens the same way: the Turning Key, two cuts and his pommel. He looks the part in the new style too.' },
   { version: 'v7.178.0', title: 'Echoes and overcharge', text: 'Two new rare abilities. Echoing Blade: fire any key and your next few blows are struck again by a ghost of your sword. Overcharge: a full key keeps filling, and pressing it overcharged hits harder or heals more.' },
   { version: 'v7.177.0', title: 'The Giant in ink', text: 'The Giant Skeleton is drawn in the new ink style: black irons, and his club\'s warning shows on the skull at its end instead of lighting his whole body. His swings and slams carry his weight, and his slams crack the floor wider.' },
   { version: 'v7.176.0', title: 'The Giant\'s open hand', text: 'The Giant Skeleton has a new string: a rake of its claw you can parry, then the open hand back along the floor that you must roll. The first turn of its Bonewheel can now be parried. The Bell Warden\'s weight now sinks after his bell hits the floor.' },
