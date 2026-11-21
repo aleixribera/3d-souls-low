@@ -3,12 +3,11 @@
 The iterate loop's working note (`.claude/iterate.md`). Cap: 8,000 characters.
 
 ## Now
-- Track 2, pass 141 (PLAN item 8, batch 10, Summons I, pass 1 of 1), done in v7.192.0: Cinder Fox and Lantern
-  Spirit new; Grave Hound, Lancer of Ash and Stone Guardian rebuilt as cel ink models (four Blender models; the
-  guardian's shield is its weapon; the lancer charges from 12 m). Online: heal, flight and mark forwarded; a ward
-  against a sealed attack refused. Acceptance: `tests/summons-one.cjs`, in-page `summons` 2/2; clip
-  `docs/scorecard/now/summons-one.mp4`. Next on track 2: batch 11, Summons II. Browser lock:
-  `node tools/browser-lock.cjs run <pass> -- <cmd>` (docs/two-tracks.md).
+- Track 2, pass 144 (PLAN item 8, batch 11, Summons II, pass 1 of 1), done in v7.195.0: Ink Crows, Bone Archer,
+  Thunder Hawk, Night Owl as cel ink Blender models; the owl's mark is the server's, burst by the next weapon blow.
+  Also CI: `tests/reconnect-browser.cjs` teardown bounded (v7.193/194 browser-smoke hung). Acceptance:
+  `tests/summons-two.cjs`, in-page `summons` 3/3; clip `docs/scorecard/now/summons-two.mp4`. Next on track 2:
+  batch 12, Summons III. Browser lock: `node tools/browser-lock.cjs run <pass> -- <cmd>` (docs/two-tracks.md).
 - Track 1, pass 145 (PLAN item 6, Oswin, pass 1 of 2), done: audit a rework (crowned 7 moves; roll-only 5 of 8
   and 7 of 9; body check 19/25). Now 9 and 10 moves (Royal Progress, Empty Reign, Sworn Fist, Open Hand new), roll-only
   2 a phase, body check 0/31, tells on axe edge, fists, feet; in-page `Aurel in Ash` 9/9; clip
@@ -54,7 +53,7 @@ The iterate loop's working note (`.claude/iterate.md`). Cap: 8,000 characters.
 - Abilities and crates (pass 107, v7.162.0): `js/data/crates.js`, `js/progress.js` (save `v` 2), `js/crate-screen.js`;
   `tests/crates.cjs`. Plain commons' touches (pass 109): `js/ability-touch.js`; in-page `plain commons`. Blade commons (pass 112): `js/common-fx.js`; `tests/blade-commons.cjs`, in-page `blade commons`. Guard commons (114, 117): `tests/guard-commons.cjs`, `mirror-shard.cjs`.
 - The Finishing Blow (pass 100-103, `js/finisher.js`, `js/finisher-fx.js`): the 3rd counter; its look is "Later".
-- Summons (pass 141): `js/summon-beasts.js` (hound, fox), `js/summon-lantern.js`, `js/summon-figures.js`; `tests/summons-one.cjs`, in-page `summons`; clip `node tools/ability-clips.cjs summons`.
+- Summons (pass 141, 144): `js/summon-beasts.js` (hound, fox), `summon-lantern.js`, `summon-figures.js` (archer), `summon-birds.js` (hawk, owl), `summon-crows.js`; `tests/summons-one.cjs`, `summons-two.cjs`, in-page `summons`; clips `node tools/ability-clips.cjs summons|summons2`.
 - Art styles (pass 108): `?style=cel|dark|paint`, `js/data/styles.js`, `js/style-lab.js`; `tests/style-browser.cjs`;
   retake `node tools/style-frames.cjs [styles] [still,fight,clip,time]`.
 - Body check (retro 130): `tools/body-check.cjs [bossId]`; `tests/body-check.cjs` holds every boss with a page; `followOn` (pass 132).
