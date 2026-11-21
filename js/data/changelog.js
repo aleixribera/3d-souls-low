@@ -6,6 +6,7 @@
 //   title    a few words
 //   text     one to three sentences, shown under the list when the entry is selected
 const CHANGELOG = [
+  { version: 'v7.177.0', title: 'The Giant in ink', text: 'The Giant Skeleton is drawn in the new ink style: black irons, and his club\'s warning shows on the skull at its end instead of lighting his whole body. His swings and slams carry his weight, and his slams crack the floor wider.' },
   { version: 'v7.176.0', title: 'The Giant\'s open hand', text: 'The Giant Skeleton has a new string: a rake of its claw you can parry, then the open hand back along the floor that you must roll. The first turn of its Bonewheel can now be parried. The Bell Warden\'s weight now sinks after his bell hits the floor.' },
   { version: 'v7.175.0', title: 'The Bell Warden moves', text: 'The Bell Warden swings with his whole weight now: his hips turn first and the bell follows, and his leap lifts the bell over his head in the air. He has a new string, Sweep and Return: the sweep, then straight back the other way. Parry both.' },
   { version: 'v7.174.0', title: 'Six new rares', text: 'Six new rare abilities: Riptide sends a wave after a counter, Moonfall Cut drops a crescent from a light jump attack, Iron Cyclone spins a ring of steel on a string\'s heavy, Petal Storm bursts round a Finishing Blow, Ironclad keeps a drink from being knocked off, and Hunting Call lets your summon mark the boss for your next hit.' },
