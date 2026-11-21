@@ -61,6 +61,8 @@ side by side, and each should feel like the main event.
   fast and cunning, but always fair, their danger in combos rather than any single unreadable attack. The feel only,
   never a show's names, characters, symbols or looks.
 - **Manageable for friends playing for the first time, on a laptop.**
+- **Fully playable on the phone,** from the same link, in landscape, installed from the home screen; phone and PC
+  players share the lobby, and it should feel and play as good (Aleix, 2026-11-21).
 - **Fair but challenging.** Every attack, the fast ones included, shows clearly that it's coming and can be dodged on
   its tell. Nothing hits without warning. Each of a boss's attacks has its own wind-up, so players rarely mistake one
   attack for another.
@@ -80,7 +82,7 @@ side by side, and each should feel like the main event.
 - **The UI** fits the game's dark tone, is easy to use and looks great. Plain English in menus, the HUD and end screens.
 - **Smooth on integrated graphics:** at least 60 fps on the Normal preset. Two presets: Normal for everyone, Ultra for
   Aleix's PC. Models may be as detailed as they need to be within that. No preset ever renders below 100% render
-  scale (it looks terrible): find the speed elsewhere. Normal has all of Ultra's cool effects, just toned down
+  scale (CSS pixels; sharpness capped at 2x on phones, Aleix 2026-11-21) (it looks terrible): find the speed elsewhere. Normal has all of Ultra's cool effects, just toned down
   slightly so they run as well as possible on low-end PCs. Lighting is baked for everything: levels, boss arenas,
   Boss Rush, every preset. Normal must look very nice too, while being super cheap to run.
 

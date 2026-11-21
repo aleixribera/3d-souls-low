@@ -6,7 +6,7 @@ reads it every pass and doesn't edit it: cuts and finds go to `BACKLOG.md`, asks
 ## How the work runs
 
 - **One pass at a time** until items 1 to 3 are done; then **two tracks** in parallel (`.claude/iterate.md`):
-  track 1 bosses, track 2 abilities and crates. The tracks touch different files.
+  track 1 bosses then the phone, track 2 abilities and crates. The tracks touch different files.
 - The bar is the vision's: AAA feel, runs on a toaster, anime action against fair, cunning bosses.
 - **Balance is the loop's** (Aleix, 2026-11-20: "current numbers are not final"): every number in the game and in
   this plan (damage, health, timings, windows, odds, the starter set's counts, the difficulty curve) is a starting
@@ -20,46 +20,31 @@ reads it every pass and doesn't edit it: cuts and finds go to `BACKLOG.md`, asks
 Done: the frames folder and reference set, green CI with a green-only container, the out-of-loop cuts and the
 counters (items 1-3, passes 104-110). Their text: git history.
 
-## Track 1: bosses
+## Track 1: bosses, then the phone
 
-### 4. The art style exploration
+Done: the art style (cel, Aleix's pick, default since v7.205.0), the boss creation system (pass 111 on) and the whole
+roster through it, Gemini last (pass 153); bosses await Aleix's fight. Their text: git history. A new boss follows the
+system: a one-page design, Blender model, animation (free tools; paid only with Aleix's yes), effects that never cover
+a wind-up, a blind judge against reference-game clips, Aleix's fight last.
 
-One scene, the player against the Pillager Captain in a small arena, built in four styles: (a) cel-shaded anime (light
-bands, ink outlines, flat bold colour), (b) stylized dark (strong silhouettes, painted textures, soft light),
-(c) painterly (brush-stroke textures and light), (d) today's look as the control. Real Blender models, free tools only,
-each at 60 fps on the Normal preset and 100% render scale. The chosen style becomes the whole game's: player and
-bosses first, then enemies, then levels, gradually.
-Check: desktop screenshots and a 10-second clip per style, side by side in `docs/style/`, and the frame time of each on
-Normal; then Aleix's pick under "Needs Aleix" (his taste, not a judge's).
+### 9. Fully playable on the phone, from the same link (Aleix, 2026-11-21)
 
-### 5. The boss creation system, proven on the Pillager Captain
-
-A repeatable way to make a boss: a one-page design (idea and backstory from `STORY.md`, silhouette, 8 to 12 attacks
-with 3 or 4 combos, one or two signature moments a phase, a real phase-two change) → Blender model in the chosen style
-→ animation → effects → data in `js/data/bosses/` → in game. It replaces the Hollis bar and the old boss rules in
-`.claude/feedback.md` 2026-11-14 (Aleix: remove previous quality bars).
-- Animation is the weak link today (hand-keyed in script looks stiff): use free tools where they help (video-to-motion
-  from reference clips, free motion libraries, a reusable rig and pose library). Paid or account-based services only
-  with Aleix's yes, per service, with its price.
-- Effects rule (VISION): nothing covers the boss during a wind-up; big effects on impact, signature moments and the
-  phase change. Every attack told and dodgeable on its tell; every string breaks on a counter (item 3); `noParry` on a
-  quarter of attacks at most.
-- References: any souls-like or action game whose combat fits ours (Sekiro, Lies of P, Stellar Blade, Devil May Cry,
-  Elden Ring and others); ideas only, never their names or looks. Clips stay in `.scratch/`, never committed.
-- **The judge:** a blind judge sees clips of our boss beside reference-game clips, unlabelled, and names the single
-  biggest giveaway; fix it, judge again, scores logged per round. **Aleix fights it** before it is called final
-  ("awaiting Aleix" in `STATE.md` until then).
-Check: the Captain judged and awaiting Aleix; then **a second boss built through the system with no new engine code,
-from one-page design to playable in about three passes**. That second boss proves the system.
-
-### 6. The whole roster through the system
-
-In the order players meet them: Pillager Captain, Bell Warden, the Gaol Giant, Aldric, the Antlered Hunger, Ostrey,
-Hale and Harrow, the Ringer, Hollis, Oswin, Agathe, the Kindling Tree, the King's Blade, then Gemini. One boss a pass
-or two. The borrowed Elden Ring move sources (`godfrey.js`, `godrick.js`, `maliketh.js`, `radagon.js`,
-`crucible-knight.js`, `js/data/move-sources.js`) retire as their users get moves of their own. New bosses come after
-the roster.
-Check per boss: item 5's judge and Aleix's fight.
+"Make it feel and play good." Every mode on the phone, landscape only: Story, Boss Rush online in the same lobby as PC
+players, Boss Rush alone, Practice, crates, the loadout panel and every menu.
+- **Controls** (mobile action-game standard): a floating stick on the left half; a right thumb cluster with light,
+  heavy, dodge and deflect, the four ability keys in an arc; drag the right half for the camera; tap a foe to lock
+  on. The same lock-on and aim help the PC has, the same windows and damage. A gamepad paired to the phone works.
+- **Installable app:** the home-screen launch (manifest, icon, splash) is full screen with no browser bar, respects
+  the notch and home bar, keeps audio working, and a first phone visit shows an "Add to Home Screen" hint.
+- **Speed:** 60 fps on Normal on Aleix's iPhone 15 Pro; 60 fps on Low on a 2021 mid-range Android, 30 at worst on
+  older. Render scale 100% of CSS pixels, sharpness capped at 2x (VISION).
+- **Real-device numbers:** live debugging an iPhone needs a Mac, so the game, on a phone, sends frame rate, the
+  preset and errors to the home server while it plays; the loop reads them like replays. Emulation (Playwright WebKit
+  and Chromium at iPhone and Android sizes, touch on) covers the rest.
+Check: every mode played through in emulation with touch only (frames in `docs/scorecard/now/phone-*`, the console
+clean); the design-audit rule book passes the touch HUD and menus at phone landscape; a gamepad works; then Aleix
+plays on his iPhone from the home screen, and his device's numbers in the server meet the speed line. Until he has,
+"awaiting Aleix" in `STATE.md`.
 
 ## Track 2: abilities and crates (Aleix, 2026-11-20)
 
