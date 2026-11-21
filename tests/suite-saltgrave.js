@@ -93,6 +93,30 @@
     Game.startFight('hale', ['harrow']); Game.loading = 0; sim.begin(); sim.step(0.2);
     expect.ok(Game.enemies.length === 2 && Game.enemies.every(e => e.def.phaseId !== 'whole'), `together each in her half (${Game.enemies.map(e => e.def.phaseId)})`);
   });
+  // Pass 138 (docs/bosses/castellans.md): alone, she is a fight of her own: the pair's calls answered by one body, and the
+  // moves only the whole suit can make; each sister has 8 moves, and at most a quarter of any fight's can't be parried.
+  test('Saltgrave: alone, the whole castellan answers her own calls, with moves of her own', () => {
+    for (const id of ['hale', 'harrow']) {
+      const d = A.ENEMY_BY_ID[id], [pair, alone] = d.defaultPhases.map(p => d.phases[p]), by = m => d.attacks.find(a => a.id === m);
+      expect.ok(pair.attacks.length === 8, `${id}: 8 moves of her own (${pair.attacks.length})`);
+      expect.ok(['vaultHaft', 'gauntletHold', 'stampStonesAlone', 'wallTurnsAlone'].every(m => alone.attacks.includes(m) && !pair.attacks.includes(m)), `${id}: the whole suit's own moves`);
+      const names = new Map([...pair.attacks, ...alone.attacks].map(m => [by(m).name, by(m)]));
+      const shut = [...names.values()].filter(a => a.noParry || a.rollOnly || a.hits.every(h => h.noParry)).length;
+      expect.ok(shut / names.size <= 0.25, `${id}: ${shut} of ${names.size} moves can't be parried`);
+    }
+    Game.startFight('harrow'); Game.loading = 0; sim.begin(); sim.step(0.2);
+    const e = Game.duel, p = Game.player, rnd = Math.random;
+    p.hp = p.maxHp = 1e6;
+    expect.ok(sim.until(() => !e.attack && e.state === ES.CHASE, 8) >= 0, `she rises and closes in (${e.state}, ${e.attack && e.attack.id})`);
+    e.chooseAttack = e.react = e.breakOff = () => null;
+    const near = () => { p.x = p.px = e.x + Math.sin(e.yaw) * 3; p.z = p.pz = e.z + Math.cos(e.yaw) * 3; p.hp = 1e6; return false; };
+    try {
+      Math.random = () => 0;
+      e.beginAttack(e.attackById('stampStonesAlone'));
+      sim.until(() => near() || (e.attack && e.attack.id === 'crownCleave'), 8);
+      expect.ok(e.attack && e.attack.id === 'crownCleave', `her stamps bring her own cleave down (${e.attack && e.attack.id})`);
+    } finally { Math.random = rnd; }
+  });
   test('Saltgrave: the old road is gone from the fortress', () => {
     const ids = new Set([...A.LEVEL_8.gated.flatMap(z => z.enemies.map(m => m.enemy)), ...A.LEVEL_8.dispersed.map(s => s.enemy)]);
     for (const old of ['graftedScion', 'omenkin', 'godrick']) expect.ok(!ids.has(old), `no ${old}`);

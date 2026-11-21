@@ -58,11 +58,15 @@ const BOSS_FX = {
     crownCleave: { impact: 'shatter', windup: 'gather' }, beardsHook: { element: 'steel' }, helmsSalute: { element: 'steel' }, haftsHeel: { element: 'steel' },
     wallTurns: { impact: 'gale' }, offTheRampart: { impact: 'gale' },
     stampStones: { element: 'earth', impact: 'quake' }, fallingWeight: { element: 'earth', impact: 'quake' }, greaveSlide: { element: 'earth' }, backHeel: { element: 'earth' },
-    sistersHalf: { impact: 'shatter', windup: 'gather' }, bothHalves: { impact: 'shatter', windup: 'gather' } } },
+    sistersHalf: { impact: 'shatter', windup: 'gather' }, bothHalves: { impact: 'shatter', windup: 'gather' },
+    hewing: { element: 'steel' }, elbowKnee: { element: 'earth' }, heavenHeel: { element: 'earth', impact: 'quake' }, vaultHaft: { impact: 'gale' }, gauntletHold: { element: 'steel' },
+    stampStonesAlone: { element: 'earth', impact: 'quake' }, wallTurnsAlone: { impact: 'gale' } } },
   harrow: { element: 'earth', aura: 0xc8d4dc, phases: { whole: 'storm' }, attacks: {
     stampStones: { impact: 'quake' }, hammerOfHands: { impact: 'quake', windup: 'gather' }, fallingWeight: { impact: 'quake' }, knuckleHeel: { element: 'steel' },
     crownCleave: { element: 'storm', impact: 'shatter', windup: 'gather' }, wallTurns: { element: 'storm', impact: 'gale' }, offTheRampart: { element: 'storm', impact: 'gale' },
-    saltWind: { element: 'storm' }, sistersHalf: { impact: 'shatter', windup: 'gather' }, bothHalves: { impact: 'shatter', windup: 'gather' } } },
+    saltWind: { element: 'storm' }, sistersHalf: { impact: 'shatter', windup: 'gather' }, bothHalves: { impact: 'shatter', windup: 'gather' },
+    hewing: { element: 'storm' }, elbowKnee: { element: 'steel' }, heavenHeel: { impact: 'quake' }, vaultHaft: { element: 'storm', impact: 'gale' }, gauntletHold: { element: 'steel' },
+    stampStonesAlone: { impact: 'quake' }, wallTurnsAlone: { element: 'storm', impact: 'gale' } } },
   // The Ringer of Thrale (Level 9): old iron while she is chained, her knells the pale toll of a bell; over the line,
   // all of it rings.
   ringer: { element: 'steel', aura: 0xb8c8ff, phases: { tolling: 'toll' }, attacks: {

@@ -146,20 +146,20 @@
   // The Wall Turns: the axe yoked across her shoulders, wound to her left; she turns full round twice with it held out.
   const yoke = { crouch: 0.22, lean: 0.05, legL: [-0.4, 0, 0], legR: [0.4, 0, 0], spin: [0, 1.0, 0], chest: [0, 0.45, 0], neck: [0, -0.5, 0], head: [0, -0.6, 0],
     armR: [-2.5, 0, -0.5], elbowR: [-1.9, 0, 0], weapon: [1.4, 0, 0], armL: [-2.2, 0, 0.7], elbowL: [-1.7, 0, 0] };
-  const out = turn => ({ tip: [0, turn, 0], crouch: 0.26, lean: 0.1, legL: [-0.45, 0, 0], legR: [0.45, 0, 0], spin: [0, -0.5, 0], chest: [0.05, -0.3, 0], neck: [0, 0.2, 0], head: [0, 0.3, 0],
+  const out = (turn, sink = 0) => ({ tip: [0, turn, 0], crouch: 0.26 + sink, lean: 0.1 + sink, legL: [-0.45, 0, 0], legR: [0.45, 0, 0], spin: [0, -0.5, 0], chest: [0.05, -0.3, 0], neck: [0, 0.2, 0], head: [0, 0.3, 0],
     armR: [-1.45, 0, -0.95], elbowR: [0, 0, 0], weapon: [1.55, 0, 0], armL: [-0.5, 0, 0.9], elbowL: [-0.3, 0, 0] });
   // The two turns run on through the strikes and the steps between them (the boxes round her are short; the body keeps going).
   const T = Math.PI;
   ATTACK_POSES.haleWallTurns = { ease: { windup: 'inOutSine', active: 'linear', follow: 'linear', recovery: 'inOutCubic' }, lag: { tip: 0, spin: 0, chest: 0.05 }, hits: [
     { windup: yoke, strike: out(-1.1 * T), follow: out(-1.4 * T) },
-    { windup: out(-1.8 * T), strike: out(-2.9 * T), follow: out(-4 * T) },
+    { windup: out(-1.8 * T), strike: out(-2.9 * T, 0.1), follow: out(-4 * T, 0.14) },   // (pass 138, body check) she sinks into the second turn
   ] };
 
   // Off the Rampart: down in a deep crouch, the axe trailing low behind her; she leaps and comes down axe first.
   ATTACK_POSES.haleOffTheRampart = { ease: { windup: 'inOutCubic', active: 'inQuad', follow: 'outCubic', recovery: 'inOutCubic' }, hits: [{
     windup: { crouch: 0.48, lean: 0.4, legL: [-0.8, 0, 0], legR: [0.5, 0, 0], spin: [0, -0.35, 0], chest: [0.35, -0.2, 0], neck: [-0.3, 0, 0], head: [-0.3, 0, 0],
       armR: [0.85, 0, -0.25], elbowR: [-0.1, 0, 0], weapon: [0.5, 0, 0], armL: [0.6, 0, 0.3], elbowL: [-0.2, 0, 0] },
-    strike: crown.strike, follow: crown.follow }] };
+    strike: { ...crown.strike, spin: [0, 0.15, 0] }, follow: { ...crown.follow, crouch: 0.4, lean: 0.62, spin: [0, 0.35, 0], chest: [0.55, 0.1, 0] } }] };
 
   // Salt Wind: the axe held out flat at her right, the head trailing; swept across her front, and the wind it raises flies on.
   const wind = {
@@ -181,6 +181,24 @@
     follow: { crouch: 0.24, lean: -0.16, legL: [-0.17, 0, 0], legR: [0.62, 0, 0], spin: [0, -0.62, 0], chest: [0.12, -0.45, 0], neck: [0, -0.4, 0], head: [0.05, -0.8, 0],
       armR: [0.9, 0, -0.1], elbowR: [-0.1, 0, 0], weapon: [0.5, 0, 0], armL: [0.65, 0, 0.2], elbowL: [-0.3, 0, 0] } }] };
 
+  // The Hewing (pass 138): the haft choked short and laid back over her left shoulder, the head behind her ear, left foot
+  // forward, a woodcutter's grip; hewn down across to her right, then swung back over her right shoulder and hewn down
+  // across to her left, a step in on each.
+  ATTACK_POSES.haleHewing = { ease: { windup: 'inOutCubic', active: 'outExpo', follow: 'outCubic', recovery: 'inOutCubic' }, lag: { weapon: 0.07, armR: 0.04 }, hits: [
+    { windup: { crouch: 0.18, lean: 0, legL: [-0.45, 0, 0], legR: [0.35, 0, 0], spin: [0, 0.7, 0], chest: [-0.1, 0.35, 0], neck: [0, -0.35, 0], head: [0, -0.4, 0],
+        armR: [-2.4, 0, 0.6], elbowR: [-1.3, 0, 0], weapon: [0.6, 0, 0], armL: [-2.0, 0, 0.5], elbowL: [-1.4, 0, 0] },
+      strike: { crouch: 0.3, lean: 0.35, legL: [-0.6, 0, 0], legR: [0.45, 0, 0], spin: [0, -0.55, 0], chest: [0.35, -0.35, 0], neck: [0, 0.3, 0], head: [0, 0.35, 0],
+        armR: [-0.9, 0, -0.45], elbowR: [-0.1, 0, 0], weapon: [1.5, 0, 0], armL: [-0.9, 0, -0.1], elbowL: [-0.3, 0, 0] },
+      follow: { crouch: 0.33, lean: 0.42, legL: [-0.62, 0, 0], legR: [0.47, 0, 0], spin: [0, -0.75, 0], chest: [0.42, -0.45, 0], neck: [0, 0.35, 0], head: [0, 0.4, 0],
+        armR: [-0.7, 0, -0.6], elbowR: [-0.1, 0, 0], weapon: [1.6, 0, 0], armL: [-0.75, 0, -0.15], elbowL: [-0.3, 0, 0] } },
+    { windup: { crouch: 0.16, lean: 0, legL: [0.4, 0, 0], legR: [-0.5, 0, 0], spin: [0, -0.8, 0], chest: [-0.15, -0.4, 0], neck: [0, 0.4, 0], head: [0, 0.45, 0],
+        armR: [-2.6, 0, -0.5], elbowR: [-1.2, 0, 0], weapon: [0.7, 0, 0], armL: [-2.2, 0, -0.3], elbowL: [-1.3, 0, 0] },
+      strike: { crouch: 0.34, lean: 0.4, legL: [0.45, 0, 0], legR: [-0.65, 0, 0], spin: [0, 0.6, 0], chest: [0.4, 0.35, 0], neck: [0, -0.3, 0], head: [0, -0.35, 0],
+        armR: [-0.85, 0, 0.35], elbowR: [-0.1, 0, 0], weapon: [1.55, 0, 0], armL: [-0.8, 0, 0.3], elbowL: [-0.3, 0, 0] },
+      follow: { crouch: 0.37, lean: 0.46, legL: [0.47, 0, 0], legR: [-0.67, 0, 0], spin: [0, 0.8, 0], chest: [0.48, 0.45, 0], neck: [0, -0.35, 0], head: [0, -0.4, 0],
+        armR: [-0.65, 0, 0.5], elbowR: [-0.1, 0, 0], weapon: [1.65, 0, 0], armL: [-0.65, 0, 0.4], elbowL: [-0.3, 0, 0] } },
+  ] };
+
   // ---- Harrow: fists and greaves ----
   // Stamp the Stones: a knee raised high, arms out for balance, held; the greave stamped down and the stones ring out;
   // the other knee, the other stamp, wider.
@@ -190,8 +208,9 @@
   const stamp = side => ({ crouch: 0.36, lean: 0.32, chest: [0.3, 0, 0], head: [0.2, 0, 0],
     ...(side < 0 ? { legL: [-0.55, 0, 0], kneeL: [0.25, 0, 0], legR: [0.45, 0, 0] } : { legR: [-0.55, 0, 0], kneeR: [0.25, 0, 0], legL: [0.45, 0, 0] }),
     armL: [-0.2, 0, 0.55], elbowL: [-0.9, 0, 0], armR: [-0.2, 0, -0.55], elbowR: [-0.9, 0, 0] });
+  const stampOn = side => ({ ...stamp(side), crouch: 0.44, lean: 0.42, chest: [0.42, 0, 0], head: [0.25, 0, 0] });   // (pass 138) her weight goes on down
   const stamps = { windup: 'inOutSine', active: 'outExpo', follow: 'outCubic', recovery: 'inOutCubic' };
-  ATTACK_POSES.harrowStamp = { ease: stamps, hits: [{ windup: lift(-1), strike: stamp(-1) }, { windup: lift(1), strike: stamp(1) }] };
+  ATTACK_POSES.harrowStamp = { ease: stamps, hits: [{ windup: lift(-1), strike: stamp(-1), follow: stampOn(-1) }, { windup: lift(1), strike: stamp(1), follow: stampOn(1) }] };
 
   // Hammer of Both Hands: the fists locked together and wound up over her left shoulder, held; then a diagonal smash
   // down across her body to the ground at her right.
@@ -210,11 +229,15 @@
   ATTACK_POSES.harrowKnuckleHeel = { ease: { windup: 'inOutSine', active: 'outExpo', follow: 'outQuad', recovery: 'inOutCubic' }, hits: [
     { windup: { ...guard, crouch: 0.18, legL: [-0.35, 0, 0], legR: [0.35, 0, 0], spin: [0, -0.35, 0], chest: [0.1, -0.2, 0], neck: [0, 0.2, 0], head: [0.1, 0.25, 0] },
       strike: { ...guard, crouch: 0.2, lean: 0.22, legL: [-0.55, 0, 0], legR: [0.4, 0, 0], spin: [0, 0.4, 0], chest: [0.15, 0.25, 0], neck: [0, -0.2, 0], head: [0.05, -0.25, 0],
-        armL: [-1.6, 0, -0.05], elbowL: [-0.05, 0, 0] } },
+        armL: [-1.6, 0, -0.05], elbowL: [-0.05, 0, 0] },
+      follow: { ...guard, crouch: 0.24, lean: 0.28, legL: [-0.58, 0, 0], legR: [0.42, 0, 0], spin: [0, 0.6, 0], chest: [0.2, 0.35, 0], neck: [0, -0.3, 0], head: [0.05, -0.35, 0],
+        armL: [-1.55, 0, -0.1], elbowL: [-0.1, 0, 0] } },
     { windup: { ...guard, crouch: 0.2, lean: 0.1, legL: [-0.45, 0, 0], legR: [0.4, 0, 0], spin: [0, -0.7, 0], chest: [0.1, -0.4, 0], neck: [0, 0.35, 0], head: [0.05, 0.4, 0],
         armR: [-1.25, 0, -1.0], elbowR: [-1.2, 0, 0] },
       strike: { ...guard, crouch: 0.22, lean: 0.2, legL: [-0.5, 0, 0], legR: [0.45, 0, 0], spin: [0, 0.85, 0], chest: [0.15, 0.4, 0], neck: [0, -0.35, 0], head: [0.05, -0.4, 0],
-        armR: [-1.5, 0, 0.55], elbowR: [-1.25, 0, 0] } },
+        armR: [-1.5, 0, 0.55], elbowR: [-1.25, 0, 0] },
+      follow: { ...guard, crouch: 0.26, lean: 0.24, legL: [-0.52, 0, 0], legR: [0.47, 0, 0], spin: [0, 1.1, 0], chest: [0.2, 0.5, 0], neck: [0, -0.4, 0], head: [0.05, -0.45, 0],
+        armR: [-1.45, 0, 0.75], elbowR: [-1.3, 0, 0] } },
     { windup: { ...guard, crouch: 0.08, lean: -0.22, legL: [0.1, 0, 0], legR: [-1.35, 0, 0], kneeR: [1.7, 0, 0], spin: [0, 0.1, 0], chest: [-0.15, 0, 0] },
       strike: { ...guard, crouch: 0.1, lean: -0.35, legL: [0.15, 0, 0], legR: [-1.55, 0, 0], kneeR: [0.05, 0, 0], spin: [0, 0.15, 0], chest: [-0.2, 0, 0] },
       follow: { ...guard, crouch: 0.1, lean: -0.32, legL: [0.15, 0, 0], legR: [-1.45, 0, 0], kneeR: [0.15, 0, 0], spin: [0, 0.15, 0], chest: [-0.2, 0, 0] } },
@@ -227,8 +250,9 @@
   ATTACK_POSES.harrowFallingWeight = { ease: { windup: 'inOutCubic', active: 'inQuad', follow: 'outCubic', recovery: 'inOutCubic' }, hits: [
     { windup: { crouch: 0.5, lean: 0.65, legL: [-0.85, 0, 0], kneeL: [1.0, 0, 0], legR: [0.55, 0, 0], kneeR: [0.6, 0, 0], chest: [0.35, 0, 0], neck: [-0.4, 0, 0], head: [-0.35, 0, 0],
         armL: [0.95, 0, 0.25], elbowL: [-0.2, 0, 0], armR: [0.95, 0, -0.25], elbowR: [-0.2, 0, 0] },
-      strike: kneesDown, follow: { ...kneesDown, crouch: 0.62 } },
-    { windup: { ...kneesDown, crouch: 0.55 }, strike: { ...kneesDown, crouch: 0.45, lean: 0.1, chest: [-0.1, 0, 0], head: [-0.1, 0, 0], armL: [-0.2, 0, 1.1], armR: [-0.2, 0, -1.1] } },
+      strike: kneesDown, follow: { ...kneesDown, crouch: 0.64, lean: 0.12, chest: [0.22, 0, 0] } },
+    { windup: { ...kneesDown, crouch: 0.55 }, strike: { ...kneesDown, crouch: 0.45, lean: 0.1, chest: [-0.1, 0, 0], head: [-0.1, 0, 0], armL: [-0.2, 0, 1.1], armR: [-0.2, 0, -1.1] },
+      follow: { ...kneesDown, crouch: 0.47, lean: 0.02, chest: [-0.2, 0, 0], head: [-0.15, 0, 0], armL: [-0.15, 0, 1.2], armR: [-0.15, 0, -1.2] } },
   ] };
 
   // Greave Slide: a run-up, fists pumping; she drops and slides in feet first, the leading greave at your shins.
@@ -237,7 +261,7 @@
       armL: [0.6, 0, 0.1], elbowL: [-1.4, 0, 0], armR: [-1.1, 0, -0.1], elbowR: [-1.4, 0, 0] },
     strike: { crouch: 0.55, lean: -0.75, legL: [-1.45, 0, 0], kneeL: [0.05, 0, 0], legR: [-0.35, 0, 0], kneeR: [1.7, 0, 0], chest: [0.35, 0, 0], neck: [0.3, 0, 0], head: [0.3, 0, 0],
       armR: [0.35, 0, -0.7], elbowR: [-0.1, 0, 0], armL: [-0.9, 0, 0.5], elbowL: [-1.0, 0, 0] },
-    follow: { crouch: 0.52, lean: -0.7, legL: [-1.4, 0, 0], kneeL: [0.1, 0, 0], legR: [-0.35, 0, 0], kneeR: [1.65, 0, 0], chest: [0.35, 0, 0], neck: [0.3, 0, 0], head: [0.3, 0, 0],
+    follow: { crouch: 0.52, lean: -0.84, legL: [-1.4, 0, 0], kneeL: [0.1, 0, 0], legR: [-0.35, 0, 0], kneeR: [1.65, 0, 0], chest: [0.35, 0, 0], neck: [0.3, 0, 0], head: [0.3, 0, 0],
       armR: [0.3, 0, -0.7], elbowR: [-0.1, 0, 0], armL: [-0.9, 0, 0.5], elbowL: [-1.0, 0, 0] } }] };
 
   // Back Heel: a glance down past her hip, then the greave kicked straight back like a mule's.
@@ -245,8 +269,37 @@
     windup: { crouch: 0.2, lean: 0.25, legR: [-0.6, 0, 0], kneeR: [1.5, 0, 0], legL: [-0.1, 0, 0], neck: [0.2, -0.4, 0], head: [0.2, -0.6, 0], ...guard },
     strike: { crouch: 0.16, lean: 0.75, legR: [1.25, 0, 0], kneeR: [0.05, 0, 0], legL: [-0.15, 0, 0], chest: [0.25, 0, 0], neck: [-0.3, -0.2, 0], head: [-0.2, -0.3, 0],
       armL: [-0.9, 0, 0.3], elbowL: [-0.4, 0, 0], armR: [-0.9, 0, -0.3], elbowR: [-0.4, 0, 0] },
-    follow: { crouch: 0.17, lean: 0.72, legR: [1.2, 0, 0], kneeR: [0.1, 0, 0], legL: [-0.15, 0, 0], chest: [0.25, 0, 0], neck: [-0.3, -0.2, 0], head: [-0.2, -0.3, 0],
+    follow: { crouch: 0.19, lean: 0.82, legR: [1.3, 0, 0], kneeR: [0.1, 0, 0], legL: [-0.15, 0, 0], chest: [0.32, 0, 0], neck: [-0.3, -0.2, 0], head: [-0.2, -0.3, 0],
       armL: [-0.9, 0, 0.3], elbowL: [-0.4, 0, 0], armR: [-0.9, 0, -0.3], elbowR: [-0.4, 0, 0] } }] };
+
+  // Elbow and Knee (pass 138): ducked in low, her left shoulder at you, both fists up by her ears, the right elbow cocked
+  // high; the elbow brought down through you, then both hands drag your head down onto a rising knee.
+  ATTACK_POSES.harrowElbowKnee = { ease: { windup: 'inOutSine', active: 'outExpo', follow: 'outCubic', recovery: 'inOutCubic' }, hits: [
+    { windup: { crouch: 0.3, lean: 0.35, legL: [-0.5, 0, 0], kneeL: [0.4, 0, 0], legR: [0.4, 0, 0], spin: [0, -0.45, 0], chest: [0.25, -0.2, 0], neck: [0, 0.2, 0], head: [0.1, 0.25, 0],
+        armL: [-2.2, 0, 0.35], elbowL: [-2.3, 0, 0], armR: [-2.7, 0, -0.5], elbowR: [-2.4, 0, 0] },
+      strike: { crouch: 0.32, lean: 0.5, legL: [-0.6, 0, 0], kneeL: [0.45, 0, 0], legR: [0.45, 0, 0], spin: [0, 0.5, 0], chest: [0.5, 0.3, 0], neck: [0, -0.2, 0], head: [0.1, -0.2, 0],
+        armL: [-1.9, 0, 0.3], elbowL: [-2.2, 0, 0], armR: [-1.1, 0, 0.35], elbowR: [-2.3, 0, 0] },
+      follow: { crouch: 0.36, lean: 0.55, legL: [-0.62, 0, 0], kneeL: [0.5, 0, 0], legR: [0.47, 0, 0], spin: [0, 0.65, 0], chest: [0.56, 0.4, 0], neck: [0, -0.25, 0], head: [0.1, -0.25, 0],
+        armL: [-1.8, 0, 0.3], elbowL: [-2.2, 0, 0], armR: [-0.9, 0, 0.45], elbowR: [-2.3, 0, 0] } },
+    { windup: { crouch: 0.3, lean: 0.4, legL: [-0.4, 0, 0], kneeL: [0.4, 0, 0], legR: [0.55, 0, 0], kneeR: [0.6, 0, 0], spin: [0, 0.55, 0], chest: [0.45, 0.35, 0], head: [0.1, -0.2, 0],
+        armL: [-1.6, 0, 0.2], elbowL: [-1.0, 0, 0], armR: [-1.6, 0, -0.2], elbowR: [-1.0, 0, 0] },
+      strike: { crouch: 0.05, lean: 0.15, legL: [0.1, 0, 0], legR: [-1.6, 0, 0], kneeR: [1.6, 0, 0], spin: [0, 0.1, 0], chest: [0.55, 0, 0], head: [0.15, 0, 0],
+        armL: [-0.9, 0, 0.15], elbowL: [-1.4, 0, 0], armR: [-0.9, 0, -0.15], elbowR: [-1.4, 0, 0] },
+      follow: { crouch: 0.04, lean: 0.2, legL: [0.12, 0, 0], legR: [-1.75, 0, 0], kneeR: [1.7, 0, 0], spin: [0, 0, 0], chest: [0.64, 0, 0], head: [0.2, 0, 0],
+        armL: [-0.75, 0, 0.15], elbowL: [-1.5, 0, 0], armR: [-0.75, 0, -0.15], elbowR: [-1.5, 0, 0] } },
+  ] };
+
+  // The Heel from Heaven (pass 138): she turns half away from you, arms low and wide, and her right leg swings up high,
+  // straight, held there; then the heel comes down like an axe.
+  ATTACK_POSES.harrowHeavenHeel = { ease: { windup: 'inOutSine', active: 'inQuad', follow: 'outCubic', recovery: 'inOutCubic' }, hits: [{
+    windup: { crouch: 0.06, lean: -0.4, legL: [0.05, 0, 0], kneeL: [0.15, 0, 0], legR: [-2.85, 0, -0.3], kneeR: [0.15, 0, 0], spin: [0, 0.3, 0], chest: [-0.25, 0.1, 0], neck: [0, -0.1, 0],
+      armL: [-0.6, 0, 1.0], elbowL: [-0.3, 0, 0], armR: [0.2, 0, -0.5], elbowR: [-0.2, 0, 0], weapon: [0.9, 0, 0] },
+    strike: { crouch: 0.3, lean: 0.4, legL: [0.3, 0, 0], kneeL: [0.4, 0, 0], legR: [-0.5, 0, 0], kneeR: [0.1, 0, 0], spin: [0, -0.1, 0], chest: [0.4, 0, 0], head: [0.15, 0, 0],
+      armL: [-0.3, 0, 0.5], elbowL: [-0.4, 0, 0], armR: [-0.3, 0, -0.5], elbowR: [-0.4, 0, 0], weapon: [1.3, 0, 0] },
+    follow: { crouch: 0.36, lean: 0.48, legL: [0.32, 0, 0], kneeL: [0.45, 0, 0], legR: [-0.45, 0, 0], kneeR: [0.3, 0, 0], spin: [0, -0.15, 0], chest: [0.5, 0, 0], head: [0.2, 0, 0],
+      armL: [-0.25, 0, 0.55], elbowL: [-0.4, 0, 0], armR: [-0.25, 0, -0.55], elbowR: [-0.4, 0, 0], weapon: [1.35, 0, 0] },
+    // the turn away comes first, then the leg rises out of it
+    via: { windup: [{ t: 0.4, rel: true, spin: [0, 0.9, 0], chest: [0, 0.3, 0], neck: [0, -0.5, 0], head: [0, -0.6, 0], legR: [1.4, 0, 0] }] } }] };
 
   // ---- alone, in the whole suit ----
   // Her Sister's Half (the opener): she kneels on one knee, head bowed, both hands on her knee, a long while; then rises
@@ -256,7 +309,7 @@
       armL: [-0.7, 0, 0.1], elbowL: [-0.6, 0, 0], armR: [-0.6, 0, -0.1], elbowR: [-0.7, 0, 0], weapon: [1.6, 0, 0] },
     strike: { crouch: 0.08, lean: -0.15, legL: [-0.3, 0, 0], legR: [0.25, 0, 0], chest: [-0.35, 0, 0], neck: [-0.2, 0, 0], head: [-0.3, 0, 0],
       armL: [-0.55, 0, 1.2], elbowL: [-0.2, 0, 0], armR: [-0.55, 0, -1.2], elbowR: [-0.2, 0, 0], weapon: [1.4, 0, 0] },
-    follow: { crouch: 0.1, lean: -0.12, legL: [-0.3, 0, 0], legR: [0.25, 0, 0], chest: [-0.3, 0, 0], neck: [-0.15, 0, 0], head: [-0.25, 0, 0],
+    follow: { crouch: 0.1, lean: -0.22, legL: [-0.3, 0, 0], legR: [0.25, 0, 0], chest: [-0.44, 0, 0], neck: [-0.15, 0, 0], head: [-0.25, 0, 0],
       armL: [-0.5, 0, 1.15], elbowL: [-0.25, 0, 0], armR: [-0.5, 0, -1.15], elbowR: [-0.25, 0, 0], weapon: [1.4, 0, 0] } }] };
 
   // Both Halves: the crown cleave, a stamp that rings out, then the beard brought rising up through you.
@@ -266,9 +319,36 @@
     { windup: { crouch: 0.4, lean: 0.12, spin: [0, -0.85, 0], legL: [-0.65, 0, 0], legR: [0.55, 0, 0], chest: [0.15, -0.45, 0], neck: [0, 0.4, 0], head: [0, 0.5, 0],
         armR: [-1.7, 0, -0.95], elbowR: [-1.0, 0, 0], weapon: [0.9, 0, 0], armL: [-1.5, 0, 0.35], elbowL: [-1.2, 0, 0] },
       strike: { ...crown.strike, spin: [0, 0.35, 0], chest: [0.45, 0.25, 0] }, follow: { ...crown.follow, spin: [0, 0.4, 0] } },
-    { windup: { ...lift(1), armR: [-0.7, 0, -0.6], elbowR: [-0.4, 0, 0], weapon: [1.6, 0, 0] }, strike: { ...stamp(1), armR: [-0.5, 0, -0.4], elbowR: [-0.3, 0, 0], weapon: [1.7, 0, 0] } },
+    { windup: { ...lift(1), armR: [-0.7, 0, -0.6], elbowR: [-0.4, 0, 0], weapon: [1.6, 0, 0] }, strike: { ...stamp(1), armR: [-0.5, 0, -0.4], elbowR: [-0.3, 0, 0], weapon: [1.7, 0, 0] },
+      follow: { ...stampOn(1), armR: [-0.45, 0, -0.4], elbowR: [-0.3, 0, 0], weapon: [1.75, 0, 0] } },
     { windup: hook.rise.windup, strike: hook.rise.strike, follow: hook.rise.follow },
   ] };
+
+  // Vault the Haft (pass 138, the whole castellan): the axe head driven down into the stones before her, both hands on
+  // the haft, her knees bent under her; she swings full round the haft with both greaves out, then wrenches the axe up
+  // out of the stones through you.
+  const planted = { armR: [-0.9, 0, 0.1], elbowR: [-0.2, 0, 0], weapon: [2.6, 0, 0], armL: [-0.9, 0, -0.1], elbowL: [-0.2, 0, 0] };
+  const wheel = (turn, sink) => ({ ...planted, tip: [0, turn, 0], crouch: 0.22 + sink, lean: -0.2 - sink, chest: [-0.1, 0, 0], head: [0.1, 0, 0],
+    legL: [-1.4, 0, 0.6], kneeL: [0.1, 0, 0], legR: [-1.2, 0, -0.6], kneeR: [0.1, 0, 0] });
+  ATTACK_POSES.castellanVaultHaft = { ease: { windup: 'inOutCubic', active: 'linear', follow: 'outCubic', recovery: 'inOutCubic' }, lag: { tip: 0 }, hits: [
+    { windup: { ...planted, crouch: 0.45, lean: 0.5, legL: [-0.9, 0, 0], kneeL: [1.2, 0, 0], legR: [0.2, 0, 0], kneeR: [1.3, 0, 0], chest: [0.4, 0, 0], head: [-0.1, 0, 0] },
+      strike: wheel(-Math.PI, 0), follow: wheel(-1.9 * Math.PI, 0.06) },
+    { windup: { ...planted, tip: [0, -2 * Math.PI, 0], crouch: 0.42, lean: 0.3, legL: [-0.6, 0, 0], kneeL: [0.9, 0, 0], legR: [0.4, 0, 0], kneeR: [0.7, 0, 0], chest: [0.35, 0, 0], weapon: [2.3, 0, 0], armR: [-0.6, 0, 0.1] },
+      strike: { tip: [0, -2 * Math.PI, 0], crouch: 0.1, lean: -0.2, legL: [-0.5, 0, 0], legR: [0.35, 0, 0], chest: [-0.3, 0, 0], head: [-0.15, 0, 0],
+        armR: [-2.4, 0, 0.1], elbowR: [-0.3, 0, 0], weapon: [0.6, 0, 0], armL: [-2.1, 0, -0.2], elbowL: [-0.5, 0, 0] },
+      follow: { tip: [0, -2 * Math.PI, 0], crouch: 0.08, lean: -0.28, legL: [-0.5, 0, 0], legR: [0.35, 0, 0], chest: [-0.4, 0, 0], head: [-0.2, 0, 0],
+        armR: [-2.7, 0, 0.1], elbowR: [-0.3, 0, 0], weapon: [0.5, 0, 0], armL: [-2.4, 0, -0.2], elbowL: [-0.5, 0, 0] } },
+  ] };
+
+  // The Gauntlet's Hold (pass 138, the whole castellan): sunk low, her left shoulder at you, the axe drawn back low in her
+  // right hand and the open left gauntlet reaching; she lunges, takes you by the collar and lifts you, then throws you down.
+  ATTACK_POSES.castellanGauntletHold = { ease: { windup: 'inOutSine', active: 'outExpo', follow: 'outCubic', recovery: 'inOutCubic' }, hits: [{
+    windup: { crouch: 0.3, lean: 0.45, legL: [-0.6, 0, 0], legR: [0.45, 0, 0], spin: [0, -0.4, 0], chest: [0.3, -0.25, 0], head: [0.1, 0.25, 0],
+      armL: [-0.8, 0, 0.5], elbowL: [-0.6, 0, 0], armR: [0.5, 0, -0.3], elbowR: [-0.3, 0, 0], weapon: [0.6, 0, 0] },
+    strike: { crouch: 0.22, lean: 0.35, legL: [-0.8, 0, 0], legR: [0.6, 0, 0], spin: [0, 0.25, 0], chest: [0.2, 0.2, 0], head: [0.05, -0.2, 0],
+      armL: [-1.75, 0, 0.05], elbowL: [-0.05, 0, 0], armR: [0.55, 0, -0.35], elbowR: [-0.3, 0, 0], weapon: [0.6, 0, 0] },
+    follow: { crouch: 0.12, lean: -0.05, legL: [-0.6, 0, 0], legR: [0.5, 0, 0], spin: [0, 0.4, 0], chest: [-0.15, 0.3, 0], head: [-0.1, -0.25, 0],
+      armL: [-2.3, 0, 0.1], elbowL: [-0.15, 0, 0], armR: [0.6, 0, -0.4], elbowR: [-0.3, 0, 0], weapon: [0.6, 0, 0] } }] };
 }
 
 // ---- the bosses -----------------------------------------------------------------------------------------------------------
@@ -294,14 +374,21 @@
       hits: [{ startup: 1.05, active: 0.12, follow: 0.3 }], recovery: 1.2,
       followUps: [{ attack: 'beardsHook', if: 'near', chance: 0.25 }],
       damage: 30, poise: 50, knock: 7, lunge: 2.6, range: 4.6, box: { w: 1.0, h: 1.4, d: 4.6, fwd: 2.7, y: 1.2 } },
-    // The Wall Turns: yoked across her shoulders, then two full turns with the axe held out. Get out of reach, or under it
-    // with a roll; Harrow slides in at whoever backs away.
-    { id: 'wallTurns', name: 'The Wall Turns', anim: 'sweep', pose: 'haleWallTurns', noParry: true, tracking: { rate: 1.6, commit: 0.4 }, chance: 0.5,
+    // The Wall Turns: yoked across her shoulders, then two full turns with the axe held out. Parry the first turn, then get
+    // out of reach or under the second with a roll (pass 138: the first is the blade's, and parried); Harrow slides in at
+    // whoever backs away.
+    { id: 'wallTurns', name: 'The Wall Turns', anim: 'sweep', pose: 'haleWallTurns', tracking: { rate: 1.6, commit: 0.4 }, chance: 0.5, markers: glint(0),
       cue: { attack: 'greaveSlide', delay: 0.9, chance: 0.6, near: 14 },
-      hits: [{ startup: 1.2, active: 0.2, follow: 0.2 }, { startup: 0.15, active: 0.2, follow: 0.45 }], recovery: 1.68,
+      hits: [{ startup: 1.2, active: 0.2, follow: 0.2 }, { startup: 0.15, active: 0.2, follow: 0.45, noParry: true }], recovery: 1.68,
       damage: 26, poise: 45, knock: 8, lunge: 0.6, range: 3.4, box: { w: 6.8, h: 1.8, d: 6.8, fwd: 0, y: 1.1 } },
-    // Off the Rampart: from afar, a crouch with the axe trailing, a leap, the axe first on landing.
-    { id: 'offTheRampart', name: 'Off the Rampart', anim: 'chop', pose: 'haleOffTheRampart', noParry: true, tracking: { rate: 2.2, commit: 0.5 }, minRange: 5, chance: 0.35,
+    // The Hewing (pass 138): the haft choked over her left shoulder; hewn down across to her right, then back over her right
+    // shoulder and down across to her left, a step in on each; the second may wait. Parry both.
+    { id: 'hewing', name: 'The Hewing', anim: 'chop', pose: 'haleHewing', tracking: { rate: 2.6, commit: 0.65 }, markers: glint(0, 1), chance: 0.9,
+      hits: [{ startup: 1.0, active: 0.14, follow: 0.22 }, { startup: 0.55, active: 0.14, follow: 0.4, hold: { at: 0.6, time: [0.2, 0.6], chance: 0.4 } }], recovery: 1.3,
+      followUps: [{ attack: 'haftsHeel', if: 'behind', chance: 0.4 }],
+      damage: 30, poise: 50, knock: 6, lunge: 1.3, range: 3.4, box: { w: 2.4, h: 2.6, d: 3.4, fwd: 1.8, y: 1.1 } },
+    // Off the Rampart: from afar, a crouch with the axe trailing, a leap, the axe first on landing: parry the axe (pass 138).
+    { id: 'offTheRampart', name: 'Off the Rampart', anim: 'chop', pose: 'haleOffTheRampart', markers: glint(0), tracking: { rate: 2.2, commit: 0.5 }, minRange: 5, chance: 0.35,
       hits: [{ startup: 1.3, active: 0.16, follow: 0.5, leap: { from: 0.4, max: 12, short: 1.4 } }], recovery: 1.92,
       damage: 40, heavy: true, poise: 75, knock: 9, lunge: 0, range: 12, box: { w: 2.2, h: 2.8, d: 4.2, fwd: 2.0, y: 1.0 },
       impact: { ring: 3.4, crack: 1.8, dust: 16, shake: 0.14 } },
@@ -334,11 +421,25 @@
              { startup: 0.6, active: 0.14, follow: 0.35, box: { w: 1.4, h: 1.2, d: 3.0, fwd: 1.8, y: 0.9 } }], recovery: 1.08,
       followUps: [{ attack: 'backHeel', if: 'behind', chance: 0.58 }],
       damage: 20, poise: 30, knock: 5, lunge: 1.4, range: 2.8, box: { w: 1.0, h: 1.2, d: 2.6, fwd: 1.6, y: 1.6 } },
-    // The Falling Weight: a sprinter's crouch, a leap, both knees down on you; the stones ring out a moment after.
-    { id: 'fallingWeight', name: 'The Falling Weight', anim: 'chop', pose: 'harrowFallingWeight', noParry: true, tracking: { rate: 2.4, commit: 0.5 }, minRange: 5, chance: 0.4,
+    // The Elbow and Knee (pass 138): ducked in, fists by her ears; the elbow down through you, then your head dragged down
+    // onto her knee. Parry both.
+    { id: 'elbowKnee', name: 'Elbow and Knee', anim: 'thrust', pose: 'harrowElbowKnee', tracking: { rate: 3.0, commit: 0.65 }, markers: glint(0, 1), chance: 0.8,
+      hits: [{ startup: 0.75, active: 0.12, follow: 0.18, box: { w: 1.8, h: 1.4, d: 2.4, fwd: 1.4, y: 1.5 } },
+             { startup: 0.45, active: 0.12, follow: 0.35, box: { w: 1.4, h: 1.2, d: 2.2, fwd: 1.2, y: 1.0 } }], recovery: 1.1,
+      followUps: [{ attack: 'backHeel', if: 'behind', chance: 0.5 }],
+      damage: 22, poise: 35, knock: 6, lunge: 1.6, range: 2.4, box: { w: 1.8, h: 1.4, d: 2.4, fwd: 1.4, y: 1.5 } },
+    // The Heel from Heaven (pass 138): turned half away, her leg swung up high and held; the heel brought down like
+    // an axe. Parry it.
+    { id: 'heavenHeel', name: 'The Heel from Heaven', anim: 'chop', pose: 'harrowHeavenHeel', tracking: { rate: 2.2, commit: 0.6 }, markers: glint(0), chance: 0.6,
+      hits: [{ startup: 1.05, active: 0.14, follow: 0.4, hold: { at: 0.85, time: [0.2, 0.5], chance: 0.45 } }], recovery: 1.3,
+      damage: 32, heavy: true, poise: 60, knock: 8, lunge: 1.0, range: 2.8, box: { w: 1.4, h: 2.4, d: 2.6, fwd: 1.6, y: 1.0 },
+      impact: { ring: 1.6, crack: 1.0, dust: 8, shake: 0.08 } },
+    // The Falling Weight: a sprinter's crouch, a leap, both knees down on you (parry them, pass 138); the stones ring out a
+    // moment after (jump or roll the ring).
+    { id: 'fallingWeight', name: 'The Falling Weight', anim: 'chop', pose: 'harrowFallingWeight', markers: glint(0), tracking: { rate: 2.4, commit: 0.5 }, minRange: 5, chance: 0.4,
       hits: [{ startup: 1.3, active: 0.16, follow: 0.4, leap: { from: 0.45, max: 12, short: 1.2 }, box: { w: 3.0, h: 2.2, d: 3.0, fwd: 0.6, y: 0.8 },
                impact: { ring: 3.6, crack: 2.0, dust: 20, shake: 0.16 } },
-             { startup: 0.32, active: 0.2, follow: 0.4, box: RING(1.4, 7, 1.6, 0.2), impact: { ring: 4.2, crack: 0, dust: 12, shake: 0.1 } }],
+             { startup: 0.32, active: 0.2, follow: 0.4, noParry: true, box: RING(1.4, 7, 1.6, 0.2), impact: { ring: 4.2, crack: 0, dust: 12, shake: 0.1 } }],
       recovery: 2.04, damage: 40, heavy: true, poise: 75, knock: 10, lunge: 0, range: 12, box: { w: 3.0, h: 2.2, d: 3.0, fwd: 0.6, y: 0.8 } },
     // Greave Slide: from afar, a run, then she drops and slides in feet first at your shins. Jump it.
     { id: 'greaveSlide', name: 'Greave Slide', anim: 'bash', pose: 'harrowGreaveSlide', noParry: true, tracking: { rate: 2.6, commit: 0.5 },
@@ -361,11 +462,29 @@
              { startup: 0.7, active: 0.2, follow: 0.25, box: RING(1.0, 7, 1.6), impact: { ring: 3.6, crack: 1.6, dust: 16, shake: 0.12 } },
              { startup: 0.55, active: 0.14, follow: 0.4, box: { w: 3.6, h: 2.4, d: 3.2, fwd: 1.5, y: 1.1 } }],
       recovery: 1.92, damage: 34, heavy: true, poise: 60, knock: 8, lunge: 1.2, range: 3.8, box: { w: 1.6, h: 3.0, d: 4.2, fwd: 2.3, y: 1.2 } },
+    // Vault the Haft (pass 138): the axe head driven into the stones, both hands on the haft; she swings full round it with
+    // both greaves out (roll out of reach, or jump), then wrenches the axe up out of the stones through you (parry it).
+    { id: 'vaultHaft', name: 'Vault the Haft', anim: 'sweep', pose: 'castellanVaultHaft', tracking: { rate: 1.8, commit: 0.45 }, markers: glint(1), chance: 0.5,
+      hits: [{ startup: 1.15, active: 0.2, follow: 0.22, noParry: true, box: { w: 5.4, h: 1.2, d: 5.4, fwd: 0, y: 0.8 } },
+             { startup: 0.5, active: 0.14, follow: 0.4, box: { w: 1.6, h: 3.0, d: 3.4, fwd: 1.8, y: 1.3 } }], recovery: 1.5,
+      damage: 30, poise: 55, knock: 8, lunge: 0.8, range: 3.2, box: { w: 1.6, h: 3.0, d: 3.4, fwd: 1.8, y: 1.3 },
+      impact: { ring: 2.2, crack: 1.4, dust: 14, shake: 0.1 } },
+    // The Gauntlet's Hold (pass 138): sunk low, the open left gauntlet reaching; she takes you by the collar, lifts you and
+    // throws you down. Roll it; caught, struggle.
+    { id: 'gauntletHold', name: 'The Gauntlet\'s Hold', anim: 'thrust', pose: 'castellanGauntletHold', noParry: true, rollOnly: true, tracking: { rate: 2.2, commit: 0.65 }, chance: 0.4,
+      hits: [{ startup: 1.1, active: 0.16, follow: 1.9, seize: { at: [0.25, 1.9, 1.4], lift: 0.4, time: 1.8, dps: 9, escape: 0.22, throw: 10 } }], recovery: 0.9,
+      damage: 8, poise: 40, knock: 0, lunge: 1.8, range: 2.6, box: { w: 1.6, h: 1.8, d: 2.4, fwd: 1.4, y: 1.2 } },
   ];
-  const HALE = ['crownCleave', 'beardsHook', 'helmsSalute', 'wallTurns', 'offTheRampart', 'saltWind', 'haftsHeel'];
-  const HARROW = ['stampStones', 'hammerOfHands', 'knuckleHeel', 'fallingWeight', 'greaveSlide', 'backHeel'];
-  // Alone, in the whole suit: the axe and the greaves (the fists hold the axe now), and both halves at once.
-  const WHOLE = ['sistersHalf', 'bothHalves', ...HALE, 'stampStones', 'fallingWeight', 'greaveSlide', 'backHeel'];
+  // Alone, what took two bodies takes one, with no gap (pass 138): the stamps bring her own cleave down where you land,
+  // and backing off from the turns brings her knees down on you. The same moves, with the other sister's answer in them.
+  const byId = id => attacks.find(a => a.id === id), solo = (id, then) => { const { cue, ...a } = byId(id); return { ...a, id: `${id}Alone`, followUps: [then] }; };
+  attacks.push(solo('stampStones', { attack: 'crownCleave', if: 'near', chance: 0.7 }), solo('wallTurns', { attack: 'fallingWeight', if: 'far', chance: 0.6 }));
+  const HALE = ['crownCleave', 'beardsHook', 'helmsSalute', 'wallTurns', 'hewing', 'offTheRampart', 'saltWind', 'haftsHeel'];
+  const HARROW = ['stampStones', 'hammerOfHands', 'knuckleHeel', 'elbowKnee', 'heavenHeel', 'fallingWeight', 'greaveSlide', 'backHeel'];
+  // Alone, in the whole suit (pass 138, a fight of its own): the axe and the greaves (the fists hold the axe now), the pair's
+  // calls answered by one body, and what only the whole suit can do: vault the haft, and the gauntlet's hold.
+  const WHOLE = ['sistersHalf', 'bothHalves', 'vaultHaft', 'gauntletHold', 'stampStonesAlone', 'wallTurnsAlone',
+    'crownCleave', 'hewing', 'beardsHook', 'heavenHeel', 'fallingWeight', 'haftsHeel', 'backHeel'];
   const base = {
     scale: 1.75, bulk: 1.15, radius: 0.78, weapon: 'greataxe', idle: 'sway',
     hp: 1700, poise: 220, speed: 2.3, turnRate: 3.0, trackRate: 1.5, approach: 0.45, kite: 0.15,
