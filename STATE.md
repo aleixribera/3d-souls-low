@@ -3,12 +3,12 @@
 The iterate loop's working note (`.claude/iterate.md`). Cap: 8,000 characters.
 
 ## Now
-- Track 2, pass 126, PLAN item 8 batch 5 (pass 2 of 2), done in v7.178.0: batch 5 is through. Echoing Blade
-  (`cast/ghostBlade`: a key fired arms echoes, each landed blow cut again by a ghost sword) and Overcharge
-  (`ready/overcharge`: a full key fills on to double, a HUD ring, its press raised by the share). The server's press
-  claim now takes Guard keys too. Acceptance: `tests/rare-triggers.cjs`, in-page `rare triggers` (2); clip
-  `docs/scorecard/now/echo-overcharge.mp4` (`node tools/ability-clips.cjs echo`). Next on track 2: batch 6 of
-  `design/abilities/BUILD-ORDER.md`. Browser lock: `node tools/browser-lock.cjs run <pass> -- <cmd>` (docs/two-tracks.md).
+- Track 2, pass 129, PLAN item 8 batch 6 (pass 1 of 1), done in v7.180.0: Strike I. Tidal Arc (`press/wave`), Frost
+  Spike (`press/spikes`, a running line), Stone Fist and Rising Fang (the spot erupts a beat later), Thunderclap
+  (`press/clap`, a close cone; `pressOpen` holds the key while its enemy is out of reach, the server with `reachSlack`);
+  Fire Burst's lotus and Wind Blade's crescent (`js/strike-fx.js`). Acceptance: `tests/strike-shapes.cjs`, in-page
+  `strike shapes`; clip `docs/scorecard/now/strike-shapes.mp4` (`node tools/ability-clips.cjs strikes`). Next on track 2:
+  batch 7, Strike II. Browser lock: `node tools/browser-lock.cjs run <pass> -- <cmd>` (docs/two-tracks.md).
 - Track 1, pass 128, PLAN item 6 (pass 1 of Aldric): his own Gaol Sweep wind-up (the blade flat over his left shoulder,
   swept left to right; it was the Giant's), the Turning Key (the man's second string: sweep, back across, the pommel, its
   tell at his fists; burning as well), and his cel look (dark cloth, banded steel, the tell on the blade's edge, soft
