@@ -30,7 +30,7 @@ MODEL_DEFS.ringerOfThrale = {
     skin: { tex: 'paleSkin', tint: 0xb0a8a0, decay: 0.5 },
     iron: { tex: 'rustedIron', tint: 0x6a6058, decay: 0.75, rim: 0.4 },
     bronze: { tex: 'bellBronze', tint: 0xc09858, decay: 0.55, rim: 0.4 },
-    struck: { tex: 'dentedSteel', tint: 0xd8d0c0, decay: 0.45, rim: 0.4 },   // the ball, worn bright where it struck
+    struck: { tex: 'dentedSteel', tint: 0xd8d0c0, decay: 0.45, rim: 0.4, steel: true },   // the ball, worn bright where it struck
     shift: { tex: 'sentinelCloth', tint: 0xb8b0a0, decay: 0.6, double: true, rim: 0.2 },
     apron: { tex: 'crackedLeather', tint: 0x6a4a30, decay: 0.7, double: true },
     wrap: { tex: 'sentinelRags', tint: 0x9a9080, decay: 0.7 },
@@ -53,6 +53,12 @@ MODEL_DEFS.ringerOfThrale = {
     ...(bone === 'weapon' ? { weapon: true } : {}) }))),
   weapon: null,          // the clapper is part of the figure (the `weapon: true` pieces above)
   weaponRest: 0.8,       // at rest the ball hangs before her feet (js/registries.js `sway`)
+  // (pass 142, docs/bosses/system.md 4) the wind-up's tell sits on what strikes, never over her body: the ball's bright band
+  // (the clapper runs -0.26 to 1.47 m along the weapon bone, the band at 1.07), or the fettered foot she stamps with (a
+  // hit's `tell`; the ankle 0.37 m below the knee). A heavy's halo grows there instead of washing her whole figure.
+  edgeTell: { slot: 'struck', size: 0.55, along: 0.77 },
+  tells: { footL: { bone: 'kneeL', at: [0, -0.37, 0.06], size: 0.65 }, footR: { bone: 'kneeR', at: [0, -0.37, 0.06], size: 0.65 } },
+  tellsGrow: true,
   eyes: { color: 0xb8c8ff, size: 0.01, spread: 0.034, at: [0, 0.11, 0.085] },   // through the bridle's hoops
   anim: {
     idle: { breathRate: 0.9, breath: 0.018, headDrift: 0.04, sway: 0.014, twitch: 0 }, walk: { twist: 0.08, roll: 0.05, headNod: 0.04, elbow: 0.15, drag: 0.12 },
@@ -104,7 +110,7 @@ MODEL_DEFS.ringerOfThrale = {
   ATTACK_POSES.ringerRisingToll = { ease: { windup: 'inOutCubic', active: 'outExpo', follow: 'outQuad', recovery: 'inOutCubic' }, lag: { weapon: 0.12 }, hits: [{
     windup: { crouch: 0.38, lean: 0.55, legL: [-0.45, 0, 0], legR: [0.45, 0, 0], chest: [0.35, 0, 0], neck: [0.1, 0, 0], head: [-0.3, 0, 0],
               armR: [-0.25, 0, 0.12], elbowR: [-0.1, 0, 0], pitch: 0.2, armL: [-0.35, 0, -0.12], elbowL: [-0.25, 0, 0] },
-    strike: rose, follow: { ...rose, armR: [-2.85, 0, 0], armL: [-2.6, 0, 0.1] } }] };
+    strike: rose, follow: { ...rose, lean: -0.32, chest: [-0.45, 0, 0], armR: [-2.85, 0, 0], armL: [-2.6, 0, 0.1] } }] };   // (pass 142) the heave carries her on back
 
   // The Clapper Drive: side-on, the shaft along her right side like a ram, her left hand guiding it; a short jab, then the
   // whole body behind the ball.
@@ -127,9 +133,14 @@ MODEL_DEFS.ringerOfThrale = {
   const stampDown = (L) => ({ crouch: 0.3, lean: 0.2, [L ? 'legL' : 'legR']: [-0.35, 0, 0], [L ? 'kneeL' : 'kneeR']: [0.25, 0, 0], [L ? 'legR' : 'legL']: [0.3, 0, 0],
     chest: [0.2, 0, 0], head: [0.25, 0, 0], armR: [-0.85, 0, 0.05], elbowR: [-1.2, 0, 0], pitch: -1.2, armL: [-0.8, 0, -0.2], elbowL: [-1.2, 0, 0] });
   const stamp = { windup: 'outCubic', active: 'outExpo', follow: 'outCubic', recovery: 'inOutCubic' };
-  ATTACK_POSES.ringerFetterStamp = { ease: stamp, hits: [{ windup: stampUp(true), strike: stampDown(true), follow: { ...stampDown(true), crouch: 0.32 } }] };
-  ATTACK_POSES.ringerFetterStamp2 = { ease: stamp, hits: [{ windup: stampUp(true), strike: stampDown(true), follow: { ...stampDown(true), crouch: 0.32 } },
-    { windup: stampUp(false), strike: stampDown(false), follow: { ...stampDown(false), crouch: 0.34 } }] };
+  // (pass 142) the foot comes down on you (parry the fetter), her weight goes on down after it, then the ring breaks out
+  // of the stones: a second, short hit of her settling onto the stamped foot.
+  const stamped = L => ({ ...stampDown(L), crouch: 0.32, lean: 0.27, chest: [0.27, 0, 0] });
+  const settle = L => ({ windup: { ...stampDown(L), crouch: 0.24, lean: 0.16 }, strike: { ...stampDown(L), crouch: 0.36, lean: 0.28, chest: [0.28, 0, 0] },
+    follow: { ...stampDown(L), crouch: 0.38, lean: 0.32, chest: [0.32, 0, 0] } });
+  ATTACK_POSES.ringerFetterStamp = { ease: stamp, hits: [{ windup: stampUp(true), strike: stampDown(true), follow: stamped(true) }, settle(true)] };
+  ATTACK_POSES.ringerFetterStamp2 = { ease: stamp, hits: [{ windup: stampUp(true), strike: stampDown(true), follow: stamped(true) }, settle(true),
+    { windup: stampUp(false), strike: stampDown(false), follow: { ...stamped(false), crouch: 0.34 } }] };
 
   // The Backstroke: behind her, a look over her right shoulder, the clapper raised before her left; swung back round.
   ATTACK_POSES.ringerBackstroke = { ease: { windup: 'inOutCubic', active: 'outExpo', follow: 'outQuad', recovery: 'inOutCubic' }, lag: { weapon: 0.1 }, hits: [{
@@ -145,15 +156,18 @@ MODEL_DEFS.ringerOfThrale = {
   const call = { windup: { crouch: 0.12, lean: 0.1, legL: [-0.3, 0, 0], legR: [0.3, 0, 0], chest: [0.15, 0, 0], neck: [0.3, 0, 0], head: [0.45, 0, 0],
     armR: [-0.75, 0, 0.25], elbowR: [-1.7, 0, 0], pitch: -1.5, armL: [-0.85, 0, -0.25], elbowL: [-1.6, 0, 0] },
     strike: { ...struck, crouch: 0.4, lean: 0.55, armR: [-0.6, 0, 0.05], elbowR: [0, 0, 0], pitch: 0.15, armL: [-0.7, 0, -0.1], elbowL: [-0.2, 0, 0] } };
-  ATTACK_POSES.ringerCallAcross = { ease: { windup: 'inOutSine', active: 'inQuad', follow: 'outCubic', recovery: 'inOutCubic' }, hits: [{ ...call, follow: { ...call.strike, crouch: 0.42 } }] };
+  ATTACK_POSES.ringerCallAcross = { ease: { windup: 'inOutSine', active: 'inQuad', follow: 'outCubic', recovery: 'inOutCubic' },
+    hits: [{ ...call, follow: { ...call.strike, crouch: 0.44, lean: 0.62, chest: [0.55, 0, 0], head: [0.15, 0, 0] } }] };   // (pass 142) bowed on over the floor she struck
 
   // ---- over the line (second phase) ----
   // Over the Line: the clapper raised high in her right hand, her left arm flung wide, her face lifted to the bell that
   // is not there; brought down, and the great knell runs out to the walls.
   const wide = { crouch: 0, lean: -0.3, legL: [-0.2, 0, 0.12], legR: [0.2, 0, -0.12], chest: [-0.4, 0, 0], neck: [-0.3, 0, 0], head: [-0.55, 0, 0],
     armR: [-3.0, 0, -0.3], elbowR: [-0.3, 0, 0], pitch: -3.4, armL: [-0.2, 0, 1.4], elbowL: [-0.1, 0, 0] };
-  ATTACK_POSES.ringerOverTheLine = { ease: fall, hits: [{ windup: wide, strike: { ...struck, crouch: 0.42, lean: 0.6 }, follow: { ...deeper, crouch: 0.44, lean: 0.6 } },
-    { windup: { ...deeper, crouch: 0.44, lean: 0.6 }, strike: { ...deeper, crouch: 0.46, lean: 0.62 }, follow: { ...deeper, crouch: 0.4 } }] };
+  ATTACK_POSES.ringerOverTheLine = { ease: fall, hits: [{ windup: wide, strike: { ...struck, crouch: 0.42, lean: 0.6 }, follow: { ...deeper, crouch: 0.44, lean: 0.64, chest: [0.56, 0, 0] } },
+    // (pass 142) the ball lifted off the stones and struck again where it lies: the great knell
+    { windup: { ...deeper, crouch: 0.34, lean: 0.46, chest: [0.4, 0, 0], armR: [-1.45, 0, 0.05], pitch: 0.42 }, strike: { ...deeper, crouch: 0.46, lean: 0.62 },
+      follow: { ...deeper, crouch: 0.48, lean: 0.66, chest: [0.58, 0, 0] } }] };
 
   // The Nine Tailors: she kneels and counts them out, the clapper lifted upright and struck down; three knells at a
   // steady pace, then the fourth lifted over her head, heavier, wider.
@@ -162,9 +176,10 @@ MODEL_DEFS.ringerOfThrale = {
   const tellDown = { ...knelt, lean: 0.35, chest: [0.3, 0, 0], armR: [-0.7, 0, 0.1], elbowR: [-0.2, 0, 0], pitch: 0.27, armL: [-0.7, 0, -0.1], elbowL: [-0.4, 0, 0] };
   const tellHigh = { ...knelt, lean: 0, chest: [-0.3, 0, 0], neck: [-0.1, 0, 0], head: [-0.3, 0, 0], armR: [-2.8, 0, -0.1], elbowR: [-0.4, 0, 0], pitch: -3.0,
     armL: [-2.6, 0, 0.1], elbowL: [-0.8, 0, 0] };
-  const knell = up => ({ windup: up, strike: tellDown, follow: { ...tellDown, lean: 0.38 } });
+  const knell = up => ({ windup: up, strike: tellDown, follow: { ...tellDown, lean: 0.43, chest: [0.38, 0, 0], pitch: 0.3 } });
   ATTACK_POSES.ringerNineTailors = { ease: { windup: 'inOutSine', active: 'outExpo', follow: 'linear', recovery: 'inOutCubic' },
-    hits: [knell(tellUp), knell(tellUp), knell(tellUp), { ...knell(tellHigh), strike: { ...tellDown, lean: 0.45, chest: [0.4, 0, 0], pitch: 0.12 } }] };
+    hits: [knell(tellUp), knell(tellUp), knell(tellUp), { ...knell(tellHigh), strike: { ...tellDown, lean: 0.45, chest: [0.4, 0, 0], pitch: 0.12 },
+      follow: { ...tellDown, lean: 0.52, chest: [0.48, 0, 0], pitch: 0.16 } }] };   // (pass 142) each knell bows her on past the blow
 
   // The Peal: the clapper held across her like a staff, both fists wide on the shaft; four quick blows, over her left
   // shoulder and her right in turn, the last struck into the floor.
@@ -172,22 +187,44 @@ MODEL_DEFS.ringerOfThrale = {
     armR: [-2.3, 0, L ? 0.5 : -0.8], elbowR: [L ? -1.0 : -0.6, 0, 0], pitch: -2.2, armL: [-1.8 - (L ? 0 : 0.1), 0, L ? 0.2 : 0.5], elbowL: [L ? -1.2 : -1.0, 0, 0] });
   const pealDown = L => ({ crouch: 0.22, lean: 0.25, legL: [-0.45, 0, 0], legR: [0.35, 0, 0], spin: [0, L ? -0.5 : 0.5, 0], chest: [0.2, L ? -0.3 : 0.3, 0], head: [0, L ? 0.3 : -0.3, 0],
     armR: [-0.9, 0, L ? -0.5 : 0.4], elbowR: [-0.2, 0, 0], pitch: 0.7, armL: [-1.0, 0, L ? -0.1 : 0.3], elbowL: [-0.5, 0, 0] });
-  const peal = L => ({ windup: pealUp(L), strike: pealDown(L), follow: { ...pealDown(L), crouch: 0.24 } });
+  const peal = L => ({ windup: pealUp(L), strike: pealDown(L),   // (pass 142) the blow turns her on past it
+    follow: { ...pealDown(L), crouch: 0.24, spin: [0, L ? -0.66 : 0.66, 0], chest: [0.24, L ? -0.4 : 0.4, 0] } });
   ATTACK_POSES.ringerPeal = { ease: { windup: 'inOutCubic', active: 'outExpo', follow: 'outQuad', recovery: 'inOutCubic' }, lag: { weapon: 0.08 },
     hits: [peal(true), peal(false), peal(true), { windup: { ...pealUp(false), crouch: 0.05, lean: -0.15 }, strike: struck, follow: deeper }] };
 
   // Out of the Ring: down in a crouch, the clapper slung over her right shoulder, the ball at her back; she leaps and
   // brings it down where she lands.
   ATTACK_POSES.ringerOutOfTheRing = { ease: { windup: 'inOutCubic', active: 'inQuad', follow: 'outCubic', recovery: 'inOutCubic' }, hits: [
-    { windup: { crouch: 0.45, lean: 0.25, legL: [-0.6, 0, 0], legR: [0.5, 0, 0], chest: [0.2, -0.2, 0], neck: [0, 0.1, 0], head: [-0.2, 0, 0],
+    // (pass 142) coiled upright and turned from you, so the whole body comes over with the ball
+    { windup: { crouch: 0.45, lean: 0.05, legL: [-0.6, 0, 0], legR: [0.5, 0, 0], spin: [0, -0.35, 0], chest: [0, -0.3, 0], neck: [0, 0.1, 0], head: [-0.2, 0.2, 0],
                 armR: [-2.6, 0, -0.3], elbowR: [-1.6, 0, 0], pitch: -3.4, armL: [-1.6, 0, 0.2], elbowL: [-1.4, 0, 0] },
       strike: struck, follow: deeper },
-    { windup: { ...deeper, crouch: 0.38 }, strike: { ...deeper, crouch: 0.4 }, follow: { ...deeper, crouch: 0.3, lean: 0.4 } }] };
+    // ... the ball lifted a hand's width off the stones and struck again: the knell
+    { windup: { ...deeper, crouch: 0.3, lean: 0.42, chest: [0.38, 0, 0], armR: [-1.45, 0, 0.05], pitch: 0.4 }, strike: { ...deeper, crouch: 0.42, lean: 0.58 },
+      follow: { ...deeper, crouch: 0.44, lean: 0.6, chest: [0.55, 0, 0] } }] };
   // Every clapper angle above is a `pitch`, the way the shaft points; here it becomes the weapon bone's angle.
   for (const [id, P] of Object.entries(ATTACK_POSES)) if (id.startsWith('ringer')) for (const h of P.hits) for (const k of ['windup', 'strike', 'follow']) {
     const q = h[k]; if (!q || !('pitch' in q)) continue;
     const { pitch, ...rest } = q, x = b => (rest[b] ? rest[b][0] : 0);
     h[k] = { ...rest, weapon: [pitch + 0.08 - x('armR') - x('elbowR') - x('chest') - (rest.lean || 0), 0, 0] };
+  }
+  // In-between keys (pass 142, docs/bosses/system.md 3; `via`, js/attack-anim.js), every one `rel`, from each hit's own key
+  // poses (as the castellans', pass 139): a last hand's breadth of wind before the blow; her hips and chest lead while the
+  // clapper and her arms trail a beat behind and then whip through (the ball's weight); her weight sinks on after it.
+  // `toward(a, b, k)`: k of the way from pose a to pose b, per channel, each at most 0.45 rad.
+  const BODY = ['spin', 'chest'], LIMB = ['armR', 'elbowR', 'armL', 'elbowL', 'weapon', 'legL', 'legR', 'kneeL', 'kneeR'];
+  const toward = (a, b, k, names) => Object.fromEntries(names.filter(n => a[n] && b[n])
+    .map(n => [n, a[n].map((v, i) => Math.max(-0.45, Math.min(0.45, k * (b[n][i] - v))))]));
+  const inBetween = h => ({
+    windup: [{ t: 0.8, rel: true, crouch: 0.02, ...toward(h.strike, h.windup, 0.08, [...BODY, ...LIMB]) }],
+    active: [{ t: 0.6, rel: true, crouch: 0.04, lean: 0.03, ...toward(h.windup, h.strike, 0.3, BODY), ...toward(h.windup, h.strike, -0.25, LIMB) }],
+    follow: [{ t: 0.5, rel: true, crouch: 0.05, lean: 0.06, ...toward(h.strike, h.follow, 0.3, [...BODY, ...LIMB]) }],
+  });
+  // (pass 142, the bars-1 round) every wind-up gets to its own pose fast and then gathers: from the slow inOutSine start
+  // her moves all looked like the clapper at rest for their first third, so four strips shared one wind-up.
+  for (const [id, P] of Object.entries(ATTACK_POSES)) if (/^ringer[A-Z]/.test(id)) {
+    P.ease = { ...P.ease, windup: 'outCubic' };
+    P.hits = P.hits.map(h => ({ ...h, via: { ...inBetween(h), ...(h.via || {}) } }));
   }
 }
 
@@ -199,6 +236,7 @@ MODEL_DEFS.ringerOfThrale = {
   // long as its ring, and js/ring-waves.js draws it where the hitbox is.
   const RING = (from, to, width, time) => ({ w: 1, h: 0.6, d: 1, fwd: 0, y: 0.3, ground: true, ring: { from, to, width, time } });
   const knell = (from, to, width, time, extra = {}) => ({ active: time, box: RING(from, to, width, time), ...extra });
+  const STAMP = { w: 1.6, h: 1.0, d: 2.0, fwd: 1.0, y: 0.5 };   // (pass 142) the fettered foot coming down before her
   const RINGER = {
     id: 'ringer', model: 'ringerOfThrale', name: 'The Ringer of Thrale',
     description: 'The bellwright\'s daughter who rang Thrale\'s bell without leave, shut in the great ring of the Night Gaol for it with the clapper chained to her wrist. Her chain is long broken; she still keeps to the circle it let her reach, and calls across it. Jump the knell along the floor.',
@@ -238,14 +276,15 @@ MODEL_DEFS.ringerOfThrale = {
         hits: [{ startup: 0.8, active: 0.1, follow: 0.47, box: { w: 1.0, h: 1.4, d: 2.8, fwd: 1.9, y: 1.2 } },
                { startup: 0.55, active: 0.14, follow: 0.35, hold: { at: 0.6, time: [0.2, 0.6], chance: 0.45 } }], recovery: 1.7,
         damage: 28, poise: 45, knock: 7, lunge: 3.0, range: 4.4, box: { w: 1.2, h: 1.4, d: 4.4, fwd: 2.7, y: 1.2 } },
-      // The Fetter Stamp: the knee up, the fettered foot stamped; a ring runs out. It flows on into the rising toll or the
-      // hour struck.
-      { id: 'fetterStamp', name: 'The Fetter Stamp', anim: 'stomp', pose: 'ringerFetterStamp', noParry: true, rollOnly: true, tracking: { rate: 1.8, commit: 0.5 }, chance: 0.45,
-        hits: [{ startup: 0.95, follow: 0.2, ...knell(0.8, 5.5, 1.4, 0.45), impact: { ring: 2.6, crack: 1.2, dust: 12, shake: 0.1 } }], recovery: 1.7,
+      // The Fetter Stamp: the knee up, the fettered foot stamped down on you (parry the fetter, pass 142); a ring runs out of
+      // the stones after it (jump or roll it). It flows on into the rising toll or the hour struck.
+      { id: 'fetterStamp', name: 'The Fetter Stamp', anim: 'stomp', pose: 'ringerFetterStamp', tracking: { rate: 1.8, commit: 0.5 }, chance: 0.45, markers: glint(0),
+        hits: [{ tell: 'footL', startup: 0.95, active: 0.12, follow: 0.3, box: STAMP, impact: { ring: 1.6, crack: 1.2, dust: 8, shake: 0.08 } },
+               { tell: 'footL', startup: 0.48, follow: 0.2, noParry: true, ...knell(0.8, 5.5, 1.4, 0.45), impact: { ring: 2.6, crack: 0, dust: 12, shake: 0.1 } }], recovery: 1.2,
         followUps: [{ attack: 'risingToll', if: 'near', chance: 0.29 }, { attack: 'strikeHour', if: 'any', chance: 0.18 }],
-        damage: 22, poise: 35, knock: 6, lunge: 0, range: 5, box: RING(0.8, 5.5, 1.4, 0.45) },
-      // Behind her: a look over her shoulder and the clapper swung back round.
-      { id: 'backstroke', name: 'The Backstroke', anim: 'sweep', pose: 'ringerBackstroke', noParry: true, when: 'behind', tracking: { rate: 1, commit: 0.3 }, chance: 4,
+        damage: 22, poise: 35, knock: 6, lunge: 0.4, range: 2.8, box: STAMP },
+      // Behind her: a look over her shoulder and the clapper swung back round. Parry it (pass 142).
+      { id: 'backstroke', name: 'The Backstroke', anim: 'sweep', pose: 'ringerBackstroke', markers: glint(0), when: 'behind', tracking: { rate: 1, commit: 0.3 }, chance: 4,
         hits: [{ startup: 0.7, active: 0.14, follow: 0.3 }], recovery: 1.53,
         damage: 24, poise: 40, knock: 8, lunge: 0, range: 3.4, box: { w: 3.6, h: 2.0, d: 3.0, fwd: -1.5, y: 1.0 } },
       // Calling Across the Ring: from inside her circle, to you standing off: the clapper listened to, then struck on the
@@ -263,20 +302,21 @@ MODEL_DEFS.ringerOfThrale = {
       // The Hour Struck twice: the ball struck again where it lies, and a knell runs out from it.
       { id: 'strikeHour2', name: 'The Hour Struck', anim: 'chop', pose: 'ringerHourStruck2', tracking: { rate: 2.2, commit: 0.6 }, markers: glint(0),
         hits: [{ startup: 1.35, active: 0.14, follow: 0.6, hold: { at: 0.6, time: [0.3, 0.9], chance: 0.55 }, impact: { ring: 2.6, crack: 1.4, dust: 14, shake: 0.12 } },
-               { startup: 0.45, follow: 0.45, ...knell(1, 10, 1.5, 0.7), impact: { ring: 3.4, crack: 0, dust: 12, shake: 0.1 } }], recovery: 2.21,
+               { startup: 0.45, follow: 0.45, noParry: true, ...knell(1, 10, 1.5, 0.7), impact: { ring: 3.4, crack: 0, dust: 12, shake: 0.1 } }], recovery: 2.21,
         damage: 44, heavy: true, poise: 75, knock: 8, lunge: 1.2, range: 4.0, box: { w: 1.8, h: 3.2, d: 4.4, fwd: 2.5, y: 1.2 } },
-      // Two Fetters: the left foot stamped, then the right, wider.
-      { id: 'fetterStamp2', name: 'The Fetter Stamp', anim: 'stomp', pose: 'ringerFetterStamp2', noParry: true, rollOnly: true, tracking: { rate: 1.8, commit: 0.5 }, chance: 0.45,
-        hits: [{ startup: 0.9, follow: 0.45, ...knell(0.8, 5.5, 1.4, 0.45), impact: { ring: 2.6, crack: 1.2, dust: 12, shake: 0.1 } },
-               { startup: 0.65, follow: 0.3, ...knell(1, 9, 1.6, 0.6), impact: { ring: 4.0, crack: 1.8, dust: 18, shake: 0.14 } }], recovery: 1.87,
+      // Two Fetters: the left foot stamped on you (parry it) and its ring, then the right, wider (jump it).
+      { id: 'fetterStamp2', name: 'The Fetter Stamp', anim: 'stomp', pose: 'ringerFetterStamp2', tracking: { rate: 1.8, commit: 0.5 }, chance: 0.45, markers: glint(0),
+        hits: [{ tell: 'footL', startup: 0.9, active: 0.12, follow: 0.3, box: STAMP, impact: { ring: 1.6, crack: 1.2, dust: 8, shake: 0.08 } },
+               { tell: 'footL', startup: 0.48, follow: 0.3, noParry: true, ...knell(0.8, 5.5, 1.4, 0.45), impact: { ring: 2.6, crack: 0, dust: 12, shake: 0.1 } },
+               { tell: 'footR', startup: 0.65, follow: 0.3, noParry: true, ...knell(1, 9, 1.6, 0.6), impact: { ring: 4.0, crack: 1.8, dust: 18, shake: 0.14 } }], recovery: 1.5,
         followUps: [{ attack: 'risingToll', if: 'near', chance: 0.29 }, { attack: 'peal', if: 'any', chance: 0.15 }],
-        damage: 24, poise: 40, knock: 7, lunge: 0, range: 6, box: RING(0.8, 5.5, 1.4, 0.45) },
+        damage: 24, poise: 40, knock: 7, lunge: 0.4, range: 2.8, box: STAMP },
       // Over the Line (the phase opener): the clapper raised high, her arm flung wide, her face lifted; brought down on
-      // the floor where her circle ends, and the great knell runs out to the walls.
-      { id: 'overTheLine', name: 'Over the Line', anim: 'chop', pose: 'ringerOverTheLine', noParry: true, rollOnly: true, tracking: { rate: 1.6, commit: 0.6 }, chance: 0.1,
+      // the floor where her circle ends (parry the ball, pass 142), and the great knell runs out to the walls (jump it).
+      { id: 'overTheLine', name: 'Over the Line', anim: 'chop', pose: 'ringerOverTheLine', markers: glint(0), tracking: { rate: 1.6, commit: 0.6 }, chance: 0.1,
         hits: [{ startup: 1.6, active: 0.16, follow: 0.7, box: { w: 3.2, h: 2.4, d: 3.6, fwd: 1.4, y: 1.0 }, impact: { ring: 3.6, crack: 1.8, dust: 20, shake: 0.18 } },
-               { startup: 0.35, follow: 0.5, ...knell(1, 22, 1.6, 1.6), impact: { ring: 5.0, crack: 0, dust: 14, shake: 0.12 } }],
-        recovery: 2.72, damage: 40, heavy: true, poise: 70, knock: 9, lunge: 0.6, range: 8, box: { w: 3.2, h: 2.4, d: 3.6, fwd: 1.4, y: 1.0 } },
+               { startup: 0.35, follow: 0.5, noParry: true, ...knell(1, 22, 1.6, 1.6), impact: { ring: 5.0, crack: 0, dust: 14, shake: 0.12 } }],
+        recovery: 2.72, damage: 40, heavy: true, poise: 70, knock: 9, lunge: 0.6, range: 3.6, box: { w: 3.2, h: 2.4, d: 3.6, fwd: 1.4, y: 1.0 } },
       // The Nine Tailors: knelt, she counts them out: three knells at a steady pace, then a fourth, heavier and wider.
       // Jump each on the beat; her body is open between them.
       { id: 'nineTailors', name: 'The Nine Tailors', anim: 'chop', pose: 'ringerNineTailors', noParry: true, rollOnly: true, tracking: { rate: 1.2, commit: 0.4 }, chance: 0.3,
@@ -286,14 +326,15 @@ MODEL_DEFS.ringerOfThrale = {
                { startup: 0.95, follow: 0.5, ...knell(1, 20, 1.6, 1.4), impact: { ring: 4.4, crack: 1.6, dust: 18, shake: 0.14 } }],
         recovery: 2.72, damage: 20, poise: 30, knock: 5, lunge: 0, range: 12, box: RING(1, 12, 1.2, 0.9) },
       // The Peal: four quick blows from the shoulders, left, right, left, the last into the floor with a short knell.
-      { id: 'peal', name: 'The Peal', anim: 'chop', pose: 'ringerPeal', tracking: { rate: 3.0, commit: 0.65 }, markers: glint(0, 1, 2, 3),
+      { id: 'peal', name: 'The Peal', anim: 'chop', pose: 'ringerPeal', tracking: { rate: 3.0, commit: 0.65 }, markers: glint(0, 1, 2),
         hits: [{ startup: 0.75, active: 0.12, follow: 0.43 }, { startup: 0.38, active: 0.12, follow: 0.43 }, { startup: 0.38, active: 0.12, follow: 0.43 },
-               { startup: 0.65, follow: 0.4, ...knell(0.8, 6, 1.4, 0.45), impact: { ring: 2.8, crack: 1.2, dust: 12, shake: 0.1 } }],
+               { startup: 0.65, follow: 0.4, noParry: true, ...knell(0.8, 6, 1.4, 0.45), impact: { ring: 2.8, crack: 1.2, dust: 12, shake: 0.1 } }],
         recovery: 2.04, damage: 24, poise: 35, knock: 5, lunge: 1.6, range: 3.6, box: { w: 2.4, h: 2.6, d: 3.6, fwd: 1.9, y: 1.2 } },
-      // Out of the Ring: a crouch, the clapper over her shoulder; a leap, and it comes down where she lands, a knell after.
-      { id: 'outOfTheRing', name: 'Out of the Ring', anim: 'chop', pose: 'ringerOutOfTheRing', noParry: true, tracking: { rate: 2.4, commit: 0.5 }, minRange: 5, chance: 0.35,
+      // Out of the Ring: a crouch, the clapper over her shoulder; a leap, and it comes down where she lands (parry it, pass
+      // 142), a knell after (jump it).
+      { id: 'outOfTheRing', name: 'Out of the Ring', anim: 'chop', pose: 'ringerOutOfTheRing', markers: glint(0), tracking: { rate: 2.4, commit: 0.5 }, minRange: 5, chance: 0.35,
         hits: [{ startup: 1.4, active: 0.14, follow: 0.65, leap: { from: 0.45, max: 13, short: 1.4 }, impact: { ring: 4.6, crack: 2.2, dust: 22, shake: 0.18 } },
-               { startup: 0.35, follow: 0.5, ...knell(1, 9, 1.5, 0.55), impact: { ring: 3.6, crack: 0, dust: 10, shake: 0.1 } }],
+               { startup: 0.35, follow: 0.5, noParry: true, ...knell(1, 9, 1.5, 0.55), impact: { ring: 3.6, crack: 0, dust: 10, shake: 0.1 } }],
         recovery: 2.89, damage: 46, heavy: true, poise: 85, knock: 10, lunge: 0, range: 13, box: { w: 2.4, h: 2.8, d: 4.4, fwd: 2.4, y: 1.0 } },
     ],
   };

@@ -68,8 +68,9 @@ const BOSS_FX = {
     hewing: { element: 'storm' }, elbowKnee: { element: 'steel' }, heavenHeel: { impact: 'quake' }, vaultHaft: { element: 'storm', impact: 'gale' }, gauntletHold: { element: 'steel' },
     stampStonesAlone: { impact: 'quake' }, wallTurnsAlone: { element: 'storm', impact: 'gale' } } },
   // The Ringer of Thrale (Level 9): old iron while she is chained, her knells the pale toll of a bell; over the line,
-  // all of it rings.
-  ringer: { element: 'steel', aura: 0xb8c8ff, phases: { tolling: 'toll' }, attacks: {
+  // all of it rings. (pass 142) The ribbon is a thin arc at the ball, and the ball's head smears on its last frames: the
+  // default band from her wrists washed her body through Change Ringing.
+  ringer: { element: 'steel', aura: 0xb8c8ff, trail: { edge: 0.25, life: 0.16, smear: 0.3 }, phases: { tolling: 'toll' }, attacks: {
     strikeHour: { impact: 'shatter', windup: 'gather' }, strikeHour2: { impact: 'toll', windup: 'gather' }, risingToll: { windup: 'gather' },
     fetterStamp: { element: 'earth', impact: 'quake' }, fetterStamp2: { element: 'earth', impact: 'quake' },
     callAcross: { element: 'toll', impact: 'toll', windup: 'gather' }, callPunish: { element: 'toll', impact: 'toll' },

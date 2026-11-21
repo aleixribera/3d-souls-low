@@ -7,6 +7,20 @@
   const A = window.__arena, { Game, ES } = A, { sim, expect, test } = A.tests;
   const start = () => { Game.startLevel('night-gaol'); Game.loading = 0; sim.begin(); };
   const ringer = () => Game.enemies.find(e => e.baseDef.id === 'ringer');
+  // Pass 142 (docs/bosses/ringer.md, the moveset audit): every blow of the clapper or the fettered foot can be parried; only
+  // the knells along the floor are jumped or rolled, and a phase keeps roll-only moves to a quarter (docs/bosses/system.md 1).
+  test('Night Gaol: the Ringer\'s clapper and fetter blows are parried, her knells jumped, a quarter roll-only at most (pass 142)', () => {
+    const d = A.ENEMY_BY_ID.ringer, by = id => d.attacks.find(a => a.id === id);
+    for (const a of d.attacks) a.hits.forEach((h, i) => {
+      const ring = !!(h.box || a.box).ring;
+      expect.ok(ring ? !canParryHit(a, i) : canParryHit(a, i), `${a.id} hit ${i + 1}: ${ring ? 'a knell, jumped' : 'a blow, parried'}`);
+    });
+    for (const [id, Ph] of Object.entries(d.phases)) {
+      const rolled = Ph.attacks.filter(x => !by(x).hits.some((h, i) => canParryHit(by(x), i)));
+      expect.ok(rolled.length <= Ph.attacks.length / 4, `${id}: ${rolled.length} of ${Ph.attacks.length} roll-only (${rolled.join(', ')})`);
+    }
+    expect.ok(KIT.resolve(d.model).edgeTell.slot === 'struck' && by('fetterStamp').hits[0].tell === 'footL', 'the tell on the ball, or on the stamping foot');
+  });
   test('Night Gaol: Level 9 follows Saltgrave, as chapter 9 of the Story', () => {
     expect.ok(A.LEVELS[A.LEVELS.indexOf(A.LEVEL_9) - 1].id === 'saltgrave', 'listed after Saltgrave');
     expect.ok(A.STORY.chapters[8].level === 'night-gaol' && A.STORY.chapters[8].title === 'THE NIGHT GAOL', 'chapter 9 of the Story');

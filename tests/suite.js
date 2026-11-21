@@ -2768,7 +2768,7 @@
   // Pass 123: every boss whose model opts in (the Captain, the Bell Warden): the system's check, not one boss's.
   test('Boss edge tells: every boss with an edgeTell keeps the wind-up tell on the weapon, never over the body', () => {
     const ids = ENEMY_DEFS.filter(d => d.phases && KIT.resolve(d.model).edgeTell).map(d => d.id);
-    expect.ok(['pillagerCaptain', 'bellWarden', 'giant', 'varn', 'ostrey', 'hale', 'harrow'].every(id => ids.includes(id)), `opted in: ${ids.join(', ')}`);
+    expect.ok(['pillagerCaptain', 'bellWarden', 'giant', 'varn', 'ostrey', 'hale', 'harrow', 'ringer'].every(id => ids.includes(id)), `opted in: ${ids.join(', ')}`);
     for (const id of ids) {
       Game.startFight(id); Game.loading = 0; sim.begin();
       const heavyOn = a => a.heavy && !a.invulnerable && !a.hits[0].tell && !a.hits[0].leap;   // (pass 136) a boss with no roll-only heavy: a parried one

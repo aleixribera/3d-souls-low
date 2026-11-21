@@ -19,6 +19,8 @@ them (`git show 88f1abd:BACKLOG.md`).
 - Online, a blow that hit a teammate while its target perfect-dodged still gives the boss the long recovery.
 - 92 of 197 boss attacks can't be deflected (area hits, leaps); PLAN 5's "`noParry` on a quarter at most" applies
   per boss as each is rebuilt (per-hit `noParry` exists).
+- Ground area marks (`CONFIG.VISUALS.areaMark`, `js/area-marks.js`) are orange-red, close to the parry tell's red, and their fill
+  sits over a boss's legs in cel (the `bars-1` judge, pass 142, on the Ringer's Fetter Stamp): a colour of their own.
 - `startFight('dummy')` under `Game.manualClock` turns positions to NaN (no `speed`, starts in chase).
 - A test that empties `Game.enemies` without `sim.clearEnemies()` leaves figures for later tests; a runner check
   would catch it.
