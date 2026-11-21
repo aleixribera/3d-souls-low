@@ -3,11 +3,12 @@
 The iterate loop's working note (`.claude/iterate.md`). Cap: 8,000 characters.
 
 ## Now
-- Track 2, pass 119, PLAN item 8 batch 4 (pass 1 of 2), done in v7.171.0: the kept rares. Counterstep flash-steps
-  behind the boss (`dodge/flashBehind`, server window `stepDodge`); Opportunist on a cracked guard (`cracked/damage`);
-  all eleven drawn in blue by `js/rare-fx.js`. Acceptance: `tests/rare-perks.cjs`, in-page `kept rares`; clip
-  `docs/scorecard/now/rare-perks.mp4`. Not drawn yet: Static Edge's blade crackle count, Bastion's arm line.
-  Browser lock: `node tools/browser-lock.cjs run <pass> -- <cmd>` (docs/two-tracks.md). Next on track 2: batch 5.
+- Track 2, pass 122, PLAN item 8 batch 5 (pass 1 of 2), done in v7.174.0: six rares' new triggers. Riptide
+  (`counter/wave`), Moonfall Cut (`land/crescent`), Iron Cyclone (`comboHeavy/cyclone`, a new server claim), Petal
+  Storm (`finisher/petals`), Ironclad (`flask/unshaken`), Hunting Call (`summonHit/empower`), drawn in blue by
+  `js/rare-strike-fx.js`. Acceptance: `tests/rare-triggers.cjs`, in-page `rare triggers`; clip
+  `docs/scorecard/now/rare-triggers.mp4` (`node tools/ability-clips.cjs triggers`). Next on track 2: batch 5 pass 2,
+  Echoing Blade and Overcharge. Browser lock: `node tools/browser-lock.cjs run <pass> -- <cmd>` (docs/two-tracks.md).
 - Track 1, pass 123, PLAN item 5's real check (the second boss through the system, pass 1 of ~3): the Bell Warden.
   Design page `docs/bosses/bell-warden.md` (every attack named, `tests/boss-pages.cjs`); his cel look by data alone, no
   engine code: dark bronze (`bellBronzeDark`), the bell the one bright metal (`steel`), the tell on the bell
