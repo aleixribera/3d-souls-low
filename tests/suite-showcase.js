@@ -69,10 +69,10 @@
       showcase.frame(STEP, { render: true });
       expect.ok(showcase.running && cap.style.opacity === '1', 'another key brings it back, and skips nothing');
       let ended = 0;
-      // Skipped inside a card's freeze, its ink up, so the test sees the ink go.
-      const B = 60 / SHOWCASE.bpm, fz = SHOWCASE.freezes.find(f => f.at * B > showcase.time);
-      while (showcase.running && showcase.time < (fz.at + 0.5) * B) showcase.frame(STEP, { render: true });
-      expect.ok(showcase.frozen && !document.getElementById('scDuo').classList.contains('hidden'), 'in a freeze, its ink up');
+      // Skipped in the fade to the second fight, its black up, so the test sees the black go.
+      const B = 60 / SHOWCASE.bpm, black = document.querySelector('#showcase .sc-black'), cut = SHOWCASE.fights[1].from * B;
+      while (showcase.running && showcase.time < cut - SHOWCASE.fade / 2) showcase.frame(STEP, { render: showcase.time > cut - 1 });
+      expect.ok(Number(black.style.opacity) > 0.3, `in a fade, its black up (${black.style.opacity})`);
       let leaked = 0; const spy = ev => { if (ev.code === 'Escape') leaked++; };
       window.addEventListener('keydown', spy);
       window.dispatchEvent(new KeyboardEvent('keydown', { code: 'Escape', key: 'Escape', bubbles: true, cancelable: true }));
@@ -81,82 +81,72 @@
       window.dispatchEvent(new KeyboardEvent('keyup', { code: 'Escape', key: 'Escape', bubbles: true, cancelable: true }));
       window.removeEventListener('keydown', spy);
       expect.ok(leaked === 0, 'the held Esc that skipped reaches nothing after it');
-      expect.ok(document.querySelector('#showcase .sc-card').style.opacity === '0' && document.getElementById('scTint').classList.contains('hidden'), 'the card and the tint are gone');
       expect.ok(showcase.report().skipped && !showcase.report().failed, 'the report says skipped, not failed');
-      expect.ok(document.getElementById('showcase').classList.contains('hidden') && document.getElementById('scDuo').classList.contains('hidden'), 'its ink is gone');
+      expect.ok(document.getElementById('showcase').classList.contains('hidden') && black.style.opacity === '0', 'its overlay and its black are gone');
+      expect.ok(!$('hud').classList.contains('sc-hud'), 'the HUD is the game\'s own again');
       expect.ok(showcase.play({ manual: true, toMenu: false, onEnd: () => ended++ }), 'again');
       expect.ok(showcase.pad(['PadStart']) === true, 'the pad press that skips is used up, not passed to the menus');
       expect.ok(!showcase.running && ended === 1, 'a pad Start skips it too, and what follows it runs once');
     } finally { if (showcase.running) showcase.stop(); Game.showMenu('main'); }
   });
-  // The opening's freezes (pass 160): the game stands still while the show's clock, the camera and the card go on.
-  test('Showcase: a freeze holds the game still, cards each boss in its ink, and the logo slams in on its own beat', () => {
+  // The player's view (Aleix 2026-11-21, pass 166): the game's own camera behind the player all the way, a fade to black
+  // the only cut between two fights, each on its own ground; the "Showcase" tag up throughout; the game's name at the end.
+  test('Showcase: the player\'s view, one cut per fight on its own ground, the Showcase tag, and the name at the end', () => {
     sim.begin();
     expect.ok(showcase.play({ manual: true, toMenu: false }), 'it starts');
-    const B = 60 / SHOWCASE.bpm, card = document.querySelector('#showcase .sc-card'), seen = [];
-    const words = [...(SHOWCASE.words || [])], field = document.querySelector('#showcase .sc-word'), word = document.querySelector('#showcase .sc-word span');
+    const B = 60 / SHOWCASE.bpm, F = SHOWCASE.fights, T = SHOWCASE.title.at * B, q = s => document.querySelector(`#showcase ${s}`);
+    const black = q('.sc-black'), mark = q('.sc-mark'), tag = q('.sc-tag'), title = q('.sc-title');
+    const cuts = [], grounds = [], names = [];
+    let behind = 0, looked = 0, tagged = 0, drawn = 0;
     try {
-      for (const f of SHOWCASE.freezes) {
-        // Pass 164: each kinetic word before this freeze covers the frame, read whole: edge to edge, inside the screen.
-        while (words.length && words[0].at < f.at) {
-          const w = words.shift();
-          while (showcase.running && showcase.time < (w.at + w.for * 0.6) * B - 3 * STEP) showcase.frame(STEP, { render: false });
-          for (let n = 0; n < 3; n++) showcase.frame(STEP, { render: true });
-          const box = word.getBoundingClientRect();
-          expect.ok(field.style.opacity === '1' && word.textContent === w.text, `the word "${w.text}" covers the frame at beat ${w.at} (${field.style.opacity}, "${word.textContent}")`);
-          expect.ok(box.left >= 0 && box.right <= window.innerWidth + 1 && box.width > window.innerWidth * 0.6, `"${w.text}" is read whole, edge to edge (${Math.round(box.left)}-${Math.round(box.right)} of ${window.innerWidth})`);
+      const was = Game.cam.pos.clone();
+      for (let n = 0; showcase.running && showcase.time < T - SHOWCASE.fade && n < 60 * 40; n++) {
+        const fight = showcase.time >= 0 ? F.filter(f => f.from * B <= showcase.time + 1e-6).length - 1 : 0;
+        // Drawn every quarter second, and every frame round a fight's start (the overlay is written as it is drawn).
+        showcase.frame(STEP, { render: n % 15 === 0 || F.some(f => Math.abs(showcase.time + STEP - f.from * B) < 0.2) });
+        const c = Game.cam.pos, p = Game.player, e = Game.enemies[0];
+        // A cut: the camera somewhere else from one step to the next (it follows the player smoothly otherwise).
+        if (c.distanceTo(was) > 2.5) cuts.push({ at: showcase.time, black: Number(black.style.opacity) });
+        was.copy(c);
+        if (grounds.length <= fight && showcase.time > F[fight].from * B + 0.1) { grounds.push(Game.level.id); names.push($('eName').textContent); }
+        if (n % 15 === 0) {
+          drawn++;
+          if (mark.style.opacity === '1' && tag.textContent === 'Showcase') tagged++;
+          // Behind the player, looking past them at the boss: the lock-on camera's own place.
+          const ax = p.x - c.x, az = p.z - c.z, bx = e.x - p.x, bz = e.z - p.z;
+          looked++;
+          if ((ax * bx + az * bz) / ((Math.hypot(ax, az) * Math.hypot(bx, bz)) || 1) > 0.2 && Math.hypot(ax, az) < 14) behind++;
         }
-        if (f.card === 'title') {
-          // Pass 164: the action is cut away to an empty ink frame from title.dark, and the logo lands on it alone.
-          const T = SHOWCASE.title, ink = document.querySelector('#showcase .sc-ink'), logo = [...document.querySelectorAll('#showcase .sc-logo b')];
-          while (showcase.running && showcase.time < (T.dark + 0.2) * B) showcase.frame(STEP, { render: showcase.time > (T.dark - 0.1) * B });
-          const px = ink.getContext('2d').getImageData(4, Math.round(ink.height / 2), 1, 1).data;
-          expect.ok(px[3] === 255 && px[0] < 30 && px[1] < 30 && px[2] < 30, `the frame is cut to ink before the title (${[...px]})`);
-          expect.ok(logo.every(el => el.style.opacity === '0' || el.style.opacity === ''), 'and the logo is not up yet');
-          while (showcase.running && showcase.time < (T.at + 1.5) * B) showcase.frame(STEP, { render: true });
-          expect.ok(logo.every(el => el.style.opacity === '1'), `every part of the logo is up: ${logo.map(el => el.style.opacity)}`);
-          expect.ok(card.style.opacity === '0' && document.getElementById('scDuo').classList.contains('hidden'), 'no boss card or duotone over it: the title has its own frame');
-          seen.push(document.querySelector('#showcase .sc-logo').getAttribute('aria-label'));
-          continue;
-        }
-        // Drawn across the freeze's first frames, where the drawn clock can lead the staging of the fight it opens.
-        while (showcase.running && showcase.time < f.at * B - 3 * STEP) showcase.frame(STEP, { render: false });
-        while (showcase.running && showcase.time < (f.at + 0.5) * B) showcase.frame(STEP, { render: true });
-        const fight = SHOWCASE.fights.filter(x => x.from <= f.at + 1e-6).pop();
-        expect.ok(card.textContent === ENEMY_BY_ID[fight.boss].name, `the card at beat ${f.at} names its own fight: ${card.textContent}`);
-        if (fight.ground) expect.ok(Game.level.id === (fight.ground === 'arena' ? ARENA.id : fight.ground), `the fight at beat ${fight.from} is on its own ground (${Game.level.id})`);
-        const p = Game.player, e = Game.enemies[0], at = [p.x, p.z, e.x, e.z, e.hp, e.stateTime].join(), cam = Game.cam.pos.clone();
-        for (let n = 0; n < 20; n++) showcase.frame(STEP, { render: n === 19 });
-        expect.ok(showcase.frozen && [p.x, p.z, e.x, e.z, e.hp, e.stateTime].join() === at, `the game stands still in the freeze at beat ${f.at}`);
-        expect.ok(Game.cam.pos.distanceTo(cam) > 0.001, `the camera keeps moving through it (beat ${f.at})`);
-        expect.ok(card.style.opacity === '1' && !document.getElementById('scDuo').classList.contains('hidden'), `the card and the ink are up at beat ${f.at}`);
-        seen.push(card.textContent);
       }
+      expect.ok(cuts.length === F.length - 1 && cuts.every(x => x.black > 0.95), `one cut into each fight after the first, under black: ${cuts.map(x => `${x.at.toFixed(2)}s black ${x.black}`).join(', ')}`);
+      expect.ok(cuts.every((x, i) => Math.abs(x.at - F[i + 1].from * B) < 0.05), 'each on its fight\'s first beat');
+      expect.ok(behind >= looked * 0.9, `the camera is behind the player, facing the boss (${behind} of ${looked} frames)`);
+      expect.ok(tagged === drawn, `the Showcase tag is up in every frame before the title (${tagged} of ${drawn})`);
+      for (let i = 0; i < F.length; i++) {
+        const g = F[i].ground;
+        if (g) expect.ok(grounds[i] === (g === 'arena' ? ARENA.id : g), `the fight from beat ${F[i].from} is on its own ground (${grounds[i]})`);
+        // Its name or its phase's ("Gemini, the Eclipsed"), as the boss bar shows it in play.
+        expect.ok(!!names[i] && names.indexOf(names[i]) === i, `the HUD names fight ${i + 1}'s boss, its own (${names.join(' / ')})`);
+      }
+      expect.ok(!$('hud').classList.contains('hidden') && $('hud').classList.contains('sc-hud'), 'the game\'s HUD is up, but for what speaks to a player');
+      while (showcase.running && showcase.time < T + 1) showcase.frame(STEP, { render: showcase.time > T + 0.8 });
+      expect.ok(black.style.opacity === '1' && mark.style.opacity === '0', `the title has the black to itself (${black.style.opacity}, ${mark.style.opacity})`);
+      expect.ok(title.style.opacity === '1' && title.textContent === 'Combat Arena 3D', `the game's name ends it (${title.style.opacity}, "${title.textContent}")`);
     } finally { if (showcase.running) showcase.stop(); Game.showMenu('main'); }
-    const names = SHOWCASE.fights.map(f => ENEMY_BY_ID[f.boss].name);
-    expect.ok(names.every(n => seen.includes(n)) && seen[seen.length - 1] === 'Combat Arena 3D', `a card for every boss, then the title: ${seen.join(' / ')}`);
   });
-  // Pass 164: slow motion runs the game at its ramp's speed while the show's clock runs on; the show keeps the game's
-  // glare down (no white impact frames, a softer bloom) and gives it all back after, with the Arena.
-  test('Showcase: slow motion, its own light, and the Arena given back', () => {
+  // The show keeps the game's glare down (no white impact frames, a softer bloom) and gives it all back after, with the
+  // Arena and the HUD.
+  test('Showcase: its own light, and the Arena and the HUD given back', () => {
     sim.begin();
     const bloom = visuals.passes.bloom, was = bloom.strength;
     expect.ok(showcase.play({ manual: true, toMenu: false }), 'it starts');
-    const B = 60 / SHOWCASE.bpm, r = SHOWCASE.ramps[0];
     try {
       expect.ok(bloom.strength < was && impactFrame.hit(Game.player.x, Game.player.z) === false, 'a softer bloom and no white impact frame while it plays');
-      while (showcase.running && showcase.time < (r.at + 0.2) * B) showcase.frame(STEP, { render: false });
-      const s0 = showcase.simTime, t0 = showcase.time;
-      for (let n = 0; n < 30; n++) showcase.frame(STEP, { render: false });
-      const ran = (showcase.simTime - s0) / (showcase.time - t0);
-      expect.near(ran, r.speed, 0.08, 'the game runs at the ramp\'s speed');
-      const r2 = SHOWCASE.ramps[1];
-      while (showcase.running && showcase.time < (r.at + r.for + 0.3) * B && showcase.time < r2.at * B) showcase.frame(STEP, { render: false });
-      const s1 = showcase.simTime, t1 = showcase.time;
-      for (let n = 0; n < 10; n++) showcase.frame(STEP, { render: false });
-      expect.near((showcase.simTime - s1) / (showcase.time - t1), 1, 0.01, 'and at full speed after it');
+      for (let n = 0; n < 60 * 9; n++) showcase.frame(STEP, { render: false });
+      expect.ok(Game.level !== ARENA, 'on a ground of its own');
     } finally { if (showcase.running) showcase.stop(); }
     expect.ok(bloom.strength === was && impactFrame.hit !== undefined && Game.level === ARENA, 'the bloom, the impact frames and the Arena come back');
+    expect.ok(!$('hud').classList.contains('sc-hud'), 'and the HUD is the game\'s own');
     Game.showMenu('main');
   });
   // At launch (PLAN.md "The showcase"): each new version plays it, once in SHOWCASE.again hours at most, never into a run.

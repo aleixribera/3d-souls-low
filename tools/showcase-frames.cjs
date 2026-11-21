@@ -1,5 +1,5 @@
 'use strict';
-// Stills of the showcase (js/showcase.js) at chosen beats, for checking a cut, a card or a freeze without recording
+// Stills of the showcase (js/showcase.js) at chosen beats, for checking a fight, a fade or the overlay without recording
 // the whole show: the show stepped by hand in headless Edge, a screenshot at each beat asked for.
 //   node tools/showcase-frames.cjs <outDir> <beat>[,<beat>...]|none [--phone] [--still]
 // Writes <outDir>/showcase-b<beat>.jpg (1280x720; 390x844 with --phone) and prints the run's beats. `--still`: with

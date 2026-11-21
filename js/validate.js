@@ -1213,7 +1213,7 @@ function validateBonfireGuidance() {
   return errors;
 }
 // The showcase's script (js/data/showcase.js, js/showcase.js): bosses, phases and strings that exist, keys its kit holds,
-// beats in order inside the show, cuts naming known shots, framings with numbers in range.
+// beats in order inside the show, grounds that exist, fights and the title on the music's bars.
 function validateShowcase(S, need) {
   const tag = 'SHOWCASE', num = v => Number.isFinite(v), len = S.length, fights = Array.isArray(S.fights) ? S.fights : [];
   need(num(S.bpm) && S.bpm >= 60 && S.bpm <= 200 && num(len) && len > 0 && num(S.preroll) && S.preroll >= 0 && Number.isInteger(S.seed), `${tag}: bpm 60-200, length > 0 beats, preroll >= 0 s and an integer seed.`);
@@ -1260,56 +1260,21 @@ function validateShowcase(S, need) {
       }
     }
   }
-  const shots = S.shots || {};
-  const lens = (id, s) => need(['zoom', 'roll', 'spin', 'whip'].every(k => s[k] === undefined || num(s[k])) && (s.zoom === undefined || (s.zoom >= 1 && s.zoom <= 3))
-    && (s.roll === undefined || Math.abs(s.roll) <= 30) && (s.whip === undefined || Math.abs(s.whip) <= 120), `SHOWCASE: shot "${id}": zoom 1-3 (times its fov), roll within 30 degrees, spin degrees/s, whip within 120 degrees.`);
-  for (const [id, s] of Object.entries(shots)) lens(id, s);
-  for (const [id, s] of Object.entries(shots)) if (s.part !== undefined)
-    need(['head', 'chest', 'weapon', 'tip'].includes(s.part) && ['boss', 'player'].includes(s.on) && num(s.dist) && s.dist > 0 && num(s.turn) && num(s.fov) && s.fov >= 15 && s.fov <= 90
-      && ['rise', 'aim', 'push'].every(k => s[k] === undefined || num(s[k])), `SHOWCASE: close-up "${id}": part head, chest, weapon or tip of the boss or the player, dist > 0 m, turn (degrees), fov 15-90; rise, aim (m) and push (m/s) are numbers.`);
-  else if (s.fit !== undefined)
-    need(num(s.fit) && s.fit > 0 && s.fit <= 1 && ['boss', 'player'].includes(s.on) && num(s.turn) && num(s.up) && num(s.lookUp) && num(s.fov) && s.fov >= 15 && s.fov <= 90
-      && (s.push === undefined || num(s.push)), `${tag}: card shot "${id}": fit 0-1 of the frame, on boss or player, turn (degrees), up and lookUp (shares of its height), fov 15-90.`);
-  else
-    need(['at', 'look', 'lookUp'].every(k => num(s[k]) && s[k] >= 0 && s[k] <= 1) && ['back', 'side', 'up'].every(k => num(s[k])) && num(s.fov) && s.fov >= 15 && s.fov <= 90
-      && ['push', 'orbit'].every(k => s[k] === undefined || num(s[k])), `${tag}: shot "${id}": at, look, lookUp 0-1; back, side, up in m; fov 15-90.`);
-  const cuts = S.cuts || [];
-  need(cuts.length > 0 && cuts[0].at === 0 && cuts.every((c, i) => c.shot in shots && num(c.at) && c.at < len && (i === 0 || c.at > cuts[i - 1].at)), `${tag}: cuts start at beat 0, in order, each naming a shot.`);
-  need(!!S.title && num(S.title.at) && S.title.at < len && S.title.at % 4 === 0, `${tag}: the title comes before the end, on a bar line (a multiple of 4 beats: the music holds its chord from there).`);
-  // The anime opening's ink (pass 160): a name card's accent per fight, freezes no beat lands in, impacts under 3 Hz.
-  for (const f of fights) need(typeof f.ink === 'string' && /^#[0-9a-f]{6}$/i.test(f.ink), `${tag}: ${f.boss}'s ink is its card's accent, a #rrggbb colour.`);
-  const freezes = Array.isArray(S.freezes) ? S.freezes : [];
-  need(Array.isArray(S.freezes), `${tag}: freezes is a list (may be empty).`);
-  freezes.forEach((f, i) => {
-    const t = `${tag}: freeze at beat ${f.at}`;
-    need(num(f.at) && f.at > 0 && num(f.for) && f.for > 0 && f.at + f.for <= len + 1e-9 && (i === 0 || f.at >= freezes[i - 1].at + freezes[i - 1].for), `${t}: at > 0, for > 0, inside the show, after the freeze before it ends.`);
-    need(f.card === undefined || f.card === 'boss' || f.card === 'title', `${t}: card is 'boss' or 'title'.`);
-    need(f.shot === undefined || (f.shot in shots && cuts.some(c => c.at === f.at && c.shot === f.shot)), `${t}: its shot "${f.shot}" is a known shot, cut to on its beat.`);
-    need(f.card !== 'title' || (!!S.title && f.at === S.title.at && f.at + f.for === len), `${t}: the title's card runs from the title to the end.`);
-    for (const b of S.beats || []) need(!(b.at >= f.at && b.at < f.at + f.for), `${t}: beat "${b.id}" lands inside it (the game stands still there).`);
-  });
-  const impacts = Array.isArray(S.impacts) ? S.impacts : [];
-  need(Array.isArray(S.impacts) && impacts.every((b, i) => num(b) && b >= 0 && b < len && (i === 0 || (b - impacts[i - 1]) * 60 / S.bpm >= 3)), `${tag}: impacts are beats in order, at least 3 s apart (impact frames stay well under 3 Hz).`);
-  // Slow motion and kinetic words (pass 164): inside the show, in order, apart from the freezes and the title.
-  const ramps = Array.isArray(S.ramps) ? S.ramps : [];
-  need(S.ramps === undefined || Array.isArray(S.ramps), `SHOWCASE: ramps is a list.`);
-  ramps.forEach((r, i) => need(num(r.at) && r.at >= 0 && num(r.for) && r.for > 0 && num(r.speed) && r.speed > 0 && r.speed < 1 && (i === 0 || r.at >= ramps[i - 1].at + ramps[i - 1].for)
-    && !!S.title && r.at + r.for <= S.title.dark && !freezes.some(f => r.at < f.at + f.for && f.at < r.at + r.for), `SHOWCASE: ramp at beat ${r.at}: for > 0 beats at a speed between 0 and 1, in order, before the title, never over a freeze.`));
-  const words = Array.isArray(S.words) ? S.words : [];
-  need(S.words === undefined || Array.isArray(S.words), `SHOWCASE: words is a list.`);
-  // A word is a full-screen field of colour: held at least 1/3 s, and 1/3 s from the last one or an impact frame (under 3 Hz).
-  const third = S.bpm / 180;   // 1/3 s in beats
-  words.forEach((w, i) => need(num(w.at) && w.at >= 0 && num(w.for) && w.for >= third && w.for <= 4 && (i === 0 || w.at >= words[i - 1].at + words[i - 1].for + third) && !!S.title && w.at + w.for <= S.title.dark
-    && impacts.every(x => x + third <= w.at || x >= w.at + w.for + third)
-    && typeof w.text === 'string' && /^[A-Za-z0-9 !'-]{1,12}$/.test(w.text) && typeof w.ink === 'string' && /^#[0-9a-f]{6}$/i.test(w.ink)
-    && !freezes.some(f => w.at < f.at + f.for && f.at < w.at + w.for), `SHOWCASE: word at beat ${w.at}: held 1/3 s to 4 beats, in order and 1/3 s apart (from impact frames too), before the title, off the freezes; text of 1-12 letters, ink a #rrggbb colour.`));
   for (const f of fights) need(f.ground === undefined || f.ground === 'arena' || ALL_LEVELS.some(l => l.id === f.ground), `SHOWCASE: ${f.boss}'s ground "${f.ground}" is not a level.`);
-  // The title's own beat (pass 164): the action cut away at `dark`, after every beat, the name slammed in at `at`.
+  // The player's view (pass 166): the music's grid holds a fight's start and the title on a bar line, and a fade fits
+  // between two of them.
   const lastBeat = (S.beats || []).reduce((m, b) => Math.max(m, b.at), -Infinity);
-  need(!!S.title && num(S.title.dark) && S.title.dark < S.title.at && S.title.dark > lastBeat && S.title.at - S.title.dark <= 2, `${tag}: title.dark is the beat the action is cut away, after the last beat and at most 2 beats before the title.`);
+  need(fights.every(f => num(f.from) && f.from % 4 === 0), `${tag}: each fight starts on a bar line (from: a multiple of 4 beats; the music's chords and fills are on bars).`);
+  need(!!S.title && num(S.title.at) && S.title.at < len && S.title.at % 4 === 0 && S.title.at > lastBeat && fights.every(f => f.from < S.title.at),
+    `${tag}: the title comes after every beat and fight and before the end, on a bar line (a multiple of 4 beats: the music holds its chord from there).`);
+  const gaps = fights.map((f, i) => ((i + 1 < fights.length ? fights[i + 1].from : S.title ? S.title.at : len) - f.from) * 60 / S.bpm);
+  need(num(S.fade) && S.fade > 0 && S.fade <= 1 && gaps.every(g => g >= 3 * S.fade), `${tag}: fade is 0-1 s, and every fight lasts at least three fades.`);
+  // A beat played in the light: its first blow a fade clear of every cut (both sides) and of the fade into the title.
+  const beatS = 60 / S.bpm, cutsAt = fights.slice(1).map(f => f.from * beatS);
+  for (const b of S.beats || []) need(num(S.fade) && cutsAt.every(c => Math.abs(b.at * beatS - c) >= S.fade + 0.1) && !!S.title && b.at * beatS <= S.title.at * beatS - 2 * S.fade,
+    `${tag}: beat "${b.id}" lands under a fade's black (keep it ${S.fade} s and more from a fight's start and the title's fade).`);
   need(!!S.glare && num(S.glare.bloom) && S.glare.bloom >= 0 && S.glare.bloom <= 1 && num(S.glare.threshold) && S.glare.threshold >= 0 && num(S.glare.flash) && S.glare.flash >= 0 && S.glare.flash <= 1,
     `${tag}: glare needs bloom and flash (shares, 0-1) and a bloom threshold (>= 0).`);
-  need(num(S.bars) && S.bars >= 0 && S.bars < len, `${tag}: bars is the beat the cold open's letterbox opens on.`);
   need(!!S.skip && ['from', 'for', 'again'].every(k => num(S.skip[k]) && S.skip[k] >= 0), `${tag}: skip needs from, for and again (s).`);
 }
 const GATE_STYLES = ['portcullis', 'barricade'];

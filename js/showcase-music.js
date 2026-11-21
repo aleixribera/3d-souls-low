@@ -2,13 +2,12 @@
 // ============================================================================
 // The showcase's music (js/showcase.js): its own synthesized cue, built like js/audio.js's sounds
 // ============================================================================
-// An opening's song in miniature, 128 bpm in D minor, one chord a bar (CHORDS). Its form comes from SHOWCASE itself, so
-// the cuts and the music share one grid (docs/showcase/storyboard.md):
-//   the cold open   unison hits on the first cuts over silence, until the letterbox opens (SHOWCASE.bars)
-//   the groove      kick, backbeat snare, hats, bass in eighths, the string ostinato; a brass stab and a drum on every cut
-//   a break         under each freeze: one hit and its tail, a swell back in over its last beat
-//   the build       the bar before the climax (the first impact): a snare roll, a riser, half a beat of silence
-//   the chorus      from the climax to the title: the four-chord climb, crashes, a lead hook
+// An opening's song in miniature, 128 bpm in D minor, one chord a bar (chordAt). Its form comes from SHOWCASE itself, so
+// the fights and the music share one grid (docs/showcase/storyboard.md):
+//   the groove      from the first beat: kick, backbeat snare, hats, bass in eighths, the string ostinato
+//   a new fight     toms down into it under its fade, a brass stab and a crash on its first beat
+//   the build       the bar before the last fight: a snare roll, a riser, half a beat of silence (the darkest of its fade)
+//   the chorus      from the last fight to the title: the four-chord climb, crashes, a lead hook
 //   the title       a deep hit and the last chord, held
 // It plays through AudioManager's mix (its mood filter, compressor, limiter and Options volume) and its reverb.
 // Notes are made a little ahead of time (pump), on the audio clock: the same in a live page and in the recorder's
@@ -19,8 +18,13 @@ const showcaseMusic = (() => {
   // A chord: its notes (MIDI) and its bass root.
   const C = { Dm: [[62, 65, 69], 38], Bb: [[58, 62, 65], 34], C: [[60, 64, 67], 36], A: [[57, 61, 64], 33], Gm: [[55, 58, 62], 31],
     F: [[57, 60, 65], 41], Am: [[57, 60, 64], 33] };
-  // One a bar (16 bars): the verse, the build on A, the chorus's climb (Bb C Am Dm) and the title's Dm.
-  const CHORDS = ['Dm', 'Dm', 'Bb', 'C', 'Dm', 'Bb', 'Gm', 'A', 'Dm', 'A', 'Bb', 'C', 'Am', 'Dm', 'A', 'Dm'];
+  // One a bar: the verse round and round, the chorus's climb (Bb C Am Dm) from the last fight, A the bar before the
+  // title and its Dm. `q`: a beat.
+  const VERSE = ['Dm', 'Dm', 'Bb', 'C', 'Dm', 'Bb', 'Gm', 'A'], CLIMB = ['Bb', 'C', 'Am', 'Dm'];
+  function chordAt(q, climax, title) {
+    const bar = Math.floor(q / 4), top = Math.floor(title / 4), from = Math.floor(climax / 4);
+    return bar >= top ? 'Dm' : bar === top - 1 ? 'A' : bar >= from ? CLIMB[(bar - from) % 4] : VERSE[bar % 8];
+  }
   // The chorus's hook, from the climax: [beat into the chorus, MIDI note, length in beats].
   const HOOK = [[0, 74, 0.5], [0.5, 77, 0.5], [1, 81, 1.5], [2.5, 79, 0.5], [3, 77, 1],
     [4, 76, 0.5], [4.5, 79, 0.5], [5, 84, 1.5], [6.5, 82, 0.5], [7, 81, 1],
@@ -116,65 +120,47 @@ const showcaseMusic = (() => {
 
     // ---- the score: [beat, voice], sorted ---------------------------------------------------------
     function score(b) {
-      const ev = [], at = (beatN, fn) => ev.push([beatN, fn]), title = S.title.at, open = S.bars;
-      const breaks = (S.freezes || []).filter(f => f.at < title).map(f => [f.at, f.at + f.for]);
-      const climax = (S.impacts || []).find(x => x < title) ?? title;
-      const inBreak = q => breaks.some(([a, z]) => q >= a - 1e-6 && q < z - 1e-6);
-      const quiet = q => q < open || inBreak(q) || (q >= climax - 0.5 && q < climax) || q >= (S.title.dark ?? title);   // no groove here
-      const chordAt = q => C[CHORDS[Math.min(CHORDS.length - 1, Math.floor(q / 4))]];
-      // The cold open: unison hits on its cuts, a tom fill into the groove.
-      for (const c of S.cuts) if (c.at < open) at(c.at, t => { V.brass(t, b * 0.35, chordAt(c.at)[0], 1.2); V.taiko(t, 1, 80); V.bass(t, b * 0.8, chordAt(c.at)[1], 1); if (c.at === 0) V.crash(t, 0.8); });
-      for (let i = 0; i < 4; i++) at(open - 0.5 + i / 8, t => V.taiko(t, 0.5 + i * 0.12, 150 - i * 12));
+      const ev = [], at = (beatN, fn) => ev.push([beatN, fn]), title = S.title.at, F = S.fights;
+      const climax = F[F.length - 1].from, built = climax > 0, quiet = q => (built && q >= climax - 0.5 && q < climax) || q >= title - 0.5;   // no groove here
+      const chordOf = bar => C[chordAt(bar * 4, climax, title)], heat = q => q >= climax ? 1 : F.length > 2 && q >= F[1].from ? 0.9 : 0.8;
+      at(0, t => { V.crash(t, 0.8); V.taiko(t, 1, 80); });
       for (let bar = 0; bar * 4 < title; bar++) {
-        const [notes, root] = C[CHORDS[bar]], b0 = bar * 4, chorus = b0 >= climax, heat = chorus ? 1 : b0 >= 20 ? 0.9 : 0.8;
-        if (b0 >= open && !inBreak(b0)) at(b0, t => V.pad(t, b * 4, notes, chorus ? 1.3 : heat));
+        const [notes, root] = chordOf(bar), b0 = bar * 4, chorus = b0 >= climax, h = heat(b0);
+        at(b0, t => V.pad(t, b * 4, notes, chorus ? 1.3 : h));
         for (let i = 0; i < 8; i++) {   // the bass in eighths, an octave up on each pair's last
           const q = b0 + i / 2, m = i % 4 === 3 ? root + 12 : root;
           if (!quiet(q)) at(q, t => V.bass(t, b * 0.42, m, i % 2 ? 0.75 : 1));
         }
         for (let i = 0; i < 16; i++) {   // the ostinato: the chord rising and falling in sixteenths
           const q = b0 + i / 4, shape = [0, 1, 2, 1, 2, 0, 1, 2], m = notes[shape[i % 8]] + 12 + (chorus && i >= 8 ? 12 : 0);
-          if (!quiet(q)) at(q, t => V.pluck(t, m, heat * (i % 4 === 0 ? 1 : 0.65)));
+          if (!quiet(q)) at(q, t => V.pluck(t, m, h * (i % 4 === 0 ? 1 : 0.65)));
         }
         for (let i = 0; i < 4; i++) {   // drums: kick on 1 and 3 (and the and-of-3), snare on 2 and 4, hats in eighths
           const q = b0 + i;
-          if (!quiet(q)) { if (i % 2 === 0) at(q, t => V.kick(t, 1)); else at(q, t => V.snare(t, heat)); }
+          if (!quiet(q)) { if (i % 2 === 0) at(q, t => V.kick(t, 1)); else at(q, t => V.snare(t, h)); }
           if (i === 2 && !quiet(q + 0.5)) at(q + 0.5, t => V.kick(t, 0.75));
-          for (const h of [0, 0.5]) if (!quiet(q + h)) at(q + h, t => V.hat(t, h ? 0.9 : 0.5));
+          for (const x of [0, 0.5]) if (!quiet(q + x)) at(q + x, t => V.hat(t, x ? 0.9 : 0.5));
           if (chorus && !quiet(q + 0.75)) at(q + 0.75, t => V.hat(t, 0.6));
         }
       }
-      // Every cut in the groove: a brass stab and a low drum.
-      for (const c of S.cuts) if (c.at >= open && c.at < title && !inBreak(c.at) && c.at !== climax) at(c.at, t => { V.brass(t, b * 0.4, chordAt(c.at)[0], 0.8); V.taiko(t, 0.8, 92); });
-      // The breaks: one hit and its tail, a swell back into the groove.
-      for (const [a, z] of breaks) {
-        at(a, t => { V.boom(t, 0.9); V.brass(t, b * 0.9, chordAt(a)[0], 1.1); V.crash(t, 0.7); V.snare(t, 1); });
-        at(Math.max(a, z - 1), t => V.swell(t, (z - Math.max(a, z - 1)) * b, 1));
-        at(z, t => V.crash(t, 0.6));
+      // A new fight before the last: toms down into it, a brass stab and a crash on its first beat.
+      for (const f of F.slice(1, -1)) {
+        for (let i = 0; i < 4; i++) at(f.from - 1 + i / 4, t => V.taiko(t, 0.5 + i * 0.1, 150 - i * 12));
+        at(f.from, t => { V.brass(t, b * 0.9, chordOf(f.from / 4)[0], 1.1); V.crash(t, 0.7); V.taiko(t, 1, 80); });
       }
-      // The build: a snare roll in eighths, then sixteenths, a riser, half a beat of silence; then the climax.
-      for (let q = climax - 4; q < climax - 0.5 - 1e-6; q += q < climax - 2 ? 0.5 : 0.25) { const k = (q - climax + 4) / 3.5; at(q, t => V.snare(t, 0.35 + 0.6 * k)); }
-      at(climax - 4, t => V.riser(t, b * 3.5, 1));
-      at(climax, t => { V.boom(t, 1.1); V.crash(t, 1); V.brass(t, b * 1.5, chordAt(climax)[0], 1.3); });
-      for (let i = 0; i < 16; i += 8) at(climax + 8 + i, t => V.crash(t, 0.7));
+      // The build into the last fight: a snare roll in eighths, then sixteenths, a riser, half a beat of silence (its
+      // fade's darkest); then the chorus: the four-chord climb, crashes, a lead hook.
+      if (built) for (let q = climax - 4; q < climax - 0.5 - 1e-6; q += q < climax - 2 ? 0.5 : 0.25) { const k = (q - climax + 4) / 3.5; at(q, t => V.snare(t, 0.35 + 0.6 * k)); }
+      if (built) at(climax - 4, t => V.riser(t, b * 3.5, 1));
+      at(climax, t => { V.boom(t, 1.1); V.crash(t, 1); V.brass(t, b * 1.5, chordOf(climax / 4)[0], 1.3); });
+      for (let i = 8; climax + i < title - 4; i += 8) at(climax + i, t => V.crash(t, 0.7));
       for (const [q, m, len] of HOOK) if (climax + q < title - 4) at(climax + q, t => V.lead(t, len * b, m, 1));
-      // Slow motion (SHOWCASE.ramps): a reversed cymbal drawn out over it, and the snap back to speed is a hit.
-      for (const r of S.ramps || []) {
-        at(r.at, t => V.swell(t, r.for * b, 1.3));
-        at(r.at + r.for, t => { V.taiko(t, 1, 70); V.kick(t, 1.1); V.crash(t, 0.6); });
-      }
-      // The kinetic words: each a stab of the band, a drum and a crack.
-      for (const w of S.words || []) at(w.at, t => { V.brass(t, b * w.for * 0.8, chordAt(w.at)[0], 1.1); V.taiko(t, 1, 96); V.snare(t, 0.9); });
-      // The last bar before the title: half time, toms down into it; then the cut to black is half a beat of silence
-      // but for a cymbal drawn in backwards.
-      const dark = S.title.dark ?? title;
-      for (let i = 0; i < 8; i++) if (title - 2 + i / 4 < dark - 0.2) at(title - 2 + i / 4, t => V.taiko(t, 0.45 + i * 0.07, 150 - i * 9));
-      if (dark < title) at(dark, t => V.swell(t, (title - dark) * b, 1.4));
-      // The title: the deep hit, the last chord held; the logo's other two parts each a hit of their own.
-      const [notes, root] = C[CHORDS[Math.floor(title / 4)]];
+      // The last bar before the title: toms down into it; its fade to black is half a beat of a cymbal drawn in backwards.
+      for (let i = 0; i < 8; i++) if (title - 2 + i / 4 < title - 0.7) at(title - 2 + i / 4, t => V.taiko(t, 0.45 + i * 0.07, 150 - i * 9));
+      at(title - 0.5, t => V.swell(t, 0.5 * b, 1.4));
+      // The title: the deep hit and the last chord, held.
+      const [notes, root] = chordOf(title / 4);
       at(title, t => { V.boom(t, 1.25); V.crash(t, 1.1); V.pad(t, b * 7, notes, 1.6); V.brass(t, b * 3, notes, 1.1); V.bass(t, b * 6, root, 1); V.kick(t, 1.2); V.snare(t, 1); });
-      at(title + 0.5, t => { V.taiko(t, 1.1, 88); V.snare(t, 0.8); });
-      at(title + 1, t => { V.taiko(t, 1.3, 64); V.kick(t, 1.2); V.crash(t, 0.8); });
       return ev.sort((x, y) => x[0] - y[0]).map(([beatN, fn]) => [t0 + beatN * b, fn]);
     }
     const list = score(beat);
@@ -194,5 +180,5 @@ const showcaseMusic = (() => {
     pump(t0);
     return { t0, pump, stop };
   }
-  return { start, chords: CHORDS };
+  return { start, chordAt };
 })();
