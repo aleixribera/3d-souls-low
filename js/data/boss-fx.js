@@ -118,7 +118,7 @@ const BOSS_FX = {
   rootbound: { element: 'earth', aura: 0xff9a50, attacks: { rootMark: { element: 'fire', impact: 'blaze', windup: 'gather' }, rootThorn: { element: 'fire' } } },
   // The King's Blade (Level 14): the champion's steel, until the Ember shows through it (the second phase)
   // (js/data/bosses/kings-blade.js, loaded after this file).
-  kingsBlade: { element: 'steel', aura: 0xff8a40, phases: { emberWorn: 'fire' }, attacks: {
+  kingsBlade: { element: 'steel', aura: 0xff8a40, trail: { edge: 0.25, life: 0.16, smear: 0.4 }, phases: { emberWorn: 'fire' }, attacks: {
     crownsWeight: { impact: 'shatter', windup: 'gather' }, torchTaken: { element: 'fire', impact: 'blaze', windup: 'gather' },
     corvel: { element: 'fire', impact: 'blaze', windup: 'gather' }, emberLeap: { element: 'fire', impact: 'blaze', windup: 'gather' },
     shieldBurns: { element: 'fire', impact: 'blaze' } } },

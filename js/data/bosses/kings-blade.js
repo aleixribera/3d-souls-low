@@ -18,7 +18,8 @@
 // shoulder, point at you); the Shield Wall (shoulder down behind the shield); the Crown's Weight (the shield a roof, the
 // sword laid back under it). Ember-Worn: the Torch Taken Up (the sword raised straight up like a torch, head thrown
 // back); Corvel Burns (the same, held, shaking); the Hunger's Cuts (hunched behind the burning shield, the sword cocked
-// over it); the Shield Burns (the shield flung out wide). A blow the shield strikes is told on the shield (`tell`).
+// over it); the Ember Leaps (sunk low to spring, the sword trailed low behind, point back; pass 152, it was the Crown's
+// Weight's roof); the Shield Burns (the shield flung out wide). A blow the shield strikes is told on the shield (`tell`).
 // Blade angles are a `pitch` (0 level ahead, -1.57 straight up, positive dips the point) and the shield's a `face` (the
 // left forearm's angle: -1.57 the shield faced straight ahead, 0 faced at the floor), both worked out into the bone
 // angles by the loop after the poses.
@@ -47,7 +48,7 @@
       strap: { tex: 'crackedLeather', tint: 0x2a2420, decay: 0.75 },
       wood: { tex: 'paviseWood', tint: 0x5a4a3e, decay: 0.7 },
       scarf: { tex: 'rottenCloth', tint: 0xd0302a, decay: 0.35, double: true },   // the one thing the fire left its colour
-      blade: { tex: 'dentedSteel', tint: 0xe8e4dc, decay: 0.15, rim: 0.6 },        // the King's sword: kept bright
+      blade: { tex: 'dentedSteel', tint: 0xe8e4dc, decay: 0.15, rim: 0.6, steel: true },   // the King's sword: kept bright; banded as steel in cel (pass 152)
       burn: { glow: 0xff6a20, burn: true },
       eye: { glow: 0xff7a2a },
     },
@@ -69,6 +70,9 @@
     weaponRest: 1.15,      // at rest its point is low before it (the `sway` idle)
     guardArm: { armL: [-0.85, 0, -0.12], elbowL: [-0.78, 0, 0] },   // guarding: the shield high before its chest, faced at you
     shieldTell: { bone: 'elbowL', at: [0.015, -0.42, 0.01] },   // a shield blow's wind-up glows on the shield's face, not the sword
+    // (pass 152, docs/bosses/system.md 4) a sword blow's wind-up tell sits on the blade's edge, and a heavy grows it there
+    // instead of washing the whole body orange.
+    edgeTell: { slot: 'blade', size: 0.42, along: 0.85 },
     eyes: { color: 0xff7a2a, size: 0.009, spread: 0.03, at: [0, 0.115, 0.066] },   // embers in the struck-off face
     anim: {
       idle: { breathRate: 0.6, breath: 0.012, headDrift: 0.02, sway: 0.006, twitch: 0 }, walk: { twist: 0.05, roll: 0.03, headNod: 0.02, elbow: 0.08, drag: 0.04 },
@@ -189,26 +193,37 @@
     armR: [-1.7, 0, -0.2], elbowR: [-1.35, 0, 0], pitch: 0.05 };
   const driveIn = { ...hunch, crouch: 0.3, lean: 0.5, legL: [-0.95, 0, 0], kneeL: [0.45, 0, 0], legR: [0.6, 0, 0], spin: [0, -0.35, 0], head: [-0.2, 0.3, 0],
     armL: [-1.4, 0, -0.2], face: -1.6, armR: [-1.7, 0, -0.2], elbowR: [-1.4, 0, 0], pitch: 0.0 };
-  const overBrand = { ...driveIn, lean: 0.55, spin: [0, -0.1, 0], armL: [-1.1, 0, -0.15], face: -1.55, armR: [-1.6, 0, 0.2], elbowR: [-0.05, 0, 0], pitch: -0.15 };
+  const overBrand = { ...driveIn, crouch: 0.36, lean: 0.64, spin: [0, 0.05, 0], chest: [0.35, 0, 0], armL: [-1.1, 0, -0.15], face: -1.55, armR: [-1.6, 0, 0.2], elbowR: [-0.05, 0, 0], pitch: -0.15 };
   const overShield = { ...hunch, crouch: 0.26, lean: 0.2, spin: [0, -0.5, 0], chest: [0.1, -0.15, 0], head: [-0.1, 0.4, 0],
     armL: [-1.05, 0, -0.15], face: -1.6, armR: [-2.4, 0, -0.4], elbowR: [-0.6, 0, 0], pitch: -2.2 };
   const downAcross = { ...hunch, crouch: 0.42, lean: 0.5, legL: [-0.85, 0, 0], kneeL: [0.4, 0, 0], spin: [0, 0.5, 0], chest: [0.35, 0.2, 0], head: [-0.1, -0.3, 0],
     armL: [-0.6, 0, 0.6], face: -1.1, armR: [-0.85, 0, 0.5], elbowR: [0, 0, 0], pitch: 0.85 };
   ATTACK_POSES.kbHunger = { ease: { windup: 'inOutCubic', active: 'outExpo', follow: 'outQuad', recovery: 'inOutCubic' }, lag: { weapon: 0.08, armR: 0.05 },
-    hits: [{ windup: brace, strike: driveIn, follow: driveIn }, { windup: driveIn, strike: overBrand, follow: { ...overBrand, lean: 0.6 } },
+    hits: [{ windup: brace, strike: driveIn, follow: driveIn }, { windup: driveIn, strike: overBrand, follow: { ...overBrand, lean: 0.7 } },
       { windup: overShield, strike: downAcross, follow: { ...downAcross, spin: [0, 0.7, 0] } }] };
 
-  // The Ember Leaps: the Crown's Weight's roof, a leap, and down where you were.
+  // The Ember Leaps (pass 152: its own wind-up; it was the Crown's Weight's roof, which is parried, and this was not):
+  // sunk low to spring, the burning shield forward, the sword trailed low behind it, point back; a leap, and the sword
+  // brought over and down where you were (parry it as it lands).
+  const spring = { crouch: 0.55, lean: 0.4, legL: [-1.05, 0, 0], kneeL: [0.95, 0, 0], legR: [0.55, 0, 0], kneeR: [0.75, 0, 0],
+    spin: [0, -0.45, 0], chest: [0.3, -0.2, 0], head: [-0.35, 0.35, 0], armL: [-0.95, 0, -0.2], face: -1.5,
+    armR: [0.55, 0, -0.45], elbowR: [-0.15, 0, 0], pitch: 2.35 };
+  const landed = { ...down, crouch: 0.42, lean: 0.55, spin: [0, 0.3, 0], chest: [0.4, 0.1, 0] };
   ATTACK_POSES.kbLeap = { ease: { windup: 'inOutCubic', active: 'inQuad', follow: 'outCubic', recovery: 'inOutCubic' }, lag: { weapon: 0.06 },
-    hits: [{ windup: { ...high, crouch: 0.3 }, strike: down, follow: { ...down, crouch: 0.4, lean: 0.5 } }] };
+    hits: [{ windup: spring, strike: landed, follow: { ...landed, crouch: 0.46, lean: 0.62 } }] };
 
   // The Shield Burns: you are at its shield side; the burning shield flung out wide at you, then slammed flat into the ice.
   const shieldUp = { crouch: 0.22, lean: 0.05, legL: [-0.35, 0, 0.12], legR: [0.35, 0, 0], spin: [0, 0.7, 0], chest: [-0.1, 0.25, 0], head: [0, 0.45, 0],
     armL: [-1.3, 0, 1.35], face: -1.5, armR: [-0.4, 0, -0.3], pitch: 0.8 };   // flung out wide at arm's length on its shield side, not overhead
   const slammed = { crouch: 0.45, lean: 0.45, legL: [-0.9, 0, 0], kneeL: [0.8, 0, 0], legR: [0.5, 0, 0], kneeR: [0.8, 0, 0], spin: [0, 0.3, 0], chest: [0.3, 0.1, 0],
     armL: [-0.7, 0, 0.3], face: 0, armR: [-0.3, 0, -0.4], pitch: 0.9 };
+  // (pass 152) first the burning shield swung across into you, rim first (parry it), then raised and slammed flat.
+  const swungAcross = { crouch: 0.28, lean: 0.25, legL: [-0.6, 0, 0], legR: [0.45, 0, 0], spin: [0, -0.55, 0], chest: [0.15, -0.3, 0], head: [0, 0.3, 0],
+    armL: [-1.25, 0, -0.45], face: -1.55, armR: [-0.4, 0, -0.5], pitch: 0.8 };
+  const reared = { crouch: 0.16, lean: -0.15, spin: [0, -0.1, 0], chest: [-0.25, 0, 0], head: [-0.1, 0.2, 0],
+    armL: [-2.6, 0, 0.3], face: -2.9, armR: [-0.4, 0, -0.4], pitch: 0.8 };
   ATTACK_POSES.kbShieldBurns = { ease: { windup: 'inOutSine', active: 'inQuad', follow: 'outCubic', recovery: 'inOutCubic' },
-    hits: [{ windup: shieldUp, strike: slammed, follow: slammed }] };
+    hits: [{ windup: shieldUp, strike: swungAcross, follow: { ...swungAcross, spin: [0, -0.75, 0] } }, { windup: reared, strike: slammed, follow: slammed }] };
 
   // The refusal (every Finishing Blow): one knee down, the sword planted point-down in the ice before it, both hands on
   // the pommel, the shield let down at its side, its head bowed: as the champion knelt at Corvel, and kneels at the end.
@@ -226,7 +241,34 @@
     if (face != null) rest.elbowL = [face - x(rest, 'armL') - body - PST.armL[0] - PST.elbowL[0], 0, 0];
     return rest;
   };
-  for (const [id, P] of Object.entries(ATTACK_POSES)) if (id.startsWith('kb')) for (const h of P.hits) for (const k of ['windup', 'strike', 'follow']) h[k] = convert(h[k]);
+  // (pass 152, tools/body-check.cjs; as the Kindling Tree's) every follow-through carries a fifth again of the blow's lean,
+  // bend and turn past the strike, where the pose written does not already go further; a blow that neither drops nor
+  // leans settles through its follow. Done on the written poses, before the blade's `pitch` is worked into bone angles;
+  // then in-between keys from each hit's own poses (all `rel`).
+  const get = (q, ch, i) => (i == null ? q[ch] || 0 : (q[ch] || [0, 0, 0])[i]);
+  const carry = h => {
+    const F = { ...h.follow };
+    for (const [ch, i] of [['lean'], ['chest', 0], ['chest', 1], ['spin', 1]]) {
+      const d = get(h.strike, ch, i) - get(h.windup, ch, i), want = get(h.strike, ch, i) + 0.2 * d;
+      if (Math.abs(d) < 0.05 || (get(F, ch, i) - want) * Math.sign(d) >= 0) continue;
+      if (i == null) F[ch] = want; else { const v = [...(F[ch] || [0, 0, 0])]; v[i] = want; F[ch] = v; }
+    }
+    if (get(F, 'crouch') <= get(h.strike, 'crouch') + 0.02 && Math.abs(get(h.strike, 'lean') - get(h.windup, 'lean')) < 0.1) F.crouch = get(h.strike, 'crouch') + 0.08;
+    return { ...h, follow: F };
+  };
+  const BODY = ['spin', 'chest'], LIMB = ['armR', 'elbowR', 'armL'];
+  const toward = (a, b, k, names) => Object.fromEntries(names.filter(n => a[n] && b[n])
+    .map(n => [n, a[n].map((v, i) => Math.max(-0.45, Math.min(0.45, k * (b[n][i] - v))))]));
+  const inBetween = h => ({
+    windup: [{ t: 0.8, rel: true, crouch: 0.02, ...toward(h.strike, h.windup, 0.08, [...BODY, ...LIMB]) }],
+    active: [{ t: 0.6, rel: true, crouch: 0.03, lean: 0.03, ...toward(h.windup, h.strike, 0.3, BODY), ...toward(h.windup, h.strike, -0.2, LIMB) }],
+    follow: [{ t: 0.5, rel: true, crouch: 0.04, lean: 0.05, ...toward(h.strike, h.follow, 0.3, [...BODY, ...LIMB]) }],
+  });
+  for (const [id, P] of Object.entries(ATTACK_POSES)) if (id.startsWith('kb')) {
+    P.hits = P.hits.map(carry);
+    for (const h of P.hits) for (const k of ['windup', 'strike', 'follow']) h[k] = convert(h[k]);
+    P.hits = P.hits.map(h => ({ ...h, via: { ...inBetween(h), ...(h.via || {}) } }));
+  }
   var KINGS_BLADE_REFUSAL = convert(refusal);   // (the boss below)
 }
 
@@ -282,9 +324,10 @@
       { id: 'kingsReach', name: 'The King\'s Reach', anim: 'thrust', pose: 'kbReach', tracking: { rate: 3.0, commit: 0.75 }, markers: glint(0), chance: 0.7,
         hits: [{ startup: 1.15, active: 0.14, follow: 0.3, hold: { at: 0.6, time: [0.3, 1.1], chance: 0.55 } }], recovery: 1.8,
         damage: 36, poise: 55, knock: 8, lunge: 5.0, range: 6.5, box: THRUST },
-      // The Shield Wall: from off, a run behind the shield, the shield first; a cut over it. The shield cannot be parried.
-      { id: 'shieldWall', name: 'The Shield Wall', anim: 'bash', pose: 'kbWall', noParry: true, tracking: { rate: 3.0, commit: 0.45 }, chance: 0.5, minRange: 4.5, dash: { speed: 10, from: 0.45 },
-        hits: [{ startup: 0.95, active: 0.14, follow: 0.45, box: SHIELD, tell: 'shield' }, { startup: 0.55, active: 0.14, follow: 0.25, damage: 28, box: CUT }], recovery: 1.9,
+      // The Shield Wall: from off, a run behind the shield, the shield first (roll it: it cannot be parried); a cut over it
+      // (parry it; pass 152, the whole attack was unparriable).
+      { id: 'shieldWall', name: 'The Shield Wall', anim: 'bash', pose: 'kbWall', tracking: { rate: 3.0, commit: 0.45 }, chance: 0.5, minRange: 4.5, dash: { speed: 10, from: 0.45 }, markers: glint(1),
+        hits: [{ startup: 0.95, active: 0.14, follow: 0.45, noParry: true, box: SHIELD, tell: 'shield' }, { startup: 0.55, active: 0.14, follow: 0.25, damage: 28, box: CUT }], recovery: 1.9,
         damage: 24, heavy: true, poise: 70, knock: 10, lunge: 0, range: 11, box: SHIELD },
       // The Crown's Weight: the shield a roof over its head, the sword laid back under it, held; straight down.
       { id: 'crownsWeight', name: 'The Crown\'s Weight', anim: 'chop', pose: 'kbCrown', tracking: { rate: 2.2, commit: 0.6 }, markers: glint(0), chance: 0.6,
@@ -326,13 +369,16 @@
                { startup: 0.3, active: 0.12, follow: 0.42, box: THRUST },
                { startup: 0.6, active: 0.14, follow: 0.25, damage: 32, box: CHOP, step: { from: 0.2, speed: 3, side: 0 } }], recovery: 2.1,
         damage: 22, poise: 35, knock: 5, lunge: 1.0, range: 3.6, box: { w: 4.0, h: 1.6, d: 3.0, fwd: 1.6, y: 1.0 } },
-      // The Ember Leaps: raised high, a leap from far off, and down where you were, in fire.
-      { id: 'emberLeap', name: 'The Ember Leaps', anim: 'chop', pose: 'kbLeap', noParry: true, tracking: { rate: 2.6, commit: 0.6 }, chance: 0.5, minRange: 5,
+      // The Ember Leaps: sunk low to spring, a leap from far off, and down where you were, in fire. Parried as it lands
+      // (pass 152): the King's sword, not the fire (the fire is its impact).
+      { id: 'emberLeap', name: 'The Ember Leaps', anim: 'chop', pose: 'kbLeap', tracking: { rate: 2.6, commit: 0.6 }, chance: 0.5, minRange: 5, markers: glint(0),
         hits: [{ startup: 1.2, active: 0.16, follow: 0.4, leap: { from: 0.35, max: 11, short: 1.2 }, impact: { ring: 3.0, crack: 1.6, dust: 16, shake: 0.14 } }], recovery: 2.4,
         damage: 44, heavy: true, poise: 80, knock: 10, lunge: 0, range: 12, box: { w: 2.6, h: 2.6, d: 3.0, fwd: 1.0, y: 1.0 } },
-      // The Shield Burns: at its shield side, the burning shield flung out wide and slammed into the ice.
-      { id: 'shieldBurns', name: 'The Shield Burns', anim: 'stomp', pose: 'kbShieldBurns', noParry: true, rollOnly: true, when: 'flank', tracking: { rate: 1, commit: 0.4 }, chance: 1.5,
-        hits: [{ startup: 0.9, active: 0.35, follow: 0.3, tell: 'shield', box: RING(0.4, 4, 1.2, 0.35), impact: { ring: 2.4, crack: 1.2, dust: 12, shake: 0.1 } }], recovery: 1.9,
+      // The Shield Burns: at its shield side, the burning shield flung out wide and swung across into you (parry it); then
+      // raised and slammed into the ice, the fire running out round it (roll it). Two blows since pass 152; it was the slam alone.
+      { id: 'shieldBurns', name: 'The Shield Burns', anim: 'stomp', pose: 'kbShieldBurns', when: 'flank', tracking: { rate: 1, commit: 0.4 }, chance: 1.5, markers: glint(0),
+        hits: [{ startup: 0.8, active: 0.14, follow: 0.25, damage: 18, tell: 'shield', box: { w: 3.0, h: 1.8, d: 2.6, fwd: 0.9, y: 1.1 } },
+               { startup: 0.55, active: 0.35, follow: 0.3, noParry: true, tell: 'shield', box: RING(0.4, 4, 1.2, 0.35), impact: { ring: 2.4, crack: 1.2, dust: 12, shake: 0.1 } }], recovery: 1.9,
         damage: 26, heavy: true, poise: 60, knock: 9, lunge: 0, range: 3.5, box: RING(0.4, 4, 1.2, 0.35) },
     ],
   };
