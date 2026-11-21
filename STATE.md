@@ -8,10 +8,9 @@ The iterate loop's working note (`.claude/iterate.md`). Cap: 8,000 characters.
   Glass Mantis, as cel Blender models. CI fixed (counters stub, reconnect-browser timeout). Acceptance:
   `tests/summons-three.cjs`, in-page `summons` 4/4; clip `docs/scorecard/now/summons-three.mp4`. Next on track 2:
   batch 13, Legendaries I. Browser lock: `node tools/browser-lock.cjs run <pass> -- <cmd>` (docs/two-tracks.md).
-- Track 1, pass 150 (retro; Broken: players 9 releases behind): the container gate now takes the CI
-  run of a notes-only later commit (`tools/ci-gate.sh`), only its publish job queues, and an older tag never retakes
-  `:latest` (`tools/image-version.cjs`); `live-check` says `BROKEN` past 2 behind. v7.199.0 served;
-  the new gate proves on the next tag. Next: Kindling Tree `bars-1`, King's Blade.
+- Track 1, pass 152 (PLAN item 6), v7.200.0: Kindling Tree `bars-1` done (no red wash on a weaponless body,
+  `js/effect-lighting.js`, `js/ultra-boss.js`; its own Reaching Bough). King's Blade audit: restyle
+  (`docs/bosses/kings-blade.md`): Leap, Shield Burns, Wall parried; body check clean. Next: Gemini.
 
 ## Works
 
@@ -72,6 +71,7 @@ The iterate loop's working note (`.claude/iterate.md`). Cap: 8,000 characters.
 
 - Fight Oswin (Practice, `?style=cel`; reworked: threefold, the leap and his hands now parried unless you say).
 - Fight Agathe (Practice, `?style=cel`; the Gale Reap and the Hook from the Storm's landing now parried unless you say).
+- Fight the King's Blade (Practice, `?style=cel`; the Ember Leaps, the Shield Burns' swing and the Wall's cut parried unless you say).
 - Fight the Kindling Tree (Practice, `?style=cel`; reworked: its boughs parried, the Bramble Sweep and the Charge too, unless you say).
 - Fight the Regent Hollis (Practice, `?style=cel`; the Pavane is new, and the Feast's blade is parried unless you say).
 - Fight the Ringer (Practice, `?style=cel`; her stamping foot and Over the Line's ball are parried unless you say).
@@ -79,8 +79,7 @@ The iterate loop's working note (`.claude/iterate.md`). Cap: 8,000 characters.
 - Fight Old Ostrey too (Practice, `?style=cel`; one `bars-1` round; the Burning Drop's landing parried unless you say).
 - Fight the Antlered Hunger too (Practice, `?style=cel`; one `bars-1` round; its follow-ups parriable unless you say).
 - Fight Aldric too (Practice, `?style=cel`; the Turning Key ends on a pommel strike unless you say all blade).
-- Fight the Giant Skeleton too (Practice, `?style=cel`).
-- Fight the Bell Warden too (Practice, `?style=cel`).
+- Fight the Giant Skeleton and the Bell Warden too (Practice, `?style=cel`).
 - Fight the Pillager Captain (PLAN item 5's last gate; tried: six judge rounds, nothing left a judge can settle). Practice,
   with `?style=cel` in the address (cel is not yet every player's default); say what feels off or unfair.
 Answered: the art style is cel-shaded anime (Aleix, 2026-11-20). The home server's `/souls/` address is PUBLIC (Aleix, 2026-11-20).
