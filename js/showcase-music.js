@@ -120,7 +120,7 @@ const showcaseMusic = (() => {
       const breaks = (S.freezes || []).filter(f => f.at < title).map(f => [f.at, f.at + f.for]);
       const climax = (S.impacts || []).find(x => x < title) ?? title;
       const inBreak = q => breaks.some(([a, z]) => q >= a - 1e-6 && q < z - 1e-6);
-      const quiet = q => q < open || inBreak(q) || (q >= climax - 0.5 && q < climax) || q >= title;   // no groove here
+      const quiet = q => q < open || inBreak(q) || (q >= climax - 0.5 && q < climax) || q >= (S.title.dark ?? title);   // no groove here
       const chordAt = q => C[CHORDS[Math.min(CHORDS.length - 1, Math.floor(q / 4))]];
       // The cold open: unison hits on its cuts, a tom fill into the groove.
       for (const c of S.cuts) if (c.at < open) at(c.at, t => { V.brass(t, b * 0.35, chordAt(c.at)[0], 1.2); V.taiko(t, 1, 80); V.bass(t, b * 0.8, chordAt(c.at)[1], 1); if (c.at === 0) V.crash(t, 0.8); });
@@ -158,11 +158,23 @@ const showcaseMusic = (() => {
       at(climax, t => { V.boom(t, 1.1); V.crash(t, 1); V.brass(t, b * 1.5, chordAt(climax)[0], 1.3); });
       for (let i = 0; i < 16; i += 8) at(climax + 8 + i, t => V.crash(t, 0.7));
       for (const [q, m, len] of HOOK) if (climax + q < title - 4) at(climax + q, t => V.lead(t, len * b, m, 1));
-      // The last bar before the title: half time, toms down into it.
-      for (let i = 0; i < 8; i++) at(title - 2 + i / 4, t => V.taiko(t, 0.45 + i * 0.07, 150 - i * 9));
-      // The title: the deep hit, the last chord held.
+      // Slow motion (SHOWCASE.ramps): a reversed cymbal drawn out over it, and the snap back to speed is a hit.
+      for (const r of S.ramps || []) {
+        at(r.at, t => V.swell(t, r.for * b, 1.3));
+        at(r.at + r.for, t => { V.taiko(t, 1, 70); V.kick(t, 1.1); V.crash(t, 0.6); });
+      }
+      // The kinetic words: each a stab of the band, a drum and a crack.
+      for (const w of S.words || []) at(w.at, t => { V.brass(t, b * w.for * 0.8, chordAt(w.at)[0], 1.1); V.taiko(t, 1, 96); V.snare(t, 0.9); });
+      // The last bar before the title: half time, toms down into it; then the cut to black is half a beat of silence
+      // but for a cymbal drawn in backwards.
+      const dark = S.title.dark ?? title;
+      for (let i = 0; i < 8; i++) if (title - 2 + i / 4 < dark - 0.2) at(title - 2 + i / 4, t => V.taiko(t, 0.45 + i * 0.07, 150 - i * 9));
+      if (dark < title) at(dark, t => V.swell(t, (title - dark) * b, 1.4));
+      // The title: the deep hit, the last chord held; the logo's other two parts each a hit of their own.
       const [notes, root] = C[CHORDS[Math.floor(title / 4)]];
-      at(title, t => { V.boom(t, 1.25); V.crash(t, 1.1); V.pad(t, b * 7, notes, 1.6); V.brass(t, b * 3, notes, 1.1); V.bass(t, b * 6, root, 1); V.kick(t, 1.2); });
+      at(title, t => { V.boom(t, 1.25); V.crash(t, 1.1); V.pad(t, b * 7, notes, 1.6); V.brass(t, b * 3, notes, 1.1); V.bass(t, b * 6, root, 1); V.kick(t, 1.2); V.snare(t, 1); });
+      at(title + 0.5, t => { V.taiko(t, 1.1, 88); V.snare(t, 0.8); });
+      at(title + 1, t => { V.taiko(t, 1.3, 64); V.kick(t, 1.2); V.crash(t, 0.8); });
       return ev.sort((x, y) => x[0] - y[0]).map(([beatN, fn]) => [t0 + beatN * b, fn]);
     }
     const list = score(beat);

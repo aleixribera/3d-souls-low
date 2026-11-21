@@ -1261,7 +1261,13 @@ function validateShowcase(S, need) {
     }
   }
   const shots = S.shots || {};
-  for (const [id, s] of Object.entries(shots)) if (s.fit !== undefined)
+  const lens = (id, s) => need(['zoom', 'roll', 'spin', 'whip'].every(k => s[k] === undefined || num(s[k])) && (s.zoom === undefined || (s.zoom >= 1 && s.zoom <= 3))
+    && (s.roll === undefined || Math.abs(s.roll) <= 30) && (s.whip === undefined || Math.abs(s.whip) <= 120), `SHOWCASE: shot "${id}": zoom 1-3 (times its fov), roll within 30 degrees, spin degrees/s, whip within 120 degrees.`);
+  for (const [id, s] of Object.entries(shots)) lens(id, s);
+  for (const [id, s] of Object.entries(shots)) if (s.part !== undefined)
+    need(['head', 'chest', 'weapon', 'tip'].includes(s.part) && ['boss', 'player'].includes(s.on) && num(s.dist) && s.dist > 0 && num(s.turn) && num(s.fov) && s.fov >= 15 && s.fov <= 90
+      && ['rise', 'aim', 'push'].every(k => s[k] === undefined || num(s[k])), `SHOWCASE: close-up "${id}": part head, chest, weapon or tip of the boss or the player, dist > 0 m, turn (degrees), fov 15-90; rise, aim (m) and push (m/s) are numbers.`);
+  else if (s.fit !== undefined)
     need(num(s.fit) && s.fit > 0 && s.fit <= 1 && ['boss', 'player'].includes(s.on) && num(s.turn) && num(s.up) && num(s.lookUp) && num(s.fov) && s.fov >= 15 && s.fov <= 90
       && (s.push === undefined || num(s.push)), `${tag}: card shot "${id}": fit 0-1 of the frame, on boss or player, turn (degrees), up and lookUp (shares of its height), fov 15-90.`);
   else
@@ -1269,7 +1275,6 @@ function validateShowcase(S, need) {
       && ['push', 'orbit'].every(k => s[k] === undefined || num(s[k])), `${tag}: shot "${id}": at, look, lookUp 0-1; back, side, up in m; fov 15-90.`);
   const cuts = S.cuts || [];
   need(cuts.length > 0 && cuts[0].at === 0 && cuts.every((c, i) => c.shot in shots && num(c.at) && c.at < len && (i === 0 || c.at > cuts[i - 1].at)), `${tag}: cuts start at beat 0, in order, each naming a shot.`);
-  for (const k of S.keys || []) need((S.beats || []).some(b => b.kind === 'ability' && b.key === k.key && b.at === k.at) && num(k.for) && k.for > 0, `${tag}: the key cap at beat ${k.at} must match an ability beat.`);
   need(!!S.title && num(S.title.at) && S.title.at < len && S.title.at % 4 === 0, `${tag}: the title comes before the end, on a bar line (a multiple of 4 beats: the music holds its chord from there).`);
   // The anime opening's ink (pass 160): a name card's accent per fight, freezes no beat lands in, impacts under 3 Hz.
   for (const f of fights) need(typeof f.ink === 'string' && /^#[0-9a-f]{6}$/i.test(f.ink), `${tag}: ${f.boss}'s ink is its card's accent, a #rrggbb colour.`);
@@ -1284,7 +1289,26 @@ function validateShowcase(S, need) {
     for (const b of S.beats || []) need(!(b.at >= f.at && b.at < f.at + f.for), `${t}: beat "${b.id}" lands inside it (the game stands still there).`);
   });
   const impacts = Array.isArray(S.impacts) ? S.impacts : [];
-  need(Array.isArray(S.impacts) && impacts.every((b, i) => num(b) && b >= 0 && b < len && (i === 0 || (b - impacts[i - 1]) * 60 / S.bpm >= 3)), `${tag}: impacts are beats in order, at least 3 s apart (white frames stay well under 3 Hz).`);
+  need(Array.isArray(S.impacts) && impacts.every((b, i) => num(b) && b >= 0 && b < len && (i === 0 || (b - impacts[i - 1]) * 60 / S.bpm >= 3)), `${tag}: impacts are beats in order, at least 3 s apart (impact frames stay well under 3 Hz).`);
+  // Slow motion and kinetic words (pass 164): inside the show, in order, apart from the freezes and the title.
+  const ramps = Array.isArray(S.ramps) ? S.ramps : [];
+  need(S.ramps === undefined || Array.isArray(S.ramps), `SHOWCASE: ramps is a list.`);
+  ramps.forEach((r, i) => need(num(r.at) && r.at >= 0 && num(r.for) && r.for > 0 && num(r.speed) && r.speed > 0 && r.speed < 1 && (i === 0 || r.at >= ramps[i - 1].at + ramps[i - 1].for)
+    && !!S.title && r.at + r.for <= S.title.dark && !freezes.some(f => r.at < f.at + f.for && f.at < r.at + r.for), `SHOWCASE: ramp at beat ${r.at}: for > 0 beats at a speed between 0 and 1, in order, before the title, never over a freeze.`));
+  const words = Array.isArray(S.words) ? S.words : [];
+  need(S.words === undefined || Array.isArray(S.words), `SHOWCASE: words is a list.`);
+  // A word is a full-screen field of colour: held at least 1/3 s, and 1/3 s from the last one or an impact frame (under 3 Hz).
+  const third = S.bpm / 180;   // 1/3 s in beats
+  words.forEach((w, i) => need(num(w.at) && w.at >= 0 && num(w.for) && w.for >= third && w.for <= 4 && (i === 0 || w.at >= words[i - 1].at + words[i - 1].for + third) && !!S.title && w.at + w.for <= S.title.dark
+    && impacts.every(x => x + third <= w.at || x >= w.at + w.for + third)
+    && typeof w.text === 'string' && /^[A-Za-z0-9 !'-]{1,12}$/.test(w.text) && typeof w.ink === 'string' && /^#[0-9a-f]{6}$/i.test(w.ink)
+    && !freezes.some(f => w.at < f.at + f.for && f.at < w.at + w.for), `SHOWCASE: word at beat ${w.at}: held 1/3 s to 4 beats, in order and 1/3 s apart (from impact frames too), before the title, off the freezes; text of 1-12 letters, ink a #rrggbb colour.`));
+  for (const f of fights) need(f.ground === undefined || f.ground === 'arena' || ALL_LEVELS.some(l => l.id === f.ground), `SHOWCASE: ${f.boss}'s ground "${f.ground}" is not a level.`);
+  // The title's own beat (pass 164): the action cut away at `dark`, after every beat, the name slammed in at `at`.
+  const lastBeat = (S.beats || []).reduce((m, b) => Math.max(m, b.at), -Infinity);
+  need(!!S.title && num(S.title.dark) && S.title.dark < S.title.at && S.title.dark > lastBeat && S.title.at - S.title.dark <= 2, `${tag}: title.dark is the beat the action is cut away, after the last beat and at most 2 beats before the title.`);
+  need(!!S.glare && num(S.glare.bloom) && S.glare.bloom >= 0 && S.glare.bloom <= 1 && num(S.glare.threshold) && S.glare.threshold >= 0 && num(S.glare.flash) && S.glare.flash >= 0 && S.glare.flash <= 1,
+    `${tag}: glare needs bloom and flash (shares, 0-1) and a bloom threshold (>= 0).`);
   need(num(S.bars) && S.bars >= 0 && S.bars < len, `${tag}: bars is the beat the cold open's letterbox opens on.`);
   need(!!S.skip && ['from', 'for', 'again'].every(k => num(S.skip[k]) && S.skip[k] >= 0), `${tag}: skip needs from, for and again (s).`);
 }

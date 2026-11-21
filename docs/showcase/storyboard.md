@@ -1,4 +1,4 @@
-# The showcase as an anime opening (pass 160)
+# The showcase as an anime opening (passes 160 and 164)
 
 Aleix (2026-11-21): "Completely redesign it, it should make the player excited about the game." Direction: an anime
 opening, in the cel look. Ideas and patterns only: no names, looks or music of the references reach the game.
@@ -38,27 +38,46 @@ held while the camera and the ink overlay keep moving, so every card is a real f
 What would prove it wrong: a judge naming the cards or the freezes as the weakest moment (too static, or the duotone
 hides the models).
 
+## Pass 164: from a reel to an opening
+
+Aleix (2026-11-21): "Why did the showcase video look almost like the old one? ... make it spectacular, polished,
+engaging." Pass 160 had changed the overlay and the music but kept the old camera: two small fighters on the bare Arena
+floor, seen from a crane. What reads as an opening is the camera and the places, so pass 164 changed those:
+
+- **Authored cinematography.** Close-ups on a bone of a body (`part`: the boss's head, the blade hand, the blade's tip,
+  the player's helm) from a distance scaled to the body's height; low hero angles that fill the frame (`fit` 0.8);
+  Dutch angles (`roll`, turning by `spin`), crash zooms (`zoom`: the lens slams in from wider in 0.1 s) and whip pans
+  (`whip`: the shot arrives swung off and snaps onto its subject in 0.12 s, with streaks).
+- **Time ramps.** `ramps`: the game runs slowed (0.3) while the camera and music run on, and snaps back to full speed on
+  a hit: the cold open's frenzy crawling in, the dash on its snap, the Giant's claw, the King's Blade's last blow.
+- **Each boss on its own ground.** A fight's `ground` is a Story level's boss room (read only: where its boss waits):
+  the Hunger in the Night Gaol, Vesper in the Final Castle, the Giant in the Ember Root, the King's Blade in
+  Saltgrave (pale grounds, the Torn Abbey and the Still Mere, washed the frame out). Every ground is built once behind the loading screen, so the hard cut to it costs a frame.
+- **Kinetic type.** `words`: a field of the fight's colour over the whole frame and one heavy word slammed edge to edge
+  (Dash, Counter, Finish), three quarters of a beat each, on the music's stabs. They hide the cut to the next ground.
+- **Light kept off white.** The judge's note on pass 160 was glare: bloom and flashes washing the frame white. `glare`
+  turns the bloom down and its threshold up for the show, scales screen flashes down, and replaces the white impact frame
+  with a dark ink one.
+- **The title's own beat.** At `title.dark` the action is cut away to an empty ink frame and half a beat of silence; the
+  logo then slams in part by part on three hits (an outlined COMBAT, a solid ARENA, a red stamped 3D), over red rays.
+
 ## Beat-by-beat (128 bpm, 0.469 s a beat, 64 beats = 30.0 s)
 
 | Beats | Picture | Music |
 |---|---|---|
-| 0-4 | **Cold open.** The Antlered Hunger already mid-fight, its **Starving Frenzy** dashed through blow by blow. Letterbox bars. Cuts on the riff's hits: 0 face (the boss looming), 1.5 low, 3 over. | Three unison hits (0, 1.5, 3) over silence, a tom fill on 3.5. |
-| 4-6 | The bars snap open: **freeze card 1, The Antlered Hunger**, on the counter. Ink and gold, speed lines, the name slammed in. | Break: one hit, its tail, a swell back in. |
-| 6-12 | The groove. Wind Blade (key 1) at 8 from a crane; the bot's own fighting. Cuts 6 behind, 8 crane, 10 wide. | The groove drops in: kick, backbeat snare, hats, bass, ostinato. |
-| 12-14 | Cut to **Gemini, Neon High**, face on. | Groove. |
-| 14-16 | Its **Lunar Tempest**: the first blow deflected; **freeze card 2** on the parry's spark, ink and violet. | Break on the parry. |
-| 16-24 | The other blows deflected, the counter; the bot's own fighting. Cuts 16 over, 18 low, 20 wide, 22 behind. | Groove, fuller. |
-| 24-26 | Hard cut to the **Giant Skeleton** squared up to the player: **freeze card 3**, ink and ember. | Break. |
-| 26-32 | Its **Claw** deflected (29), the counter. Cuts 26 crane, 27 wide, 29 low, 31 over. | Groove. |
-| 32-34 | Hard cut to **The King's Blade** facing the player: **freeze card 4**, ink and red. | Break. |
-| 34-40 | **The Hunger's Cuts** dashed through (36), the counter (his guard cracks). Cuts every beat from 36. | Pre-chorus: snare roll, riser, half a beat of silence at 39.5. |
-| 40-46 | **The drop: Ash Legion** (key 4). One white ink frame on 40, the phantom army charging through him. Cuts 40 behind, 42 over (the judge's weakest moment was a crane here: tiny figures on bare floor), 44 low. | Chorus: the full band, a lead hook, a four-chord climb. |
-| 46-56 | **Keeping the River** deflected (50), the counter is the **Finishing Blow**. | Chorus. |
-| 56-60 | The blow's own cuts; he falls. Cuts 56 crane, 58 fallen. | Hits on the blow's steps. |
-| 60-64 | **Title slam** on the victor: freeze, ink, speed lines, the game's name slammed in. | The last chord, a deep hit, held. |
-
-Each new fight is staged at its card's freeze, and the last fight's sparks and star flares are cleared with it (they age
-in real time, so a freeze would hold them glaring over the new boss).
+| 0-4 | **Cold open, Night Gaol.** The Hunger's eyes in close-up as its frenzy crawls in slowed; the blade hand in a crash zoom; a low hero angle snapping to speed on the dash; a whip pan back onto its eyes. | Hits over silence; a swell over each ramp and a hit on its snap. |
+| 4-6 | **Freeze card 1, The Antlered Hunger**: ink and gold, speed lines, the name slammed in. | Break. |
+| 6-12 | The groove. The frenzy's last blows dashed through (its slow motion stretched it): the blade's tip, the boss from below, the helm, the counter at 11. | Groove drops in. |
+| 11.25-12 | **DASH**: kinetic type in gold; under it the cut to the Final Castle. | A stab. |
+| 12-16 | Vesper's eyes; its **Lunar Tempest**, **freeze card 2** on the parry's spark. | Break on the parry. |
+| 16-24 | The other blows deflected, the counter: blade, low orbit, helm. Wind Blade (key 1) at 20 from a low push-in on the caster, then the boss from below; a whip pan. | Groove. |
+| 23.25-24 | **COUNTER**, ember. Cut to the Ember Root. | Stab. |
+| 24-32 | **Freeze card 3**, the Giant; its claw met in slow motion (28) and deflected on the snap (29). | Swell and snap hit. |
+| 31.25-32 | **FINISH**, red. Cut to Saltgrave. | Stab. |
+| 32-40 | **Freeze card 4**, the King's Blade; the Hunger's Cuts dashed through at 36, a cut a beat. | Pre-chorus build. |
+| 40-46 | **The drop: Ash Legion** (key 4) and one dark ink impact frame. | Chorus. |
+| 46-59 | Keeping the River met in slow motion (49) and deflected; the counter is the **Finishing Blow**; he falls. | Chorus. |
+| 59.5-64 | **The title's own beat**: cut to ink and silence, then the logo slams in on three hits and holds. | Silence, swell, three hits, the last chord. |
 
 ## Skipping
 
@@ -68,6 +87,9 @@ controller's Start or B, and on a touch screen the cap is a button.
 
 ## Rules kept
 
-- No flash above 3 Hz: two white ink frames in the whole show (beats 40 and 60), nine seconds apart. Cuts are not flashes.
-- `reducedMotion()`: no white frames, speed lines still and not flickering, cards fade in instead of slamming.
+- No flash above 3 Hz: one dark ink impact frame in the whole show (beat 40), no white one. Cuts are not flashes; a
+  kinetic word is held at least 1/3 s and comes 1/3 s or more from another word or an impact frame (validated).
+- No HUD: the key cap of pass 160 is gone (the judge's biggest giveaway); only the small skip cap, on later showings.
+- `reducedMotion()`: no impact frame, no crash zoom, whip pan or turning roll; speed lines still; cards, words and the
+  logo fade in (and words out) instead of slamming.
 - Nothing allocated per frame: the speed lines are a fixed set of numbers drawn into one canvas.

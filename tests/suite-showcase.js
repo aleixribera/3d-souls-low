@@ -90,17 +90,41 @@
     } finally { if (showcase.running) showcase.stop(); Game.showMenu('main'); }
   });
   // The opening's freezes (pass 160): the game stands still while the show's clock, the camera and the card go on.
-  test('Showcase: a freeze holds the game still, cards each boss in its ink, and the title slams in', () => {
+  test('Showcase: a freeze holds the game still, cards each boss in its ink, and the logo slams in on its own beat', () => {
     sim.begin();
     expect.ok(showcase.play({ manual: true, toMenu: false }), 'it starts');
     const B = 60 / SHOWCASE.bpm, card = document.querySelector('#showcase .sc-card'), seen = [];
+    const words = [...(SHOWCASE.words || [])], field = document.querySelector('#showcase .sc-word'), word = document.querySelector('#showcase .sc-word span');
     try {
       for (const f of SHOWCASE.freezes) {
+        // Pass 164: each kinetic word before this freeze covers the frame, read whole: edge to edge, inside the screen.
+        while (words.length && words[0].at < f.at) {
+          const w = words.shift();
+          while (showcase.running && showcase.time < (w.at + w.for * 0.6) * B - 3 * STEP) showcase.frame(STEP, { render: false });
+          for (let n = 0; n < 3; n++) showcase.frame(STEP, { render: true });
+          const box = word.getBoundingClientRect();
+          expect.ok(field.style.opacity === '1' && word.textContent === w.text, `the word "${w.text}" covers the frame at beat ${w.at} (${field.style.opacity}, "${word.textContent}")`);
+          expect.ok(box.left >= 0 && box.right <= window.innerWidth + 1 && box.width > window.innerWidth * 0.6, `"${w.text}" is read whole, edge to edge (${Math.round(box.left)}-${Math.round(box.right)} of ${window.innerWidth})`);
+        }
+        if (f.card === 'title') {
+          // Pass 164: the action is cut away to an empty ink frame from title.dark, and the logo lands on it alone.
+          const T = SHOWCASE.title, ink = document.querySelector('#showcase .sc-ink'), logo = [...document.querySelectorAll('#showcase .sc-logo b')];
+          while (showcase.running && showcase.time < (T.dark + 0.2) * B) showcase.frame(STEP, { render: showcase.time > (T.dark - 0.1) * B });
+          const px = ink.getContext('2d').getImageData(4, Math.round(ink.height / 2), 1, 1).data;
+          expect.ok(px[3] === 255 && px[0] < 30 && px[1] < 30 && px[2] < 30, `the frame is cut to ink before the title (${[...px]})`);
+          expect.ok(logo.every(el => el.style.opacity === '0' || el.style.opacity === ''), 'and the logo is not up yet');
+          while (showcase.running && showcase.time < (T.at + 1.5) * B) showcase.frame(STEP, { render: true });
+          expect.ok(logo.every(el => el.style.opacity === '1'), `every part of the logo is up: ${logo.map(el => el.style.opacity)}`);
+          expect.ok(card.style.opacity === '0' && document.getElementById('scDuo').classList.contains('hidden'), 'no boss card or duotone over it: the title has its own frame');
+          seen.push(document.querySelector('#showcase .sc-logo').getAttribute('aria-label'));
+          continue;
+        }
         // Drawn across the freeze's first frames, where the drawn clock can lead the staging of the fight it opens.
         while (showcase.running && showcase.time < f.at * B - 3 * STEP) showcase.frame(STEP, { render: false });
         while (showcase.running && showcase.time < (f.at + 0.5) * B) showcase.frame(STEP, { render: true });
         const fight = SHOWCASE.fights.filter(x => x.from <= f.at + 1e-6).pop();
-        expect.ok(card.textContent === (f.card === 'title' ? 'Combat Arena 3D' : ENEMY_BY_ID[fight.boss].name), `the card at beat ${f.at} names its own fight: ${card.textContent}`);
+        expect.ok(card.textContent === ENEMY_BY_ID[fight.boss].name, `the card at beat ${f.at} names its own fight: ${card.textContent}`);
+        if (fight.ground) expect.ok(Game.level.id === (fight.ground === 'arena' ? ARENA.id : fight.ground), `the fight at beat ${fight.from} is on its own ground (${Game.level.id})`);
         const p = Game.player, e = Game.enemies[0], at = [p.x, p.z, e.x, e.z, e.hp, e.stateTime].join(), cam = Game.cam.pos.clone();
         for (let n = 0; n < 20; n++) showcase.frame(STEP, { render: n === 19 });
         expect.ok(showcase.frozen && [p.x, p.z, e.x, e.z, e.hp, e.stateTime].join() === at, `the game stands still in the freeze at beat ${f.at}`);
@@ -111,6 +135,29 @@
     } finally { if (showcase.running) showcase.stop(); Game.showMenu('main'); }
     const names = SHOWCASE.fights.map(f => ENEMY_BY_ID[f.boss].name);
     expect.ok(names.every(n => seen.includes(n)) && seen[seen.length - 1] === 'Combat Arena 3D', `a card for every boss, then the title: ${seen.join(' / ')}`);
+  });
+  // Pass 164: slow motion runs the game at its ramp's speed while the show's clock runs on; the show keeps the game's
+  // glare down (no white impact frames, a softer bloom) and gives it all back after, with the Arena.
+  test('Showcase: slow motion, its own light, and the Arena given back', () => {
+    sim.begin();
+    const bloom = visuals.passes.bloom, was = bloom.strength;
+    expect.ok(showcase.play({ manual: true, toMenu: false }), 'it starts');
+    const B = 60 / SHOWCASE.bpm, r = SHOWCASE.ramps[0];
+    try {
+      expect.ok(bloom.strength < was && impactFrame.hit(Game.player.x, Game.player.z) === false, 'a softer bloom and no white impact frame while it plays');
+      while (showcase.running && showcase.time < (r.at + 0.2) * B) showcase.frame(STEP, { render: false });
+      const s0 = showcase.simTime, t0 = showcase.time;
+      for (let n = 0; n < 30; n++) showcase.frame(STEP, { render: false });
+      const ran = (showcase.simTime - s0) / (showcase.time - t0);
+      expect.near(ran, r.speed, 0.08, 'the game runs at the ramp\'s speed');
+      const r2 = SHOWCASE.ramps[1];
+      while (showcase.running && showcase.time < (r.at + r.for + 0.3) * B && showcase.time < r2.at * B) showcase.frame(STEP, { render: false });
+      const s1 = showcase.simTime, t1 = showcase.time;
+      for (let n = 0; n < 10; n++) showcase.frame(STEP, { render: false });
+      expect.near((showcase.simTime - s1) / (showcase.time - t1), 1, 0.01, 'and at full speed after it');
+    } finally { if (showcase.running) showcase.stop(); }
+    expect.ok(bloom.strength === was && impactFrame.hit !== undefined && Game.level === ARENA, 'the bloom, the impact frames and the Arena come back');
+    Game.showMenu('main');
   });
   // At launch (PLAN.md "The showcase"): each new version plays it, once in SHOWCASE.again hours at most, never into a run.
   test('Showcase: plays at launch on each new version, once a day at most, never into a run', () => {
