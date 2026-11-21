@@ -1190,7 +1190,7 @@
     console.log('pass 98 dodge timings:', out.join(', '));
   });
   const opens = [], hits = [];   // pass 95: every counter window opened and every strike (recorded once: events has no unsubscribe)
-  A.events.on('counterOpen', d => opens.push(d)); A.events.on('strike', d => hits.push(d));
+  A.events.on('counterOpen', d => opens.push(d)); A.events.on('strike', d => hits.push({ ...d, move: d.attacker && d.attacker.attack && d.attacker.attack.id }));
   test('pass 95 counter: a window opens with its cue on a dodge or a deflect; the light counter flash-steps through the foe and its cut opens', () => {
     const H = CONFIG.hints, W = A.worldHints;
     let kept = null; try { kept = localStorage.getItem(H.storageKey); } catch (e) { /* none */ }
@@ -1219,14 +1219,16 @@
       const fx = e.x - p.x, fz = e.z - p.z;
       sim.press('light'); sim.until(() => p.state === PS.ATTACK, 0.5);
       expect.ok(p.attack && p.attack.id === 'counter' && p.attack.flashStep, `the counter, a flash step (${p.attack && p.attack.id})`);
-      e.cooldown = 30; const n0 = log.length;
+      // Quiet foe from here: no new move, nor a reaction, which ignores cooldowns (Haft Back rolls 4/s at someone behind it,
+      // and the flash step ends behind it: whether it fired hung on the random draws earlier tests left; CI, v7.204.0).
+      e.cooldown = 30; e.react = () => null; const n0 = log.length;
       sim.until(() => p.attackPhase() === PHASE.RECOVERY || p.state !== PS.ATTACK, 1.5);
       const along = ((p.x - e.x) * fx + (p.z - e.z) * fz) / Math.hypot(fx, fz);
       const F = p.attack.flashStep, far = e.radius + p.radius + F.past;
       expect.ok(along > e.radius && along < far + 1.5, `the flash step ends just past the foe's far side (${along.toFixed(2)} m beyond its centre, about ${far.toFixed(2)})`);
       const sx = p.x, sz = p.z; sim.seconds(1);
       expect.ok(Math.hypot(p.x - sx, p.z - sz) < 1.2, `and stops there, no slide on (${Math.hypot(p.x - sx, p.z - sz).toFixed(2)} m more)`);
-      expect.ok(!hits.some(d => d.target === p), 'never caught by the blow it slipped');
+      expect.ok(!hits.some(d => d.target === p), `never caught by the blow it slipped (${hits.filter(d => d.target === p).map(d => d.move).join(', ')})`);
       expect.ok(log.slice(n0).includes('strike'), 'the cut landed');
       Game.render(1, STEP); let c = counterFx.state.cuts[0];
       expect.ok(c && c.kind === 'line' && !c.open, `a thin cut line across the foe (${JSON.stringify(c)})`);
@@ -1235,7 +1237,7 @@
       c = counterFx.state.cuts[0];
       expect.ok(c && c.open && c.w > thin * 2, `a beat later it opens wide (${thin.toFixed(2)} to ${c && c.w.toFixed(2)})`);
       // The second window of the fight, from a deflect: its slow beat too, and no hint this time.
-      sim.until(() => p.isFree(), 2); e.cooldown = 0; sim.until(() => e.state === ES.CHASE, 4);
+      sim.until(() => p.isFree(), 2); e.cooldown = 0; delete e.react; sim.until(() => e.state === ES.CHASE, 4);
       faceOff(e, p, 2); e.beginAttack(combo); opens.length = 0;
       deflectString(e, combo);
       const d = opens[opens.length - 1];
