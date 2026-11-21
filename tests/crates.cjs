@@ -84,7 +84,7 @@ const seeded = seed => () => { seed = (seed + 0x6d2b79f5) >>> 0; let t = seed; t
   assert.equal(progress.open(rng), null, 'a complete collection opens nothing'); assert.equal(progress.crates, before - prizes.length, 'and keeps its crates');
   assert.equal(progress.draw(rng), null);
   // Late in the collection the odds lean to what is left: with only legendaries left, a crate gives one.
-  const late = browser(store()).progress; late.award({ won: 1000, time: 0 }, 'x');
+  const late = browser(store()).progress; late.award({ won: 3000, time: 0 }, 'x');   // enough crates for the whole pool as it grows
   let opened; while ((opened = late.open(rng)) && ABILITIES.some(b => b.rarity !== 'legendary' && !late.owns(b.id)));
   const left = ABILITIES.filter(b => !late.owns(b.id));
   if (left.length) assert.ok(left.every(b => b.rarity === 'legendary') && late.draw(rng).rarity === 'legendary', 'what is left is what a crate gives');
