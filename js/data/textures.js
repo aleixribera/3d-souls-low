@@ -31,6 +31,10 @@ const TEXTURE_DEFS = [
   { id: 'emberBark', kind: 'bark', base: 0x5a2414, alt: 0xb0662c, accent: 0xff8a30, rough: [0.6, 0.88], metal: 0, bump: 0, scratch: 8, stain: 0x2a0e06, contrast: 0.6 },
   // Selective identity pass: restrained surfaces let the cast forms and tailoring read.
   { id: 'bellBronze', kind: 'plate', base: 0x536e68, alt: 0xa49a6a, accent: 0x366d61, rough: [0.3, 0.67], metal: 0.7, bump: 0.65, scratch: 28, stain: 0x263e37, contrast: 0.35 },
+  // (pass 123) the Bell Warden in cel: a dark weathered bronze, near black-green with verdigris and worn gold at the edges.
+  // In cel a tint sets hue only, so a dark armour needs a dark texture (docs/bosses/system.md 2); the light bellBronze read
+  // pale yellow-green, a toy.
+  { id: 'bellBronzeDark', kind: 'plate', base: 0x1c2622, alt: 0x5a5a3a, accent: 0x2c5e50, rough: [0.3, 0.7], metal: 0.65, bump: 0.9, scratch: 40, stain: 0x0c1210, cavity: 0.9, contrast: 0.6 },
   { id: 'wornGilt', kind: 'steel', base: 0x85704b, alt: 0xd4b674, accent: 0x51452f, rough: [0.26, 0.55], metal: 0.72, bump: 0.35, scratch: 22, stain: 0x302b22, contrast: 0.3 },
   { id: 'gaolerPlate', kind: 'plate', base: 0x434a54, alt: 0x7c858d, accent: 0x6c5741, rough: [0.26, 0.6], metal: 0.7, bump: 0.65, scratch: 42, stain: 0x292b30, contrast: 0.4 },
   { id: 'oathLinen', kind: 'cloth', base: 0xaaa79c, alt: 0xccc7b7, accent: 0x706c61, rough: [0.85, 1], metal: 0, bump: 0.55, scratch: 3, stain: 0x666058, cavity: 0.3, contrast: 0.22 },

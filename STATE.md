@@ -8,11 +8,12 @@ The iterate loop's working note (`.claude/iterate.md`). Cap: 8,000 characters.
   all eleven drawn in blue by `js/rare-fx.js`. Acceptance: `tests/rare-perks.cjs`, in-page `kept rares`; clip
   `docs/scorecard/now/rare-perks.mp4`. Not drawn yet: Static Edge's blade crackle count, Bastion's arm line.
   Browser lock: `node tools/browser-lock.cjs run <pass> -- <cmd>` (docs/two-tracks.md). Next on track 2: batch 5.
-- Track 1, pass 121, PLAN item 5 (the cel model, pass 2 of 2), done: the bill in banded steel (a material's `steel: true`,
-  the cel style's `steel`), a smear on his swings (`BOSS_FX` `trail.smear`), in-page `cleave smears`; clip
-  `docs/scorecard/now/captain-swing.mp4`. Fresh judge `edges-1` round 6: motion 5, read 7, spectacle 6, caught 9/10;
-  giveaway: an upright body while only the arms sweep. **The Captain is awaiting Aleix.** Next on track 1: the second
-  boss through the system (item 5's real check), from its one-page design.
+- Track 1, pass 123, PLAN item 5's real check (the second boss through the system, pass 1 of ~3): the Bell Warden.
+  Design page `docs/bosses/bell-warden.md` (every attack named, `tests/boss-pages.cjs`); his cel look by data alone, no
+  engine code: dark bronze (`bellBronzeDark`), the bell the one bright metal (`steel`), the tell on the bell
+  (`edgeTell`), soft joints, a smear (`BOSS_FX` trail). Acceptance: strips show his body clear through every wind-up
+  (`docs/scorecard/now/warden-*.jpg`, clip `warden-cel.mp4`); in-page `Boss edge tells`. Next on track 1: his
+  animation (in-between keys), then the `edges-1` judge and Aleix. The Pillager Captain is awaiting Aleix.
 
 ## Works
 

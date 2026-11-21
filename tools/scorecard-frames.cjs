@@ -2,6 +2,7 @@
 // Evidence frames: the title menu at desktop and phone width, one frame per Ashmere level from
 // its start (with frame time, draw calls and triangles on High), and one frame per boss in a Practice duel, front-lit at
 // fighting distance. Usage: node tools/scorecard-frames.cjs [outDir=docs/scorecard] [levels|bosses|fights|menu ...]
+// BOSS=<id> (pass 123): only that boss in `bosses` and `fights`; STYLE=<id>: drawn in that art style (js/data/styles.js).
 // One headless Edge, closed at the end; idle priority through tests/low-priority.cjs.
 require('../tests/low-priority.cjs');
 const fs = require('node:fs');
@@ -11,6 +12,8 @@ const { createServer } = require('../server/index.cjs');
 
 const [outDir = 'docs/scorecard', ...parts] = process.argv.slice(2);
 const want = p => !parts.length || parts.includes(p);
+const ONLY = process.env.BOSS || '', STYLE = process.env.STYLE ? `?style=${encodeURIComponent(process.env.STYLE)}` : '';
+const bossIds = page => page.evaluate(only => ENEMY_DEFS.filter(isBossDef).map(d => d.id).filter(id => !only || id === only), ONLY);
 const shot = (page, name) => page.screenshot({ path: path.join(outDir, name + '.jpg'), type: 'jpeg', quality: 62 });
 
 // Waits out the loading card, then lets the scene settle.
@@ -36,7 +39,7 @@ const measure = (page, ms) => page.evaluate(ms => new Promise(done => {
 (async () => {
   fs.mkdirSync(outDir, { recursive: true });
   const app = createServer({ dev: true }); await new Promise(r => app.server.listen(0, '127.0.0.1', r));
-  const url = `http://127.0.0.1:${app.server.address().port}/combat-arena-3d.html`;
+  const url = `http://127.0.0.1:${app.server.address().port}/combat-arena-3d.html${STYLE}`;
   const browser = await chromium.launch({ channel: 'msedge', headless: true });
   const errors = [], report = { levels: {}, bosses: [] };
   const open = async (w, h, hash = '') => {
@@ -58,7 +61,7 @@ const measure = (page, ms) => page.evaluate(ms => new Promise(done => {
       await shot(page, `level-${id}`);
       console.log(id, JSON.stringify(report.levels[id]));
     }
-    if (want('bosses')) for (const id of await page.evaluate(() => ENEMY_DEFS.filter(isBossDef).map(d => d.id))) {
+    if (want('bosses')) for (const id of await bossIds(page)) {
       await page.evaluate(id => Game.startFight(id), id); await settle(page, 500);
       // The player stands at fighting distance on the boss's lit side, every body frozen mid-idle, locked on.
       await page.evaluate(() => {
@@ -72,7 +75,7 @@ const measure = (page, ms) => page.evaluate(ms => new Promise(done => {
     }
     // Each boss fights for real (the world awake, the player unkillable): 5 s, then past its phase change for 6 s more,
     // a frame taken while it attacks. Page errors are counted below (PLAN.md item 2: no console error).
-    if (want('fights')) for (const id of await page.evaluate(() => ENEMY_DEFS.filter(isBossDef).map(d => d.id))) {
+    if (want('fights')) for (const id of await bossIds(page)) {
       await page.evaluate(id => { Game.startFight(id); }, id); await settle(page, 300);
       await page.evaluate(() => { Game.worldWaiting = false; const p = Game.player; p.maxHp = p.hp = 1e7; Game.setLock?.(Game.enemies[0]); });
       await page.waitForTimeout(5000);

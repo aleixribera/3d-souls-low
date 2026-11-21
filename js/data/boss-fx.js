@@ -33,7 +33,7 @@ const BOSS_FX = {
     giantPitStomps: { impact: 'shatter' }, giantReach: { impact: 'shatter', windup: 'gather' } } },
   pillagerCaptain: { element: 'steel', aura: 0xff9a50, trail: { edge: 1, life: 0.16, smear: 0.45 }, phases: { lit: 'fire' }, attacks: { captainOverhead: { impact: 'shatter', windup: 'gather', trail: { edge: 0.12, life: 0.36, smear: 0.45 } },
     captainKindling: { element: 'fire', impact: 'blaze', windup: 'gather' }, captainOverheadLit: { impact: 'blaze', windup: 'gather', trail: { edge: 0.12, life: 0.36, smear: 0.45 } } } },
-  bellWarden: { element: 'toll', aura: 0xb8d4f0, attacks: { wardenHammerfall: { impact: 'toll', windup: 'gather' }, wardenBackhand: { impact: 'toll' },
+  bellWarden: { element: 'toll', aura: 0xb8d4f0, trail: { edge: 0.2, life: 0.18, smear: 0.3 }, attacks: { wardenHammerfall: { impact: 'toll', windup: 'gather' }, wardenBackhand: { impact: 'toll' },
     wardenAnswer: { impact: 'toll', windup: 'gather' }, wardenAnswerTwice: { impact: 'toll', windup: 'gather' }, wardenWaking: { impact: 'toll', windup: 'gather' },
     wardenFall: { impact: 'toll' }, wardenThreeTolls: { impact: 'toll' } } },
   varn: { element: 'steel', aura: 0xff8040, phases: { throne: 'fire', knell: 'fire' }, attacks: {

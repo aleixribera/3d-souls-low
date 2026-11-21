@@ -31,7 +31,8 @@ MODEL_DEFS.bellWarden = {
   proportions: { shoulderX: 0.37, torsoW: 0.265, torsoD: 0.19, armR: 0.085, legR: 0.1, headR: 0.14, handR: 0.075, footLen: 0.34 },
   posture: { chest: [0.1, 0, 0], neck: [0.06, 0, 0], head: [0.02, 0, 0], elbowL: [-0.3, 0, 0], elbowR: [-0.35, 0, 0] },
   materials: {
-    bronze: { tex: 'bellBronze', tint: 0x9cb8aa, decay: 0.5, size: 512, double: true },
+    bronze: { tex: 'bellBronzeDark', tint: 0x9cb8aa, decay: 0.6, size: 512, double: true },   // (pass 123) dark in cel: the light bellBronze read pale yellow-green, a toy
+    bell: { tex: 'bellBronze', tint: 0xd8c890, decay: 0.4, size: 512, steel: true },   // (pass 123) the maul's bell: the one bright bronze on him, banded with a glint (his reach)
     trim: { tex: 'wornGilt', decay: 0.4 },
     mail: { tex: 'knightMail', tint: 0x707a79, decay: 0.7 },
     rust: { tex: 'rustedIron', tint: 0x6a7a62, decay: 0.8 },
@@ -55,8 +56,11 @@ MODEL_DEFS.bellWarden = {
     legL: ['mail'], legR: ['mail'],
     kneeL: ['bronze', 'iron', 'iron.1'], kneeR: ['bronze', 'iron', 'iron.1'],
     weapon: ['wood', 'bronze', 'trim', 'iron', 'muffle', 'toll'],
-  }).flatMap(([bone, list]) => list.map(s => ({ use: 'baked', mesh: `bell:${bone}__${s}`, bone, slot: s.split('.')[0], tile: 0.42,
+  }).flatMap(([bone, list]) => list.map(s => ({ use: 'baked', mesh: `bell:${bone}__${s}`, bone, slot: bone === 'weapon' && s === 'bronze' ? 'bell' : s.split('.')[0], tile: 0.42,
     ...(bone === 'weapon' ? { weapon: true } : {}) }))),
+  // (pass 123) his joints bend as one body: waist, neck, shoulders, elbows, hips, knees, the loincloths
+  softJoints: { chest: 0.18, neck: 0.08, armL: 0.14, armR: 0.14, elbowL: 0.11, elbowR: 0.11, legL: 0.15, legR: 0.15, kneeL: 0.11, kneeR: 0.11, loinF: 0.12, loinB: 0.12 },
+  edgeTell: { slot: 'bell', size: 0.6, along: 0.9 },   // (pass 123) his wind-ups glow on the bell's lip, not over his hands, haft and body
   weapon: null,            // the bell maul is part of the figure (the `weapon: true` pieces above)
   hidden: ['toll'],        // the lit crack: shown by the woken phase's `reveal`
   grip: { span: [-0.5, 0.75], rest: [0.5, -0.45, 3.14] },   // at rest the bell hangs low ahead of his right foot, its lip off the floor

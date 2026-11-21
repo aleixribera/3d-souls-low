@@ -2,7 +2,7 @@
 
 How a boss is made, start to finish, so the next one takes about three passes and no new engine code. It replaces the
 Hollis bar and the old boss rules (`.claude/feedback.md` 2026-11-14). Proven first on the Pillager Captain
-(`pillager-captain.md`). Each step names its tool and the check that closes it.
+(`pillager-captain.md`); the second is the Bell Warden (`bell-warden.md`, from pass 123). Each step names its tool and the check that closes it.
 
 ## 1. The one-page design
 
@@ -18,7 +18,7 @@ Hollis bar and the old boss rules (`.claude/feedback.md` 2026-11-14). Proven fir
   `noParry` on a quarter of the attacks at most; nothing covers the boss during a wind-up (effects on impact, on
   signature moments and on the phase change).
 
-Check: the page exists and every attack in the data file is on it.
+Check: the page exists and every attack in the data file is on it (`node tests/boss-pages.cjs`, pass 123).
 
 ## 2. The model, in the chosen style
 

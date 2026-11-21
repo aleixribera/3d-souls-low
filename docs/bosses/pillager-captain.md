@@ -46,7 +46,8 @@ Firebrand**, sweep then thrust through the flames. Unparryable: the Wheel and Ki
 ## Phase two
 
 The bill burns and the fight's rule changes: wherever the burning bill lands, fire stays on the floor and burns
-(`fire` on the hit). The cuts, the Cleave and the Furrow leave fire; the Firebrand is new. He comes closer and keeps
+(`fire` on the hit). The cuts, the Cleave and the Furrow leave fire (Three Burning Cuts, the Burning Cleave, the
+Burning Furrow); the Firebrand is new. He comes closer and keeps
 coming (approach 0.75, kite 0.05): the court gets smaller every exchange.
 
 ## Effects

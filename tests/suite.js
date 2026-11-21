@@ -2533,16 +2533,21 @@
   });
   // Pass 113 (docs/bosses/system.md "Effects"): a model's `edgeTell` keeps the wind-up's tell on the blade: the heavy
   // overhead leaves his body its own colour, the halo sits out on the bill's head, small, and grows as the blow nears.
-  test('Pillager Captain: his wind-up tell is on the bill\'s edge, never over his body', () => {
-    Game.startFight('pillagerCaptain'); Game.loading = 0; sim.begin();
-    const e = Game.duel, r = e.rig, over = e.def.attacks.find(a => a.rollOnly && a.heavy), T = r.edgeTell;
-    expect.ok(T && r.weaponSlotMeshes.blade.material === r.weaponMat, 'the tell colours the blade, not the haft');
-    const scaleAt = f => { e.attack = over; e.hitIndex = 0; e.holdLeft = 0; e.setState(ES.WINDUP); e.stateTime = over.hits[0].startup * f; Game.render(0, STEP); return r.warnGlow.scale.x; };
-    const early = scaleAt(0.2), late = scaleAt(0.95);
-    expect.ok(r.bodyMats.every(m => m.emissive.r + m.emissive.g + m.emissive.b < 0.01), 'no heavy tint on the body');
-    expect.ok(r.warnGlow.visible && late > early && early < 1, `the halo is small and grows (${early.toFixed(2)} to ${late.toFixed(2)} m)`);
-    const fromHands = r.warnGlow.getWorldPosition(new THREE.Vector3()).distanceTo(r.weapon.getWorldPosition(new THREE.Vector3()));
-    expect.ok(fromHands > 1, `the halo is out on the bill's head, ${fromHands.toFixed(2)} m from his hands`);
+  // Pass 123: every boss whose model opts in (the Captain, the Bell Warden): the system's check, not one boss's.
+  test('Boss edge tells: every boss with an edgeTell keeps the wind-up tell on the weapon, never over the body', () => {
+    const ids = ENEMY_DEFS.filter(d => d.phases && KIT.resolve(d.model).edgeTell).map(d => d.id);
+    expect.ok(ids.includes('pillagerCaptain') && ids.includes('bellWarden'), `opted in: ${ids.join(', ')}`);
+    for (const id of ids) {
+      Game.startFight(id); Game.loading = 0; sim.begin();
+      const e = Game.duel, r = e.rig, over = e.def.attacks.find(a => a.rollOnly && a.heavy && !a.invulnerable), T = r.edgeTell, slot = KIT.resolve(e.def.model).edgeTell.slot;
+      expect.ok(T && r.weaponSlotMeshes[slot].material === r.weaponMat, `${id}: the tell colours the weapon's ${slot}, not the haft`);
+      const scaleAt = f => { e.attack = over; e.hitIndex = 0; e.holdLeft = 0; e.setState(ES.WINDUP); e.stateTime = over.hits[0].startup * f; Game.render(0, STEP); return r.warnGlow.scale.x; };
+      const early = scaleAt(0.2), late = scaleAt(0.95);
+      expect.ok(r.bodyMats.every(m => m.emissive.r + m.emissive.g + m.emissive.b < 0.01), `${id}: no heavy tint on the body`);
+      expect.ok(r.warnGlow.visible && late > early && early < 1, `${id}: the halo is small and grows (${early.toFixed(2)} to ${late.toFixed(2)} m)`);
+      const fromHands = r.warnGlow.getWorldPosition(new THREE.Vector3()).distanceTo(r.weapon.getWorldPosition(new THREE.Vector3()));
+      expect.ok(fromHands > 1, `${id}: the halo is out on the weapon's head, ${fromHands.toFixed(2)} m from his hands`);
+    }
   });
   // Pass 116 (the judge's round 3: the floor burst erupted while the bill was still raised): a hit's `impact.at` holds the
   // ground burst until the drawn blade lands, while the hitbox opens on time.
