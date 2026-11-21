@@ -7,12 +7,11 @@ The iterate loop's working note (`.claude/iterate.md`). Cap: 8,000 characters.
   `lure`; in-page `guard boss`); `weekly` and `network-load` hardened for a busy PC. Batch 9 (pass 137, v7.189.0):
   `tests/guard-boss.cjs`, clip `docs/scorecard/now/guard-boss.mp4`. Next on track 2: batch 10, Summons I. Browser
   lock: `node tools/browser-lock.cjs run <pass> -- <cmd>` (docs/two-tracks.md).
-- Track 1, pass 139 (PLAN item 6, Hale and Harrow, pass 2 of 2), done in v7.190.0: their wind-up halo sits on the
-  axe head, gauntlet, elbow, knee or greave that strikes (`edgeTell`, `tells`, `tellsGrow`; no body wash), every hit
-  has `via` keys, the Heel's toe reaches her helm; `bars-1` round: Crown Cleave's halo hid behind her and the part
-  halos were specks, fixed and rechecked (`docs/bosses/castellans.md`). Acceptance: in-page `Saltgrave|edge tells`
-  13/13, `tests/pose-via.cjs`, body-check 0/35; clip `docs/scorecard/now/castellans-cel.mp4`. They await Aleix. Next
-  on track 1: the Ringer's step-0 audit (PLAN item 6).
+- Track 1, pass 142 (PLAN item 6, the Ringer, pass 1 of 2), done in v7.191.0: step-0 audit a restyle (her own 11
+  moves, 5 strings, a real phase two; `noParry` 8 of 15 and body check 16/26 flagged): clapper and fetter blows parried,
+  knells jumped (roll-only 2/8, 3/12), tells on the ball (`edgeTell`) or the stamping foot, in-between keys, outCubic
+  wind-ups after the `bars-1` round (`docs/bosses/ringer.md`). Acceptance: in-page `Night Gaol|Boss edge tells` 16/16,
+  body-check 0/28; clip `docs/scorecard/now/ringer-cel.mp4`. She awaits Aleix. Next on track 1: Hollis's step-0 audit.
 
 ## Works
 
@@ -70,6 +69,7 @@ The iterate loop's working note (`.claude/iterate.md`). Cap: 8,000 characters.
 
 ## Needs Aleix
 
+- Fight the Ringer (Practice, `?style=cel`; her stamping foot and Over the Line's ball are parried unless you say).
 - Fight Hale and Harrow (Practice, `?style=cel`; Harrow's axe stays hidden until the whole phase unless you say).
 - Fight Old Ostrey too (Practice, `?style=cel`; one `bars-1` round; the Burning Drop's landing parried unless you say).
 - Fight the Antlered Hunger too (Practice, `?style=cel`; one `bars-1` round; its follow-ups parriable unless you say).
