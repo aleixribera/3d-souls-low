@@ -56,6 +56,11 @@ const ABILITY_ICONS = {
   'bone-archer': '<path d="M12 4 C24 14 24 34 12 44"/><path d="M12 4 V44" stroke-dasharray="1 2"/><path d="M8 24 H46"/><path d="M41 20 L46 24 L41 28"/><circle cx="24" cy="12" r="4"/><path d="M20 10 C20 5 28 5 28 10"/>',
   'thunder-hawk': '<path d="M24 34 L10 14 L18 16 L24 6 L30 16 L38 14 Z"/><path d="M24 34 L22 40 L26 42 L23 47"/><path d="M28 2 L25 8 L29 9 L27 14" stroke-dasharray="2 1"/>',
   'night-owl': '<path d="M4 18 C12 12 18 16 24 20 C30 16 36 12 44 18 C38 20 32 22 28 26 H20 C16 22 10 20 4 18 Z"/><circle cx="21" cy="22" r="1.5"/><circle cx="27" cy="22" r="1.5"/><circle cx="24" cy="40" r="5"/><path d="M21 37 L27 43 M27 37 L21 43"/>',
+  'ronin-shade': '<path d="M8 14 L40 14 L30 9 H18 Z"/><path d="M20 15 V30 L16 44 M28 15 V30 L32 44 M20 30 H28"/><path d="M28 22 L44 6" stroke-dasharray="3 1"/>',
+  'mire-serpent': '<path d="M20 6 V44 M28 6 V44"/><path d="M14 40 C30 44 34 36 24 34 C14 32 14 26 24 24 C34 22 34 16 24 14 C18 13 16 10 18 7"/><path d="M18 7 L14 4 M18 7 L22 3"/>',
+  'puppet-knight': '<path d="M14 4 H34 M24 4 V12 M16 4 L16 24 M32 4 L32 24 M20 4 L19 36 M28 4 L29 36"/><rect x="20" y="12" width="8" height="8"/><path d="M19 22 H29 V32 H19 Z M16 24 L19 22 M32 24 L29 22 M21 32 L19 44 M27 32 L29 44"/><circle cx="16" cy="24" r="1.5"/><circle cx="32" cy="24" r="1.5"/>',
+  'ash-bear': '<path d="M18 44 L16 30 L12 22 L16 14 L22 10 L28 12 L30 20 L28 30 L30 44"/><path d="M30 20 L38 10 M34 8 L40 14 M36 6 L42 12 M38 4 L44 10"/><path d="M16 14 L14 10 M22 10 L22 7"/>',
+  'glass-mantis': '<path d="M24 44 V22 L22 10 L26 6 L28 10 L24 22"/><path d="M24 26 L36 20 L30 12 M24 26 L12 20 L18 12"/><path d="M24 34 L12 44 M24 34 L36 44"/><path d="M14 8 L34 28 M34 8 L14 28" stroke-dasharray="2 1"/>',
   'static-edge': '<path d="M6 42 L28 20 L33 17 L30 22 L9 45"/><path d="M34 4 L27 13 L35 15 L29 25"/><path d="M39 19 L44 15 M40 26 L46 26"/>',
   // Crate rares (js/data/crates.js)
   'grave-feast': '<path d="M21 4 V17 L24 23 L27 17 V4 Z"/><path d="M16 8 H32"/><path d="M24 44 C15 38 10 33 10 28 A7 7 0 0 1 22 24 M26 24 A7 7 0 0 1 38 28 C38 33 33 38 24 44"/>',

@@ -125,6 +125,14 @@ function abilityHeal(p, share, perk, target = null) {
 //                        `every` s (`e.owlMark`, CONFIG.abilities.summons.owl.markLife s): the next weapon blow anyone
 //                        lands on it does `mark` more and bursts it (abilityOwlStrike, abilityOwlLanded). It never
 //                        strikes and never draws the enemy's eye.
+//   press/ronin:         a summon (batch 12). Pressed, a ghost swordsman duels the enemy for `time` s, cutting every
+//                        `every` s; the first blow the enemy aims at it while it draws is deflected (`parry`: drawing only).
+//   press/serpent:       a summon (batch 12). Pressed, a serpent rises under the enemy and coils round it for `time` s,
+//                        squeezing every `every` s; it rides with the enemy (its `coil`), so it is never left behind.
+//   press/puppet:        a summon (batch 12). Pressed, a puppet knight drops beside the enemy and strikes every `every` s.
+//   press/bear:          a summon (batch 12). Pressed, an ash bear rises beside the enemy and swipes every `every` s: each
+//                        swipe lands its kind's `dive` s after it rears (the hawk's rule), for `damage`.
+//   press/mantis:        a summon (batch 12). Pressed, a glass mantis rises beside the enemy and slices every `every` s.
 //   press/flare, press/gale, press/blades, press/lightning, press/blast: pressed (key 1 or 4), the power of that name
 //                        on the enemy (the blast round its holder).
 // The effect commons (design/abilities, batch 2: the blade), each a small blow of `damage` (CONFIG.abilities.commons):
@@ -198,6 +206,9 @@ const ABILITY_POWERS = {
   'press/lantern': ['charge', 'time', 'every', 'damage', 'heal'],
   'press/crows': ['charge', 'time', 'every', 'damage', 'draw'], 'press/archer': ['charge', 'time', 'every', 'damage', 'draw'],
   'press/hawk': ['charge', 'time', 'every', 'damage', 'draw'], 'press/owl': ['charge', 'time', 'every', 'mark'],
+  'press/ronin': ['charge', 'time', 'every', 'damage', 'draw'], 'press/serpent': ['charge', 'time', 'every', 'damage', 'draw'],
+  'press/puppet': ['charge', 'time', 'every', 'damage', 'draw'], 'press/bear': ['charge', 'time', 'every', 'damage', 'draw'],
+  'press/mantis': ['charge', 'time', 'every', 'damage', 'draw'],
   'press/flare': ['charge', 'damage'], 'press/gale': ['charge', 'damage', 'reach', 'width'],
   'press/blades': ['charge', 'time', 'every', 'damage'], 'press/lightning': ['charge', 'strikes', 'lead', 'every', 'damage'],
   'press/blast': ['charge', 'radius', 'damage'],
@@ -218,12 +229,12 @@ function isComboHeavy(a) {
   if (!comboHeavies) comboHeavies = new Set(Object.values(PLAYER_DEF.moveset.attacks).map(x => x.next && x.next.heavy).filter(Boolean));
   return !!a && comboHeavies.has(a.id);
 }
-const SUMMONS = new Set(['twin', 'hound', 'guardian', 'lancer', 'fox', 'lantern', 'crows', 'archer', 'hawk', 'owl']);
+const SUMMONS = new Set(['twin', 'hound', 'guardian', 'lancer', 'fox', 'lantern', 'crows', 'archer', 'hawk', 'owl', 'ronin', 'serpent', 'puppet', 'bear', 'mantis']);
 // The summons that strike on their own, every `every` s from `reach` m off their enemy's body (the twin echoes its holder).
-const SUMMON_STRIKERS = new Set(['hound', 'guardian', 'lancer', 'fox', 'lantern', 'crows', 'archer', 'hawk']);
-// The summons whose blow flies before it lands (a fireball, an arrow, a hawk's dive): each tells every browser twice,
-// as it leaves (`flight`: s until it lands) and as it lands (`land`).
-const SUMMON_SHOTS = new Set(['lantern', 'archer', 'hawk']);
+const SUMMON_STRIKERS = new Set(['hound', 'guardian', 'lancer', 'fox', 'lantern', 'crows', 'archer', 'hawk', 'ronin', 'serpent', 'puppet', 'bear', 'mantis']);
+// The summons whose blow flies before it lands (a fireball, an arrow, a hawk's dive), or is wound up first (a bear's rear):
+// each tells every browser twice, as it leaves (`flight`: s until it lands) and as it lands (`land`).
+const SUMMON_SHOTS = new Set(['lantern', 'archer', 'hawk', 'bear']);
 // Where summon `s` (its `kind`, `x`, `z`, `age`: s since it was called) heads round enemy `e` with its holder at `body`:
 // `gap` m off the enemy's body, `flank` rad round from its side away from the holder (CONFIG.abilities.summons), turning
 // on at its kind's `orbit` rad/s of its own age (the fox circles); with no enemy, beside the holder. A `perch` kind stays
@@ -233,6 +244,7 @@ const SUMMON_SHOTS = new Set(['lantern', 'archer', 'hawk']);
 function summonStep(s, e, body, dt) {
   const K = CONFIG.abilities.summons, S = K[s.kind];
   let x, z;
+  if (S.coil && e) { s.x = e.x; s.z = e.z; s.yaw = e.yaw || 0; return 0; }   // a serpent coiled round its enemy rides with it
   if (S.perch && body) { const yaw = body.yaw || 0, side = S.side ?? K.side; x = body.x - Math.cos(yaw) * side; z = body.z + Math.sin(yaw) * side; }   // at its holder's shoulder
   else if (e) {
     const dx = body ? e.x - body.x : Math.sin(e.yaw), dz = body ? e.z - body.z : Math.cos(e.yaw), l = Math.hypot(dx, dz) || 1;
@@ -597,7 +609,7 @@ function abilityReport(body, when, ctx) {
 // its number), the first `lead` s after it fires (the time its dragon takes to reach the boss), then every `every` s; damage goes through Enemy.takeHit like any blow and `credit` (the server's) counts it to the holder.
 const ECHO_DELAY = 0.06;   // s from its holder's blow to the twin's: the two land as one
 // The powers that need a live enemy to strike (the one parried, struck, broken or dodged).
-const ON_ENEMY = new Set(['lightning', 'blades', 'flare', 'spark', 'gale', 'pyre', 'hound', 'lancer', 'fox', 'lantern', 'crows', 'archer', 'hawk', 'owl', 'lick', 'molten', 'lateCut', 'afterimage',
+const ON_ENEMY = new Set(['lightning', 'blades', 'flare', 'spark', 'gale', 'pyre', 'hound', 'lancer', 'fox', 'lantern', 'crows', 'archer', 'hawk', 'owl', 'ronin', 'serpent', 'puppet', 'bear', 'mantis', 'lick', 'molten', 'lateCut', 'afterimage',
   'thorns', 'shards', 'reflect', 'wave', 'spikes', 'fist', 'risingFire', 'clap',
   'flurry', 'drill', 'stitch', 'boomerang', 'clones', 'iai', 'seal']);
 // The powers whose blow lands a beat after they fire: each tells every browser again as it lands (`strike`).
@@ -772,10 +784,11 @@ const abilityPowers = (() => {
       case 'pyre':   // one pillar an enemy: a second break lights it afresh
         for (let i = running.length - 1; i >= 0; i--) if (running[i].pw === pw && running[i].holder === holder && running[i].enemy === e) running.splice(i, 1);
         running.push({ pw, holder, enemy: e, left: Math.round(v.time / v.every), next: v.every, n: 0 }); break;
-      case 'twin': case 'hound': case 'guardian': case 'lancer': case 'fox': case 'lantern': case 'crows': case 'archer': case 'hawk': case 'owl': {
+      case 'twin': case 'hound': case 'guardian': case 'lancer': case 'fox': case 'lantern': case 'crows': case 'archer': case 'hawk': case 'owl':
+      case 'ronin': case 'serpent': case 'puppet': case 'bear': case 'mantis': {
         const out = summonOf(holder), from = out || at, K = CONFIG.abilities.summons;
         const s = { kind: pw.then, pw, body, until: clock + v.time, n: out ? out.n : 0, x: from.x, y: from.y, z: from.z, yaw: from.yaw || 0,
-          enemy: e, wait: out ? 0 : summonArrive(pw.then), bite: 0, drew: out ? out.drew : false, lure: out ? out.lure : null, lureUntil: out ? out.lureUntil : 0, decoy: null,
+          enemy: e, wait: out ? 0 : summonArrive(pw.then), bite: 0, drew: out ? out.drew : false, parried: !!(out && out.parried), lure: out ? out.lure : null, lureUntil: out ? out.lureUntil : 0, decoy: null,
           age: out ? out.age : 0, shots: (out && out.shots) || [] };
         if (K[pw.then].rises && !out) summonStep(s, foeOf(s), body, 60);   // a twin or a guardian rises where it stands; a hound or a lancer runs there
         else if (!out) summonStart(s, foeOf(s), body);   // a lancer from the arena's edge
@@ -911,11 +924,20 @@ const abilityPowers = (() => {
     if (s.age > (K[s.kind].hold || 0)) summonStep(s, e, body, dt);   // a lancer forms where it starts before it charges
     if (e) s.y = e.y;
     s.decoy.x = s.x; s.decoy.y = s.y; s.decoy.z = s.z;
+    if (K[s.kind].coil && e) {   // a serpent is round its enemy: what it draws the eye to is its coil on its holder's side, never the enemy's own middle
+      const dx = body ? body.x - e.x : Math.sin(e.yaw), dz = body ? body.z - e.z : Math.cos(e.yaw), l = Math.hypot(dx, dz) || 1, r = (e.radius || 1) + K[s.kind].gap;
+      s.decoy.x = e.x + dx / l * r; s.decoy.z = e.z + dz / l * r;
+    }
     if ((s.wait -= dt) > 0 || !e) return;
     // Arrived: it draws its enemy's eye once, when that enemy is between attacks and no other summon has it.
     if (!s.drew && v.draw > 0 && !e.in('attacking') && !(e.frozen > 0) && !decoy(e)) {
       s.drew = true; s.lure = e; s.lureUntil = clock + v.draw;
       events.emit('abilityPower', { power: s.pw.id, then: s.kind, holder, body: s.body, enemy: e, x: s.x, y: s.y, z: s.z, v, draw: true });
+    }
+    // A ronin meets the first blow its drawn enemy aims at it with a deflect (drawing only: the decoy is never hurt).
+    if (s.kind === 'ronin' && !s.parried && s.lure === e && e.hitbox) {
+      s.parried = true;
+      events.emit('abilityPower', { power: s.pw.id, then: s.kind, holder, body: s.body, enemy: e, x: s.x, y: s.y, z: s.z, v, parry: true });
     }
     // An owl marks its enemy every `every` s (one mark an enemy, whoever's owl: a new one renews it).
     if (s.kind === 'owl' && (s.bite -= dt) <= 0) {

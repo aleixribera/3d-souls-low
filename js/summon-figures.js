@@ -16,8 +16,13 @@
 // edge on its holder's side (the engine's summonStart), a glowing seam climbing it, holds a breath (`hold`), charges
 // across, and thrusts. Both crumble or burn away from the head down. Four of each in the pool (one a player), made at attach and
 // warmed like the rest; nothing allocated per frame.
+// Summons III (pass 147): the Ronin Shade is ink (`ink`: its cloth a dark, nearly opaque ghost under a hard blue rim,
+// its blade and hat light), and turns its drawn boss's first blow aside (the engine's `parry` word: its `deflect` pose and
+// a star of light at the blade). The Puppet Knight drops from the dark (CONFIG.abilities.summons.puppet.drop m) on lines
+// of light (`strings`), the sixth to its holder's hand while it arrives, every move snapped through (outBack). A large
+// one (`see`) thins by a dither while it stands between the camera and its boss (summonBeasts.see).
 const summonFigures = (() => {
-  const KINDS = ['guardian', 'lancer', 'archer'], pool = [];
+  const KINDS = ['guardian', 'lancer', 'archer', 'ronin', 'puppet'], pool = [];
   const vertex = `
     #include <common>
     #include <skinning_pars_vertex>
@@ -36,19 +41,26 @@ const summonFigures = (() => {
   // uSolid 1: lit stone under a glowing rim; 0: a ghost of light, bright at its edges. The part past the cut (above it,
   // uFrom 1; below it, uFrom -1) isn't there, and the line it is cut at glows. uGlow 1: a slot of light (a rune, an eye).
   // uMap: the model's own texture for that slot (its carving and cracks), its brightness only; uHasMap 0 for none.
+  // uInk 1: ink (the ronin): its slot's colour flat, a hard rim of uColor, nearly opaque; its slots of light white-hot.
+  // uSee under 1: a dither leaves out that much of it (see summonBeasts.see).
   const fragment = `
     uniform vec3 uColor; uniform vec3 uCore; uniform vec3 uStone; uniform float uSolid; uniform float uOpacity; uniform float uCut;
     uniform float uFrom; uniform float uTime; uniform float uBoost; uniform float uRim; uniform float uBody; uniform float uFlicker;
-    uniform float uGlow; uniform sampler2D uMap; uniform float uHasMap;
+    uniform float uGlow; uniform sampler2D uMap; uniform float uHasMap; uniform float uInk; uniform float uSee;
     varying vec3 vN; varying vec3 vV; varying float vY; varying vec2 vUv;
     void main() {
       float edge = (vY - uCut) * uFrom;
       if (edge > 0.0) discard;
+      if (uSee < 0.99 && fract(52.9829189 * fract(dot(gl_FragCoord.xy, vec2(0.06711056, 0.00583715)))) > uSee) discard;
       vec3 n = normalize(vN);
       float rim = pow(1.0 - abs(dot(n, normalize(vV))), 2.2);
       float flick = 1.0 + uFlicker * sin(uTime * 11.0 + vY * 13.0) * sin(uTime * 6.1 - vY * 5.3);
       float seam = smoothstep(-0.18, 0.0, edge);
-      if (uSolid > 0.5) {
+      if (uInk > 0.5) {
+        float hard = step(0.55 - 0.08 * (flick - 1.0), rim);
+        vec3 c = mix(mix(uStone, uColor * uBoost, hard), uCore * uBoost, max(uGlow, step(-0.04, edge)));
+        gl_FragColor = vec4(c, uOpacity * mix(0.82, 1.0, max(hard, uGlow)));
+      } else if (uSolid > 0.5) {
         float lit = 0.3 + 0.7 * max(dot(n, normalize(vec3(0.35, 0.85, 0.4))), 0.0);
         float tone = mix(1.0, 2.2 * dot(texture2D(uMap, vUv).rgb, vec3(0.3, 0.59, 0.11)), uHasMap);
         vec3 c = uStone * lit * tone + mix(uColor, uCore, seam) * (pow(rim, 1.6) * uRim + seam * 1.6) * flick * uBoost;
@@ -64,15 +76,15 @@ const summonFigures = (() => {
   function material(F, shared, stone, glow, map = null) {
     return new THREE.ShaderMaterial({
       uniforms: { ...shared, uStone: { value: new THREE.Color(stone) }, uGlow: { value: glow ? 1 : 0 }, uMap: { value: map }, uHasMap: { value: map ? 1 : 0 } },
-      vertexShader: vertex, fragmentShader: fragment, transparent: !F.solid, depthWrite: !!F.solid,
-      blending: F.solid ? THREE.NormalBlending : THREE.AdditiveBlending });
+      vertexShader: vertex, fragmentShader: fragment, transparent: !F.solid, depthWrite: !!(F.solid || F.ink),
+      blending: F.solid || F.ink ? THREE.NormalBlending : THREE.AdditiveBlending });
   }
   function make(kind) {
     const F = VIS.abilityFx[kind];
     const rig = new Rig({ scale: F.scale, bulk: F.bulk ?? 1, model: F.model });
     const shared = { uColor: { value: new THREE.Color(F.color) }, uCore: { value: new THREE.Color(F.core) }, uSolid: { value: F.solid ? 1 : 0 },
       uOpacity: { value: 0 }, uCut: { value: 0 }, uFrom: { value: 1 }, uTime: { value: 0 }, uBoost: { value: 1 }, uRim: { value: F.rim },
-      uBody: { value: F.body }, uFlicker: { value: F.flicker } };
+      uBody: { value: F.body }, uFlicker: { value: F.flicker }, uInk: { value: F.ink ? 1 : 0 }, uSee: { value: 1 } };
     const mat = material(F, shared, F.stone ?? 0, false), bySlot = new Map();   // each mesh of a model: its slot's material
     if (F.slots) for (const meshes of [rig.slotMeshes, rig.weaponSlotMeshes]) for (const slot in meshes || {}) {
       const glow = (F.glows || []).includes(slot), own = meshes[slot].material;
@@ -84,7 +96,14 @@ const summonFigures = (() => {
       else if (o.isSprite || o.isPoints) o.visible = false;   // a glint, an aura, embers: not on a summon
     });
     rig.root.visible = rig.shadow.visible = false;
-    return { kind, F, rig, mat, moves: F.moves.map(timed), m: null, n: 0, mn: 0, landed: true, hop: 0,
+    let strings = null;   // a puppet's lines of light: head, wrists and knees up into the dark, and one to its holder
+    if (F.strings) {
+      const geo = new THREE.BufferGeometry(); geo.setAttribute('position', new THREE.BufferAttribute(new Float32Array(STRINGS.length * 6 + 6), 3));
+      strings = new THREE.LineSegments(geo, new THREE.LineBasicMaterial({ color: F.core, transparent: true, opacity: 0, depthWrite: false, toneMapped: false }));
+      strings.frustumCulled = false; strings.visible = false; strings.renderOrder = 3; strings.userData.warmUp = true; scene.add(strings);
+    }
+    const tied = strings ? STRINGS.map(([bone, down]) => [rig[bone] || rig.head, down]) : null;   // each string's bone
+    return { kind, F, rig, mat, strings, tied, moves: F.moves.map(timed), m: null, n: 0, mn: 0, landed: true, hop: 0, parry: Infinity, see: 1, dropped: true,
       body: null, enemy: null, enemies: null, x: 0, y: 0, z: 0, yaw: 0, left: 0, time: 1, every: 1, speed: 0, phase: 0,
       ac: Infinity, rate: 1, next: Infinity, cry: Infinity, boost: 0, mote: 0, gone: false, guarded: Object.keys(F.guard).length > 0 };
   }
@@ -111,6 +130,8 @@ const summonFigures = (() => {
     return p >= 1 ? 0 : h * (1 - p * p);
   }
   const at = { x: 0, y: 0, z: 0 };
+  // A puppet's strings: from each of these bones (offset down its own length, in its own frame) straight up.
+  const STRINGS = [['head', 0.2], ['elbowL', -0.26], ['elbowR', -0.26], ['kneeL', -0.05], ['kneeR', -0.05]], SV = new THREE.Vector3();
   const near = (x, z) => Game.player && Math.hypot(Game.player.x - x, Game.player.z - z) < VIS.abilityFx.near;
   const light = (p, color, k, range) => effectLighting.flash(p, color, k * (reducedMotion() ? 0.5 : 1), range);
   function ground(x, z, y) { const g = world.groundAt(x, z, y + 0.5); return Number.isFinite(g) ? g : y; }
@@ -128,7 +149,8 @@ const summonFigures = (() => {
     f = f || pool.find(q => q.kind === d.then && !q.body) || pool.filter(q => q.kind === d.then).reduce((p, q) => (p.left < q.left ? p : q));
     f.body = d.body; f.enemy = d.enemy || null; f.left = d.v.time; f.every = d.v.every; f.enemies = Game.enemies;
     if (renew) { f.time = d.v.time + F.rise; f.gone = false; return; }   // up already: it stays up
-    f.time = d.v.time; f.gone = false; f.ac = f.cry = f.next = Infinity; f.speed = 0; f.boost = 0; f.m = null; f.n = f.mn = 0; f.landed = true; f.hop = 0;
+    f.time = d.v.time; f.gone = false; f.ac = f.cry = f.next = f.parry = Infinity; f.speed = 0; f.boost = 0; f.m = null; f.n = f.mn = 0; f.landed = true; f.hop = 0;
+    f.dropped = !K.drop; f.see = 1;
     const from = d.body || d;
     f.x = from.x; f.z = from.z; f.yaw = d.body ? d.body.yaw || 0 : 0;
     if (K.rises) summonStep(f, foe(f, from), d.body, 60);   // it comes up where it will stand
@@ -186,6 +208,42 @@ const summonFigures = (() => {
     ultraFx.moteBurst(at, 24, F.color, { r: 0.4, speed: 1.4, lift: 2, life: [0.5, 1.1], up: 1 }); light(at, F.color, 6, 9);
     if (F.solid && near(f.x, f.z)) Game.addShake(F.shake[0] * 0.6, F.shake[1] * 0.6);
   }
+  // The ronin turns its drawn boss's first blow aside: its deflect pose, a star of light and sparks at its blade.
+  function deflect(d) {
+    const f = mine(d);
+    if (!f) return;
+    const F = f.F, s = Math.sin(f.yaw), c = Math.cos(f.yaw);
+    f.parry = 0; f.boost = 1.6;
+    at.x = f.x + s * 0.55; at.y = f.y + 1.55 * F.scale; at.z = f.z + c * 0.55;
+    const st = STAR.find(o => o.age === Infinity) || STAR[0];
+    st.age = 0; st.size = F.star; st.s.position.set(at.x, at.y, at.z); st.s.material.rotation = Math.random() * 1.5; st.s.visible = true;
+    ultraFx.sparkBurst(at, 18, 'lunar', [s, 0.5, c], 0.7, 0.8); spawnBurst(at, F.hitBurst); light(at, F.core, 6, 8);
+    if (near(f.x, f.z)) Game.addShake(F.shake[0] * 0.8, F.shake[1] * 0.8);
+  }
+  // A puppet lands from its drop: dust and a ring where its feet meet the floor.
+  function touchDown(f) {
+    f.dropped = true;
+    groundFx.ring(f.x, f.z, 1.6, f.F.color, 0.6, f.y); at.x = f.x; at.y = f.y + 0.2; at.z = f.z;
+    ultraFx.moteBurst(at, 14, 0x9a958c, { r: 0.6, speed: 1.2, lift: 0.6, life: [0.4, 0.9], up: 0.4 });
+    if (near(f.x, f.z)) Game.addShake(f.F.shake[0] * 0.7, f.F.shake[1] * 0.7);
+  }
+  // Its strings this frame: the five from its limbs straight up `strings` m, and while it arrives one more from its
+  // head to its holder's hand, fading as it lands.
+  function string(f, b, rising, fading) {
+    const L = f.strings, pos = L.geometry.attributes.position, a = pos.array, r = f.rig, top = f.F.strings;
+    r.root.updateMatrixWorld(true);
+    let i = 0;
+    for (let k = 0; k < f.tied.length; k++) {
+      SV.set(0, f.tied[k][1], 0); f.tied[k][0].localToWorld(SV);
+      a[i++] = SV.x; a[i++] = SV.y; a[i++] = SV.z; a[i++] = SV.x; a[i++] = SV.y + top; a[i++] = SV.z;
+    }
+    const tie = rising < 1 && b ? 1 : 0;
+    SV.set(0, 0.2, 0); r.head.localToWorld(SV);
+    a[i++] = SV.x; a[i++] = SV.y; a[i++] = SV.z;
+    a[i++] = tie ? b.x : SV.x; a[i++] = tie ? (b.y || 0) + 1.3 : SV.y; a[i++] = tie ? b.z : SV.z;
+    pos.needsUpdate = true;
+    L.material.opacity = 0.55 * Math.min(1, rising * 4) * fading * f.see; L.visible = true;
+  }
   const MOTES = { r: 0.35, speed: 0.4, lift: 1.4, life: [0.4, 0.9], up: 1, size: 0.8 };
   function pose(f, dt, now) {
     const r = f.rig, F = f.F, run = clamp01(f.speed / 4);
@@ -219,6 +277,10 @@ const summonFigures = (() => {
       f.cry += dt;
       if (f.cry > F.cryTime) f.cry = Infinity; else applyKeyPose(r, F.cry, Math.sin(Math.PI * Math.min(1, f.cry / F.cryTime)));
     }
+    if (f.parry !== Infinity) {   // the deflect: snapped up, held, eased back
+      f.parry += dt;
+      if (f.parry > F.deflectTime) f.parry = Infinity; else applyKeyPose(r, F.deflect, Math.min(1, f.parry * 12) * (1 - Math.max(0, (f.parry / F.deflectTime - 0.6) / 0.4)));
+    }
     if (r.grip) r.holdHaft(1);
   }
   function draw() {
@@ -228,7 +290,7 @@ const summonFigures = (() => {
       if (!f.body) continue;
       const b = f.body, alive = b.alive ? b.alive() : true, F = f.F, K = A[f.kind];
       if (alive) f.left -= dt; else f.left = Math.min(f.left, F.fade);
-      if (f.left <= 0 || f.enemies !== Game.enemies) { f.body = null; f.rig.root.visible = f.rig.shadow.visible = false; continue; }   // a new fight ends it too
+      if (f.left <= 0 || f.enemies !== Game.enemies) { f.body = null; f.rig.root.visible = f.rig.shadow.visible = false; if (f.strings) f.strings.visible = false; continue; }   // a new fight ends it too
       const e = foe(f, b), x0 = f.x, z0 = f.z, yaw0 = f.yaw;
       if (K.rises || f.time - f.left > (K.hold ?? A.arrive * 0.5)) summonStep(f, e, alive ? b : null, dt);   // a runner forms first
       const moved = Math.hypot(f.x - x0, f.z - z0) / Math.max(dt, 1e-4);
@@ -240,9 +302,12 @@ const summonFigures = (() => {
       pose(f, dt, now);
       const rising = clamp01((f.time - f.left) / F.rise), fading = clamp01(f.left / F.fade), tall = K.height + 0.3, u = f.mat.uniforms;
       let lift = 0;
+      if (K.drop && rising < 1) lift = K.drop * (1 - rising) * (1 - rising);   // a puppet drops from the dark
+      if (!f.dropped && rising >= 1) touchDown(f);
       if (fading < 1) { u.uFrom.value = 1; u.uCut.value = f.y - 0.1 + (tall + 0.4) * fading; }   // crumbling or burning away from the head down
       else if (F.floor) { lift = -tall * (1 - rising) * (1 - rising); u.uFrom.value = -1; u.uCut.value = f.y; }   // stone rises out of the floor
-      else { u.uFrom.value = 1; u.uCut.value = rising < 1 ? f.y - 0.1 + (tall + 0.4) * rising : f.y + 99; }   // it forms from the feet up (a crest or a raised spear over its height too)
+      else { u.uFrom.value = 1; u.uCut.value = rising < 1 && !K.drop ? f.y - 0.1 + (tall + 0.4) * rising : f.y + 99; }   // it forms from the feet up (a crest or a raised spear over its height too)
+      f.see += (summonBeasts.see(f.x, f.z, e, F.see) - f.see) * (1 - Math.exp(-8 * dt)); u.uSee.value = f.see;
       u.uOpacity.value = 0.92 * Math.min(1, rising * 3); u.uTime.value = now; u.uBoost.value = 1 + f.boost * F.strikeBoost;
       if (fading < 1 && !f.gone) { f.gone = true; at.x = f.x; at.y = f.y + 1; at.z = f.z; spawnBurst(at, F.burst); ultraFx.moteBurst(at, 30, F.color, { r: 0.5, speed: 0.9, lift: 2, life: [0.5, 1.1], up: 1 }); }
       if ((f.mote -= dt) <= 0) { f.mote = F.motes; at.x = f.x; at.y = f.y + 0.3 + Math.random() * K.height * 0.8; at.z = f.z; ultraFx.moteBurst(at, 2, F.color, MOTES); }
@@ -250,6 +315,7 @@ const summonFigures = (() => {
       r.place(f.x, f.y + lift + f.hop, f.z, f.yaw, F.solid && fading >= 1 ? f.y : -Infinity);
       r.warnGlow.visible = false; if (r.tellGlows) for (const n in r.tellGlows) r.tellGlows[n].visible = false;
       r.root.visible = true;
+      if (f.strings) string(f, alive ? b : null, rising, fading);
     }
   }
   // ---- The archer's arrows (pass 144): each loosed at the engine's `flight` word from its right hand, flying straight
@@ -287,7 +353,7 @@ const summonFigures = (() => {
     if (!e) return;
     for (const q of arrows) if (q.e === e && q.t !== Infinity && q.t >= q.T * 0.5) { q.t = Infinity; q.g.visible = false; break; }   // the arrow that landed
     const F = VIS.abilityFx.archer, p = chestOf(e, at), st = STAR.find(o => o.age === Infinity) || STAR[0];
-    st.age = 0; st.s.position.set(p.x, p.y, p.z); st.s.material.rotation = Math.random() * 1.5; st.s.visible = true;
+    st.age = 0; st.size = F.star; st.s.position.set(p.x, p.y, p.z); st.s.material.rotation = Math.random() * 1.5; st.s.visible = true;
     ultraFx.sparkBurst(p, 6, 'lunar', [0, 0.4, 0], 0.4, 0.5); spawnBurst(p, F.hitBurst); light(p, F.color, 2.5, 5);
   }
   function flyArrows(dt) {
@@ -307,19 +373,20 @@ const summonFigures = (() => {
       if (o.age === Infinity) continue;
       o.age += dt; const p = o.age / 0.3;
       if (p >= 1) { o.age = Infinity; o.s.visible = false; continue; }
-      o.s.scale.setScalar(F.star * (0.6 + 0.4 * Math.min(1, p * 4))); o.s.material.opacity = 1 - p * p;
+      o.s.scale.setScalar((o.size || F.star) * (0.6 + 0.4 * Math.min(1, p * 4))); o.s.material.opacity = 1 - p * p;
     }
   }
   const TRAIL = { r: 0.04, speed: 0.1, lift: 0.1, life: [0.2, 0.4], up: 0, size: 0.6 };
   events.on('abilityPower', d => {
     if (!KINDS.includes(d.then)) return;
     if (d.land) { if (VIS.abilityFx[d.then].shoots) hit(d); return; }   // an arrow lands (the loose was its strike)
+    if (d.parry) { deflect(d); return; }   // before the call below: a parry is no new summon
     if (d.draw) cry(d);
     else if (d.strike) { strike(d); if (d.flight !== undefined && VIS.abilityFx[d.then].shoots) loose(d); }
     else call(d);
   });
   function clear() {
-    for (const f of pool) { f.body = null; f.rig.root.visible = f.rig.shadow.visible = false; }
+    for (const f of pool) { f.body = null; f.rig.root.visible = f.rig.shadow.visible = false; if (f.strings) f.strings.visible = false; }
     for (const q of arrows) { q.t = Infinity; q.g.visible = false; }
     for (const o of STAR || []) { o.age = Infinity; o.s.visible = false; }
   }
@@ -334,6 +401,7 @@ const summonFigures = (() => {
       if (Object.keys(F.guard).length) applyKeyPose(r, F.guard, w);
       return hopAt(f);
     },
-    clear, info: () => pool.filter(f => f.body).map(f => ({ kind: f.kind, x: f.x, z: f.z, speed: f.speed, striking: f.ac !== Infinity, move: f.ac !== Infinity ? f.m.a.pose : null, n: f.n, hop: f.hop, cry: f.cry !== Infinity })),
+    clear, info: () => pool.filter(f => f.body).map(f => ({ kind: f.kind, x: f.x, z: f.z, speed: f.speed, striking: f.ac !== Infinity, move: f.ac !== Infinity ? f.m.a.pose : null, n: f.n, hop: f.hop, cry: f.cry !== Infinity,
+      parry: f.parry !== Infinity, see: f.see, strings: !!(f.strings && f.strings.visible) })),
   };
 })();

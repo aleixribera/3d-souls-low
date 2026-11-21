@@ -169,8 +169,8 @@ function validateData({ visual = true } = {}) {
     need(opt('arrive') && opt('from') && opt('hold') && (S.fromTurn === undefined || num(S.fromTurn)) && (S.orbit === undefined || num(S.orbit))
       && [undefined, true, false].includes(S.perch) && opt('side') && opt('lift') && (S.shot === undefined || (num(S.shot) && S.shot > 0))
       && (S.hold === undefined || S.hold < (S.arrive ?? SUM.arrive)) && (!S.perch || (num(S.side) && num(S.lift) && num(S.shot)))
-      && opt('alt') && opt('dive') && [undefined, true, false].includes(S.head),
-      `CONFIG.abilities.summons.${k}: arrive, from, hold, side, lift, alt and dive 0 or more, fromTurn and orbit numbers, perch and head true or false (a perch needs side, lift and shot), shot above 0, hold under its arrive.`);
+      && opt('alt') && opt('dive') && [undefined, true, false].includes(S.head) && [undefined, true, false].includes(S.coil) && opt('drop'),
+      `CONFIG.abilities.summons.${k}: arrive, from, hold, side, lift, alt, dive and drop 0 or more, fromTurn and orbit numbers, perch, head and coil true or false (a perch needs side, lift and shot), shot above 0, hold under its arrive.`);
   }
   for (const b of ABILITIES) {
     const pw = b.power;
@@ -241,6 +241,27 @@ function validateData({ visual = true } = {}) {
     need(Cr && Number.isInteger(Cr.count) && Cr.count > 0 && ['color', 'eye', 'ink', 'lit'].every(n => hx(Cr[n]))
       && pos(Cr, ['outline', 'size', 'stagger', 'pour', 'head', 'ring', 'spin', 'spread', 'follow', 'dart', 'flap', 'flapAmp', 'cryTime', 'fade']) && Cr.burst,
       'CONFIG.VISUALS.abilityFx.crows: a whole count above 0, color, eye, ink and lit as hex, outline, size, stagger, pour, head, ring, spin, spread, follow, dart, flap, flapAmp, cryTime and fade above 0, and a burst.');
+    // Summons III (pass 147): the brutes (js/summon-brutes.js), the serpent (js/summon-coil.js), the ronin's deflect and
+    // the puppet's strings (js/summon-figures.js), and a large summon's `see` (0 to 1).
+    const hb = B => B && pos(B, ['count', 'speed']) && hx(B.color), slotsOf = pre => new Set(Object.keys(BAKED).filter(n => n.startsWith(pre)).map(n => n.split('__')[1].split('.')[0]));
+    for (const [k, B] of Object.entries(CONFIG.VISUALS.abilityFx)) if (B && B.brute) {
+      const slots = slotsOf(k + ':');
+      need(['color', 'core', 'ink', 'lit'].every(n => hx(B[n])) && Array.isArray(B.lights) && B.lights.every(s => slots.has(s))
+        && Object.entries(B.tones || {}).every(([s, t]) => slots.has(s) && Array.isArray(t) && t.length === 2 && t.every(hx))
+        && pos(B, ['outline', 'size', 'turn', 'rise', 'fade', 'strideRate', 'cryTime', 'boost', 'motes']) && num(B.flicker) && B.flicker >= 0
+        && num(B.see) && B.see > 0 && B.see <= 1 && hb(B.burst) && hb(B.hitBurst) && Array.isArray(B.shake) && B.shake.length === 2 && B.shake.every(num)
+        && (k !== 'bear' || (pos(B, ['swipeTime']) && B.impact && pos(B.impact, ['ahead', 'ring', 'shake']) && ['crack', 'dust', 'chunks'].every(n => num(B.impact[n]) && B.impact[n] >= 0))) && (k !== 'mantis' || pos(B, ['cutTime', 'shatter'])),
+        `CONFIG.VISUALS.abilityFx.${k}: a brute needs color, core, ink and lit as hex, lights a list of its model's slots, tones { slot: [ink, lit] }, outline, size, turn, rise, fade, strideRate, cryTime, boost and motes above 0, flicker 0 or more, see above 0 up to 1, burst and hitBurst, a shake, and the bear swipeTime and an impact (ahead, ring and shake above 0, crack, dust and chunks 0 or more), the mantis cutTime and shatter.`);
+    }
+    need(pos(CONFIG.VISUALS.abilityFx, ['seeWidth']), 'CONFIG.VISUALS.abilityFx.seeWidth: above 0 (m).');
+    const Sp = CONFIG.VISUALS.abilityFx.serpent, Ro = CONFIG.VISUALS.abilityFx.ronin, Pu = CONFIG.VISUALS.abilityFx.puppet;
+    need(Sp && ['color', 'core', 'ink', 'lit'].every(n => hx(Sp[n])) && Array.isArray(Sp.lights) && Sp.lights.every(s => slotsOf('serpent:').has(s))
+      && Number.isInteger(Sp.segs) && Sp.segs >= 4 && pos(Sp, ['outline', 'thick', 'turns', 'gap', 'climb', 'head', 'squeeze', 'squeezeTime', 'hissTime', 'boost', 'rise', 'fade', 'motes'])
+      && Sp.squeeze < 0.5 && num(Sp.spin) && hb(Sp.burst) && hb(Sp.hitBurst),
+      "CONFIG.VISUALS.abilityFx.serpent: color, core, ink and lit as hex, lights a list of its model's slots, a whole segs of 4 or more, outline, thick, turns, gap, climb, head, squeeze (under 0.5), squeezeTime, hissTime, boost, rise, fade and motes above 0, a spin, burst and hitBurst.");
+    need(Ro && Ro.ink === true && pos(Ro, ['star', 'deflectTime']) && Ro.deflect && typeof Ro.deflect === 'object' && Pu && pos(Pu, ['strings'])
+      && num(Pu.see) && Pu.see > 0 && Pu.see <= 1 && pos(CONFIG.abilities.summons.puppet, ['drop']),
+      'CONFIG.VISUALS.abilityFx: the ronin is ink with star and deflectTime above 0 and a deflect key pose; the puppet strings above 0, see above 0 up to 1, and CONFIG.abilities.summons.puppet a drop above 0.');
     const L = CONFIG.VISUALS.abilityFx.lantern;
     need(L && ['color', 'core', 'deep', 'ink'].every(n => hx(L[n])) && [L.burst, L.hitBurst].every(B => B && pos(B, ['count', 'speed']) && hx(B.color)) && pos(L, ['outline', 'bob', 'bobTime', 'rise', 'fade', 'ball', 'burstSize', 'warm', 'puff', 'sway', 'turn', 'motes']),
       'CONFIG.VISUALS.abilityFx.lantern: color, core, deep and ink as hex, burst and hitBurst with count, speed and a hex colour; outline, bob, bobTime, rise, fade, ball, burstSize, warm, puff, sway, turn and motes above 0.');

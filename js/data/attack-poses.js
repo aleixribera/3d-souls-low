@@ -353,3 +353,54 @@ ATTACK_POSES.lancerPike = {
               head: [0.25, 0, 0], armR: [-0.95, 0, 0.1], elbowR: [-0.1, 0, 0], weapon: [1.6, 0, 0], armL: [-0.85, 0, -0.1], elbowL: [-0.3, 0, 0] },
   }],
 };
+
+// Summons III (pass 147). The Ronin Shade (the blade in armR, held forward and up by its posture):
+// Ronin Draw: turned away, the blade dropped low by the left hip, then one flat cut across the boss's body, held.
+ATTACK_POSES.roninDraw = {
+  ease: { windup: 'inOutCubic', active: 'outExpo', follow: 'outCubic', recovery: 'inOutCubic' },
+  hits: [{
+    windup: { crouch: 0.16, lean: 0.12, legL: [-0.4, 0, 0], kneeL: [0.3, 0, 0], legR: [0.35, 0, 0], kneeR: [0.3, 0, 0], spin: [0, 0.6, 0],
+              chest: [0.05, 0.35, 0], neck: [0, -0.2, 0], head: [0.05, -0.35, 0], armR: [0.35, 0, 0.6], elbowR: [0.4, 0, 0], armL: [-0.3, 0, 0.2], elbowL: [-0.5, 0, 0] },
+    strike: { crouch: 0.22, lean: 0.25, legL: [-0.75, 0, 0], kneeL: [0.4, 0, 0], legR: [0.55, 0, 0], kneeR: [0.15, 0, 0], spin: [0, -0.75, 0],
+              chest: [0.12, -0.45, 0], neck: [0, 0.25, 0], head: [0.02, 0.45, 0], armR: [-1.45, 0, -0.75], elbowR: [0.15, 0, 0], armL: [0.2, 0, 0.5], elbowL: [-0.2, 0, 0] },
+    follow: { crouch: 0.23, lean: 0.27, legL: [-0.77, 0, 0], kneeL: [0.42, 0, 0], legR: [0.57, 0, 0], kneeR: [0.16, 0, 0], spin: [0, -0.82, 0],
+              chest: [0.13, -0.5, 0], neck: [0, 0.27, 0], head: [0.02, 0.48, 0], armR: [-1.4, 0, -0.85], elbowR: [0.15, 0, 0], armL: [0.22, 0, 0.55], elbowL: [-0.2, 0, 0] },
+  }],
+};
+// Ronin Cross: the blade raised straight over the hat, then brought down through the boss in one clean vertical cut.
+ATTACK_POSES.roninCross = {
+  ease: { windup: 'inOutSine', active: 'outExpo', follow: 'outCubic', recovery: 'inOutCubic' },
+  hits: [{
+    windup: { crouch: 0.05, lean: -0.08, legL: [-0.25, 0, 0], legR: [0.2, 0, 0], spin: [0, 0.15, 0], chest: [-0.18, 0.1, 0], head: [-0.1, 0, 0],
+              armR: [-2.7, 0, 0.15], elbowR: [-0.7, 0, 0], armL: [-2.5, 0, -0.2], elbowL: [-0.8, 0, 0] },
+    strike: { crouch: 0.25, lean: 0.35, legL: [-0.8, 0, 0], kneeL: [0.45, 0, 0], legR: [0.55, 0, 0], kneeR: [0.2, 0, 0], spin: [0, -0.1, 0],
+              chest: [0.2, -0.05, 0], head: [0.1, 0, 0], armR: [-0.7, 0, 0.05], elbowR: [0.05, 0, 0], armL: [-0.75, 0, -0.1], elbowL: [-0.05, 0, 0] },
+    follow: { crouch: 0.26, lean: 0.37, legL: [-0.82, 0, 0], kneeL: [0.46, 0, 0], legR: [0.56, 0, 0], kneeR: [0.2, 0, 0], spin: [0, -0.12, 0],
+              chest: [0.22, -0.06, 0], head: [0.12, 0, 0], armR: [-0.6, 0, 0.05], elbowR: [0.05, 0, 0], armL: [-0.65, 0, -0.1], elbowL: [-0.05, 0, 0] },
+  }],
+};
+// The Puppet Knight (its sword in armR, the buckler on the left forearm), every pose snapped through with an overshoot:
+// Puppet Chop: jerked up, the sword high behind the helm, then yanked down in an overhead chop.
+ATTACK_POSES.puppetChop = {
+  ease: { windup: 'outBack', active: 'outBack', follow: 'outCubic', recovery: 'outBack' },
+  hits: [{
+    windup: { crouch: -0.04, lean: -0.12, legL: [-0.2, 0, 0.1], legR: [0.15, 0, -0.1], chest: [-0.25, 0.1, 0], head: [-0.2, 0, 0.2],
+              armR: [-2.9, 0, 0.25], elbowR: [-0.9, 0, 0], armL: [-0.5, 0, 0.6], elbowL: [-0.6, 0, 0] },
+    strike: { crouch: 0.2, lean: 0.4, legL: [-0.7, 0, 0], kneeL: [0.5, 0, 0], legR: [0.5, 0, 0], kneeR: [0.3, 0, 0], chest: [0.3, -0.05, 0], head: [0.3, 0, -0.15],
+              armR: [-0.5, 0, 0.05], elbowR: [0, 0, 0], armL: [-0.2, 0, 0.3], elbowL: [-0.4, 0, 0] },
+    follow: { crouch: 0.22, lean: 0.42, legL: [-0.72, 0, 0], kneeL: [0.52, 0, 0], legR: [0.52, 0, 0], kneeR: [0.32, 0, 0], chest: [0.32, -0.05, 0], head: [0.4, 0, -0.2],
+              armR: [-0.35, 0, 0.05], elbowR: [0, 0, 0], armL: [-0.15, 0, 0.3], elbowL: [-0.4, 0, 0] },
+  }],
+};
+// Puppet Spin: wound round to its left on its strings, the sword out wide, then spun right round through the boss.
+ATTACK_POSES.puppetSpin = {
+  ease: { windup: 'outBack', active: 'outBack', follow: 'outCubic', recovery: 'outBack' },
+  hits: [{
+    windup: { crouch: 0.1, lean: 0.05, legL: [-0.3, 0, 0.1], legR: [0.3, 0, -0.1], spin: [0, 1.3, 0], chest: [0, 0.4, 0], head: [0, -0.5, 0.2],
+              armR: [-1.3, 0, 0.9], elbowR: [-0.2, 0, 0], armL: [-0.2, 0, 0.9], elbowL: [-0.3, 0, 0] },
+    strike: { crouch: 0.12, lean: 0.1, legL: [-0.35, 0, -0.1], legR: [0.35, 0, 0.1], spin: [0, -1.6, 0], chest: [0.05, -0.6, 0], head: [0, 0.4, -0.2],
+              armR: [-1.5, 0, -1.0], elbowR: [0, 0, 0], armL: [-0.2, 0, 1.0], elbowL: [-0.2, 0, 0] },
+    follow: { crouch: 0.12, lean: 0.12, legL: [-0.36, 0, -0.1], legR: [0.36, 0, 0.1], spin: [0, -1.75, 0], chest: [0.05, -0.65, 0], head: [0, 0.45, -0.25],
+              armR: [-1.45, 0, -1.1], elbowR: [0, 0, 0], armL: [-0.2, 0, 1.05], elbowL: [-0.2, 0, 0] },
+  }],
+};

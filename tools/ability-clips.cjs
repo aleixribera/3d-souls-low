@@ -3,7 +3,7 @@
 // each fired twice, its name in the corner: docs/scorecard/now/<set>-commons.mp4. The clock is stepped by hand
 // (Game.manualClock) and every other step is a frame, so a clip plays at real speed whatever the PC's speed. With
 // `--stills`, the guard set's current frames too (guard-*.jpg, desktop; -phone for two).
-// Usage: node tools/ability-clips.cjs [blade|guard|mirror|rares|triggers|echo|strikes|flashy|self|boss|summons|summons2 ...] [--stills]   (no set = all). One headless Edge; needs ffmpeg.
+// Usage: node tools/ability-clips.cjs [blade|guard|mirror|rares|triggers|echo|strikes|flashy|self|boss|summons|summons2|summons3 ...] [--stills]   (no set = all). One headless Edge; needs ffmpeg.
 require('../tests/low-priority.cjs');
 const fs = require('node:fs');
 const os = require('node:os');
@@ -158,6 +158,15 @@ const SETS = {
     ['Thunder Hawk', `p => { p.grantAbilities(['thunder-hawk']); __face(); __key3(); }`, 220, 'summons-thunder-hawk', 116],
     ['Night Owl', `(p, e) => { p.grantAbilities(['night-owl']); __face(); __key3(); __later(110, () => { const s = abilityOwlStrike(e, { attackId: 'light', damage: 10, poise: 0, knock: 0, hitstop: 0 }); abilityOwlLanded(e, s, e.takeHit(s, p)); }); }`, 170, 'summons-night-owl', 90],
   ] },
+  // Summons III (pass 147, batch 12): docs/scorecard/now/summons-three.mp4; with --stills summons-<id>.jpg (-phone for
+  // the first two). The Captain swings at the drawn ronin (its deflect) and the puppet drops in from above.
+  summons3: { ids: [], file: 'summons-three', phone: 2, crf: 30, beats: [
+    ['Ronin Shade', `(p, e) => { p.grantAbilities(['ronin-shade']); __face(); __key3(); __later(100, () => { const s = abilityPowers.summonOf('self'); if (s) e.yaw = Math.atan2(s.x - e.x, s.z - e.z); __swing(); }); }`, 200, 'summons-ronin-shade', 84],
+    ['Ash Bear', `p => { p.grantAbilities(['ash-bear']); __face(); __key3(); }`, 210, 'summons-ash-bear', 120],
+    ['Mire Serpent', `p => { p.grantAbilities(['mire-serpent']); __face(); __key3(); }`, 180, 'summons-mire-serpent', 100],
+    ['Puppet Knight', `p => { p.grantAbilities(['puppet-knight']); __face(); __key3(); }`, 190, 'summons-puppet-knight', 26],
+    ['Glass Mantis', `p => { p.grantAbilities(['glass-mantis']); __face(); __key3(); }`, 180, 'summons-glass-mantis', 96],
+  ] },
 };
 
 (async () => {
@@ -218,7 +227,7 @@ const SETS = {
             events.emit('strike', { strike: s, attacker: p, target: e, at: { x: e.x, y: e.y + 1.2, z: e.z }, blocked: false });
           };
           window.__reset = name => {
-            commonFx.clear(); rareFx.clear(); rareStrikeFx.clear(); strikeFx.clear(); strikeFx2.clear(); guardFx.clear(); guardFx2.clear(); abilityDomes.clear(); summonBeasts.clear(); summonLantern.clear(); summonFigures.clear(); abilityPowers.reset(); later.length = 0; tag.textContent = name; e.cracks = 0; events.emit('guardCrack', { enemy: e, cracks: 0 });
+            commonFx.clear(); rareFx.clear(); rareStrikeFx.clear(); strikeFx.clear(); strikeFx2.clear(); guardFx.clear(); guardFx2.clear(); abilityDomes.clear(); summonBeasts.clear(); summonLantern.clear(); summonFigures.clear(); summonBirds.clear(); summonCrows.clear(); summonBrutes.clear(); summonCoil.clear(); abilityPowers.reset(); later.length = 0; tag.textContent = name; e.cracks = 0; events.emit('guardCrack', { enemy: e, cracks: 0 });
             p.hp = p.maxHp; p.lastHp = p.hp; p.perk = abilityPerkState(); p.tint = 0;
             for (let i = 0; i < 30; i++) Game.update(CONFIG.step);
             e.x = e.px = p.x + Math.sin(p.yaw + 0.6) * 2.8; e.z = e.pz = p.z + Math.cos(p.yaw + 0.6) * 2.8; e.y = p.y; e.yaw = Math.atan2(p.x - e.x, p.z - e.z);

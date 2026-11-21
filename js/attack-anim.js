@@ -20,6 +20,7 @@ const EASE = {
   inOutSine: p => -(Math.cos(Math.PI * p) - 1) / 2,
   outExpo: p => p >= 1 ? 1 : 1 - Math.pow(2, -10 * p),
   inBack: p => 2.2 * p * p * p - 1.2 * p * p,   // pulls back a little before going
+  outBack: p => 1 + 2.7 * Math.pow(p - 1, 3) + 1.7 * Math.pow(p - 1, 2),   // snaps past and settles back (the Puppet Knight's strings)
 };
 const PHASE_EASE_KEY = { [PHASE.STARTUP]: 'windup', [PHASE.ACTIVE]: 'active', [PHASE.FOLLOW]: 'follow', [PHASE.RECOVERY]: 'recovery' };
 const MARKER_PHASES = ['windup', 'active', 'follow', 'recovery'];

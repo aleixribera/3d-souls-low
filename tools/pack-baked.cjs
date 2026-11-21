@@ -45,6 +45,11 @@ const FILES = {
   'bone-archer': { sources: ['bone_archer'] },
   'thunder-hawk': { sources: ['thunder_hawk'] },
   'night-owl': { sources: ['night_owl'] },
+  'ronin-shade': { sources: ['ronin_shade'] },
+  'mire-serpent': { sources: ['mire_serpent'] },
+  'puppet-knight': { sources: ['puppet_knight'] },
+  'ash-bear': { sources: ['ash_bear'] },
+  'glass-mantis': { sources: ['glass_mantis'] },
 };
 
 function readGlb(file) {

@@ -820,3 +820,64 @@ MODEL_DEFS.lancerOfAsh = {
     { bone: 'capeA', gain: 0.09, k: 38, damp: 4.2, flutter: 0.04 }, { bone: 'capeB', gain: 0.1, k: 34, damp: 3.6, flutter: 0.07, sideways: 1.1 },
   ] },
 };
+
+// Summons III (pass 147). Each one rigid baked piece per bone, built at its bone's rest place (the Bone Archer's way):
+// the piece names below are the Blender scripts' (tools/blender/ronin_shade.py, puppet_knight.py), `.n` its extra pieces.
+const bakedParts = (prefix, list) => Object.entries(list).flatMap(([bone, names]) => names.map(n =>
+  ({ use: 'baked', mesh: `${prefix}:${bone}__${n}`, bone, slot: n.split('.')[0], tile: 0.42 })));
+// The Ronin Shade: a lean ghost swordsman in a wide straw hat, a tattered cloak, a long blade in the right fist. Its guard
+// is its posture: the blade held forward and up before it.
+MODEL_DEFS.roninShade = {
+  extends: 'ironKnight', fit: 1.0, budget: 'player',
+  proportions: { ...IRONBOUND_PROPS, shoulderX: 0.30, torsoW: 0.19, torsoD: 0.13, armR: 0.045, legR: 0.07 },
+  posture: { chest: [0.06, 0.15, 0], head: [0.06, -0.1, 0], armR: [-0.35, 0, -0.05], elbowR: [-0.6, 0, 0.1],
+    armL: [-0.1, 0, 0.1], elbowL: [-0.2, 0, 0] },
+  materials: {
+    cloth: { tex: 'ashSoot', tint: 0x1a1d26, decay: 0.85 },
+    straw: { tex: 'ashSoot', tint: 0x8a7a58, decay: 0.6 },
+    steel: { glow: 0x8fb8dc },
+  },
+  body: { torso: null, pelvis: null, arms: null, legs: null, head: null, neck: null, hands: null, feet: null },
+  bones: {
+    loinF: { parent: 'spin', at: [0.0, -0.02, 0.14] }, loinB: { parent: 'spin', at: [0.0, -0.02, -0.14] },
+    capeA: { parent: 'chest', at: [0, 0.54, -0.14] }, capeB: { parent: 'capeA', at: [0, -0.42, 0] },
+  },
+  parts: bakedParts('ronin', {
+    head: ['cloth', 'straw', 'steel'], neck: ['cloth'], chest: ['cloth', 'cloth.1', 'cloth.2'], spin: ['cloth', 'cloth.1'],
+    loinF: ['cloth'], loinB: ['cloth'], capeA: ['cloth'], capeB: ['cloth'],
+    armL: ['cloth'], armR: ['cloth'], elbowL: ['cloth'], elbowR: ['cloth', 'cloth.1', 'steel'],
+    legL: ['cloth'], legR: ['cloth'], kneeL: ['cloth', 'straw'], kneeR: ['cloth', 'straw'],
+  }),
+  weapon: null,   // the blade is part of the figure (elbowR)
+  eyes: null,     // the hat hides its face
+  anim: { ...IRONBOUND_ANIM, cloth: [
+    { bone: 'loinF', gain: 0.14, k: 50, damp: 4.5, flutter: 0.07 }, { bone: 'loinB', gain: 0.16, k: 46, damp: 4.2, flutter: 0.08 },
+    { bone: 'capeA', gain: 0.12, k: 34, damp: 3.8, flutter: 0.06 }, { bone: 'capeB', gain: 0.16, k: 26, damp: 3, flutter: 0.12, sideways: 1.3 },
+  ] },
+};
+// The Puppet Knight: a life-size marionette of a knight in dark wood, ball joints, a cracked great helm, a wooden sword
+// and buckler. Slack at rest: the limbs hang a little loose from their strings.
+MODEL_DEFS.puppetKnight = {
+  extends: 'ironKnight', fit: 1.0, budget: 'player',
+  proportions: { ...IRONBOUND_PROPS, shoulderX: 0.32, torsoW: 0.2, torsoD: 0.14, armR: 0.05, legR: 0.065 },
+  posture: { head: [0.18, 0, 0.12], armR: [-0.25, 0, -0.08], elbowR: [-0.5, 0, 0], armL: [-0.1, 0, 0.12], elbowL: [-0.35, 0, 0] },
+  materials: {
+    wood: { tex: 'ashSoot', tint: 0x3a2e22, decay: 0.6 },
+    paint: { tex: 'ashSoot', tint: 0x6a3a30, decay: 0.7 },
+    joint: { glow: 0x8fb8dc },
+    crack: { glow: 0xf2f6fa },
+  },
+  body: { torso: null, pelvis: null, arms: null, legs: null, head: null, neck: null, hands: null, feet: null },
+  bones: { loinF: { parent: 'spin', at: [0.0, -0.02, 0.14] }, loinB: { parent: 'spin', at: [0.0, -0.02, -0.14] } },
+  parts: bakedParts('puppet', {
+    head: ['wood', 'crack', 'joint'], neck: ['joint'], chest: ['wood', 'paint', 'joint'], spin: ['wood', 'joint'],
+    loinF: ['paint'], loinB: ['paint'],
+    armL: ['wood'], armR: ['wood'], elbowL: ['wood', 'wood.1', 'joint'], elbowR: ['wood', 'wood.1', 'joint'],
+    legL: ['wood'], legR: ['wood'], kneeL: ['wood', 'joint'], kneeR: ['wood', 'joint'],
+  }),
+  weapon: null,   // the sword and the buckler are part of the figure (elbowR, elbowL)
+  eyes: null,     // its eyes are the visor's slit (the `crack` slot)
+  anim: { ...IRONBOUND_ANIM, cloth: [
+    { bone: 'loinF', gain: 0.1, k: 70, damp: 6, flutter: 0.02 }, { bone: 'loinB', gain: 0.1, k: 70, damp: 6, flutter: 0.02 },
+  ] },
+};

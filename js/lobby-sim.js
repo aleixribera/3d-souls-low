@@ -79,7 +79,7 @@ globalThis.host = (() => {
     if (type === 'abilityPerk' && d.perk === 'press/dome' && d.dome && d.body && d.body.botId) tellDome(d.body.botId, d.ability, d.dome);   // a bot's Moon Dome
     // A legendary fired or striking, for every browser to draw (js/ability-fx.js).
     if (type === 'abilityPower') eventList.push({ type, power: d.power, then: d.then, holder: d.holder, enemy: d.enemy?.netId || null,
-      x: d.x, y: d.y, z: d.z, v: d.v, strike: d.strike, draw: d.draw || undefined, path: d.path, flight: d.flight, mark: d.mark || undefined, yaw: d.yaw, over: d.over, end: d.end,
+      x: d.x, y: d.y, z: d.z, v: d.v, strike: d.strike, draw: d.draw || undefined, parry: d.parry || undefined, path: d.path, flight: d.flight, mark: d.mark || undefined, yaw: d.yaw, over: d.over, end: d.end,
       burst: d.burst || undefined, sputter: d.sputter || undefined, heal: d.heal || undefined, land: d.land || undefined });   // an Ash Husk bursting, a Binding Seal burning out, a lantern's heal
     const e = d.enemy || d.actor;
     if (type === 'attackStart' && e) e.netAttack = ++attackSerial;

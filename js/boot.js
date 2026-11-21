@@ -55,7 +55,9 @@ function registerListeners() {
   strikeFx2.attach();    // Strike II, the flashy key-1 strikes drawn (js/strike-fx-2.js)
   guardFx.attach();      // Guard I, the key-2 guards on yourself drawn (js/guard-fx.js)
   guardFx2.attach();     // Guard II, the key-2 guards that answer the boss drawn (js/guard-fx-2.js)
-  summonFigures.attach(); // the Stone Guardian, the Lancer of Ash and the Bone Archer drawn (js/summon-figures.js)
+  summonFigures.attach(); // the Stone Guardian, the Lancer of Ash, the Bone Archer, the Ronin Shade and the Puppet Knight drawn (js/summon-figures.js)
+  summonBrutes.attach(); // the Ash Bear and the Glass Mantis drawn (js/summon-brutes.js)
+  summonCoil.attach();   // the Mire Serpent drawn (js/summon-coil.js)
   registerAudioListeners();
 }
 

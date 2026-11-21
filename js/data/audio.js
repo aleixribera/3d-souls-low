@@ -487,6 +487,91 @@ const AUDIO = {
       { wave: 'sine', freq: 1568, a: 0.002, d: 0.4, gain: 0.12 },
       { wave: 'sine', freq: 3763, a: 0.002, d: 0.25, gain: 0.05 },
     ] },
+    // Summons III (pass 147). Ronin Shade: a sandal's knock, wind through cloth, a thin ringing blade.
+    abilityRonin: { bus: 'sfx', priority: 3, cooldown: 0.4, max: 1, verb: 0.6, heat: 0.25, jitter: 15, layers: [
+      { noise: 'white', filter: { type: 'bandpass', freq: 600, q: 4 }, a: 0.001, d: 0.02, gain: 0.5 },
+      { noise: 'pink', filter: { type: 'bandpass', freq: 500, q: 1 }, at: 0.03, a: 0.15, d: 0.45, gain: 0.3 },
+      { wave: 'sine', freq: 1175, at: 0.2, a: 0.003, d: 1, gain: 0.07 },
+      { wave: 'sine', freq: 3243, at: 0.2, a: 0.003, d: 0.5, gain: 0.025 },
+    ] },
+    // Each cut: a fast swish and a clean ring.
+    abilityRoninCut: { bus: 'sfx', priority: 2, cooldown: 0.2, max: 1, verb: 0.35, heat: 0.15, jitter: 20, layers: [
+      { noise: 'white', filter: { type: 'bandpass', freq: 2000, to: 6000, q: 2 }, a: 0.005, d: 0.06, gain: 0.4 },
+      { wave: 'sine', freq: 880, at: 0.04, a: 0.002, d: 0.3, gain: 0.07 },
+    ] },
+    // Mire Serpent: a deep plunge, water rising and pouring, a wet hiss.
+    abilitySerpent: { bus: 'sfx', priority: 3, cooldown: 0.4, max: 1, verb: 0.5, heat: 0.3, jitter: 15, layers: [
+      { wave: 'sine', freq: 70, a: 0.002, d: 0.3, gain: 0.6 },
+      { wave: 'sine', freq: 168, a: 0.002, d: 0.2, gain: 0.2 },
+      { noise: 'white', filter: { type: 'bandpass', freq: 300, to: 1200, q: 2 }, at: 0.05, a: 0.15, d: 0.45, gain: 0.35 },
+      { noise: 'pink', filter: { type: 'highpass', freq: 2000 }, at: 0.4, a: 0.05, d: 0.45, gain: 0.15 },
+    ] },
+    // Every other squeeze: a low creak of pressure.
+    abilityCoil: { bus: 'sfx', priority: 1, cooldown: 0.3, max: 1, verb: 0.3, heat: 0.08, jitter: 15, layers: [
+      { wave: 'sawtooth', freq: 65, filter: { type: 'lowpass', freq: 250 }, a: 0.02, d: 0.13, gain: 0.25 },
+    ] },
+    // Its rear as it draws the boss: a long hiss from the open mouth.
+    abilityHiss: { bus: 'sfx', priority: 2, cooldown: 0.5, max: 1, verb: 0.4, heat: 0.15, jitter: 10, layers: [
+      { noise: 'white', filter: { type: 'bandpass', freq: 5000, q: 2 }, a: 0.08, h: 0.4, d: 0.3, gain: 0.25 },
+    ] },
+    // Puppet Knight: strings snapping taut, a wooden clatter as it lands, a slow creak.
+    abilityPuppet: { bus: 'sfx', priority: 3, cooldown: 0.4, max: 1, verb: 0.5, heat: 0.25, jitter: 15, layers: [
+      { wave: 'sine', freq: 330, to: 495, glide: 0.04, a: 0.001, d: 0.1, gain: 0.2 },
+      { noise: 'white', filter: { type: 'bandpass', freq: 800, q: 3 }, at: 0.200, a: 0.001, d: 0.02, gain: 0.35 },
+      { noise: 'white', filter: { type: 'bandpass', freq: 800, q: 3 }, at: 0.225, a: 0.001, d: 0.02, gain: 0.33 },
+      { noise: 'white', filter: { type: 'bandpass', freq: 800, q: 3 }, at: 0.250, a: 0.001, d: 0.02, gain: 0.31 },
+      { noise: 'white', filter: { type: 'bandpass', freq: 800, q: 3 }, at: 0.275, a: 0.001, d: 0.02, gain: 0.29 },
+      { noise: 'white', filter: { type: 'bandpass', freq: 800, q: 3 }, at: 0.300, a: 0.001, d: 0.02, gain: 0.27 },
+      { noise: 'white', filter: { type: 'bandpass', freq: 800, q: 3 }, at: 0.325, a: 0.001, d: 0.02, gain: 0.25 },
+      { noise: 'white', filter: { type: 'bandpass', freq: 800, q: 3 }, at: 0.350, a: 0.001, d: 0.02, gain: 0.23 },
+      { noise: 'white', filter: { type: 'bandpass', freq: 800, q: 3 }, at: 0.375, a: 0.001, d: 0.02, gain: 0.21 },
+      { wave: 'sawtooth', freq: 110, filter: { type: 'bandpass', freq: 500, q: 3 }, at: 0.45, a: 0.1, d: 0.4, gain: 0.12 },
+    ] },
+    // Each blow: the strings' twang and a hard wooden thwack.
+    abilityPuppetBlow: { bus: 'sfx', priority: 2, cooldown: 0.2, max: 1, verb: 0.3, heat: 0.15, jitter: 20, layers: [
+      { wave: 'sine', freq: 440, a: 0.001, d: 0.15, gain: 0.12 },
+      { noise: 'white', filter: { type: 'bandpass', freq: 1200, q: 3 }, at: 0.03, a: 0.001, d: 0.04, gain: 0.5 },
+      { wave: 'sine', freq: 120, at: 0.03, a: 0.002, d: 0.08, gain: 0.4 },
+    ] },
+    // Ash Bear: the mound cracking, a deep growl over sliding ash, embers crackling.
+    abilityBear: { bus: 'sfx', priority: 3, cooldown: 0.4, max: 1, verb: 0.5, heat: 0.4, jitter: 15, layers: [
+      { noise: 'brown', filter: { type: 'lowpass', freq: 400 }, a: 0.002, d: 0.05, gain: 0.7 },
+      { wave: 'sawtooth', freq: 55, to: 70, glide: 0.6, filter: { type: 'lowpass', freq: 300 }, at: 0.05, a: 0.1, d: 0.6, gain: 0.35, drive: 2 },
+      { noise: 'pink', filter: { type: 'bandpass', freq: 1000, q: 1 }, at: 0.05, a: 0.1, d: 0.5, gain: 0.2 },
+      { noise: 'white', filter: { type: 'highpass', freq: 4000 }, at: 0.5, a: 0.01, d: 0.45, gain: 0.08 },
+    ] },
+    // Each swipe: a whoosh as it rears (the rear's word), then the heavy impact as it lands.
+    abilityRear: { bus: 'sfx', priority: 2, cooldown: 0.4, max: 1, verb: 0.3, heat: 0.15, jitter: 15, layers: [
+      { noise: 'white', filter: { type: 'bandpass', freq: 300, to: 1000, q: 2 }, a: 0.3, d: 0.2, gain: 0.3 },
+    ] },
+    abilityMaul: { bus: 'sfx', priority: 3, cooldown: 0.3, max: 1, verb: 0.45, heat: 0.45, jitter: 25, layers: [
+      { wave: 'sine', freq: 70, to: 40, a: 0.003, d: 0.3, gain: 0.7, drive: 1.6 },
+      { noise: 'white', filter: { type: 'bandpass', freq: 1500, q: 2 }, a: 0.002, d: 0.1, gain: 0.45 },
+    ] },
+    // Its draw: the growl, louder and longer, rising.
+    abilityRoar: { bus: 'sfx', priority: 3, cooldown: 0.8, max: 1, verb: 0.6, heat: 0.4, jitter: 10, layers: [
+      { wave: 'sawtooth', freq: 55, to: 85, glide: 0.9, filter: { type: 'lowpass', freq: 380 }, a: 0.1, h: 0.4, d: 0.5, gain: 0.45, drive: 2.2 },
+      { noise: 'pink', filter: { type: 'bandpass', freq: 700, q: 1 }, a: 0.1, h: 0.3, d: 0.5, gain: 0.2 },
+    ] },
+    // Glass Mantis: glass stabbing up, six small ticks as it unfolds, a ringing glass tone.
+    abilityMantis: { bus: 'sfx', priority: 3, cooldown: 0.4, max: 1, verb: 0.6, heat: 0.2, jitter: 15, layers: [
+      { wave: 'sine', freq: 3200, a: 0.002, d: 0.1, gain: 0.08 },
+      { wave: 'sine', freq: 8832, a: 0.002, d: 0.06, gain: 0.03 },
+      { noise: 'white', filter: { type: 'bandpass', freq: 4000, q: 6 }, at: 0.08, a: 0.001, d: 0.012, gain: 0.25 },
+      { noise: 'white', filter: { type: 'bandpass', freq: 4250, q: 6 }, at: 0.16, a: 0.001, d: 0.012, gain: 0.25 },
+      { noise: 'white', filter: { type: 'bandpass', freq: 4500, q: 6 }, at: 0.24, a: 0.001, d: 0.012, gain: 0.25 },
+      { noise: 'white', filter: { type: 'bandpass', freq: 4750, q: 6 }, at: 0.32, a: 0.001, d: 0.012, gain: 0.25 },
+      { noise: 'white', filter: { type: 'bandpass', freq: 5000, q: 6 }, at: 0.40, a: 0.001, d: 0.012, gain: 0.25 },
+      { noise: 'white', filter: { type: 'bandpass', freq: 5250, q: 6 }, at: 0.48, a: 0.001, d: 0.012, gain: 0.25 },
+      { wave: 'sine', freq: 1320, at: 0.55, a: 0.003, d: 0.8, gain: 0.06 },
+      { wave: 'sine', freq: 3168, at: 0.55, a: 0.003, d: 0.4, gain: 0.02 },
+    ] },
+    // Each cut: two crossed swishes 30 ms apart and a short glass ring.
+    abilityScissor: { bus: 'sfx', priority: 2, cooldown: 0.15, max: 1, verb: 0.3, heat: 0.1, jitter: 20, layers: [
+      { noise: 'white', filter: { type: 'bandpass', freq: 3000, to: 8000, q: 2 }, a: 0.005, d: 0.055, gain: 0.3 },
+      { noise: 'white', filter: { type: 'bandpass', freq: 3000, to: 8000, q: 2 }, at: 0.03, a: 0.005, d: 0.055, gain: 0.3 },
+      { wave: 'sine', freq: 1760, at: 0.05, a: 0.002, d: 0.2, gain: 0.04 },
+    ] },
     // Lantern Spirit (pass 141): paper unfolding in four crinkles, a candle catching, a soft wind chime.
     abilityLantern: { bus: 'sfx', priority: 3, cooldown: 0.4, max: 1, verb: 0.7, heat: 0.25, jitter: 20, layers: [
       { noise: 'white', filter: { type: 'bandpass', freq: 3000, q: 2 }, a: 0.002, d: 0.03, gain: 0.35 },

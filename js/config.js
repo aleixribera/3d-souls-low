@@ -47,6 +47,7 @@ const CONFIG = {
               twin: [2.6, 0.1], echo: [-0.6, 0.02], gale: [-2.4, 0.05], pyre: [3.2, 0.16], flare: [-1.1, 0.03], spark: [-0.8, 0.02],
               hound: [1.4, 0.05], bite: [-0.5, 0.02], draw: [1.2, 0.03], guardian: [2.2, 0.1], lancer: [1.2, 0.04], fox: [1, 0.03], lantern: [0.6, 0],
               crows: [0.8, 0.02], archer: [0.8, 0.02], hawk: [1.2, 0.04], stoop: [-0.6, 0.02], owl: [0.6, 0], owlBurst: [-0.4, 0.02],
+              ronin: [1.4, 0.04], serpent: [1.6, 0.06], puppet: [1.4, 0.05], bear: [2, 0.08], maul: [-0.8, 0.03], mantis: [1, 0.03],
               wave: [0.8, 0], crescent: [-1.4, 0.06], cyclone: [1.2, 0.04], petals: [1.4, 0.04],
               spikes: [-1.2, 0.04], fist: [2.4, 0.12], risingFire: [1.6, 0.05], clap: [2.0, 0.08],
               flurry: [-0.8, 0.02], drill: [-1.0, 0.02], stitch: [-1.0, 0.03], boomerang: [-0.8, 0.02], clones: [-1.6, 0.04], iai: [-2.2, 0.05],
@@ -378,7 +379,14 @@ const CONFIG = {
       crows: { gap: 0, flank: 0, speed: 16, height: 0.6, reach: 1.5, orbit: 1.4, head: true },
       archer: { gap: 8, flank: 2.5, speed: 6, height: 2.1, reach: 20, rises: true, shot: 40 },
       hawk: { gap: 1, flank: -0.8, speed: 18, height: 0.8, reach: 2, alt: 7, orbit: 1.2, dive: 0.35 },
-      owl: { gap: 0, flank: 0, speed: 10, height: 0.6, reach: 30, alt: 6, orbit: 0.8, markLife: 4 } } },
+      owl: { gap: 0, flank: 0, speed: 10, height: 0.6, reach: 30, alt: 6, orbit: 0.8, markLife: 4 },
+      // Batch 12 (pass 147): `coil` (the serpent): drawn wound round its enemy's body, its head where it stands; `drop` (the
+      // puppet): it falls into place from that many m up as it arrives; the bear's `dive` is its rear before a swipe lands.
+      ronin: { gap: 1.2, flank: 0.6, speed: 11, height: 1.8, reach: 2 },
+      serpent: { gap: 0.8, flank: 1.2, speed: 40, height: 1.6, reach: 3, rises: true, coil: true },
+      puppet: { gap: 1.2, flank: 1, speed: 7, height: 2, reach: 1.8, rises: true, drop: 6 },
+      bear: { gap: 1.4, flank: 1.3, speed: 6, height: 2.4, reach: 2.2, rises: true, dive: 0.6 },
+      mantis: { gap: 1.3, flank: 1.1, speed: 9, height: 2.4, reach: 2, rises: true } } },
   // A boss fights the group (v7.35.0, the server's targeting): anyone drinking a flask within `healReach` m of its
   // body draws it at once (the closest drinker); otherwise it turns on whoever hurt it most lately, else on the closest.
   // Each player's score is their distance in m, less `damage` m per 1% of its bar they dealt lately (fading with a time
@@ -912,6 +920,29 @@ const CONFIG = {
       // The Bone Archer (pass 144): bone lit cold with a blue rim, its eyes, string and arrows of light; it climbs out of
       // the floor at range (`floor`) and looses (`shoots`: its blow is an arrow, js/summon-figures.js `arrows`), each arrow
       // `arrow` m long with a trail of motes every `trail` s, a star `star` m on the boss where it lands.
+      seeWidth: 1.3,   // m: a large summon (its `see`) this near the line from the camera to its boss thins (summonBeasts.see)
+      // Summons III (pass 147), the large beasts (js/summon-brutes.js), cel-shaded like the hound: `lights` its slots of
+      // light, `tones` [ink, lit] for another slot's two bands, `see` how much shows between the camera and its boss.
+      // (The bear's embers are a blue tone, not light: lit white they read as a cracked marble statue.)
+      // The Ash Bear: rears through its swipe's wind-up (the engine's `dive`), slams down in `swipeTime` s (`impact` before
+      // it), roars for `cryTime` s.
+      bear: { brute: true, color: 0x8fb8dc, core: 0xf2f6fa, ink: 0x0e0f12, lit: 0x3a3a3e, lights: [], tones: { char: [0x050506, 0x16171a], ember: [0x2c5878, 0x8fb8dc] },
+        outline: 0.016, size: 1, flicker: 0.15, turn: 7, rise: 0.8, fade: 0.9, strideRate: 1.1, swipeTime: 0.55, cryTime: 1.2, boost: 0.9, motes: 0.08,
+        see: 0.4, impact: { ahead: 1.6, ring: 1.6, crack: 1, dust: 10, chunks: 6, shake: 1 }, shake: [0.18, 0.1],
+        burst: { count: 30, speed: 4, color: 0x8fb8dc }, hitBurst: { count: 10, speed: 5, color: 0xcfe4f2 } },
+      // The Glass Mantis: pale glass in two bands (`tones`), its edges and eyes light; its scythes open and scissor shut
+      // in `cutTime` s, its wings fan for `cryTime` s, and it goes in `shatter` glints.
+      mantis: { brute: true, color: 0x8fb8dc, core: 0xf2f6fa, ink: 0x2a3e4c, lit: 0x8fb0c2, lights: ['edge', 'eye'], tones: { glass: [0x2a3e4c, 0x9cc2d6] },
+        outline: 0.01, size: 1, flicker: 0.08, turn: 10, rise: 0.6, fade: 0.5, strideRate: 1.4, cutTime: 0.5, cryTime: 1.1, boost: 1, motes: 0.1,
+        see: 0.4, shatter: 30, shake: [0.1, 0.05],
+        burst: { count: 26, speed: 5, color: 0xcfe4f2 }, hitBurst: { count: 10, speed: 6, color: 0xf2f6fa } },
+      // The Mire Serpent (js/summon-coil.js): `segs` body segments `thick` times the model's, `turns` turns round its enemy
+      // `gap` m off its side up to `climb` of its height, turning `spin` rad/s; the head `head` times the model's. Each
+      // squeeze tightens it by `squeeze` over `squeezeTime` s; the hiss lasts `hissTime` s.
+      serpent: { color: 0x8fb8dc, core: 0xf2f6fa, ink: 0x0b0d12, lit: 0x24303e, lights: ['spine', 'tooth'], outline: 0.012, flicker: 0.12,
+        segs: 18, thick: 1.1, turns: 2.5, gap: 0.45, climb: 0.7, spin: 0.35, head: 1.5, squeeze: 0.15, squeezeTime: 0.35, hissTime: 1, boost: 0.9,
+        rise: 0.7, fade: 0.7, motes: 0.1, shake: [0.1, 0.05],
+        burst: { count: 26, speed: 4, color: 0x8fb8dc }, hitBurst: { count: 8, speed: 4, color: 0xcfe4f2 } },
       archer: { model: 'boneArcher', idle: 'still', scale: 1.15, floor: true, shoots: true,
         slots: { bone: 0xc8ccc8, cloth: 0x1c1d24, wood: 0x4a3a30 }, glows: ['light'], solid: true, stone: 0x9a9c98, color: 0x8fb8dc, core: 0xf2f6fa, rim: 1.1, body: 0.25,
         flicker: 0.1, turn: 8, rise: 0.8, fade: 0.7, strikeBoost: 0.8, strikeGlow: 0.25, motes: 0.12, cryTime: 1, shake: [0.12, 0.08],
@@ -921,6 +952,34 @@ const CONFIG = {
           { name: 'Loose', pose: 'archerLoose', hits: [{ startup: 0.4, active: 0.06, follow: 0.1 }], recovery: 0.2 },
         ],
         burst: { count: 30, speed: 5, color: 0xc8ccc8 }, hitBurst: { count: 8, speed: 4, color: 0xcfe4f2 } },
+      // Summons III (pass 147). The Ronin Shade: an ink ghost (`ink`: dark and see-through, a hard blue rim; its blade
+      // and hat rim of light), forming from the feet up; on the first blow its drawn boss aims at it, the `deflect` key
+      // pose for `deflectTime` s and a star of light `star` m at its blade.
+      ronin: { model: 'roninShade', idle: 'still', scale: 1.05, ink: true,
+        slots: { cloth: 0x10131a, straw: 0x2a2a30 }, glows: ['steel'], solid: false, color: 0x8fb8dc, core: 0xf2f6fa, rim: 1, body: 0.7,
+        flicker: 0.05, turn: 12, rise: 0.5, fade: 0.6, strikeBoost: 0.9, strikeGlow: 0.2, motes: 0.1, cryTime: 1, shake: [0.1, 0.06],
+        star: 1.1, deflectTime: 0.45,
+        guard: {}, cry: { armR: [-1.1, 0, 0.1], elbowR: [-0.1, 0, 0], chest: [0.05, -0.2, 0], head: [0.1, 0.15, 0] },
+        deflect: { armR: [-1.7, 0, 0.55], elbowR: [-0.9, 0, 0], chest: [-0.05, 0.35, 0], spin: [0, 0.3, 0], head: [-0.05, -0.2, 0] },
+        moves: [
+          { name: 'Ronin Draw', pose: 'roninDraw', hits: [{ startup: 0.45, active: 0.08, follow: 0.18 }], recovery: 0.35 },
+          { name: 'Ronin Cross', pose: 'roninCross', hits: [{ startup: 0.4, active: 0.08, follow: 0.18 }], recovery: 0.35 },
+        ],
+        burst: { count: 24, speed: 4, color: 0x8fb8dc }, hitBurst: { count: 8, speed: 5, color: 0xf2f6fa } },
+      // The Puppet Knight: lit wood (`solid`) with its ball joints of blue light; it drops from the dark on `strings` (five
+      // lines of light up `strings` m, a sixth to its holder's hand while it arrives), its moves snapped through (outBack).
+      // `see`: a large summon thins to this much when it stands between the camera and its boss (a dither, drawing only).
+      puppet: { model: 'puppetKnight', idle: 'still', scale: 1.0, see: 0.4, strings: 12,
+        slots: { wood: 0x4a3a2a, paint: 0x7a4436 }, glows: ['joint', 'crack'], solid: true, stone: 0x4a3a2a, color: 0x8fb8dc, core: 0xf2f6fa, rim: 0.9, body: 0.25,
+        flicker: 0.05, turn: 10, rise: 0.7, fade: 0.8, strikeBoost: 0.8, strikeGlow: 0.25, motes: 0.2, cryTime: 1, shake: [0.14, 0.08],
+        guard: { armR: [-0.5, 0, 0], elbowR: [-0.8, 0, 0], head: [0.1, 0, -0.1] },
+        cry: { armL: [0.1, 0, 1.4], elbowL: [-0.2, 0, 0], armR: [0.1, 0, -1.4], elbowR: [-0.2, 0, 0], head: [-0.6, 0, 0.25], chest: [-0.15, 0, 0] },
+        moves: [
+          { name: 'Puppet Chop', pose: 'puppetChop', hits: [{ startup: 0.4, active: 0.1, follow: 0.15 }], recovery: 0.3,
+            impact: { ahead: 1.1, ring: 1.2, crack: 0, dust: 6, chunks: 0, shake: 0.4 } },
+          { name: 'Puppet Spin', pose: 'puppetSpin', hits: [{ startup: 0.4, active: 0.12, follow: 0.15 }], recovery: 0.3 },
+        ],
+        burst: { count: 20, speed: 4, color: 0x9a958c }, hitBurst: { count: 8, speed: 4, color: 0xcfe4f2 } },
       lancer: { model: 'lancerOfAsh', idle: 'guard', scale: 1.1, slots: { ash: 0xaaa59e, char: 0x3a3534 }, glows: ['cinder'],
         solid: true, stone: 0x4a4644, color: 0x8fb8dc, core: 0xf2f6fa, rim: 1.25, body: 0.26,
         flicker: 0.2, turn: 11, rise: 0.4, fade: 0.6, strikeBoost: 0.9, strikeGlow: 0.22, motes: 0.07, cryTime: 0.9, shake: [0.14, 0.08],

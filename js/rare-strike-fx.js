@@ -259,7 +259,8 @@ const rareStrikeFx = (() => {
         throwFlakes(at.x, at.y, at.z, 6, PALES, FALL);
         break;
       }
-      case 'hound': case 'guardian': case 'lancer': case 'fox': case 'lantern': case 'crows': case 'archer': case 'hawk':   // Hunting Call: its holder's own summon marked the boss
+      case 'hound': case 'guardian': case 'lancer': case 'fox': case 'lantern': case 'crows': case 'archer': case 'hawk':
+      case 'ronin': case 'serpent': case 'puppet': case 'bear': case 'mantis':   // Hunting Call: its holder's own summon marked the boss
         if (d.mark && d.strike && e && d.body === Game.player) {
           mark.age = 0; mark.e = e; mark.keep = CONFIG.abilities.mark.keep; mark.s.material.opacity = 1; mark.s.visible = true;
         }
@@ -471,7 +472,7 @@ const rareStrikeFx = (() => {
     for (const s of sparks.list) s.visible = false;
     for (const q of bursts) { q.age = Infinity; for (const s of q.list) s.visible = false; }
   }
-  const THENS = new Set(['wave', 'crescent', 'cyclone', 'petals', 'hound', 'guardian', 'lancer', 'fox', 'lantern', 'crows', 'archer', 'hawk', 'ghostBlade']);
+  const THENS = new Set(['wave', 'crescent', 'cyclone', 'petals', 'hound', 'guardian', 'lancer', 'fox', 'lantern', 'crows', 'archer', 'hawk', 'ronin', 'serpent', 'puppet', 'bear', 'mantis', 'ghostBlade']);
   return {
     attach() {
       make(); Game.renderHooks.push(render); visuals.hooks.stage.push(clear);

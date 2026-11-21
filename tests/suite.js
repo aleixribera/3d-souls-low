@@ -349,6 +349,65 @@
         'another\'s crows, archer, hawk and owl are drawn');
     } finally { audio.play = play; Game.lock = null; summonCrows.clear(); summonBirds.clear(); summonFigures.clear(); p.grantAbilities([]); }
   });
+  // Pass 147 (PLAN.md item 8, batch 12): the five Summons III drawn, and drawn from the server's word.
+  test('summons three: the ronin cuts and deflects, the serpent coils and squeezes, the puppet drops on strings, the bear rears and slams, the mantis scissors; another\'s from the server\'s word', () => {
+    Game.startLevel('test-abilities'); sim.begin(); sim.step(2);
+    const p = Game.player, e = Game.enemies.find(o => o.def.id === 'greatDummy'), played = [];
+    const play = audio.play; audio.play = (id, o) => { played.push(id); return play.call(audio, id, o); };
+    const ctx = { x: e.x, y: e.y, z: e.z, enemy: e, key: 'summon' };
+    const wipe = () => { abilityPowers.reset(); summonFigures.clear(); summonBrutes.clear(); summonCoil.clear(); };
+    const press = id => { wipe(); p.grantAbilities([id]); abilityPowers.reset(); abilityPowers.trigger('self', p, p.kit, 'press', ctx); };
+    const heard = ids => expect.ok(ids.every(id => played.includes(id)), `heard ${ids.join(', ')} (${[...new Set(played)].join(', ')})`);
+    try {
+      p.x = e.x - 6; p.z = e.z; Game.lock = e;
+      press('ronin-shade');
+      let cuts = 0, parried = false;
+      for (let i = 0; i < 4 * 60; i++) {
+        sim.step(1, 1);
+        if (i === 150) events.emit('abilityPower', { power: 'ronin-shade', then: 'ronin', holder: 'self', body: p, enemy: e, x: e.x, y: e.y, z: e.z, v: ABILITY_BY_ID['ronin-shade'].levels[0], parry: true });
+        const f = summonFigures.info().find(q => q.kind === 'ronin'); if (f) { cuts = Math.max(cuts, f.n); parried = parried || f.parry; }
+      }
+      expect.above(cuts, 1, `the ronin cuts (${cuts})`);
+      expect.ok(parried && summonFigures.info().filter(q => q.kind === 'ronin').length === 1, 'its deflect is drawn on the same ronin, no second one called');
+      heard(['abilityRonin', 'abilityRoninCut', 'parry']);
+      played.length = 0; press('puppet-knight');
+      let strings = 0, struck = 0;
+      for (let i = 0; i < 4 * 60; i++) { sim.step(1, 1); const f = summonFigures.info().find(q => q.kind === 'puppet'); if (f) { if (f.strings) strings++; struck = Math.max(struck, f.n); } }
+      expect.above(strings, 100, `the puppet hangs on its strings (${strings} frames)`);
+      expect.above(struck, 1, `and strikes (${struck})`);
+      heard(['abilityPuppet', 'abilityPuppetBlow']);
+      played.length = 0; press('ash-bear');
+      let reared = false, swiped = false;
+      for (let i = 0; i < 5 * 60; i++) { sim.step(1, 1); const b = summonBrutes.info().find(q => q.kind === 'bear'); if (b) { reared = reared || b.rear; swiped = swiped || b.swipe; } }
+      expect.ok(reared && swiped, `the bear rears (${reared}) and slams down (${swiped})`);
+      heard(['abilityBear', 'abilityRear', 'abilityMaul']);
+      played.length = 0; press('glass-mantis');
+      let cut = false, fan = false;
+      for (let i = 0; i < 4 * 60; i++) { sim.step(1, 1); const m = summonBrutes.info().find(q => q.kind === 'mantis'); if (m) { cut = cut || m.cut; fan = fan || m.cry; } }
+      expect.ok(cut && fan, `the mantis scissors (${cut}) and fans its wings (${fan})`);
+      heard(['abilityMantis', 'abilityScissor']);
+      played.length = 0; press('mire-serpent');
+      let squeezed = false, round = Infinity;
+      for (let i = 0; i < 4 * 60; i++) { sim.step(1, 1); const c = summonCoil.info()[0]; if (c) { squeezed = squeezed || c.squeeze; round = Math.min(round, Math.hypot(c.x - e.x, c.z - e.z)); } }
+      expect.ok(squeezed && round < 1e-3, `the serpent is coiled round the boss (${round.toFixed(3)} m off it) and squeezes (${squeezed})`);
+      heard(['abilitySerpent', 'abilityCoil']);
+      // Online: another's five drawn from the server's word, and the ronin's deflect.
+      wipe(); p.grantAbilities([]);
+      const other = { x: p.x + 1, y: p.y, z: p.z, yaw: 0, alive: () => true }, net = { self: 'me', bodyOf: id => (id === 'them' ? other : null) };
+      const five = [['ronin-shade', 'ronin'], ['mire-serpent', 'serpent'], ['puppet-knight', 'puppet'], ['ash-bear', 'bear'], ['glass-mantis', 'mantis']];
+      for (const [id, then] of five) netView.ability({ power: id, then, holder: 'them', x: other.x, y: other.y, z: other.z, v: ABILITY_BY_ID[id].levels[0] }, e, net);
+      for (let i = 0; i < 30; i++) Game.render(1, STEP);
+      const figs = summonFigures.info(), brutes = summonBrutes.info();
+      expect.ok(figs.some(f => f.kind === 'ronin') && figs.some(f => f.kind === 'puppet') && brutes.some(b => b.kind === 'bear') && brutes.some(b => b.kind === 'mantis') && summonCoil.info().length === 1,
+        'another\'s ronin, puppet, bear, mantis and serpent are drawn');
+      netView.ability({ power: 'ronin-shade', then: 'ronin', holder: 'them', x: other.x, y: other.y, z: other.z, v: ABILITY_BY_ID['ronin-shade'].levels[0], parry: true }, e, net);
+      Game.render(1, STEP);
+      expect.ok(summonFigures.info().some(f => f.kind === 'ronin' && f.parry), 'and its deflect');
+      netView.ability({ power: 'ash-bear', then: 'bear', holder: 'them', x: other.x, y: other.y, z: other.z, v: ABILITY_BY_ID['ash-bear'].levels[0], strike: 1, flight: 0.6 }, e, net);
+      Game.render(1, STEP);
+      expect.ok(summonBrutes.info().some(b => b.kind === 'bear' && b.rear), 'and the bear rearing on the word');
+    } finally { audio.play = play; Game.lock = null; wipe(); p.grantAbilities([]); }
+  });
   test('regression: every duel runs 20 s and the enemy engages', () => {
     for (const d of [...A.ENEMY_DEFS, ...A.TEST_DEFS]) {
       Game.startFight(d.id); sim.begin();

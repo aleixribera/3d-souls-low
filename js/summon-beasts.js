@@ -47,11 +47,12 @@ const summonBeasts = (() => {
   // The part past the cut (above it, uFrom 1) isn't there, and a hard white seam runs along the cut.
   const fragment = `
     uniform vec3 uInk; uniform vec3 uLit; uniform vec3 uColor; uniform vec3 uCore; uniform float uCut; uniform float uFrom;
-    uniform float uTime; uniform float uBoost; uniform float uBright; uniform float uFlicker;
+    uniform float uTime; uniform float uBoost; uniform float uBright; uniform float uFlicker; uniform float uSee;
     varying vec3 vN; varying vec3 vV; varying vec3 vW; varying float vY;
     void main() {
       float edge = (vY - uCut) * uFrom;
       if (edge > 0.0) discard;
+      if (uSee < 0.99 && fract(52.9829189 * fract(dot(gl_FragCoord.xy, vec2(0.06711056, 0.00583715)))) > uSee) discard;
       float rim = 1.0 - abs(dot(normalize(vN), normalize(vV)));
       float flick = uFlicker * sin(uTime * 11.0 + vY * 13.0) * sin(uTime * 6.1 - vY * 5.3);
       vec3 c;
@@ -70,18 +71,20 @@ const summonBeasts = (() => {
       gl_Position = projectionMatrix * viewMatrix * world;
     }`;
   const outlineFragment = `
-    uniform vec3 uInk; uniform float uCut; uniform float uFrom; varying float vY;
-    void main() { if ((vY - uCut) * uFrom > 0.0) discard; gl_FragColor = vec4(uInk, 1.0); }`;
+    uniform vec3 uInk; uniform float uCut; uniform float uFrom; uniform float uSee; varying float vY;
+    void main() { if ((vY - uCut) * uFrom > 0.0) discard; if (uSee < 0.99 && fract(52.9829189 * fract(dot(gl_FragCoord.xy, vec2(0.06711056, 0.00583715)))) > uSee) discard; gl_FragColor = vec4(uInk, 1.0); }`;
   function material(F, shared, bright, own = null) {
     return new THREE.ShaderMaterial({ uniforms: { ...shared, ...own, uBright: { value: bright ? 1 : 0 } }, vertexShader: vertex, fragmentShader: fragment });
   }
   // One summon's cel materials (VIS.abilityFx.<kind>: ink, lit, color, core, flicker, outline): `shared` holds the uniforms
-  // they move together (the cut, the time, the glow); `tone(ink, lit)` another ink slot in its own two bands (the owl's
-  // bars). Shared with the birds (js/summon-birds.js).
+  // they move together (the cut, the time, the glow, `uSee`: how much of it shows, thinned by a dither when a large one
+  // stands between the camera and its boss, see()); `tone(ink, lit)` another ink slot in its own two bands (the owl's
+  // bars). Shared with the birds (js/summon-birds.js) and the brutes (js/summon-brutes.js).
   function cel(F) {
     const shared = { uInk: { value: new THREE.Color(F.ink) }, uLit: { value: new THREE.Color(F.lit) }, uColor: { value: new THREE.Color(F.color) },
-      uCore: { value: new THREE.Color(F.core) }, uCut: { value: 0 }, uFrom: { value: 1 }, uTime: { value: 0 }, uBoost: { value: 1 }, uFlicker: { value: F.flicker } };
-    const outline = new THREE.ShaderMaterial({ uniforms: { uInk: shared.uInk, uCut: shared.uCut, uFrom: shared.uFrom, uWidth: { value: F.outline } },
+      uCore: { value: new THREE.Color(F.core) }, uCut: { value: 0 }, uFrom: { value: 1 }, uTime: { value: 0 }, uBoost: { value: 1 }, uFlicker: { value: F.flicker },
+      uSee: { value: 1 } };
+    const outline = new THREE.ShaderMaterial({ uniforms: { uInk: shared.uInk, uCut: shared.uCut, uFrom: shared.uFrom, uSee: shared.uSee, uWidth: { value: F.outline } },
       vertexShader: outlineVertex, fragmentShader: outlineFragment, side: THREE.BackSide });
     return { shared, dark: material(F, shared, false), bright: material(F, shared, true), outline,
       tone: (ink, lit) => material(F, shared, false, { uInk: { value: new THREE.Color(ink) }, uLit: { value: new THREE.Color(lit) } }) };
@@ -259,6 +262,18 @@ const summonBeasts = (() => {
     spawnBurst(at, F.hitBurst); light(at, F.color, 3, 5);
   }
   const ease = t => t * t * (3 - 2 * t);
+  // How much of a large summon at (x, z) should show (pass 147): `see` (VIS.abilityFx.<kind>.see) while it stands within
+  // VIS.abilityFx.seeWidth m of the line from the camera to its boss `e` and nearer the camera than it, else all of it.
+  // Drawing eases toward it, so it never pops. A summon is never in the player's way: the boss stays readable through it.
+  function see(x, z, e, amount) {
+    if (!e || !(amount < 1)) return 1;
+    const SEE_WIDTH = VIS.abilityFx.seeWidth;
+    const cx = camera.position.x, cz = camera.position.z, ex = e.x - cx, ez = e.z - cz, L2 = ex * ex + ez * ez;
+    if (L2 < 1e-4) return 1;
+    const t = ((x - cx) * ex + (z - cz) * ez) / L2;
+    if (t <= 0 || t >= 1) return 1;
+    return Math.abs((x - cx) * ez - (z - cz) * ex) / Math.sqrt(L2) < SEE_WIDTH ? amount : 1;
+  }
   // One beast's pose this frame: where it is, its stride, and the lunge or howl on top. `size` scales the hound's lifts.
   function pose(h, dt, now) {
     const F = h.F, P = h.pivots, z = F.size, run = clamp01(h.speed / F.gallopAt), prowl = 1 - run;
@@ -349,7 +364,7 @@ const summonBeasts = (() => {
       if (!beasts.length) { makeMarks(); for (const k of KINDS) for (let i = 0; i < 4; i++) beasts.push(make(k)); }
       Game.renderHooks.push(draw); visuals.hooks.stage.push(clear);
     },
-    clear, cel, info: () => beasts.filter(h => h.body).map(h => ({ kind: h.kind, x: h.x, z: h.z, speed: h.speed, lunge: h.lunge !== Infinity, howl: h.howl !== Infinity,
+    clear, cel, see, info: () => beasts.filter(h => h.body).map(h => ({ kind: h.kind, x: h.x, z: h.z, speed: h.speed, lunge: h.lunge !== Infinity, howl: h.howl !== Infinity,
       tongues: h.F.ring ? tongues.filter(q => q.age !== Infinity).length : 0 })),
   };
 })();
