@@ -3,12 +3,12 @@
 The iterate loop's working note (`.claude/iterate.md`). Cap: 8,000 characters.
 
 ## Now
-- Track 2, pass 122, PLAN item 8 batch 5 (pass 1 of 2), done in v7.174.0: six rares' new triggers. Riptide
-  (`counter/wave`), Moonfall Cut (`land/crescent`), Iron Cyclone (`comboHeavy/cyclone`, a new server claim), Petal
-  Storm (`finisher/petals`), Ironclad (`flask/unshaken`), Hunting Call (`summonHit/empower`), drawn in blue by
-  `js/rare-strike-fx.js`. Acceptance: `tests/rare-triggers.cjs`, in-page `rare triggers`; clip
-  `docs/scorecard/now/rare-triggers.mp4` (`node tools/ability-clips.cjs triggers`). Next on track 2: batch 5 pass 2,
-  Echoing Blade and Overcharge. Browser lock: `node tools/browser-lock.cjs run <pass> -- <cmd>` (docs/two-tracks.md).
+- Track 2, pass 126, PLAN item 8 batch 5 (pass 2 of 2), done in v7.178.0: batch 5 is through. Echoing Blade
+  (`cast/ghostBlade`: a key fired arms echoes, each landed blow cut again by a ghost sword) and Overcharge
+  (`ready/overcharge`: a full key fills on to double, a HUD ring, its press raised by the share). The server's press
+  claim now takes Guard keys too. Acceptance: `tests/rare-triggers.cjs`, in-page `rare triggers` (2); clip
+  `docs/scorecard/now/echo-overcharge.mp4` (`node tools/ability-clips.cjs echo`). Next on track 2: batch 6 of
+  `design/abilities/BUILD-ORDER.md`. Browser lock: `node tools/browser-lock.cjs run <pass> -- <cmd>` (docs/two-tracks.md).
 - Track 1, pass 127, PLAN item 6 (pass 2 of the Giant): the Giant Skeleton in cel, by data. Black irons, the club's
   tell on its skull (`edgeTell` slot `clubHead`), smaller claw and foot halos, a soft spine, a smear on his swings, and
   in-between keys on the Sweep, Claw, Slam and Club and Claw (`via`, `slamLanded`). `edges-1` round 9: motion 5,
