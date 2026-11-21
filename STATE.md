@@ -3,12 +3,12 @@
 The iterate loop's working note (`.claude/iterate.md`). Cap: 8,000 characters.
 
 ## Now
-- Track 2, pass 131, PLAN item 8 batch 7 (pass 1 of 1), done in v7.183.0: Strike II. Sparrow Flurry (`press/flurry`,
-  thrusts while planted, `Player.root`), Whirl Drill, Shadow Stitch, Spinning Blade (`bladeTick`, out and back), Three
-  Shadows (ink figures, `js/strike-fx-2.js`) and Quick Draw (`stanceTick`: stance, draw, split; cut short, the charge back).
-  Acceptance: `tests/strike-flashy.cjs`, in-page `strike flashy`; clip `docs/scorecard/now/strike-flashy.mp4`
-  (`node tools/ability-clips.cjs flashy`). CI flake in `tests/calling.cjs` (a spent legendary offered) hardened. Next on
-  track 2: batch 8, Guard I. Browser lock: `node tools/browser-lock.cjs run <pass> -- <cmd>` (docs/two-tracks.md).
+- Track 2, pass 134, PLAN item 8 batch 8 (pass 1 of 1), done in v7.186.0: Guard I. Iron Root (`root/bite`, no knock),
+  Unbroken (`Player.floorHp`, `loseHp` for burns), Vanishing Step (`vanished()`, server `vanishOf` turns the boss away),
+  Ember Mail (plates), Still Water (`abilityPools`, a `guardPool` frame event); Mending and Iron Stance drawn and heard
+  (`js/guard-fx.js`). Acceptance: `tests/guard-self.cjs`, in-page `guard self`; clip `docs/scorecard/now/guard-self.mp4`
+  (`node tools/ability-clips.cjs self`). Next on track 2: batch 9, Guard II. Browser lock:
+  `node tools/browser-lock.cjs run <pass> -- <cmd>` (docs/two-tracks.md).
 - Track 1, pass 135 (PLAN item 6, the Antlered Hunger, pass 3: cel look, in-between keys, judge): a thin ribbon on its
   claws (`BOSS_FX.antlered`; the default band drew a pale disc over it), `via` keys on every plain move, each wind-up its
   own shape within its first fifth (`bars-1` round: its three opened on the same crouch). Acceptance: body-check 0/27,
