@@ -11,7 +11,8 @@ Parts: judge (panel: `docs/scorecard/panel/`), review (weekly, from 2026-11-20),
 - Two tracks at once (when `PLAN.md` says so): each pass in its own worktree, by `docs/two-tracks.md`.
 - Stop point (Aleix, 2026-11-21): when `PLAN.md` items 5 to 8 are done (all 14 bosses through the boss system, the
   whole ability pool built), the pass that finishes the last of them writes the pause line in `STATE.md` "Now"; the
-  "Later" items wait for Aleix and the director.
+  "Later" items wait for Aleix and the director. "Through the system" means a rework where a boss misses the
+  system's bars (own moves, combos, signature moments, a real phase two), not just a restyle (Aleix, 2026-11-21).
 - No per-release or per-model docs: the commit message holds the details, and the in-game changelog
   (`js/data/changelog.js`) is the one changelog. A model's notes are its `tools/blender/<name>.py` header.
 - Third-party assets: logged in the header of the file that uses it.
