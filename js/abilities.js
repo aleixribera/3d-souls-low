@@ -112,6 +112,7 @@ const ABILITY_POWERS = {
   'dashPast/spark': ['damage', 'cooldown'], 'stringEnd/lick': ['damage'], 'fullHeavy/molten': ['damage'],
   'dashStrike/lateCut': ['damage'], 'dodge/afterimage': ['damage'], 'jump/whirl': ['damage', 'cooldown'],
   'block/thorns': ['damage', 'cooldown'], 'flask/burnHits': ['hits', 'damage'], 'crack/shards': ['damage'],
+  'parryShot/reflect': ['damage'],
 };
 const SUMMONS = new Set(['twin', 'hound', 'guardian', 'lancer']);
 // The summons that strike on their own, every `every` s from `reach` m off their enemy's body (the twin echoes its holder).
@@ -137,7 +138,8 @@ function summonStep(s, e, body, dt) {
 }
 // The triggers a person's browser reports to the server (the rest it sees itself: a parry, a landed blow, a counter).
 // A press is a key's power fired (below); the server checks it against its own count of that key's charge.
-const ABILITY_CLAIMS = ['land', 'dodge', 'low', 'flask', 'press', 'dashPast', 'jump', 'block'];
+// `parryShot` (Mirror Shard): a bolt deflected; each browser flies the shots at its own player (js/projectiles.js).
+const ABILITY_CLAIMS = ['land', 'dodge', 'low', 'flask', 'press', 'dashPast', 'jump', 'block', 'parryShot'];
 // The enemy a dash from `from` to `to` (each { x, z }) went past (Spark Step's `dashPast`): the nearest live one whose
 // body's edge came within `gap` m of the path at a point strictly between its ends (past it, not into it), else null.
 function dashPastOf(from, to, enemies, gap = CONFIG.abilities.commons.pastGap) {
@@ -328,9 +330,9 @@ function abilityReport(body, when, ctx) {
 const ECHO_DELAY = 0.06;   // s from its holder's blow to the twin's: the two land as one
 // The powers that need a live enemy to strike (the one parried, struck, broken or dodged).
 const ON_ENEMY = new Set(['lightning', 'blades', 'flare', 'spark', 'gale', 'pyre', 'hound', 'lancer', 'lick', 'molten', 'lateCut', 'afterimage',
-  'thorns', 'shards']);
+  'thorns', 'shards', 'reflect']);
 // The powers whose blow lands a beat after they fire: each tells every browser again as it lands (`strike`).
-const DELAYED = new Set(['lightning', 'lateCut', 'afterimage', 'shards']);
+const DELAYED = new Set(['lightning', 'lateCut', 'afterimage', 'shards', 'reflect']);
 const abilityPowers = (() => {
   // The powers still striking (lightning, blades, a pyre, a twin's echo): { pw, holder, enemy, left, next, n }, an echo
   // with its own `damage` and `twin`.
@@ -400,12 +402,15 @@ const abilityPowers = (() => {
     if (pw.then === 'afterimage' && Math.hypot(e.x - x, e.z - z) - (e.radius || 0) > CONFIG.abilities.commons.imageReach) return false;   // out of the copy's reach
     // A spark along a dash carries its path (drawn as a line on the ground).
     const path = ctx.from && ctx.to ? { from: { x: ctx.from.x, z: ctx.from.z }, to: { x: ctx.to.x, z: ctx.to.z } } : undefined;
-    events.emit('abilityPower', { power: pw.id, then: pw.then, holder, body, enemy: e, x, y, z, v, path });
+    // A reflected bolt flies back for `flight` s (its way back at its own speed) before it strikes.
+    const flight = pw.then === 'reflect' ? clamp(ctx.flight ?? 0.3, 0.05, CONFIG.abilities.commons.reflectMax) : undefined;
+    events.emit('abilityPower', { power: pw.id, then: pw.then, holder, body, enemy: e, x, y, z, v, path, flight });
     switch (pw.then) {
       case 'blast': for (const o of enemies) if (near(o, x, y, z, v.radius)) wound(o, v.damage, holder, pw.id); break;
       case 'flare': case 'spark': case 'lick': case 'molten': case 'thorns': wound(e, v.damage, holder, pw.id); break;
       case 'burnHits': if (body && body.perk) { body.perk.burn = v.hits; body.perk.burnV = v; } break;   // a new flask renews the count
       case 'shards': running.push({ pw, holder, body, enemy: e, left: 1, next: CONFIG.abilities.commons.shardDelay, n: 0 }); break;
+      case 'reflect': running.push({ pw, holder, body, enemy: e, left: 1, next: flight, n: 0 }); break;
       case 'whirl': for (const o of enemies) if (near(o, x, y, z, CONFIG.abilities.commons.whirlRadius)) wound(o, v.damage, holder, pw.id); break;
       case 'lateCut': running.push({ pw, holder, body, enemy: e, left: 1, next: CONFIG.abilities.commons.lateCut, n: 0 }); break;
       case 'afterimage': running.push({ pw, holder, body, enemy: e, left: 1, next: CONFIG.abilities.commons.imageDelay, n: 0, x, y, z }); break;

@@ -37,6 +37,7 @@ globalThis.host = (() => {
   const trails = new Map();   // person id -> their recent poses' places and states: [{ t, x, y, z, state }]
   const DASH_ATTACKS = new Set(Object.values(PLAYER_DEF.moveset.dash));   // Petal Cut's dash attacks
   const AIRBORNE = new Set([PS.JUMP, PS.JUMP_ATTACK]);   // a jump's, not a fall off a ledge
+  const SHOT_UNREADY = new Set([PS.ROLL, PS.HURT, PS.STAGGER, PS.HELD, PS.DEAD]);   // no deflect from these (canDeflectNow)
   const C = ArenaNet.config;
   const proxy = (s, id) => ({ ...s, id, radius: PLAYER_DEF.radius, height: BODY_HEIGHT * PLAYER_DEF.look.scale,
     alive() { return this.hp > 0 && this.state !== PS.DEAD; },
@@ -74,7 +75,7 @@ globalThis.host = (() => {
     if (acting && type === 'finisherStart' && d.player === acting.body) feat(acting.id).finishers++;   // a bot's Finishing Blow
     // A legendary fired or striking, for every browser to draw (js/ability-fx.js).
     if (type === 'abilityPower') eventList.push({ type, power: d.power, then: d.then, holder: d.holder, enemy: d.enemy?.netId || null,
-      x: d.x, y: d.y, z: d.z, v: d.v, strike: d.strike, draw: d.draw || undefined, path: d.path });
+      x: d.x, y: d.y, z: d.z, v: d.v, strike: d.strike, draw: d.draw || undefined, path: d.path, flight: d.flight });
     const e = d.enemy || d.actor;
     if (type === 'attackStart' && e) e.netAttack = ++attackSerial;
     if (['attackStart', 'attackPhase', 'bossPhase', 'bossRetreat', 'bossGone', 'enemyBlink', 'impact'].includes(type))
@@ -87,10 +88,13 @@ globalThis.host = (() => {
   projectiles.fire = (e, attack, p) => {
     // A reliable shot event, replayed once on each client's presentation timeline.
     bolts.push({ enemy: e.netId, attack: attack.id, target: { x: p.x, y: p.y, z: p.z, height: p.height } });
+    // Kept a bolt's life, so a deflect claimed against it (Mirror Shard's `parryShot`) can be checked: one a bolt fired.
+    while (shotsFired.length && (time - shotsFired[0].at > CONFIG.projectile.life || shotsFired.length > 64)) shotsFired.shift();
+    if (p.id) shotsFired.push({ e, id: p.id, at: time, speed: attack.projectile.speed, left: (attack.projectile.spread || [0]).length });
     // Browsers fly bolts against their own player; bots need the same bolts flown here (js/projectiles.js rules).
     if (bots.size) for (const off of attack.projectile.spread || [0]) flying.push(launch(e, attack, p, off));
   };
-  const flying = [];
+  const flying = [], shotsFired = [];
   function launch(owner, attack, target, off) {
     const A = attack.projectile, P = CONFIG.projectile, s = Math.sin(owner.yaw + off), c = Math.cos(owner.yaw + off);
     const b = { x: owner.x + s * owner.radius * 1.2, z: owner.z + c * owner.radius * 1.2, y: owner.y + owner.height * P.muzzle };
@@ -122,7 +126,13 @@ globalThis.host = (() => {
         const cx = b.x + dx * t - p.x, cz = b.z + dz * t - p.z, cy = b.y + dy * t, r = p.radius + b.size;
         if (cx * cx + cz * cz > r * r || cy < p.y || cy > p.y + p.height || t > wall) continue;
         if (p.invulnerable()) { b.passed.add(p); continue; }
-        p.takeHit(b.strike, { x: b.x, z: b.z }); gone = true; break;
+        gone = true;
+        if (p.kit && p.kit.whens.has('parryShot') && canDeflectNow(p) && isInFront(p, b.x, b.z) && b.owner.alive()) {   // Mirror Shard
+          p.deflect = 0; p.deflectLock = 0;
+          abilityReport(p, 'parryShot', { enemy: b.owner, flight: Math.max(0, Math.hypot(b.owner.x - p.x, b.owner.z - p.z) - (b.owner.radius || 0)) / Math.hypot(b.vx, b.vy, b.vz), x: p.x, y: p.y, z: p.z });
+          break;
+        }
+        p.takeHit(b.strike, { x: b.x, z: b.z }); break;
       }
       if (!gone && wall <= 1) gone = true;
       b.x += dx; b.y += dy; b.z += dz;
@@ -227,7 +237,7 @@ globalThis.host = (() => {
     Game.zones = [];
     Game.enemies = Game.makeEnemies();
     for (const e of Game.enemies) { e.netId = enemyId(e); e.netAttack = 0; e.netTarget = null; }
-    epoch++; time = 0; completedFor = 0; fought = 0; eventList = []; bolts = []; flying.length = 0; history = []; players = []; trails.clear();
+    epoch++; time = 0; completedFor = 0; fought = 0; eventList = []; bolts = []; flying.length = 0; shotsFired.length = 0; history = []; players = []; trails.clear();
     damage = new Map(); closed = false; deaths = new Map(); fightBots = new Set();
     feats = new Map(); lastHit = null; killer = null; embers.clear(); risen.length = 0;
     hitBudget.clear(); lastParry.clear(); spentOpening.clear(); defended.clear(); sleeping = false; settleCheck = 0;
@@ -434,6 +444,16 @@ globalThis.host = (() => {
       if (p.state !== PS.BLOCK) return wait();
       if (Math.hypot(e.x - p.x, e.z - p.z) - (e.radius || 0) > CONFIG.abilities.commons.thornReach + C.claimNear) return false;
       abilityPowers.trigger(id, body, kit, 'block', { enemy: e });
+    } else if (msg.when === 'parryShot') {   // Mirror Shard: that enemy shot at them within a bolt's life, and they face it
+      const e = enemy(msg.enemy);
+      while (shotsFired.length && time - shotsFired[0].at > CONFIG.projectile.life) shotsFired.shift();
+      const shot = e && e.alive() && !e.netExec && shotsFired.find(s => s.e === e && s.id === id && s.left > 0);
+      if (!shot || SHOT_UNREADY.has(p.state) || !isInFront(p, e.x, e.z)) return false;
+      // It flies back from where they stand at its own speed: it strikes as it arrives. Not before it could have reached them.
+      const way = Math.hypot(e.x - p.x, e.z - p.z) - (e.radius || 0), flight = way / shot.speed;
+      if (time - shot.at < (way - C.claimNear) / shot.speed - 0.1) return false;
+      shot.left--;
+      abilityPowers.trigger(id, body, kit, 'parryShot', { enemy: e, flight, x: p.x, y: p.y, z: p.z });
     } else if (msg.when === 'flask') {
       if (p.state !== PS.USE_ITEM) return wait();
       abilityPowers.trigger(id, body, kit, 'flask', {});

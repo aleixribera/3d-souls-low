@@ -3,7 +3,7 @@
 // each fired twice, its name in the corner: docs/scorecard/now/<set>-commons.mp4. The clock is stepped by hand
 // (Game.manualClock) and every other step is a frame, so a clip plays at real speed whatever the PC's speed. With
 // `--stills`, the guard set's current frames too (guard-*.jpg, desktop; -phone for two).
-// Usage: node tools/ability-clips.cjs [blade|guard ...] [--stills]   (no set = both). One headless Edge; needs ffmpeg.
+// Usage: node tools/ability-clips.cjs [blade|guard|mirror ...] [--stills]   (no set = all). One headless Edge; needs ffmpeg.
 require('../tests/low-priority.cjs');
 const fs = require('node:fs');
 const os = require('node:os');
@@ -41,6 +41,14 @@ const SETS = {
     ['Hunter\'s Pace', `p => { p.perk.hunt = 0; events.emit('abilityPerk', { body: p, perk: 'fightStart/freeDash' }); }`, 34, 'pace'],
     ['Kindred Ember', `p => events.emit('revive', { x: p.x + 1.2, y: p.y, z: p.z, kindred: true })`, 40, 'kindred'],
   ] },
+  // Mirror Shard (pass 117): the Captain looses a bolt (a bowman's, he has none) from 7 m; a deflect armed as it
+  // arrives turns it back into him. The second round is the same, seen again.
+  mirror: { ids: ['mirror-shard'], file: 'mirror-shard', stillAt: 28, beats: [
+    ['Mirror Shard', `(p, e) => { e.x = e.px = p.x + Math.sin(p.yaw + 0.35) * 7; e.z = e.pz = p.z + Math.cos(p.yaw + 0.35) * 7; e.yaw = Math.atan2(p.x - e.x, p.z - e.z);
+      p.yaw = p.pyaw = Math.atan2(e.x - p.x, e.z - p.z); Game.render(1, CONFIG.step);
+      __later(8, () => { const b = projectiles.fire(e, ENEMY_BY_ID.bowman.attacks.find(a => a.projectile), p);
+        __later(Math.max(1, Math.round(Math.hypot(b.x - p.x, b.z - p.z) / Math.hypot(b.vx, b.vz) / CONFIG.step) - 4), () => { p.deflect = CONFIG.parry.arm; p.setState(PS.BLOCK); }); }); }`, 70, 'mirror-shard'],
+  ] },
 };
 
 (async () => {
@@ -52,7 +60,7 @@ const SETS = {
   try {
     for (const [set, S] of Object.entries(SETS)) {
       if (!want(set)) continue;
-      for (const [w, h, tag] of stills && set === 'guard' ? [[1280, 720, ''], [390, 844, '-phone']] : [[1280, 720, '']]) {
+      for (const [w, h, tag] of stills && set !== 'blade' ? [[1280, 720, ''], [390, 844, '-phone']] : [[1280, 720, '']]) {
         const page = await browser.newPage({ viewport: { width: w, height: h } });
         page.on('pageerror', e => errors.push(e.message.slice(0, 200)));
         await page.addInitScript(() => localStorage.setItem('combat-arena-3d.settings', JSON.stringify({ graphics: 'normal', volume: 0, lessons: false })));
@@ -96,12 +104,12 @@ const SETS = {
             for (let s = 0; s < steps; s += EVERY) {
               await page.evaluate(n => __steps(n), EVERY);
               if (!tag) await grab();
-              if (stills && still && round === 0 && s === EVERY * 3) await page.screenshot({ path: path.join(out, `guard-${still}${tag}.jpg`), type: 'jpeg', quality: 70 });
+              if (stills && still && round === 0 && s === (S.stillAt || EVERY * 3)) await page.screenshot({ path: path.join(out, `${S.file ? '' : 'guard-'}${still}${tag}.jpg`), type: 'jpeg', quality: 70 });
             }
           }
         }
         if (!tag) {
-          const mp4 = path.join(out, `${set}-commons.mp4`);
+          const mp4 = path.join(out, `${S.file || set + '-commons'}.mp4`);
           execFileSync(ffmpeg, ['-y', '-loglevel', 'error', '-framerate', String(FPS), '-i', path.join(dir, 'f%05d.jpg'),
             '-c:v', 'libx264', '-pix_fmt', 'yuv420p', '-crf', '26', '-preset', 'veryfast', mp4]);
           console.log(set, frame, 'frames ->', path.relative(process.cwd(), mp4));

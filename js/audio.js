@@ -385,7 +385,7 @@ const AUDIO_CUES = ['hitFlesh', 'hitHurt', 'hitBlock', 'riposteBoom', 'parry', '
   'abilityTwin', 'abilityEcho', 'abilityGale', 'abilityPyre', 'abilityFlare', 'abilitySpark', 'abilityStep', 'abilityEmpower',
   'abilityHeal', 'abilityCharge', 'abilityHound', 'abilityBite', 'abilityHowl', 'abilityTaunt', 'abilityGuardian', 'abilityBash', 'abilityChallenge',
   'abilityLancer', 'abilityThrust', 'crateOpen', 'crateTick', 'crateLand', 'counterOpen', 'cutOpen',
-  'abilityClank', 'abilityChime', 'abilityGulp', 'abilityFrost', 'abilityInk', 'abilitySizzle', 'abilityWhirl'];
+  'abilityClank', 'abilityChime', 'abilityGulp', 'abilityFrost', 'abilityInk', 'abilitySizzle', 'abilityWhirl', 'abilityMirror'];
 // A power's sound by its `then`, its later blows' (`strike`: a lightning bolt, a twin's echo, a hound's bite) by
 // STRIKE_SOUNDS, a summon drawing the boss's eye (`draw`) by DRAW_SOUNDS; a rare's perk its own (ABILITY_PERK_SOUNDS,
 // at a pitch), a pick's pitch by its rarity.
@@ -406,8 +406,8 @@ const ABILITY_PICK_PITCH = { common: 1, rare: 0.84, legendary: 0.67 };
 // family; `fire` as it fires, `strike` as a late blow lands (Petal Cut's opening, Echo Step's slash).
 const ABILITY_COMMON_SOUNDS = {
   fire: { spark: ['abilitySpark', 1.15, 0.6], lick: ['abilityFlare', 1.3, 0.5], molten: ['abilitySizzle', 1, 0.55], whirl: ['abilityWhirl', 1, 0.5],
-    thorns: ['abilitySpark', 0.8, 0.5], burnHits: ['abilityFlare', 1.1, 0.5], shards: ['abilitySpark', 0.7, 0.4] },
-  strike: { lateCut: ['cutOpen', 1.3, 0.45], afterimage: ['abilityEcho', 1.2, 0.55], burnHits: ['abilitySizzle', 1.25, 0.4], shards: ['cutOpen', 0.8, 0.55] },
+    thorns: ['abilitySpark', 0.8, 0.5], burnHits: ['abilityFlare', 1.1, 0.5], shards: ['abilitySpark', 0.7, 0.4], reflect: ['abilityMirror', 1, 0.7] },
+  strike: { lateCut: ['cutOpen', 1.3, 0.45], afterimage: ['abilityEcho', 1.2, 0.55], burnHits: ['abilitySizzle', 1.25, 0.4], shards: ['cutOpen', 0.8, 0.55], reflect: ['hitFlesh', 1.1, 0.6] },
 };
 function registerAudioListeners() {
   // Sound is never allowed to break the game: a listener that throws is reported once and skipped.
@@ -489,6 +489,10 @@ function registerAudioListeners() {
   const rains = [];   // { e, left, next, every }
   on('abilityPower', d => {
     if (ABILITY_BY_ID[d.power] && ABILITY_BY_ID[d.power].rarity === 'common') {
+      if (d.then === 'reflect' && !d.strike) {   // it turns at its holder; theirs heard it already (shotDeflected)
+        if (d.body !== Game.player) audio.play('abilityMirror', { vel: 0.7, pos: d.body ? chest(d.body) : spot(d) });
+        return;
+      }
       const c = ABILITY_COMMON_SOUNDS[d.strike ? 'strike' : 'fire'][d.then];
       if (c) audio.play(c[0], { pitch: c[1], vel: c[2], pos: d.body === Game.player ? null : d.enemy && d.then !== 'whirl' ? chest(d.enemy) : spot(d) });
       return;
@@ -501,6 +505,7 @@ function registerAudioListeners() {
     if (d.then === 'blades' && d.enemy && d.v) for (let i = rains.length - 1; i >= 0; i--) if (rains[i].e === d.enemy) rains.splice(i, 1);   // a new rain on it replaces the old
     if (d.then === 'blades' && d.enemy && d.v && rains.length < 4) rains.push({ e: d.enemy, left: Math.round(d.v.time / d.v.every), next: d.v.every, every: d.v.every });
   });
+  on('shotDeflected', d => { if (d.player === Game.player) audio.play('abilityMirror', { vel: 0.7 }); });   // Mirror Shard, its holder's own
   on('abilityPerk', d => { if (d.body === Game.player) { const [id, pitch] = ABILITY_PERK_SOUNDS[d.perk] || ['abilityPerk', 1]; audio.play(id, { pitch }); } });
   on('abilityPicked', d => audio.play('abilityPick', { pitch: ABILITY_PICK_PITCH[d.rarity] || 1, vel: d.rarity === 'common' ? 0.6 : 0.9 }));
   // The plain commons' touches (js/ability-touch.js): the holder's own, quiet, each on its moment.

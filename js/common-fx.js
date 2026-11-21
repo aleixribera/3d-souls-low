@@ -19,6 +19,9 @@
 //   thorns      Thorn Guard: a cluster of bone thorns pops out of the attacker's flank facing the guard.
 //   burnHits    Bitter Draught: the flask lights an ember ring at the drinker's feet; each burning blow licks a flame.
 //   shards      Shatter Guard: the crack throws bone chips; a beat later the shards burst on the boss with a star.
+//   reflect     Mirror Shard (pass 117): a star where the bolt meets the blade; the bolt, bone white in an ink outline,
+//               flies back into the shooter's chest shedding mirror shards (a bright face, a dark one), a star there.
+//               Its holder's own is drawn at once (`shotDeflected`); everyone else's from the server's power.
 //   The commons' perks (`abilityPerk`, the holder's own): Ringing Steel and Hunter's Pace a bone ring at the feet (Hunter's
 //   wider, with grit), a banked dash spent a small one; Ash Veil a veil of ash wisps round its holder while it holds, torn
 //   to flakes as it takes a blow; Grit an iron ring and grey flakes (the body's iron tint: js/player-pose.js), a glance a
@@ -140,8 +143,9 @@ const commonFx = (() => {
     const m = new THREE.Mesh(geo, material); m.visible = false; m.renderOrder = order; m.frustumCulled = false; scene.add(m); pooledFx.push(m); return m;
   };
   // One of each shape (a common fires at most once a second, or once a string or a charge); flakes and petals share a pool.
-  let line, star, tongue, lens, crescent, band, cuts, thorn, veil, made = false;
+  let line, star, tongue, lens, crescent, band, cuts, thorn, veil, mirror, made = false;
   const flakes = [], rings = [];
+  const SHED = { map: null, speed: 0.5, up: 0.3, grav: 3, size: 0.12, life: 0.5 }, SHED_BRIGHT = [0xf4f1e8], SHED_DARK = [0x8c877b];   // a mirror shard shed
   function make() {
     if (made) return;
     made = true; textures();
@@ -160,6 +164,19 @@ const commonFx = (() => {
     veil = { m: mesh(new THREE.CylinderGeometry(1, 0.8, 1, 24, 1, true).translate(0, 0.5, 0), mat(VEIL), 12), body: null, age: Infinity };
     const disc = new THREE.PlaneGeometry(1, 1).rotateX(-Math.PI / 2);
     for (let i = 0; i < 3; i++) rings.push({ m: mesh(disc, mat(RING), 3), age: Infinity, life: 1, from: 1, to: 2, x: 0, y: 0, z: 0 });
+    {   // the returning bolt: a bone shaft and head inside an inked hull (back faces, a little larger)
+      const g = new THREE.Group(), M = K().mirror;
+      const bone = new THREE.MeshBasicMaterial({ color: 0xf4f1e8, fog: false }), head = new THREE.MeshBasicMaterial({ color: 0xcfc8b6, fog: false });
+      const ink = new THREE.MeshBasicMaterial({ color: 0x16130f, side: THREE.BackSide, fog: false });
+      const shaft = new THREE.BoxGeometry(M.width, M.width, M.length), tip = new THREE.ConeGeometry(M.width * 1.6, M.length * 0.3, 4).rotateX(Math.PI / 2).translate(0, 0, M.length * 0.62);
+      for (const [geo, m] of [[shaft, bone], [tip, head]]) {
+        g.add(new THREE.Mesh(geo, m));
+        const hull = new THREE.Mesh(geo, ink); hull.scale.setScalar(M.ink); hull.scale.z = 1 + (M.ink - 1) * 0.25; g.add(hull);
+      }
+      g.visible = false; scene.add(g);   // its meshes warm up with their group's (userData.warmUp), not as pooled sprites
+      g.userData.warmUp = true; for (const m of g.children) m.renderOrder = 12;
+      mirror = { g, age: Infinity, flight: 0.3, x0: 0, y0: 0, z0: 0, enemy: null, tx: 0, ty: 0, tz: 0, shed: 0 };
+    }
     for (let i = 0; i < 24; i++) flakes.push({ s: sprite(FLAKE, 13), age: Infinity, life: 1, x: 0, y: 0, z: 0, vx: 0, vy: 0, vz: 0, spin: 0, size: 0.1, grav: 0 });
   }
   const freeFlake = () => flakes.find(f => f.age === Infinity) || flakes.reduce((a, b) => (b.age / b.life > a.age / a.life ? b : a));
@@ -226,8 +243,20 @@ const commonFx = (() => {
     spot.x = e.x + dx / l * r; spot.y = e.y + (e.height || 1.8) * h; spot.z = e.z + dz / l * r; return spot;
   }
 
+  // Mirror Shard's bolt turns at (x, y, z) and flies back into `e` for `flight` s.
+  function reflect(e, x, y, z, flight) {
+    if (!e) return;
+    const M = K().mirror;
+    star.age = 0; star.x = x; star.y = y; star.z = z; star.size = M.star; star.peak = 0;
+    mirror.age = 0; mirror.flight = Math.max(0.05, flight || 0.3); mirror.enemy = e; mirror.shed = 0;
+    mirror.x0 = x; mirror.y0 = y; mirror.z0 = z; mirror.g.position.set(x, y, z); mirror.g.visible = true;
+  }
   function fire(d) {
     const e = d.enemy, C = K();
+    if (d.then === 'reflect') {   // the holder's own was drawn as it turned (shotDeflected); its landing is the bolt's own
+      if (!d.strike && e && d.body !== Game.player) { const b = d.body ? chest(d.body, 0.6) : d; reflect(e, b.x, b.y, b.z, d.flight); }
+      return;
+    }
     if (d.then === 'spark' && d.path && e) {
       const P = d.path, dx = P.to.x - P.from.x, dz = P.to.z - P.from.z, len = Math.hypot(dx, dz);
       if (!(len > 0.3)) return;
@@ -373,6 +402,22 @@ const commonFx = (() => {
         veil.m.rotation.y = calm ? 0 : veil.age * V.turn; veil.m.material.opacity = V.opacity * Math.min(1, veil.age / 0.2);
       }
     }
+    if (mirror.age !== Infinity) {   // flies from the clash to the shooter's chest (it follows them), shedding shards
+      mirror.age += real;
+      const M = C.mirror, e = mirror.enemy, k = Math.min(1, mirror.age / mirror.flight);
+      if (e) { mirror.tx = e.x; mirror.ty = e.y + (e.height || 1.8) * 0.6; mirror.tz = e.z; }
+      const x = lerp(mirror.x0, mirror.tx, k), y = lerp(mirror.y0, mirror.ty, k), z = lerp(mirror.z0, mirror.tz, k);
+      mirror.g.position.set(x, y, z); spot.x = mirror.tx; spot.y = mirror.ty; spot.z = mirror.tz; mirror.g.lookAt(spot.x, spot.y, spot.z);
+      while (mirror.shed < M.shards * k) {   // one shard each 1/shards of the way, turning as it falls
+        mirror.shed++;
+        SHED.map = FLAKE; SHED.life = M.shardLife;
+        throwFlakes(x, y, z, 1, mirror.shed % 2 ? SHED_BRIGHT : SHED_DARK, SHED);
+      }
+      if (k >= 1) {
+        mirror.age = Infinity; mirror.g.visible = false; mirror.enemy = null;
+        star.age = 0; star.x = mirror.tx; star.y = mirror.ty; star.z = mirror.tz; star.size = M.star * 1.4; star.peak = 0;
+      }
+    }
     for (const r of rings) {
       if (r.age === Infinity) continue;
       r.age += real;
@@ -396,6 +441,7 @@ const commonFx = (() => {
     for (const q of [line, band, cuts]) { q.age = Infinity; q.m.visible = false; }
     for (const q of [star, tongue, lens, crescent, thorn]) { q.age = Infinity; q.s.visible = false; }
     lens.enemy = null; veil.body = null; veil.age = Infinity; veil.m.visible = false;
+    mirror.age = Infinity; mirror.g.visible = false; mirror.enemy = null;
     for (const r of rings) { r.age = Infinity; r.m.visible = false; }
     for (const f of flakes) { f.age = Infinity; f.s.visible = false; }
   }
@@ -404,6 +450,7 @@ const commonFx = (() => {
       make(); Game.renderHooks.push(render); visuals.hooks.stage.push(clear);
       events.on('abilityPower', d => { if (isCommon(d)) fire(d); });
       events.on('abilityPerk', perk);
+      events.on('shotDeflected', d => reflect(d.enemy, d.x, d.y, d.z, d.flight));
       events.on('revive', d => { if (d.kindred) { const R = K().ring; ring(d.x, d.y, d.z, R.ringFrom, R.kindred, R.life * 1.6, 0xffb070); spot.x = d.x; spot.y = d.y + 0.8; spot.z = d.z; bright(spot, K().motes, 'ember', [0, 1, 0], 0.8, 0.6); } });
     },
     clear,
@@ -412,7 +459,7 @@ const commonFx = (() => {
       if (!made) return {};
       return { line: line.age !== Infinity, star: star.age !== Infinity, tongue: tongue.age !== Infinity, lens: lens.age !== Infinity ? (lens.open === Infinity ? 'hanging' : 'open') : null,
         crescent: crescent.age !== Infinity, whirl: band.age !== Infinity, flakes: flakes.filter(f => f.age !== Infinity).length,
-        thorns: thorn.age !== Infinity, veil: !!veil.body, rings: rings.filter(r => r.age !== Infinity).length };
+        thorns: thorn.age !== Infinity, veil: !!veil.body, mirror: mirror.age !== Infinity, rings: rings.filter(r => r.age !== Infinity).length };
     },
   };
 })();

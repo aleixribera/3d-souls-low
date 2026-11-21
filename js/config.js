@@ -317,7 +317,8 @@ const CONFIG = {
     // holder stood (Echo Step); a jump with an enemy within `whirlRadius` m whirls dust round the take-off (Dust Devil).
     // Batch 3: thorns prick an enemy whose blow on the guard came from within `thornReach` m of its body (Thorn Guard);
     // a cracked guard's shards cut `shardDelay` s after the crack (Shatter Guard).
-    commons: { pastGap: 1.2, lateCut: 0.35, imageDelay: 0.15, imageReach: 2.8, whirlRadius: 2.4, thornReach: 3.5, shardDelay: 0.12 },
+    // Mirror Shard: a deflected bolt's way back takes its distance / its speed, at most `reflectMax` s.
+    commons: { pastGap: 1.2, lateCut: 0.35, imageDelay: 0.15, imageReach: 2.8, whirlRadius: 2.4, thornReach: 3.5, shardDelay: 0.12, reflectMax: 1.5 },
     // Summons (js/abilities.js summonStep): each kind stands `gap` m off its enemy's body, `flank` rad round from the
     // side away from its holder (+ toward the enemy's left), and runs there at up to `speed` m/s. It has arrived
     // `arrive` s after it is called (one that `rises` comes up where it will stand; the others run there); a hound,
@@ -745,6 +746,9 @@ const CONFIG = {
         thorns: { size: 1.1, life: 0.32, flakes: 8 },
         veil: { height: 2.1, width: 1.5, turn: 0.5, opacity: 0.55, ash: 18 },
         shards: { count: 14, star: 0.75 },
+        // Mirror Shard's returning bolt: `length` m, an ink outline `ink` times its size, `shards` shed along its way
+        // (each living `shardLife` s), a `star` m across at the clash and on the shooter.
+        mirror: { length: 1.2, width: 0.1, ink: 1.6, shards: 14, shardLife: 0.5, star: 0.6 },
         motes: 10, burn: 6, iron: 0.35,   // `iron`: Grit's grey on the body (emissive)
       },
       meteor: { color: 0xff7a2a, core: 0xffe6b8, column: 22, width: 1.8, glow: 1.8, fall: 0.5, ring: 0.55, crater: 3.2, shake: [0.45, 0.35],

@@ -459,6 +459,12 @@ const AUDIO = {
       { noise: 'white', filter: { type: 'bandpass', freq: 1200, q: 3 }, a: 0.0005, d: 0.025, gain: 0.6, drive: 3 },
       { wave: 'sine', freq: 180, partials: [[1, 1, 1], [2.76, 0.5, 0.6]], a: 0.002, d: 0.35, gain: 0.3 },
     ] },
+    // Mirror Shard: a glassy clink as the bolt turns, then the whoosh of its way back (pass 117).
+    abilityMirror: { bus: 'sfx', priority: 2, cooldown: 0.12, max: 2, verb: 0.25, heat: 0.1, jitter: 60, layers: [
+      { wave: 'sine', freq: 3500, a: 0.0005, d: 0.012, gain: 0.35 },
+      { noise: 'white', filter: { type: 'highpass', freq: 6000 }, a: 0.0005, d: 0.012, gain: 0.4 },
+      { noise: 'white', filter: { type: 'bandpass', freq: 2000, to: 1000, q: 2 }, at: 0.01, a: 0.02, d: 0.3, gain: 0.35 },
+    ] },
     // Light Step: a dash charge back, a small chime.
     abilityChime: { bus: 'sfx', priority: 1, cooldown: 0.3, max: 1, verb: 0.1, heat: 0, jitter: 30, layers: [
       { noise: 'white', filter: { type: 'highpass', freq: 6000 }, a: 0.0005, d: 0.01, gain: 0.25 },

@@ -84,6 +84,9 @@ const ABILITIES = [
     perk: { when: 'revive', then: 'reviveHeal' }, levels: [{ heal: 0.1 }, { heal: 0.15 }, { heal: 0.2 }, { heal: 0.25 }] },
   { id: 'shatter-guard', name: 'Shatter Guard', rarity: 'common', text: 'Crack a guard: its shards cut the boss.',
     power: { when: 'crack', then: 'shards' }, levels: [{ damage: 22 }, { damage: 28 }, { damage: 34 }, { damage: 40 }] },
+  // A specialist's pick: it does nothing against a boss that never shoots (pass 117).
+  { id: 'mirror-shard', name: 'Mirror Shard', rarity: 'common', text: 'Deflect a shot: it flies back.',
+    power: { when: 'parryShot', then: 'reflect' }, levels: [{ damage: 30 }, { damage: 40 }, { damage: 50 }, { damage: 60 }] },
 
   // ---- Rares: useful perks that happen when something does ----
   { id: 'counterstep', name: 'Counterstep', rarity: 'rare', text: 'Perfect dodge: next hit in {window} is a riposte.',

@@ -7,7 +7,7 @@
 //   strike {strike, attacker, target, at, blocked}  parry {target, player}
 //   guardCrack {enemy, cracks, by}  finisherStart {player, enemy}  finisherStep  finisher {player, enemy, damage}  finisherEnd (js/finisher.js)
 //   enemyDeath {enemy}  playerDeath {player}  rest {bonfire}  gateOpened {gate}  levelComplete
-//   impact {x, y, z, fx, enemy} (an attack with `impact` hits the ground)  shot {enemy, bolt}  boltStopped {bolt}  (strike carries projectile: true when a bolt hits)
+//   impact {x, y, z, fx, enemy} (an attack with `impact` hits the ground)  shot {enemy, bolt}  boltStopped {bolt}  shotDeflected {player, enemy, x, y, z, flight} (Mirror Shard turned a bolt)  (strike carries projectile: true when a bolt hits)
 //   gateOpened {gate, shortcut} (shortcut: a gate opened from its far side)
 //   dodge {attacker, strike, projectile, player} (a live hitbox or a bolt met the player during the roll's invulnerability; once each)
 //   trapWarning {trap} (the player set a trap off)  trapSprung {trap} (its floor gave way)

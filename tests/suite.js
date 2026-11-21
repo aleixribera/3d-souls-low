@@ -913,6 +913,35 @@
       expect.ok(!left.line && !left.star && !left.tongue && !left.lens && !left.crescent && !left.whirl && !left.flakes, `all gone within a second (${JSON.stringify(left)})`);
     } finally { audio.play = play; commonFx.clear(); p.grantAbilities([]); }
   });
+  // Pass 117: Mirror Shard. A bolt meeting its holder's armed deflect, facing it, turns back: no harm to them, the bolt
+  // drawn flying into the shooter, and the shooter struck as it arrives. Unarmed, or without it, the bolt lands as ever.
+  test('mirror shard: a deflected bolt flies back into its shooter', () => {
+    Game.startFight('pillagerCaptain'); Game.loading = 0; sim.begin(); commonFx.clear(); abilityPowers.reset();
+    const p = Game.player, e = Game.duel, played = [], shot = A.ENEMY_BY_ID.bowman.attacks.find(a => a.projectile);
+    const play = audio.play; audio.play = (id, o) => { played.push(id); return play.call(audio, id, o); };
+    try {
+      sturdy(p); e.cooldown = 30; e.hp = e.maxHp = 1e6; faceOff(e, p, 7);
+      // Fly one bolt at the player; `arm` arms a deflect when it is this many steps out. Returns the player's loss.
+      const loose = arm => {
+        const hp = p.hp; p.deflect = 0; p.deflectLock = 0; p.setState(PS.IDLE);
+        const b = A.projectiles.fire(e, shot, p), eta = n => Math.hypot(b.x - p.x, b.z - p.z) / Math.hypot(b.vx, b.vz) / STEP <= n;
+        for (let i = 0; i < 120 && b.live; i++) { if (arm && !p.deflect && eta(arm)) p.deflect = CONFIG.parry.arm; Game.update(STEP); Game.render(1, STEP); }
+        return hp - p.hp;
+      };
+      p.grantAbilities(['mirror-shard']);
+      expect.ok(loose(0) > 0, 'unarmed: the bolt lands');
+      const was = e.hp;
+      expect.ok(loose(4) === 0, 'armed as it arrives: it takes nothing');
+      expect.ok(commonFx.state.mirror && played.includes('abilityMirror'), `it turns, bone white, with its clink (${JSON.stringify(commonFx.state)})`);
+      expect.ok(e.hp === was, 'not yet on the shooter');
+      for (let i = 0; i < 60 && e.hp === was; i++) { Game.update(STEP); Game.render(1, STEP); }
+      expect.ok(was - e.hp === ABILITY_BY_ID['mirror-shard'].levels[0].damage, `then strikes its shooter (${was - e.hp})`);
+      Game.render(1, STEP);
+      expect.ok(!commonFx.state.mirror && commonFx.state.star, 'and bursts on them');
+      p.grantAbilities([]);
+      expect.ok(loose(4) > 0, 'without Mirror Shard a bolt is never deflected');
+    } finally { audio.play = play; commonFx.clear(); p.grantAbilities([]); }
+  });
   // Pass 97 (PLAN.md 3d): the sparring scene. The player's part of each drill is the teacher's own demonstration, played
   // on the player's keys (a swing drill's steps from the moment the partner's blow begins), so a demo that cannot do
   // its drill fails here too.

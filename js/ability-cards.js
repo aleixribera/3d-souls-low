@@ -35,6 +35,7 @@ const ABILITY_ICONS = {
   'hunters-pace': '<path d="M30 6 A4 4 0 1 1 30 14 A4 4 0 1 1 30 6 Z M29 15 L24 28 M27 19 L36 24 M27 19 L18 22 M24 28 L32 36 L30 44 M24 28 L16 36 L8 36"/><path d="M4 18 H12 M2 26 H10 M6 32 H12"/>',
   'kindred-ember': '<path d="M16 10 A4 4 0 1 1 16 18 A4 4 0 1 1 16 10 Z M16 19 V32 M16 32 L12 42 M16 32 L20 42 M16 24 L28 30"/><path d="M28 36 H44"/><path d="M36 32 C31 27 38 24 36 18 C42 23 41 28 36 32 Z"/>',
   'shatter-guard': '<path d="M24 6 L40 12 V24 C40 34 32 40 24 43 C16 40 8 34 8 24 V12 Z"/><path d="M24 6 L22 18 L28 24 L22 32 L24 43"/><path d="M42 30 L46 28 M42 36 L46 40 M6 34 L2 38"/>',
+  'mirror-shard': '<path d="M10 42 L30 22 M26 18 L34 26"/><path d="M44 6 L33 17 M33 17 L34 11 M33 17 L39 16" stroke-dasharray="4 2"/><path d="M28 4 L22 12 L18 6 Z M14 18 L8 22 L8 14 Z M6 30 L2 36 L0 29 Z"/>',
   // Rares
   'counterstep': '<path d="M8 36 C8 22 16 14 28 14"/><path d="M28 14 L23 10 M28 14 L23 18"/><path d="M22 34 H40 L44 34 L40 36 H22 Z"/><path d="M26 30 V40"/>',
   'vengeance': '<path d="M17 10 C11 19 9 24 9 28 A8 8 0 0 0 25 28 C25 24 23 19 17 10 Z"/><path d="M36 40 V12 M30 18 L36 12 L42 18"/><path d="M30 26 L36 20 L42 26"/>',

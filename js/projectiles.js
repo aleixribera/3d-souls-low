@@ -7,7 +7,9 @@
 // chest at the distance they were when it left the string, so a late sidestep or a roll still beats it.
 // Walls, ledges, floors, roofs and closed gates stop it (rails don't: what can be seen over can be shot over).
 // It hits the player through Player.takeHit like any strike: a block from the front takes it at block rates,
-// the roll's invulnerability lets it pass, and it can never be parried. A fixed pool, oldest reused first.
+// the roll's invulnerability lets it pass, and it can never be parried, except by a holder of Mirror Shard (a
+// `parryShot` power, pass 117): a deflect armed as it arrives, facing it, turns it back (reflect, below), and the power
+// strikes the shooter as it gets there. A fixed pool, oldest reused first.
 const projectiles = (() => {
   const P = CONFIG.projectile, pool = [];
   const shaftGeo = new THREE.BoxGeometry(0.035, 0.035, P.length), headGeo = new THREE.ConeGeometry(0.045, 0.14, 6).rotateX(Math.PI / 2);
@@ -48,6 +50,10 @@ const projectiles = (() => {
     const cx = x + dx * t - b.x, cz = z + dz * t - b.z, cy = y + dy * t;
     return cx * cx + cz * cz <= reach * reach && cy >= b.y && cy <= b.y + b.height ? t : null;
   }
+
+  // A deflect turns this bolt (Mirror Shard): its holder's deflect armed now (canDeflectNow), facing where it comes from.
+  const reflects = (p, b) => !!(p.kit && p.kit.whens.has('parryShot') && p.perk && typeof p.isFree === 'function' && canDeflectNow(p)
+    && isInFront(p, b.x, b.z) && b.owner && b.owner.alive && b.owner.alive());
 
   // Build the complete visual pool during loading as well as configuring a fired bolt.
   function prepareLook(b, A) {
@@ -163,6 +169,7 @@ const projectiles = (() => {
             continue;
           }
           const at = { x: b.x + dx * t, y: b.y + dy * t, z: b.z + dz * t };
+          if (!team && reflects(actor, b)) { this.reflect(game, b, actor, at); break; }
           if (team) applyEnemyStrike(game, b.strike, b.owner, actor, at, true, { x: b.x, z: b.z });
           else {
             const res = actor.takeHit(b.strike, { x: b.x, z: b.z });
@@ -176,6 +183,18 @@ const projectiles = (() => {
         b.x += dx; b.y += dy; b.z += dz;
         if (b.age > P.life || b.y < world.killY) this.kill(b);
       }
+    },
+    // A bolt deflected by Mirror Shard's holder `p` at `at`: it takes nothing and opens no counter (not a parry), but
+    // the deflect is spent and its spam lock cleared. Its way back is drawn from here (js/common-fx.js, `shotDeflected`)
+    // and its blow is the power's (js/abilities.js `reflect`, the server's online): this bolt is gone.
+    reflect(game, b, p, at) {
+      const e = b.owner, speed = Math.hypot(b.vx, b.vy, b.vz) || 1;
+      const flight = Math.max(0, Math.hypot(e.x - at.x, e.z - at.z) - (e.radius || 0)) / speed;
+      p.deflect = 0; p.deflectLock = 0;
+      game.hitstop = Math.max(game.hitstop, CONFIG.block.hitstop);
+      this.kill(b);
+      events.emit('shotDeflected', { player: p, enemy: e, x: at.x, y: at.y, z: at.z, flight });
+      abilityReport(p, 'parryShot', { enemy: e, flight, x: at.x, y: at.y, z: at.z });
     },
     kill(b) { b.live = false; b.mesh.visible = false; },
     // Draw each bolt between its last two positions, pointing along its flight.

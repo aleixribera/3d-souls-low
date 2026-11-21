@@ -194,7 +194,7 @@ function validateData({ visual = true } = {}) {
   }
   // An ability's text is only its trigger and effect, in the fewest plain words (Aleix, 2026-11-14; a {key} is one word).
   const ABILITY_TEXT_MAX = { words: 9, chars: 56 };
-  const COMMON_POWERS = ['spark', 'lick', 'molten', 'lateCut', 'afterimage', 'whirl', 'thorns', 'burnHits', 'shards'];
+  const COMMON_POWERS = ['spark', 'lick', 'molten', 'lateCut', 'afterimage', 'whirl', 'thorns', 'burnHits', 'shards', 'reflect'];
   for (const b of ABILITIES) {
     const where = `Ability ${b.id}`, R = RAR[b.rarity], kinds = ['mods', 'perk', 'power'].filter(k => b[k]);
     need(typeof b.id === 'string' && /^[a-z0-9-]+$/.test(b.id) && typeof b.name === 'string' && b.name.trim() && typeof b.text === 'string' && b.text.trim(),
