@@ -29,14 +29,16 @@ const only = new Set((opt('only', 'load,transitions,play,shots')).split(','));
 const quality = opt('quality', 'ultra');
 const [W, H] = opt('size', '1920x1080').split('x').map(Number);
 const software = flag('software');
+const headed = flag('headed');   // a real window on the display (WAYLAND_DISPLAY), vsync on: frames as the screen shows them
 fs.mkdirSync(outDir, { recursive: true });
 const shotDir = path.join(outDir, 'shots-' + label);
 
 // The GPU, not SwiftShader (the fast-tests pass found headless Chromium on Linux falls back to software without these),
 // and no frame cap, so a frame's time is its own cost, not the display's 16.7 ms.
 const GPU_ARGS = software ? ['--use-angle=swiftshader', '--enable-unsafe-swiftshader']
+  : headed ? ['--enable-gpu', '--ignore-gpu-blocklist']   // Chrome's own default on Linux (ANGLE on OpenGL): Vulkan cannot make a context in a Wayland window
   : ['--use-angle=vulkan', '--enable-gpu', '--ignore-gpu-blocklist', '--enable-unsafe-swiftshader'];
-const LAUNCH_ARGS = [...GPU_ARGS, '--disable-gpu-vsync', '--disable-frame-rate-limit', '--autoplay-policy=no-user-gesture-required',
+const LAUNCH_ARGS = [...GPU_ARGS, ...(headed ? ['--force-device-scale-factor=1', '--ozone-platform=wayland', '--start-fullscreen', `--window-size=${W},${H}`] : ['--disable-gpu-vsync', '--disable-frame-rate-limit']), '--autoplay-policy=no-user-gesture-required',
   '--disable-background-timer-throttling', '--disable-renderer-backgrounding', '--disable-backgrounding-occluded-windows'];
 
 // A "friend at home" link for the throttled cold load: 40 ms round trip, 50 Mbit/s down, 10 up.
@@ -69,10 +71,16 @@ function instruments({ quality }) {
   } catch (e) { /* no long tasks API */ }
   // Every frame while recording: its time since the last, plus what changed in the renderer (a new shader program, a
   // new texture or geometry on the GPU) so a hitch can be told apart.
-  let last = 0;
+  // hold: ticks still skipped after the loading screen goes. Every callback of a frame gets that frame's start time, so
+  // the tick that runs after work finished under the screen (in the same frame) would date the next frame from before it.
+  let last = 0, hold = 0;
   const tick = now => {
     requestAnimationFrame(tick);
     const R = B.rec;
+    const shown = document.getElementById('loading');   // the game's loading screen, counted or not
+    const loadingNow = window.Game && (window.Game.loading > 0 || !!(shown && shown.classList.contains('show')));
+    if (R && loadingNow) { R.skipped = (R.skipped || 0) + 1; last = 0; hold = 2; return; }
+    if (R && hold > 0) { hold--; R.skipped = (R.skipped || 0) + 1; last = hold ? 0 : now; return; }
     if (R) {
       const info = window.__arena && window.__arena.renderer && window.__arena.renderer.info;
       const programs = info ? info.programs.length : 0, tex = info ? info.memory.textures : 0, geo = info ? info.memory.geometries : 0;
@@ -80,20 +88,21 @@ function instruments({ quality }) {
       R.prog.push(programs - R.p0); R.tex.push(tex - R.t0); R.geo.push(geo - R.g0);
       R.p0 = programs; R.t0 = tex; R.g0 = geo;
       R.calls.push(info ? info.render.calls : 0);
+      R.at.push(+now.toFixed(1));
     }
     last = now;
   };
   requestAnimationFrame(tick);
   B.start = () => {
     const info = window.__arena && window.__arena.renderer && window.__arena.renderer.info;
-    B.rec = { t: performance.now(), dt: [], prog: [], tex: [], geo: [], calls: [], p0: info ? info.programs.length : 0,
+    B.rec = { t: performance.now(), dt: [], prog: [], tex: [], geo: [], calls: [], at: [], p0: info ? info.programs.length : 0,
       t0: info ? info.memory.textures : 0, g0: info ? info.memory.geometries : 0 };
     B.longtasks.length = 0;
   };
   B.stop = () => {
     const R = B.rec; B.rec = null; R.ms = performance.now() - R.t;
     R.longtasks = B.longtasks.filter(([s]) => s >= R.t).map(([s, d]) => [+(s - R.t).toFixed(1), +d.toFixed(1)]);
-    delete R.p0; delete R.t0; delete R.g0; delete R.t;
+    R.t0page = R.t; delete R.p0; delete R.t0; delete R.g0; delete R.t;
     return R;
   };
 }
@@ -140,6 +149,32 @@ async function traced(browser, page, fn) {
 }
 
 // A CPU profile's heaviest functions: by self time, and by total time (self plus everything it called).
+// What the main thread ran during each slow frame: the frame's window [at - dt, at] (page time) against the profile's
+// samples (pageStart: performance.now() when the profiler started). Per spike, the heaviest game functions (self and
+// inclusive time) and what the time went to outside script (GC, (program) = the browser's own work, e.g. the GPU).
+function spikesOf(profile, pageStart, rec, over = 25, n = 6) {
+  const byId = new Map(profile.nodes.map(node => [node.id, node])), parent = new Map();
+  for (const node of profile.nodes) for (const c of node.children || []) parent.set(c, node.id);
+  const key = node => `${node.callFrame.functionName || '(anon)'} ${node.callFrame.url.split('/').pop().split('?')[0]}:${node.callFrame.lineNumber + 1}`;
+  const times = []; let t = profile.startTime;
+  for (const d of profile.timeDeltas) { t += d; times.push(pageStart + (t - profile.startTime) / 1000); }
+  const out = [];
+  rec.dt.forEach((dt, i) => {
+    if (dt <= over) return;
+    const end = rec.at[i], start = end - dt, self = new Map(), total = new Map();
+    profile.samples.forEach((id, k) => {
+      if (times[k] < start || times[k] > end) return;
+      const ms = (profile.timeDeltas[k + 1] || 0) / 1000;
+      const node = byId.get(id); self.set(key(node), (self.get(key(node)) || 0) + ms);
+      const seen = new Set();
+      for (let cur = id; cur != null; cur = parent.get(cur)) { const nk = key(byId.get(cur)); if (seen.has(nk)) continue; seen.add(nk); total.set(nk, (total.get(nk) || 0) + ms); }
+    });
+    const top = m => [...m].sort((a, b) => b[1] - a[1]).slice(0, n).map(([k, v]) => k + ' ' + Math.round(v));
+    out.push({ at: Math.round(end - rec.t0page), dt, self: top(self), total: top([...total].filter(([k]) => !/^\((root|program|idle)\)/.test(k) || true)).slice(0, n + 4) });
+  });
+  return out;
+}
+
 function topFunctions(profile, n = 25) {
   const byId = new Map(profile.nodes.map(node => [node.id, node])), dt = profile.timeDeltas, self = new Map();
   profile.samples.forEach((id, i) => self.set(id, (self.get(id) || 0) + (dt[i] || 0) / 1000));
@@ -164,13 +199,18 @@ async function startServer() {
 }
 
 async function newPage(browser, { throttle = false } = {}) {
-  const context = await browser.newContext({ viewport: { width: W, height: H }, deviceScaleFactor: 1 });
+  const context = await browser.newContext(headed ? { viewport: null } : { viewport: { width: W, height: H }, deviceScaleFactor: 1 });
   await context.addInitScript(instruments, { quality });
   const page = await context.newPage();
   const errors = [];
   page.on('pageerror', e => errors.push(e.message));
   page.on('console', m => { if (m.type() === 'error') errors.push(m.text().slice(0, 300)); });
+  if (flag('verbose')) { page.on('pageerror', e => console.error('pageerror', e.message)); page.on('console', m => console.error('console', m.type(), m.text().slice(0, 300))); }
   const cdp = await context.newCDPSession(page);
+  if (headed) {   // the whole screen, as a player sees it: the screen's own pixels, 1920x1080 (scale 1)
+    const { windowId } = await cdp.send('Browser.getWindowForTarget');
+    await cdp.send('Browser.setWindowBounds', { windowId, bounds: { windowState: 'fullscreen' } });
+  }
   await cdp.send('Network.enable');
   if (throttle) await cdp.send('Network.emulateNetworkConditions', THROTTLE);
   return { context, page, errors, cdp };
@@ -182,7 +222,11 @@ async function measureLoad(page, cdp, url) {
   const onData = e => { bytes += e.encodedDataLength; requests++; };
   cdp.on('Network.loadingFinished', onData);
   await page.goto(url, { waitUntil: 'commit' });
-  await page.waitForFunction(() => window.__bench && window.__bench.marks.firstFrame != null, null, { timeout: 180000, polling: 50 });
+  await page.waitForFunction(() => window.__bench && window.__bench.marks.firstFrame != null, null, { timeout: 120000, polling: 50 }).catch(async e => {
+    const state = await page.evaluate(() => JSON.stringify({ marks: window.__bench && window.__bench.marks, ready: document.readyState, arena: !!window.__arenaReady, mode: window.Game && Game.mode, screen: window.Game && Game.screen })).catch(x => String(x));
+    await page.screenshot({ path: path.join(outDir, label + '-stuck.png') }).catch(() => {});
+    throw new Error('the page never drew its first frame: ' + state + ' ' + e.message.split(String.fromCharCode(10))[0]);
+  });
   cdp.off('Network.loadingFinished', onData);
   return page.evaluate(({ bytes, requests }) => {
     const m = window.__bench.marks, nav = performance.getEntriesByType('navigation')[0];
@@ -241,8 +285,8 @@ async function toTitle(page) {
 
 async function main() {
   const { app, url } = await startServer();
-  const browser = await chromium.launch({ headless: true, args: LAUNCH_ARGS });
-  const result = { label, when: new Date().toISOString(), quality, size: [W, H], software, gpu: null, chromium: browser.version(),
+  const browser = await chromium.launch({ headless: !headed, args: LAUNCH_ARGS });
+  const result = { label, when: new Date().toISOString(), quality, size: [W, H], software, headed, gpu: null, chromium: browser.version(),
     load: {}, transitions: {}, play: {}, errors: [] };
   const save = () => fs.writeFileSync(path.join(outDir, label + '.json'), JSON.stringify(result, null, 1));
   try {
@@ -362,10 +406,145 @@ async function main() {
       // The showcase: three bosses at a late run's pace, abilities, ultimates, and two fades between fights.
       r = await traced(browser, P.page, () => P.page.evaluate(async () => {
         __bench.start();
-        await new Promise(r => { showcase.play({ skippable: true, onEnd: r }); setTimeout(r, 90000); });
+        // As the title's Tutorial and the first launch start it: the loading screen painted, then the show's setup under it.
+        await new Promise(r => {
+          document.getElementById('loading').classList.add('show');
+          requestAnimationFrame(() => requestAnimationFrame(() => { if (!showcase.play({ skippable: true, toMenu: false, onEnd: r })) r(); }));
+          setTimeout(r, 120000);
+        });
         return __bench.stop();
       }));
       result.play.showcase = { ...frameStats(r.value), gc: r.gc, beats: await P.page.evaluate(() => { const rep = showcase.report(); return rep && rep.beats ? rep.beats.length : null; }) };
+      result.errors.push(...P.errors);
+      await P.context.close();
+      save();
+    }
+    // ---- gauntlet: the done-bar (docs/perf/README.md "The gauntlet"). The heaviest real play, end to end, every frame
+    // timed except the loading screens': the busiest area fought through with a death and a respawn, the burning town,
+    // a Boss Rush fight with three co-op players, and the showcase's three late-run bosses with abilities and ultimates.
+    if (only.has('gauntlet')) {
+      const P = await newPage(browser);
+      await measureLoad(P.page, P.cdp, url);
+      if (!result.gpu) result.gpu = await gpuString(P.page);
+      result.display = await P.page.evaluate(() => ({ inner: [innerWidth, innerHeight], screen: [screen.width, screen.height], dpr: devicePixelRatio,
+        graphics: JSON.parse(localStorage.getItem('combat-arena-3d.settings') || '{}').graphics, drawing: [__arena.renderer.domElement.width, __arena.renderer.domElement.height] }));
+      await toTitle(P.page);
+      const G = result.gauntlet = {};
+      const all = { dt: [], prog: [], tex: [], geo: [], calls: [], longtasks: [], ms: 0 };
+      // --spikes: a CPU profile of each part, and what ran in each slow frame (spikesOf).
+      const profiled = async fn => {
+        if (!flag('spikes')) return fn();
+        await P.cdp.send('Profiler.enable'); await P.cdp.send('Profiler.setSamplingInterval', { interval: 500 }); await P.cdp.send('Profiler.start');
+        const pageStart = await P.page.evaluate(() => performance.now());
+        const rec = await fn();
+        const { profile } = await P.cdp.send('Profiler.stop');
+        rec.spikes = spikesOf(profile, pageStart, rec);
+        rec.profile = { profile, pageStart };
+        return rec;
+      };
+      const keep = (name, rec, drop = 0) => {
+        G[name] = frameStats(rec, drop) || { frames: 0 };   // an entry recorded before its first frame
+        if (rec.spikes) G[name].spikes = rec.spikes;
+        if (rec.profile) {   // the whole profile (DevTools opens it) and the frames, to look closer afterwards
+          fs.writeFileSync(path.join(outDir, `${label}-${name}.cpuprofile`), JSON.stringify(rec.profile.profile));
+          Object.assign(G[name], { profileStart: rec.profile.pageStart, frameAt: rec.at, frameDt: rec.dt, t0page: rec.t0page });
+        }
+        G[name].slow = rec.dt.map((v, i) => [Math.round(rec.at[i] - rec.t0page), v]).filter(([, v]) => v > 17.5);
+        for (const k of ['dt', 'prog', 'tex', 'geo', 'calls']) all[k].push(...rec[k].slice(drop));
+        all.longtasks.push(...rec.longtasks); all.ms += rec.ms;
+        save();
+      };
+      // Walk forward for `seconds`, the camera swept left and right, a light attack every 0.45 s and a heavy every 2.1 s;
+      // `dieAt`: the player dies then (the death, the respawn at the bonfire, the world reset) and walks on.
+      const walk = (seconds, dieAt = -1) => P.page.evaluate(async ({ seconds, dieAt }) => {
+        let seed = 777; Math.random = () => { seed = (seed * 1664525 + 1013904223) >>> 0; return seed / 4294967296; };
+        const tough = () => { if (Game.player.alive()) Game.player.hp = Game.player.maxHp = 1e9; };
+        input.suspended = false; gamepad.neutralRequired = false;
+        __bench.start();
+        const t0 = performance.now();
+        let died = false, lastLight = 0, lastHeavy = 0;
+        await new Promise(r => { const f = () => {
+          const t = (performance.now() - t0) / 1000; if (t > seconds) { r(); return; }
+          if (dieAt >= 0 && t > dieAt && !died) { died = true; Game.player.die(); }
+          if (Game.player.alive()) tough();
+          input.down('KeyW');
+          if (t - lastLight > 0.45) { lastLight = t; input.down('KeyJ'); setTimeout(() => input.up('KeyJ'), 60); }
+          if (t - lastHeavy > 2.1) { lastHeavy = t; input.down('KeyK'); setTimeout(() => input.up('KeyK'), 300); }
+          Game.mouseLook(Math.sin(t * 0.9) * 6, 0); requestAnimationFrame(f); }; requestAnimationFrame(f); });
+        input.up('KeyW');
+        return __bench.stop();
+      }, { seconds, dieAt });
+      // 1. The busiest area (the Final Castle, most enemies of any level): in through the loading screen, 40 s fought
+      //    through, a death at 24 s and the respawn.
+      let T = await transition(P.page, 'level', 'final-castle', 0.01);
+      keep('areaEntry', T.rec);
+      keep('area', await profiled(() => walk(40, 24)));
+      await toTitle(P.page);
+      // 2. The burning town (fire everywhere): in, 20 s fought through.
+      T = await transition(P.page, 'level', 'burning-town', 0.01);
+      keep('townEntry', T.rec);
+      keep('town', await profiled(() => walk(20)));
+      await toTitle(P.page);
+      // 3. Boss Rush, four players: this page leads the lobby, three of the game's own bots (the lobby's simulation, as
+      //    the server runs them) join the run as soon as it starts, and fight the boss beside the player for 40 s.
+      const rush = await P.page.evaluate(async () => {
+        const wait = (ok, s, what) => new Promise((r, no) => { const end = performance.now() + s * 1000; const f = () => ok() ? r() : performance.now() > end ? no(new Error('timed out: ' + what)) : setTimeout(f, 16); f(); });
+        await wait(() => Game.screen === 'main', 20, 'title');
+        const i = Game.menuItems.findIndex(m => m.name === 'Boss Rush');
+        if (i < 0) throw new Error('no Boss Rush in ' + Game.menuItems.map(m => m.name).join(', '));
+        input.suspended = false; gamepad.neutralRequired = false;
+        Game.select(i, true); Game.confirm();
+        await wait(() => multiplayer.connected, 60, 'lobby');
+        await new Promise(r => setTimeout(r, 1000));
+        input.suspended = false; document.getElementById('lobbyStart').click();
+        await wait(() => multiplayer.info.ready && Game.loading <= 0 && !multiplayer.runIntroActive && multiplayer.info.receivedFrames > 2, 90, 'run');
+        return true;
+      }).catch(e => ({ error: String(e).slice(0, 200) }));
+      if (rush !== true) G.rushError = rush.error;
+      else {
+        const bots = [0, 1, 2].map(() => app.sim.addBot());
+        G.rushBots = bots.filter(Boolean).length;
+        const R = await profiled(() => P.page.evaluate(async () => {
+          const wait = (ok, s) => new Promise(r => { const end = performance.now() + s * 1000; const f = () => ok() || performance.now() > end ? r() : setTimeout(f, 50); f(); });
+          await wait(() => (multiplayer.info.players || []).length >= 4, 5);
+          const tough = () => { if (Game.player.alive()) Game.player.hp = Game.player.maxHp = 1e9; };
+          input.suspended = false;
+          __bench.start();
+          const t0 = performance.now();
+          let lastLight = 0;
+          await new Promise(r => { const f = () => {
+            const t = (performance.now() - t0) / 1000; if (t > 40) { r(); return; }
+            tough();
+            const boss = Game.enemies.find(e => e.isBoss && e.isBoss() && e.alive && e.alive());
+            if (boss && Game.lock !== boss) Game.setLock(boss);
+            input.down('KeyW');
+            if (t - lastLight > 0.45) { lastLight = t; input.down('KeyJ'); setTimeout(() => input.up('KeyJ'), 60); }
+            requestAnimationFrame(f); }; requestAnimationFrame(f); });
+          input.up('KeyW');
+          const rec = __bench.stop();
+          rec.players = (multiplayer.info.players || []).length;
+          return rec;
+        }));
+        G.rushPlayers = R.players;
+        keep('rush', R);
+      }
+      await P.page.evaluate(() => { try { multiplayer.leave && multiplayer.leave(); } catch (e) { /* none */ } });
+      await toTitle(P.page);
+      // 4. The showcase: three Boss Rush bosses at a late run's pace, every ability and ultimate in its script, two fades.
+      const S = await profiled(() => P.page.evaluate(async () => {
+        // Started as the title's Tutorial and the first launch start it: its setup under the loading screen.
+        __bench.start();
+        $('loading').classList.add('show');
+        await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(() => {
+          if (!showcase.play({ skippable: true, toMenu: false, onEnd: r })) r();
+          setTimeout(r, 120000);
+        })));
+        return __bench.stop();
+      }));
+      keep('showcase', S);
+      G.whole = frameStats(all);
+      G.whole.over33 = all.dt.filter(v => v > 33).length;
+      G.whole.over17 = all.dt.filter(v => v > 17.5).length;
       result.errors.push(...P.errors);
       await P.context.close();
       save();
@@ -419,6 +598,8 @@ function summary(r) {
     load: Object.fromEntries(Object.entries(L).filter(([, v]) => v).map(([k, v]) => [k, { ready: v.readyMs, firstFrame: v.firstFrameMs, three: v.threeMs, kb: v.kb, requests: v.requests, longestTask: v.longestTask }])),
     transitions: Object.fromEntries(Object.entries(r.transitions).map(([k, v]) => [k, v.after ? { build: v.buildMs, playable: v.playableMs, programs: v.programs, after: pick(v.after) } : v])),
     play: Object.fromEntries(Object.entries(r.play).map(([k, v]) => [k, pick(v)])),
+    gauntlet: r.gauntlet && Object.fromEntries(Object.entries(r.gauntlet).map(([k, v]) => [k, v && v.frames ? { ...pick(v), frames: v.frames, p99: v.p99, over33: v.over33, over17: v.over17 } : v])),
+    display: r.display,
     errors: r.errors.length ? r.errors.slice(0, 5) : undefined,
   };
 }
