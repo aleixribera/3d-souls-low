@@ -6,6 +6,7 @@
 //   title    a few words
 //   text     one to three sentences, shown under the list when the entry is selected
 const CHANGELOG = [
+  { version: 'v7.210.0', title: 'A new opening', text: 'The opening is now cut like an anime opening: four bosses named in ink, Ash Legion as the climax, and the title slammed in at the end. After your first time, Esc skips it.' },
   { version: 'v7.209.0', title: 'Boss Rush in the lobby', text: 'Boss Rush always opens the lobby. Play in private is its big button when the lobby can\'t be reached, and a quiet entry at the bottom of the lobby when it can.' },
   { version: 'v7.208.0', title: 'Story\'s four', text: 'Story mode now gives you four abilities along the road, one for each key: Scarlet Draw in the Sunken Keep lashes your scarf out as a blade, Oath Guard in the Final Castle turns and answers every blow for 3 s, The Seven in the Church raise the seven founders to strike the boss, and Ysolde gives you the Bell of Waking at the Still Mere, which makes the boss kneel and then strikes it. They are kept in your save, and Practice\'s levels give each one from its chapter on.' },
   { version: 'v7.207.0', title: 'Ultimates III', text: 'Four new Ultimates: World of Ink paints the fight in ink and strikes every blow twice, Severance cuts everything on one line across the arena, Colossus raises a giant of embers to swing once, and Ash Legion sends a phantom army through the boss.' },
