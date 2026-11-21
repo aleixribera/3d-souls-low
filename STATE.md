@@ -4,7 +4,7 @@ The iterate loop's working note (`.claude/iterate.md`). Cap: 8,000 characters.
 
 ## Now
 - Resumed by Aleix, 2026-11-21: next the PLAN "Later" items in order, then the balance pass (loop file stop point).
-- Track 2, pass 161 (PLAN Later item 1, Boss Rush alone off the title, pass 1 of 1): the title always opens the lobby;
+- Track 2, pass 161 (PLAN Later item 1, Boss Rush alone off the title, pass 1 of 1), v7.209.0: the title always opens the lobby;
   Play in private is the lobby's big button when it can't be reached, a quiet footer entry when it can, none mid-run.
   Acceptance: `tests/lobby-peek-browser.cjs`; frames `docs/scorecard/now/lobby-private-*`.
 - Track 1, pass 155 (Aleix's ask: cel the default, pass 1 of 1), v7.205.0: cel with no `?style=`, `classic` the way
