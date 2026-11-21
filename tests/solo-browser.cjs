@@ -11,12 +11,15 @@ const { createServer } = require('../server/index.cjs');
     args: process.env.ARENA_SOFTWARE_GL ? ['--use-angle=swiftshader', '--enable-unsafe-swiftshader'] : [] });
   const messages = [];
   try {
-    // 320x180: a sixteenth of 720p's pixels. Under software WebGL (CI, the Linux test laptop) the suite waits mostly on
-    // SwiftShader filling pixels (the duel regressions: 520 of 597 s), so a small frame is the cheapest way to draw every
-    // frame the tests draw. ARENA_VIEWPORT=WxH picks another size.
-    const [width, height] = (process.env.ARENA_VIEWPORT || '320x180').split('x').map(Number);
+    // 640x360 CSS pixels drawn at half resolution (deviceScaleFactor 0.5, so the game's pixel ratio is 0.5 and the canvas
+    // 320x180): under software WebGL (CI) the suite waits mostly on SwiftShader filling pixels (the duel regressions:
+    // 520 of 597 s), while menus and the HUD still lay out at 640x360 (a 320x180 page failed a menu layout test).
+    // ARENA_VIEWPORT=WxH and ARENA_SCALE=<deviceScaleFactor> pick others.
+    const [width, height] = (process.env.ARENA_VIEWPORT || '640x360').split('x').map(Number);
+    const scale = Number(process.env.ARENA_SCALE || 0.5);
     if (!(width > 0 && height > 0)) throw new Error(`ARENA_VIEWPORT must be WxH, not "${process.env.ARENA_VIEWPORT}"`);
-    const page = await browser.newPage({ viewport: { width, height } });
+    if (!(scale > 0)) throw new Error(`ARENA_SCALE must be a positive number, not "${process.env.ARENA_SCALE}"`);
+    const page = await browser.newPage({ viewport: { width, height }, deviceScaleFactor: scale });
     page.on('console', m => { if (['error', 'warning'].includes(m.type())) messages.push(m.text()); });
     // A script that throws while the page loads (a test suite with a syntax error) would silently drop its tests: fail.
     const loadErrors = []; let loading = true;

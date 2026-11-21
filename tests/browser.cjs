@@ -27,10 +27,17 @@ function watch() {
 const softwareGL = process.env.ARENA_SOFTWARE_GL === '1';
 // A Linux test machine without Edge (the Fedora laptop that runs remote-test) uses Playwright's own Chromium instead.
 const noEdge = process.platform === 'linux' && !require('node:fs').existsSync('/opt/microsoft/msedge/msedge');
-if (lowered || softwareGL || noEdge) {
+// Headless Chromium on Linux draws with SwiftShader unless told to use the GPU. Off CI, a machine with a render node
+// (the Fedora laptop's Intel GPU) draws on it instead: Garden Defense's boot went from 54-80 s to 14 s. CI and
+// ARENA_SOFTWARE_GL=1 stay on SwiftShader; ARENA_GL=software|gpu forces either.
+const gpuGL = !softwareGL && (process.env.ARENA_GL ? process.env.ARENA_GL === 'gpu'
+  : process.platform === 'linux' && !process.env.CI && require('node:fs').existsSync('/dev/dri/renderD128'));
+const GPU_ARGS = ['--use-angle=vulkan', '--enable-gpu', '--ignore-gpu-blocklist', '--enable-unsafe-swiftshader'];
+if (lowered || softwareGL || noEdge || gpuGL) {
   const launch = playwright.chromium.launch.bind(playwright.chromium);
   playwright.chromium.launch = async (options = {}) => {
-    const args = softwareGL ? [...new Set([...(options.args || []), '--use-angle=swiftshader', '--enable-unsafe-swiftshader'])] : options.args;
+    const args = softwareGL ? [...new Set([...(options.args || []), '--use-angle=swiftshader', '--enable-unsafe-swiftshader'])]
+      : gpuGL ? [...new Set([...(options.args || []).filter(a => !/^--use-angle=/.test(a)), ...GPU_ARGS])] : options.args;
     const { channel, ...rest } = options;
     const browser = await launch({ ...rest, ...(noEdge && channel === 'msedge' ? {} : { channel }), args });
     if (lowered) watch();
