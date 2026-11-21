@@ -10,8 +10,8 @@ The iterate loop's working note (`.claude/iterate.md`). Cap: 8,000 characters.
   batch 13, Legendaries I. Browser lock: `node tools/browser-lock.cjs run <pass> -- <cmd>` (docs/two-tracks.md).
 - Track 1, pass 150 (retro; Broken: players 9 releases behind): the container gate now takes the CI
   run of a notes-only later commit (`tools/ci-gate.sh`), only its publish job queues, and an older tag never retakes
-  `:latest` (`tools/image-version.cjs`); `live-check` says `BROKEN` past 2 behind. Acceptance: v7.199.0 or
-  the next tag served. Next: the Kindling Tree's `bars-1`, then the King's Blade.
+  `:latest` (`tools/image-version.cjs`); `live-check` says `BROKEN` past 2 behind. v7.199.0 served;
+  the new gate proves on the next tag. Next: Kindling Tree `bars-1`, King's Blade.
 
 ## Works
 
