@@ -57,7 +57,7 @@ jobs:
   browser:
     # The in-page suite takes about an hour of runner time under software WebGL, so it runs as parallel shards of
     # consecutive tests, equal in time (ARENA_SHARD, tests/shard-weights.json, tests/solo-browser.cjs). Each test's line
-    # streams to the log as it ends. The shards start beside the Node job, not after it. Ten shards: about 6-7 minutes
+    # streams to the log as it ends. The shards start beside the Node job, not after it. Ten shards: about 5-7 minutes
     # each (four took 10-22 minutes, the long pole one job holding all 44 duels). AGENTS.md, Test time budget.
     name: In-page browser suite ${{ matrix.shard }}/10 (Edge, SwiftShader)
     runs-on: ubuntu-latest

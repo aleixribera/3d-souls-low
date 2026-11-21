@@ -4906,16 +4906,14 @@
       }
     }
   });
-  test('Ultra: Hale and the Kindling Tree fight 15 s with every effect on, no effect failing', () => {
-    try {
+  for (const id of ['hale', 'kindlingTree']) test(`Ultra: Hale and the Kindling Tree fight 15 s with every effect on, no effect failing: ${id}`, () => {
+    try {   // one test per boss, so CI's shards can split them
       A.visuals.setQuality('ultra');
-      for (const id of ['hale', 'kindlingTree']) {
-        Game.startFight(id); Game.loading = 0; sim.begin();
-        const warn0 = ultraWarnings().length;
-        sim.seconds(15, 3);
-        expect.ok(ultraWarnings().length === warn0, `${id}: no effect failed (${ultraWarnings().join('; ')})`);
-        expect.ok(Number.isFinite(Game.enemies[0].x), `${id}: the fight runs`);
-      }
+      Game.startFight(id); Game.loading = 0; sim.begin();
+      const warn0 = ultraWarnings().length;
+      sim.seconds(15, 3);
+      expect.ok(ultraWarnings().length === warn0, `${id}: no effect failed (${ultraWarnings().join('; ')})`);
+      expect.ok(Number.isFinite(Game.enemies[0].x), `${id}: the fight runs`);
     } finally { restoreQuality(); }
   });
   test('Ultra models: every model builds at Ultra detail, with more triangles', () => {

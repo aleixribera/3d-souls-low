@@ -52,8 +52,9 @@ agents: a draft, changed whenever the code changes.
 ### Test time budget
 
 - `npm test` (node group + the browser tests CI runs): files run in parallel, the in-page suite as one shard per browser
-  slot. Budget: node group 60 s, `npm test` 10 min on the Fedora laptop; `tests/run-all.cjs` prints a loud warning past it.
-- CI: about 8 minutes (10 in-page shards, 2 smoke halves, the node job); each step's `timeout-minutes` is ~1.5x its time.
+  slot. Budget: node group 60 s, `npm test` 10 min; `tests/run-all.cjs` prints a loud warning past it.
+- CI: about 8 minutes (10 in-page shards drawn at half resolution, 2 smoke halves, the node job); each job's
+  `timeout-minutes` is ~1.5x its time. Refresh `tests/shard-weights.json` (`node tools/shard-weights.cjs <run>`) when a shard runs long.
 - Only what changed: `node tests/run-all.cjs <name>`, `node tests/solo-browser.cjs "<filter>"` (`a|b` for either).
 - Slow and opt-in: `--group extra` (Playwright files CI never ran, several failing; see `tests/run-all.cjs`) and the
   optional benchmarks (`--list`). Output is dots and failures; logs and the timing table are in `.scratch/test-logs/`.

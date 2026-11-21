@@ -73,7 +73,7 @@ function kindOf(name, g) { return g.browser.includes(name) || g.extra.includes(n
 function parse(argv) {
   const threads = os.availableParallelism ? os.availableParallelism() : os.cpus().length;
   const opts = { group: null, names: [], passthrough: [], bail: false, verbose: false, list: false, timeout: null, retries: 0,
-    jobs: Math.max(1, Math.min(8, threads)), browserJobs: Number(process.env.ARENA_BROWSER_JOBS) || Math.max(1, Math.floor(threads / 4)) };
+    jobs: Math.max(1, Math.min(8, threads)), browserJobs: Math.max(1, Math.floor(Number(process.env.ARENA_BROWSER_JOBS) || threads / 4)) };
   for (let i = 0; i < argv.length; i++) {
     const a = argv[i];
     if (a === '--') { opts.passthrough = argv.slice(i + 1); break; }
