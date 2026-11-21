@@ -6,6 +6,7 @@
 //   title    a few words
 //   text     one to three sentences, shown under the list when the entry is selected
 const CHANGELOG = [
+  { version: 'v7.170.0', title: 'The Captain in black', text: 'The Pillager Captain\'s armour is black now, with sharper pauldrons, and his knees, elbows and cloak bend as one body.' },
   { version: 'v7.169.0', title: 'Mirror Shard', text: 'A new common: deflect a shot and it flies back into whoever shot it.' },
   { version: 'v7.168.0', title: 'The Captain\'s cleave lands', text: 'The Pillager Captain\'s Overhead Cleave now bursts from the floor the moment his bill hits it, not while it is still raised, and his swing leaves a thin arc of light along its path.' },
   { version: 'v7.167.0', title: 'Eleven guard commons', text: 'Eleven new common abilities for the guard and the run: Ringing Steel, Thorn Guard, Ash Veil, Bitter Draught, Grit, Kindling, Tithe, Glint, Hunter\'s Pace, Kindred Ember and Shatter Guard. A struck boss in the cel style now flashes in his own colours instead of going white.' },
