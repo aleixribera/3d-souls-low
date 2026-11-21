@@ -3,11 +3,11 @@
 The iterate loop's working note (`.claude/iterate.md`). Cap: 8,000 characters.
 
 ## Now
-- Track 2, pass 117, PLAN item 8 batch 3 (pass 2 of 2), done in v7.169.0: Mirror Shard. A bolt meeting its holder's
-  armed deflect turns back and strikes the shooter on arrival (`parryShot/reflect`); the server checks the claim
-  against the shots it fired (`shotsFired`), and bots turn bolts in `flyBolts`. Acceptance: the bolt turns, is drawn
-  and heard, and the shooter is struck: `tests/mirror-shard.cjs`, in-page `mirror shard`; clip
-  `docs/scorecard/now/mirror-shard.mp4`. Batch 3 is done (pass 114: the other eleven). Next on track 2: batch 4.
+- Track 2, pass 119, PLAN item 8 batch 4 (pass 1 of 2), done in v7.171.0: the kept rares. Counterstep flash-steps
+  behind the boss (`dodge/flashBehind`, server window `stepDodge`); Opportunist on a cracked guard (`cracked/damage`);
+  all eleven drawn in blue by `js/rare-fx.js`. Acceptance: `tests/rare-perks.cjs`, in-page `kept rares`; clip
+  `docs/scorecard/now/rare-perks.mp4`. Not drawn yet: Static Edge's blade crackle count, Bastion's arm line.
+  Browser lock: `node tools/browser-lock.cjs run <pass> -- <cmd>` (docs/two-tracks.md). Next on track 2: batch 5.
 - Track 1, pass 120, the retro: `node tools/boss-judge.cjs` plots the boss judge and prints `FLAT`; judge `sekiro-1`
   is flat (caught 9/10 six rounds, motion 3 to 5). Next on track 1 (pass 121, item 5 pass 2 of the cel model): shade
   the bill's steel in cel and smear the swing (round 5's giveaway; clip `docs/scorecard/now/`), then one round with

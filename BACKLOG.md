@@ -21,7 +21,7 @@ them (`git show 88f1abd:BACKLOG.md`).
 - `startFight('dummy')` under `Game.manualClock` turns positions to NaN (no `speed`, starts in chase).
 - A test that empties `Game.enemies` without `sim.clearEnemies()` leaves figures for later tests; a runner check
   would catch it.
-- Flaky: `abilities` Node check (`tests/abilities.cjs:572`, run 43632565109); `lobby-polish-browser` preset switch.
+- Flaky: `abilities` Node check (`tests/abilities.cjs:572`, run 43632565109); `lobby-polish-browser` preset switch; in-page `the burning town: frame time` on SwiftShader (284 ms vs 157, run 44843261653, a docs-only commit).
 
 ## Boss Rush and Story
 
