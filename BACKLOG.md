@@ -32,8 +32,9 @@ them (`git show 88f1abd:BACKLOG.md`).
   to full charge, so charge abilities are unmeasured by `tools/rush-curve.cjs`.
 - Crowned fights: no own final phase, no arena change; modifiers are pace-only.
 - Weekly: the end screen doesn't say where the run placed; a mid-week release changes that week's run.
-- Story's four key abilities (VISION): pass 89's draft, not built: a level's `abilityFinds` beside `flaskFinds`
-  (Wind Blade, Mending, Grave Hound, Thunder Call at four places on the road).
+- Story's four (pass 159) left out: the scarf's hide swap on the wanderer, the painted faces turning to the player,
+  Ysolde's ringing scene for the Bell, frozen ash in the kneel, the two tolls' rings at different gaps. A gift whose
+  place was walked past in an existing save is not given until a jump or a new game.
 - Blessings aren't shown anywhere during a fight.
 - Two players' summons of one kind stand in the same spot.
 - Legendaries I (pass 151) left out of their design pages: Gale Crescent's tally on the blade; Time Rift's white-violet

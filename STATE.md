@@ -3,11 +3,12 @@
 The iterate loop's working note (`.claude/iterate.md`). Cap: 8,000 characters.
 
 ## Now
-- Track 2, pass 158 (PLAN item 8, batch 17, Ultimates III, pass 1 of 1): World of Ink, Severance, Colossus, Ash
-  Legion (`js/legend-fx-5.js`, grade `uInk`/`uSplit`, Blender `colossus.py`, `ash_legion.py`). Acceptance:
-  `tests/ultimates-three.cjs`, in-page `ultimates three`; clip `docs/scorecard/now/ultimates-three.mp4`. CI on v7.206.0:
-  2/4 fixed, but the smoke's reconnect timed out (raised) and shard 1/4 ran past 25 min (weights refreshed); players
-  still on v7.202.0 until v7.207.0's CI is green. Next: batch 18 (Story's four), the last of PLAN items 5-8.
+Paused by Aleix, 2026-11-21.
+- The agreed stop point after PLAN items 5-8 (pass 159, v7.208.0).
+- Track 2, pass 159 (PLAN item 8, batch 18, Story's four, pass 1 of 1), v7.208.0: Scarlet Draw, Oath Guard, The
+  Seven, Bell of Waking, rarity `story` (`given`), each given by its chapter's level (`giveAbility`), saved as `gifts`
+  (`js/story-fx.js`, Blender `seven_founder.py`, `ghost_bell.py`). Acceptance: `tests/story-four.cjs`, in-page
+  `story four`, `given on the road`; clip `docs/scorecard/now/story-four.mp4`. PLAN items 5-8 are done.
 - Track 1, pass 155 (Aleix's ask: cel the default, pass 1 of 1), v7.205.0: cel with no `?style=`, `classic` the way
   back. Acceptance: `tests/style-browser.cjs`; frames `docs/scorecard/now/cel-default-*`. Normal inks from the scene's
   depth (GPU +10%, was +90%); laptop unreachable, 60 fps there unmeasured. Track 1 has no plan item left.
