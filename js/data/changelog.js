@@ -6,6 +6,7 @@
 //   title    a few words
 //   text     one to three sentences, shown under the list when the entry is selected
 const CHANGELOG = [
+  { version: 'v7.223.0', title: 'Blows that count', text: 'Your blows hit almost twice as hard and a counter is worth nearly three light hits; the Finishing Blow takes less off a boss. Bosses hit a quarter harder. Your first legendary comes within three crates, and never more than ten apart after that.' },
   { version: 'v7.222.0', title: 'The castles, the keep and the storm relit', text: 'The Sunken Keep, the Tower, Saltgrave and the Final Castle are relit: each wing and court has its own light, the floors read apart from the walls, and the Gaoler King\'s gibbets line the road to his gate. Saltgrave\'s yards and the castle courts have weapon racks. The Root of the Ember\'s hollows and the Still Mere\'s white gate read clearer, and the lantern thralls, the Drowned and the Salt Knights wear new colours.' },
   { version: 'v7.221.0', title: 'Every button in reach', text: 'After a long Boss Rush run, the results screen keeps its buttons on screen and the bosses in a list that scrolls, so a controller reaches everything. The ability pick stays reachable however many abilities you hold.' },
   { version: 'v7.220.0', title: 'The Finishing Blow in ink', text: 'The Finishing Blow keeps the world\'s colour now: each flash step leaves a sharp ink slash across the foe, and they open in red, with no white flash.' },
