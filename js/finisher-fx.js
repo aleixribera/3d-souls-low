@@ -406,6 +406,7 @@ const finisherFx = (() => {
   return {
     attach() { make(); Game.renderHooks.push(render); visuals.hooks.clear.push(clear); },
     clear, hold, view,
+    get grading() { return graded; },   // the freeze owns the grade now (js/visuals.js atmosphere.areas waits)
     // tests: what shows now
     get state() {
       return { cracks: sets.filter(q => q.foe).map(q => ({ level: q.level, shown: q.s.filter(s => s.visible).length })),

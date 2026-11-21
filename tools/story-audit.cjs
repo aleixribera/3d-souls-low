@@ -4,6 +4,8 @@
 // that do not exist, walks that stick, fights whose gates never open, pickups and saves that fail, chapters that do not
 // carry on, page errors. Frames land in .scratch/story-audit/ (spawn, the gift, the boss won, each problem).
 //   node tools/browser-lock.cjs run <pass> -- node tools/story-audit.cjs [levelId ...] [--no-frames] [--json out.json]
+//   --every <m>: a road frame every m metres (default 30; pass 167 films a walk with 1); --graphics <low|normal|ultra>
+//   (default low); --dir <folder> for the frames (default .scratch/story-audit).
 // Exits 1 when any chapter has a severity-1 finding (it stops a player).
 const fs = require('node:fs');
 const path = require('node:path');
@@ -12,8 +14,10 @@ const { createServer } = require('../server/index.cjs');
 
 const args = process.argv.slice(2), frames = !args.includes('--no-frames');
 const jsonAt = args.includes('--json') ? args[args.indexOf('--json') + 1] : null;
-const only = args.filter((a, i) => !a.startsWith('--') && args[i - 1] !== '--json');
-const dir = path.resolve('.scratch/story-audit'); fs.mkdirSync(dir, { recursive: true });
+const opt = (k, d) => args.includes(k) ? args[args.indexOf(k) + 1] : d;
+const only = args.filter((a, i) => !a.startsWith('--') && !['--json', '--every', '--graphics', '--dir'].includes(args[i - 1]));
+const every = +opt('--every', 30), graphics = opt('--graphics', 'low');
+const dir = path.resolve(opt('--dir', '.scratch/story-audit')); fs.mkdirSync(dir, { recursive: true });
 (async () => {
   const app = createServer({ dev: true });
   await new Promise(resolve => app.server.listen(0, '127.0.0.1', resolve));
@@ -24,7 +28,7 @@ const dir = path.resolve('.scratch/story-audit'); fs.mkdirSync(dir, { recursive:
     const messages = [];
     page.on('console', m => { if (m.type() === 'error') messages.push(m.text()); });
     page.on('pageerror', e => messages.push(e.stack || e.message));
-    await page.addInitScript(() => localStorage.setItem('combat-arena-3d.settings', JSON.stringify({ graphics: 'low', volume: 0 })));
+    await page.addInitScript(g => localStorage.setItem('combat-arena-3d.settings', JSON.stringify({ graphics: g, volume: 0, lessons: g === 'low' ? undefined : false })), graphics);
     await page.exposeFunction('__auditFrame', async name => { await page.screenshot({ path: path.join(dir, name + '.png'), timeout: 120000 }); });
     await page.goto(`http://127.0.0.1:${app.server.address().port}/combat-arena-3d.html#dev`, { timeout: 180000 });   // a busy PC: generous waits
     await page.waitForFunction(() => window.__arenaReady && window.__arena.tests && typeof MODELLAB !== 'undefined', { timeout: 180000 });
@@ -33,7 +37,7 @@ const dir = path.resolve('.scratch/story-audit'); fs.mkdirSync(dir, { recursive:
     let worst = 9;
     for (const id of ids) {
       const t0 = Date.now(), before = messages.length;
-      const r = await page.evaluate(([id, frames]) => window.__storyAudit(id, { frames }), [id, frames]);
+      const r = await page.evaluate(([id, frames, every]) => window.__storyAudit(id, { frames, every }), [id, frames, every]);
       r.console = messages.slice(before);
       all.push(r);
       console.log(`\n== ${id}: ${r.findings.length} findings, ${r.seconds.toFixed(0)} s walked, exit ${r.exit}, ${((Date.now() - t0) / 1000).toFixed(0)} s real`);

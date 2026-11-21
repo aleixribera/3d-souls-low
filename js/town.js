@@ -14,6 +14,8 @@ const TOWN_MAT = (() => {
     roof: std(0x6a382a, 'roof'), char: std(0x1c1714, 'wood'), soot: std(0x2a2420, 'plaster'),
     cloth: plain(0x7e3424), clothB: plain(0x8e7438), sack: plain(0x8a7a5a), water: plain(0x1a262c, { roughness: 0.12, metalness: 0.35 }),
     windowDark: std(0x0e0b0a, 'wood'),
+    gilt: (() => { const m = new THREE.MeshStandardMaterial({ color: 0xd8a640, roughness: 0.35, metalness: 0.6 }); m.userData.weathered = 'none'; return m; })(),
+    bronze: std(0x5a4a30, 'stone', { metalness: 0.3 }),
     windowLit: new THREE.MeshBasicMaterial({ color: new THREE.Color(0xffb468).multiplyScalar(1.5) }),   // lamplight behind the glass
     fire: new THREE.MeshBasicMaterial({ color: new THREE.Color(0xff6a20).multiplyScalar(2.6) }),        // bright enough for bloom
   };
@@ -34,9 +36,18 @@ function barrel(g, x, y, z, tipped = false) {
 }
 
 // Each look builds a prop in its own space (x across, z forward, y up from its floor), matching its boxes in PROP_KINDS.
+// (pass 167) The fountain is a Blender model (tools/blender/fountain.py, js/baked/fountain.js): its trim gilt in Aurel
+// (`gildedFountain`), bronze elsewhere. Without the baked file (a test page) it falls back to the old cylinders.
+function bakedFountain(g, trim) {
+  const M = TOWN_MAT;
+  for (const [part, mat] of [['basin', M.stone], ['column', M.stone], ['trim', trim], ['water', M.water]])
+    g.add(new THREE.Mesh(bakedGeometry(`fountain:${part}__${part === 'trim' ? 'gilt' : part === 'water' ? 'water' : 'stone'}`), mat));
+}
 const PROP_LOOKS = {
+  gildedFountain(g) { if (typeof BAKED !== 'undefined' && BAKED['fountain:basin__stone']) bakedFountain(g, TOWN_MAT.gilt); else PROP_LOOKS.fountain(g); },
   fountain(g) {
     const M = TOWN_MAT;
+    if (typeof BAKED !== 'undefined' && BAKED['fountain:basin__stone']) { bakedFountain(g, M.bronze); return; }
     townCyl(g, 2.15, 2.25, 0.85, 8, M.stone, 0, 0.425, 0);
     townCyl(g, 2.25, 2.25, 0.12, 8, M.stone, 0, 0.88, 0);
     townCyl(g, 1.95, 1.95, 0.04, 8, M.water, 0, 0.72, 0);

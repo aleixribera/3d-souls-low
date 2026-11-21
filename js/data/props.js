@@ -7,6 +7,7 @@
 // quarter turns only, so its boxes stay square to the level. Its look is in js/town.js (PROP_LOOKS), under the same name.
 const PROP_KINDS = {
   fountain: { boxes: [{ w: 4.4, d: 4.4, h: 0.85 }, { w: 0.9, d: 0.9, h: 2.8 }] },   // a basin round a column
+  gildedFountain: { boxes: [{ w: 4.4, d: 4.4, h: 0.85 }, { w: 0.9, d: 0.9, h: 2.8 }] },   // Aurel's: the same, its trim gilt (pass 167)
   well: { boxes: [{ w: 1.9, d: 1.9, h: 0.95 }] },
   cart: { boxes: [{ w: 2.8, d: 1.5, h: 1.3 }] },
   stall: { boxes: [{ z: 0.35, w: 3.0, d: 0.8, h: 1.05 }, { z: -0.62, w: 3.0, d: 0.26, h: 2.5 }] },   // counter in front, panel behind

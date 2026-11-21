@@ -364,6 +364,10 @@ const hud = {
   // Short notices above the prompt; each fades on its own (CSS) and is swept away here.
   toast(text) {
     if (!text) return;
+    // (pass 167) The same notice again while it still shows (three gates of one fight, "The barricade falls" x3) is one
+    // line, shown afresh, not a stack of them.
+    const same = this.toastList.find(t => t.el.textContent === text);
+    if (same) { same.el.remove(); this.toastList.splice(this.toastList.indexOf(same), 1); }
     const el = document.createElement('div'); el.className = 'toast'; el.textContent = text;
     this.toasts.appendChild(el);
     this.toastList.push({ el, until: this.clock + CONFIG.hud.toastTime });

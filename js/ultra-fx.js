@@ -508,14 +508,16 @@ void main() {
     const e = d.enemy;
     if (e.training) return;
     const c = chest(e), color = auraColor(e);
-    if (isBoss(e)) {   // the great soul leaves: a spiralling column, a blinding flash, the air bends
-      moteBurst(c, 420, color, { r: e.radius * 1.2, speed: 2.5, lift: 2.4, life: [1.6, 3.6], size: 1.6, swirl: 2.2, up: 1.2, drag: 0.6 });
-      moteBurst(c, 120, 0xffffff, { r: 0.5, speed: 7, lift: 0.4, life: [0.5, 1.2], size: 1.0, up: 0.3 });
+    if (isBoss(e)) {   // the great soul leaves: a spiralling column, a flash, the air bends
+      // (pass 167) Smaller than it was: under the cel style's exposure the old flash (light 30 over 18 m, a 7 m flare,
+      // 120 white motes) whited out the whole view in every Story boss's won frame (docs/story/audit.md).
+      moteBurst(c, 420, color, { r: e.radius * 1.2, speed: 2.5, lift: 2.4, life: [1.6, 3.6], size: 1.3, swirl: 2.2, up: 1.2, drag: 0.6 });
+      moteBurst(c, 40, 0xffffff, { r: 0.5, speed: 7, lift: 0.4, life: [0.5, 1.2], size: 0.7, up: 0.3 });
       sparkBurst(c, 90, 'gold', [0, 1, 0], 0.3, 1.3);
-      flashAt(c, color, 30, 18); flare(c, color, 7, 0.8);
+      flashAt(c, color, 10, 12); flare(c, color, 3.5, 0.8);
       mark(e.x, e.y, e.z, color, 7 * scaleOf(e), 3, 1);
       dustRing(e.x, e.y, e.z, 18, 2.5, U.puffs.dust, 1.6);
-      ultraPost.wave(c, 2.2, 2.2); ultraPost.pulse({ flash: 0.35, color });
+      ultraPost.wave(c, 2.2, 2.2); ultraPost.pulse({ flash: 0.15, color });
     } else {
       moteBurst(c, 70, 0xd8e4ff, { r: e.radius, speed: 1.2, lift: 1.6, life: [1.0, 2.2], size: 1.0, swirl: 1.4, up: 0.8, drag: 0.8 });
       flashAt(c, 0xc8d8ff, 5, 6);

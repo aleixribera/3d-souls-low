@@ -16,7 +16,7 @@
   window.__arena.events.on('playerDeath', d => { if (listen.deaths) listen.deaths.push(at(d.player)); });
   window.__arena.events.on('fell', d => { if (listen.fell && d.body && d.body.baseDef) listen.fell.push({ id: d.body.baseDef.id, zone: d.body.zone, at: at(d.body) }); });
 
-  window.__storyAudit = async function (levelId, { frames = true } = {}) {
+  window.__storyAudit = async function (levelId, { frames = true, every = 30 } = {}) {
     const A = window.__arena, sim = A.tests.sim, { Game, CONFIG, PS } = A;
     const out = { level: levelId, findings: [], walked: 0, seconds: 0, visited: [], deaths: 0, errors: [] };
     const find = (sev, kind, text, where) => { out.findings.push({ sev, kind, text, at: at(where) }); };
@@ -141,7 +141,7 @@
             if (Math.hypot(dx, dz) < 0.45 && Math.abs(w.y - q.y) < 1.5) break;
             if (!q.isFree() && q.state !== PS.RUN && q.state !== PS.WALK) { sim.move(null); stepOne(); if (++guard > 60 * 120) return 'stuck'; continue; }
             sim.move(dx, dz); stepOne(); guard++;
-            if (road - tourAt > 30) { tourAt = road; await snap('road', heading); }
+            if (road - tourAt > every) { tourAt = road; await snap('road', heading); }
             idle += STEP;
             if (idle >= 2) {
               const moved = Math.hypot(p().x - last.x, p().z - last.z);

@@ -4,17 +4,16 @@ The iterate loop's working note (`.claude/iterate.md`). Cap: 8,000 characters.
 
 ## Now
 - Resumed 2026-11-21: next the PLAN "Later" items in order, then the balance pass (loop file stop point).
-- Pass 163 (Aleix: Story's broken parts, the audit, pass 1 of 1): every chapter walks clean; the abbey softlock and
-  14 floating gate lintels fixed. Acceptance: `tools/story-audit.cjs` 0 findings, `tests/story-placements.cjs`;
-  `docs/story/audit.md`.
+- Track 1, pass 167 (PLAN Later item 3, Story levels redone in cel, pass 1 of ~3): Aurel, Torn Abbey, Ember Root
+  relit (`atmosphere.areas`), Blender fountain, thrall recolour. Next: `docs/story/audit.md` "Left", in order.
+  Acceptance: in-page `Aurel:`; `tools/story-frames.cjs` sheets; clip `story-redo.mp4`; audit 0 findings.
 - Track 2, pass 165 (PLAN Later item 2, cel to enemies and levels, pass 2 of 2), v7.216.0: Bowman in teal and slate,
   Gargoyle rebuilt in carved stone with an ember throat, the lobby's party standing in the arena against the sunset
   (`js/lobby-scene.js`, 1100 px up); effect clears on `visuals.hooks.clear`. Left: Story-only recolours (item 3).
   Acceptance: in-page `Render audit|clears on`, `multiplayer-browser`; clip `docs/scorecard/now/cel-lobby-enemies.mp4`.
 - Track 1, pass 166 (Aleix: the showcase in the player's view, pass 1 of 1; replaces pass 164's anime opening and its
-  pass 2), v7.215.0: the game's own camera and HUD throughout, three bosses on their own grounds, a fade to black the
-  only cut, a "Showcase" tag and corner marks, the game's name at the end; the cinematic code is gone. The finale is
-  still the Finishing Blow (PLAN Later item 4 covered).
+  pass 2), v7.215.0: the game's own camera and HUD, three bosses on their own grounds, a fade the only cut; the
+  finale is the Finishing Blow (Later item 4 covered).
   Acceptance: in-page `Showcase`; `docs/showcase/storyboard.md`; clip `docs/scorecard/now/showcase.mp4`.
 
 ## Works

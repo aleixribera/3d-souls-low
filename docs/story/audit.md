@@ -118,3 +118,50 @@ was restyled this pass.
 - **The Root of the Ember:** its courts stand open at their ends (their floating lintels fixed); all one hue.
 - **The Still Mere:** the ending plays through the King's Blade's mid-bar phase; open water with few edges to read.
 
+
+## The redo (Later item 3)
+
+### Pass 167: Aurel, the Torn Abbey, the Root of the Ember
+
+Fixed everywhere first, from the notes above:
+
+- A boss's death burst no longer whites out the view: fewer and smaller white motes, a smaller flash and flare, half
+  the screen pulse (`js/ultra-fx.js`).
+- Toasts no longer stack: the same text still on screen is shown afresh, once (`js/hud.js`).
+- A lifted portcullis that would poke over the wall beside it now lifts out of sight like an open gate
+  (`gateLiftsAway`, `js/terrain.js`; checked in `tests/story-placements.cjs`). That covers the Sunken Keep, the Tower,
+  the Final Castle, Saltgrave, the Night Gaol, Aurel in Ash and the Root of the Ember.
+- The red in the Torn Abbey's audit frames was the low-health vignette of the kept-alive walk on Low, not the level:
+  on Normal it is blue-grey storm (`torn-abbey-before.jpg`).
+
+The approach, proven on Aurel, then carried to the Torn Abbey and the Root of the Ember:
+
+1. **The hue goes where it means something.** The cel style's post (exposure 1.4, saturation 1.4) burns a chapter
+   lit in one warm hue to a single-colour haze. Each chapter's base light is now cool or neutral, with exposure under
+   1 and saturation near 0.7. Its colour comes from one source: Aurel's sun and gilt, the root's fire below
+   (hemi ground), the abbey's braziers.
+2. **Each place its own light**: `atmosphere.areas` (`js/visuals.js`, validated), a list of rooms and the look there,
+   eased in as the player walks in. Aurel has a warm avenue, a white-noon court, a low-sun terrace, a red glow at the
+   root and a dusk throne. The abbey has a warm undercroft, the open storm on the bridge, and the rent's cold violet.
+   The root has an amber hollow, a sap-green grafting and a white-gold heartwood.
+3. **Floors a clear value step below their walls**, so the road reads at a glance in the cel bands.
+4. **Real set pieces for stand-ins**: the town fountain is a Blender model (`tools/blender/fountain.py`, gilt in
+   Aurel, bronze in the Burning Town).
+5. **The Story recolours from pass 162**: the Gilded Thrall is in wine-red and oxblood with gold leaf and a steel
+   blade.
+
+Frames: `docs/story/audit/<chapter>-before.jpg` and `-after.jpg`, one shot per room from its near side
+(`node tools/browser-lock.cjs run <pass> -- node tools/story-frames.cjs <tag> <levelId ...>`; the before shots come
+from a clean checkout of the previous release). Walk-through: `docs/scorecard/now/story-redo.mp4`.
+
+### Left, in order
+
+1. **The Night Gaol**: all blue. It wants warm cell lamps against the cold bridges, as areas, and its fog gates.
+2. **Fog gates everywhere** (the Night Gaol, the Torn Abbey, the Root of the Ember, Aurel) are flat white slabs that
+   read as walls of light. They need a fog look: depth, drift, the room behind faintly seen.
+3. **Aurel in Ash**: readable already; areas for its plaza and throne, and darker floors.
+4. **The Burning Town**: the orange suits a town on fire. It needs house variety (more Blender facades), not a
+   relight.
+5. **The Sunken Keep**: long corridors of one stone. Areas per wing and floors a step down.
+6. **The Tower, Saltgrave and the Final Castle**: areas, and set pieces for the bare yard and field.
+7. **The Long Hall, the Church, the Windward Moor and the Still Mere**: they read well. Last, light touches only.

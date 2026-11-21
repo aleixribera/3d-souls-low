@@ -34,7 +34,7 @@ function qualityDraw(q, dpr) {
   return { ratio, soft: Math.min(1, q.softRatio / ratio), msaa: ratio >= VIS.denseScreen ? q.denseMsaa : q.msaa };
 }
 const ATMOSPHERE_KEYS = ['background', 'fog', 'fogDensity', 'moon', 'ambient', 'hemi', 'exposure', 'ash', 'dust', 'rim',
-  'grade', 'surface', 'shafts', 'banners', 'debris', 'sky', 'silhouettes', 'grass', 'landmark', 'embers', 'interior'];
+  'grade', 'surface', 'shafts', 'banners', 'debris', 'sky', 'silhouettes', 'grass', 'landmark', 'embers', 'interior', 'areas'];
 
 // Optional look fields, checked at load (called from validateData).
 function checkVisualData(need, num) {
@@ -137,6 +137,17 @@ function checkVisualData(need, num) {
       need(I && Array.isArray(I.rooms) && I.rooms.length > 0 && I.rooms.every(id => ids.has(id)) && isCol(I.fog) && amount(I.fogDensity, 1) && amount(I.moon, 10) && amount(I.exposure, 5)
         && I.ambient && isCol(I.ambient.color) && amount(I.ambient.intensity, 10) && I.hemi && isCol(I.hemi.sky) && isCol(I.hemi.ground) && amount(I.hemi.intensity, 5),
         `${w}: interior needs rooms of the level, fog, fogDensity, moon, exposure, ambient { color, intensity } and hemi { sky, ground, intensity }.`);
+    }
+    if ('areas' in A) {
+      const ids = L.layout === 'rooms' ? new Set([...L.rooms, ...(L.ramps || [])].map(R => R.id)) : new Set(), opt = (o, k, ok) => !(k in o) || ok(o[k]);
+      need(!('interior' in A), `${w}: areas and interior are two ways to the same thing; use one.`);
+      need(Array.isArray(A.areas) && A.areas.length > 0 && A.areas.every(a => a && Array.isArray(a.rooms) && a.rooms.length > 0 && a.rooms.every(id => ids.has(id))
+        && opt(a, 'fog', isCol) && opt(a, 'fogDensity', v => amount(v, 0.2)) && opt(a, 'exposure', v => num(v) && v > 0.2 && v < 3)
+        && opt(a, 'moon', m => m && opt(m, 'color', isCol) && opt(m, 'intensity', v => amount(v, 10)))
+        && opt(a, 'ambient', m => m && opt(m, 'color', isCol) && opt(m, 'intensity', v => amount(v, 10)))
+        && opt(a, 'hemi', m => m && opt(m, 'sky', isCol) && opt(m, 'ground', isCol) && opt(m, 'intensity', v => amount(v, 5)))
+        && opt(a, 'grade', m => m && opt(m, 'shadowTint', tri) && opt(m, 'highlightTint', tri) && opt(m, 'saturation', amount) && opt(m, 'contrast', amount))),
+        `${w}: areas must be a list of { rooms (of the level), and any of fog, fogDensity, moon { color, intensity }, ambient { color, intensity }, hemi { sky, ground, intensity }, exposure, grade }.`);
     }
     if ('hemi' in A) need(A.hemi && isCol(A.hemi.sky) && isCol(A.hemi.ground) && amount(A.hemi.intensity, 5), `${w}: hemi needs sky and ground colours and an intensity (0..5).`);
     if ('grade' in A) {
@@ -1084,6 +1095,7 @@ const visuals = (() => {
   // stage a fight just left (clearMarks); stage: builders that dress a new stage, called with (def, built).
   const hooks = { quality: [], clear: [], stage: [], beforeDraw: [], afterDraw: [], resize: [] };
   let look = null, interiorK = 0;   // the interior blend's two ends and where it stands (setInterior)
+  let areas = null, areaMoon = 1;     // a level's `atmosphere.areas` (pass 167): the base look, each area's, and its weight
 
   function applyCounts() {
     SKY_LAYERS.value = VIS.cinematic[quality.label.toLowerCase()].cloudLayers;
@@ -1142,6 +1154,71 @@ const visuals = (() => {
                     amb: ambientLight.color.clone(), ambIn: new THREE.Color(I.ambient.color), ambI: ambientLight.intensity, ambIIn: I.ambient.intensity,
                     sky: hemi.color.clone(), skyIn: new THREE.Color(I.hemi.sky), ground: hemi.groundColor.clone(), groundIn: new THREE.Color(I.hemi.ground),
                     hemiI: hemi.intensity, hemiIIn: I.hemi.intensity, exposure: renderer.toneMappingExposure, exposureIn: I.exposure };
+    buildAreas();
+  }
+  // (pass 167) A level's `atmosphere.areas`: each a list of its rooms (or ramps) and the look there, any of fog,
+  // fogDensity, moon { color, intensity }, ambient, hemi, exposure, grade; what it leaves out stays the level's. The
+  // look eases to an area's while the player is in it (CONFIG.VISUALS.scenery.interiorRate), so each place of a chapter
+  // has its own light and colour, not one hue for the whole road (docs/story/audit.md). Nothing is allocated per frame.
+  function lookNow() {
+    const G = grade.uniforms;
+    return { fog: scene.fog.color.clone(), fogD: scene.fog.density, moonC: moonLight.color.clone(), moon: moonLight.intensity,
+             amb: ambientLight.color.clone(), ambI: ambientLight.intensity, sky: hemi.color.clone(), ground: hemi.groundColor.clone(),
+             hemiI: hemi.intensity, exposure: renderer.toneMappingExposure, shadow: G.uShadow.value.toArray(), high: G.uHigh.value.toArray(),
+             sat: G.uSat.value, contrast: G.uContrast.value };
+  }
+  function areaLook(base, a) {
+    const L = { ...base, fog: base.fog.clone(), moonC: base.moonC.clone(), amb: base.amb.clone(), sky: base.sky.clone(), ground: base.ground.clone(),
+                shadow: [...base.shadow], high: [...base.high] };
+    if (a.fog !== undefined) L.fog.set(a.fog);
+    if (a.fogDensity !== undefined) L.fogD = a.fogDensity;
+    if (a.moon) { if (a.moon.color !== undefined) L.moonC.set(a.moon.color); if (a.moon.intensity !== undefined) L.moon = a.moon.intensity; }
+    if (a.ambient) { if (a.ambient.color !== undefined) L.amb.set(a.ambient.color); if (a.ambient.intensity !== undefined) L.ambI = a.ambient.intensity; }
+    if (a.hemi) { if (a.hemi.sky !== undefined) L.sky.set(a.hemi.sky); if (a.hemi.ground !== undefined) L.ground.set(a.hemi.ground); if (a.hemi.intensity !== undefined) L.hemiI = a.hemi.intensity; }
+    if (a.exposure !== undefined) L.exposure = a.exposure;
+    if (a.grade) { if (a.grade.shadowTint) L.shadow = [...a.grade.shadowTint]; if (a.grade.highlightTint) L.high = [...a.grade.highlightTint];
+                   if (a.grade.saturation !== undefined) L.sat = a.grade.saturation; if (a.grade.contrast !== undefined) L.contrast = a.grade.contrast; }
+    return L;
+  }
+  function buildAreas() {
+    areas = null; areaMoon = 1;
+    if (!A.areas || def.layout !== 'rooms') return;
+    const places = [...def.rooms, ...(def.ramps || [])], base = lookNow();
+    areas = { base, drawn: false, list: A.areas.map(a => ({ k: 0, to: areaLook(base, a), at: a.rooms.map(id => {
+      const R = places.find(r => r.id === id), lo = R.y ?? Math.min(R.from ?? 0, R.to ?? 0), hi = Math.max(R.y ?? 0, R.from ?? 0, R.to ?? 0);
+      return { rect: R.rect, y0: lo - 1, y1: hi + (R.height ?? def.wallHeight) };
+    }) })) };
+  }
+  function updateAreas(p, dt) {
+    if (!areas || !p) return;
+    // The Finishing Blow's freeze grades the world from what it found and puts it back after: wait for it, then redraw.
+    if (typeof finisherFx !== 'undefined' && finisherFx.grading) { areas.drawn = false; return; }
+    const rate = areas.drawn ? 1 - Math.exp(-dt * VIS.scenery.interiorRate) : 1;   // a load or respawn starts in its place's look
+    let moved = false;
+    for (const a of areas.list) {
+      let inside = false;
+      for (const r of a.at) if (inRect(r.rect, p.x, p.z) && p.y >= r.y0 && p.y <= r.y1) { inside = true; break; }
+      const k = a.k + ((inside ? 1 : 0) - a.k) * rate, k2 = k < 0.002 ? 0 : k > 0.998 ? 1 : k;
+      if (k2 !== a.k) { a.k = k2; moved = true; }
+    }
+    if (!moved && areas.drawn) return;
+    areas.drawn = true;
+    const B = areas.base, G = grade.uniforms, S = G.uShadow.value, H = G.uHigh.value;
+    scene.fog.color.copy(B.fog); ambientLight.color.copy(B.amb); hemi.color.copy(B.sky); hemi.groundColor.copy(B.ground); moonLight.color.copy(B.moonC);
+    S.fromArray(B.shadow); H.fromArray(B.high);
+    let fogD = B.fogD, moon = B.moon, ambI = B.ambI, hemiI = B.hemiI, ex = B.exposure, sat = B.sat, con = B.contrast;
+    for (const a of areas.list) {
+      if (!a.k) continue;
+      const T = a.to, k = a.k;
+      scene.fog.color.lerp(T.fog, k); ambientLight.color.lerp(T.amb, k); hemi.color.lerp(T.sky, k); hemi.groundColor.lerp(T.ground, k); moonLight.color.lerp(T.moonC, k);
+      fogD = lerp(fogD, T.fogD, k); moon = lerp(moon, T.moon, k); ambI = lerp(ambI, T.ambI, k); hemiI = lerp(hemiI, T.hemiI, k);
+      ex = lerp(ex, T.exposure, k); sat = lerp(sat, T.sat, k); con = lerp(con, T.contrast, k);
+      S.set(lerp(S.x, T.shadow[0], k), lerp(S.y, T.shadow[1], k), lerp(S.z, T.shadow[2], k));
+      H.set(lerp(H.x, T.high[0], k), lerp(H.y, T.high[1], k), lerp(H.z, T.high[2], k));
+    }
+    scene.fog.density = fogD; FOG_D.value = fogD; ambientLight.intensity = ambI; hemi.intensity = hemiI;
+    renderer.toneMappingExposure = ex; G.uSat.value = sat; G.uContrast.value = con;
+    areaMoon = B.moon > 0 ? moon / B.moon : 1; moonLight.intensity = moon;
   }
   // A level's `atmosphere.interior` (v7.20): k 0 is its outdoor look, 1 the look indoors. js/scenery.js eases k as the camera
   // goes through the door; a roofed room under a daylit sky needs this because lights pass through its authored walls.
@@ -1493,7 +1570,7 @@ const visuals = (() => {
       for (const f of hooks.resize) f(Math.round(w * pr), Math.round(h * pr), draw.soft);
     },
     setInterior,
-    moonScale() { return look && look.moon ? lerp(look.moon, look.moonIn, interiorK) / look.moon : 1; },   // the interior's share of the moon: js/ultra-post.js splits what is left
+    moonScale() { return (look && look.moon ? lerp(look.moon, look.moonIn, interiorK) / look.moon : 1) * areaMoon; },   // the interior's share of the moon: js/ultra-post.js splits what is left
     // Called once per stage build (loadStage), after applyAtmosphere. Everything added goes in the stage group.
     dressStage(d, built) {
       def = d; A = d.atmosphere || {}; st = { bonfires: [], glows: [], lights: [] };
@@ -1545,6 +1622,7 @@ const visuals = (() => {
       }
       decals.update(dt);
       const D = VIS.debris, p = game.player;
+      updateAreas(p, dt);
       if (A.debris && quality.debris && p && p.alive() && def.layout !== 'arena') {
         debrisTimer -= dt;
         if (debrisTimer <= 0) {

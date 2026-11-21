@@ -78,6 +78,19 @@
     sim.seconds(H.anchor.time * 0.99);
     expect.ok(d0 > H.box.fwd + 3 && Math.abs(at() - H.box.fwd) < 0.4, `called home from ${d0.toFixed(2)} m to ${at().toFixed(2)} m before him`);
   });
+  // Pass 167 (the Story levels redone in cel): each place its own light, `atmosphere.areas` (js/visuals.js), eased in
+  // as the player walks in and back out; the thralls in wine-red with gold leaf; the fountain a Blender model in gilt.
+  test('Aurel: each place has its own light, eased in and out as you walk (pass 167)', () => {
+    start();
+    const R = A.renderer, court = A.LEVEL_10.atmosphere.areas.find(a => a.rooms.includes('fountain-court'));
+    const at = (x, z) => { sim.place(x, z, 0.5); Game.render(1, 3); Game.render(1, 1 / 60); return R.toneMappingExposure; };
+    const avenue = at(40, 0), there = at(90, 12), back = at(40, 0);
+    expect.ok(Math.abs(there / avenue - court.exposure / A.LEVEL_10.atmosphere.exposure) < 0.02, `the court's own exposure (${avenue.toFixed(3)} to ${there.toFixed(3)})`);
+    expect.ok(Math.abs(back - avenue) < 0.002, `back on the avenue, its look again (${back.toFixed(3)})`);
+    expect.ok(A.LEVEL_10.props.some(p => p.kind === 'gildedFountain') && BAKED['fountain:basin__stone'], 'the gilded fountain, a Blender model');
+    const M = MODEL_DEFS.gildedThrall.materials;
+    expect.ok(M.blade.steel && M.hood.tint !== MODEL_DEFS.rogue.materials.hood.tint, 'the thrall in its own colours, its blade steel');
+  });
   test('Aurel: Gilded Thralls fill the city, and nothing of the old road is left in it', () => {
     const ids = new Set([...A.LEVEL_10.gated.flatMap(z => z.enemies.map(m => m.enemy)), ...A.LEVEL_10.dispersed.map(s => s.enemy)]);
     for (const old of ['leyndellKnight', 'crucibleSquire', 'omenkin', 'morgott', 'lancer']) expect.ok(!ids.has(old), `no ${old}`);

@@ -62,6 +62,7 @@ const FILES = {
   'seven-founder': { sources: ['seven_founder'] },
   'ghost-bell': { sources: ['ghost_bell'] },
   'arena-ruins': { sources: ['arena_ruins'] },
+  'fountain': { sources: ['fountain'] },
 };
 
 function readGlb(file) {

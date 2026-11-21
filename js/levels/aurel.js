@@ -17,15 +17,31 @@ const LEVEL_10 = {
   help: 'Level 10: the citizens smile until you are close, and they carry knives. Archers hold the fountain court\'s north gallery. The great root over the chasm has no rail.',
   completeHint: 'The Regent is fallen, and the city stops smiling. Somewhere below the avenue, something has begun to burn…',
   wallHeight: 10, gateHeight: 3.6, gateThickness: 0.5,
-  // Afternoon gold: warm haze, white stone hardly weathered, flakes of gold leaf falling off the roofs.
-  atmosphere: { background: 0x6a5a40, fog: 0x8a7652, fogDensity: 0.0085,
-                moon: { color: 0xffe0a0, intensity: 2.6, position: [-30, 40, -20] },
-                ambient: { color: 0x6a5a48, intensity: 1.15 },
-                hemi: { sky: 0xffe0a8, ground: 0x3a3020, intensity: 0.7 },
-                exposure: 1.0, dust: 0.3, rim: 0xffe0a0,
-                grade: { shadowTint: [0.95, 0.92, 1.0], highlightTint: [1.08, 1.0, 0.86], saturation: 0.88 },
+  // Afternoon gold: white stone hardly weathered, flakes of gold leaf falling off the roofs. (pass 167, the cel redo) The
+  // gold is in the sun and the gilt, not in everything: cool blue shade, pale stone, a clear sky, so the cel style's
+  // exposure and saturation no longer burn the city to orange haze (docs/story/audit.md). Each place has its own light
+  // (`areas`): the avenue's warm afternoon, the court's white noon, the terrace's low sun, the root's red glow out of the
+  // chasm, and the throne court's dusk, lit by its braziers.
+  atmosphere: { background: 0x8aa0b8, fog: 0xa8b4c0, fogDensity: 0.006,
+                moon: { color: 0xffe6b8, intensity: 2.1, position: [-30, 40, -20] },
+                ambient: { color: 0x5a6680, intensity: 0.95 },
+                hemi: { sky: 0xb8d0f0, ground: 0x4a3c2c, intensity: 0.6 },
+                exposure: 0.72, dust: 0.2, rim: 0xffe6c0,
+                grade: { shadowTint: [0.86, 0.92, 1.08], highlightTint: [1.06, 1.0, 0.9], saturation: 0.72, contrast: 1.08 },
                 surface: { moss: 0.12, grime: 0.45 }, banners: [0xd8b860, 0xe8e0c8], debris: 0.05,
-                sky: { zenith: 0x7a6a50, sun: 0xffd070, sunDir: [0.15, 0.4, 0.9] }, silhouettes: 2, grass: 0.3 },
+                sky: { zenith: 0x5a7aa8, sun: 0xffe0a0, sunDir: [0.15, 0.4, 0.9] }, silhouettes: 2, grass: 0.3,
+                areas: [
+                  { rooms: ['fountain-court', 'gallery', 'stair-foot'], moon: { color: 0xfff4e0, intensity: 1.7 }, ambient: { color: 0x6a7890 },
+                    hemi: { sky: 0xc8dcf8 }, fog: 0xb8c4d0, exposure: 0.6, grade: { highlightTint: [1.02, 1.0, 0.96] } },
+                  { rooms: ['great-stair', 'upper-terrace'], moon: { color: 0xffc890, intensity: 2.2 }, ambient: { color: 0x606478 },
+                    fog: 0xc0a890, exposure: 0.74, grade: { highlightTint: [1.1, 0.98, 0.84] } },
+                  { rooms: ['great-root'], moon: { color: 0xffb080, intensity: 1.4 }, ambient: { color: 0x6a3a30, intensity: 1.1 },
+                    hemi: { sky: 0x8a90b0, ground: 0xc0401c, intensity: 0.9 }, fog: 0x8a5a4a, fogDensity: 0.009, exposure: 0.74,
+                    grade: { shadowTint: [1.0, 0.86, 0.86], saturation: 0.8 } },
+                  { rooms: ['throne-gate', 'fog-door', 'throne-court', 'throne-exit'], moon: { color: 0xc8a0ff, intensity: 0.7 },
+                    ambient: { color: 0x3a3050, intensity: 0.9 }, hemi: { sky: 0x6a5a90, ground: 0x2a1a14, intensity: 0.5 }, fog: 0x3a3048,
+                    fogDensity: 0.011, exposure: 0.85, grade: { shadowTint: [0.9, 0.86, 1.1], highlightTint: [1.1, 0.98, 0.82], saturation: 0.8 } },
+                ] },
   realm: {
     weather: [{ kind: 'leaves', amount: 0.7, colors: [0xffc040, 0xffd870, 0xe8a030] }, { kind: 'motes', amount: 0.35, color: 0xffe0a0 }],
     // The Ember's root, come up out of the chasm and over it: red-gold wood the city has gilded where it could reach.
@@ -36,27 +52,29 @@ const LEVEL_10 = {
   },
   start: { x: 3, z: 0, yaw: Math.PI / 2 },
   rooms: [
-    { id: 'city-gate', rect: [0, 16, -6, 6], height: 8, floor: 0xa89c80, wall: 0xc8bc9c, light: 0xffd8a0, braziers: [[1.5, -4.5], [1.5, 4.5]] },
-    { id: 'avenue', rect: [16, 70, -7, 7], open: true, height: 10, floor: 0xb4a888, wall: 0xd0c4a4, light: 0xffe0a0,
+    // (pass 167) Each floor a clear step darker than its walls, and each place its own stone: the avenue's grey paving
+    // between cream walls, the court's slate round the fountain, the terrace's pale marble, the throne court's red.
+    { id: 'city-gate', rect: [0, 16, -6, 6], height: 8, floor: 0x7a7468, wall: 0xc8bc9c, light: 0xffd8a0, braziers: [[1.5, -4.5], [1.5, 4.5]] },
+    { id: 'avenue', rect: [16, 70, -7, 7], open: true, height: 10, floor: 0x686256, wall: 0xd8ccb0, light: 0xffe0a0,
       lamps: [[20, -6], [20, 6], [44, -6], [44, 6], [68, -6], [68, 6]] },
-    { id: 'fountain-court', rect: [70, 110, -20, 20], open: true, height: 12, floor: 0xb0a486, wall: 0xccc0a0, light: 0xffe8b8,
+    { id: 'fountain-court', rect: [70, 110, -20, 20], open: true, height: 12, floor: 0x4a4e58, wall: 0xd4ccb8, light: 0xfff0d8,
       lamps: [[72, -18], [72, 18], [108, -18], [108, 18]] },
-    { id: 'gallery', rect: [76, 104, 20, 24], y: 6, open: true, height: 4, edges: { s: 'rail' }, floor: 0xa89c80, wall: 0xc8bc9c },
-    { id: 'stair-foot', rect: [110, 122, -4, 4], open: true, height: 10, floor: 0xa89c80, wall: 0xc8bc9c, light: 0xffd8a0 },
-    { id: 'upper-terrace', rect: [142, 180, -16, 16], y: 10, open: true, height: 12, floor: 0xb4a888, wall: 0xd0c4a4, light: 0xffe0a0,
+    { id: 'gallery', rect: [76, 104, 20, 24], y: 6, open: true, height: 4, edges: { s: 'rail' }, floor: 0x7a7468, wall: 0xc8bc9c },
+    { id: 'stair-foot', rect: [110, 122, -4, 4], open: true, height: 10, floor: 0x7a7468, wall: 0xc8bc9c, light: 0xffd8a0 },
+    { id: 'upper-terrace', rect: [142, 180, -16, 16], y: 10, open: true, height: 12, floor: 0x7a746c, wall: 0xd8c8a4, light: 0xffc890,
       lamps: [[144, -14], [144, 14], [178, -14], [178, 14]] },
-    { id: 'great-root', rect: [156, 164, 16, 46], y: 10, open: true, height: 8, edges: { e: 'open', w: 'open' }, floor: 0x8a6a3a, wall: 0x9a7a48 },
-    { id: 'throne-gate', rect: [152, 168, 46, 56], y: 10, open: true, height: 10, floor: 0xa89c80, wall: 0xc8bc9c, light: 0xffd8a0, braziers: [[166.5, 47.5], [166.5, 54.5]] },
-    { id: 'fog-door', rect: [157, 163, 56, 60], y: 10, height: 6, floor: 0x9a8e74, wall: 0xc0b494, dim: true },
+    { id: 'great-root', rect: [156, 164, 16, 46], y: 10, open: true, height: 8, edges: { e: 'open', w: 'open' }, floor: 0x7a3a22, wall: 0x9a7a48 },
+    { id: 'throne-gate', rect: [152, 168, 46, 56], y: 10, open: true, height: 10, floor: 0x6a5a50, wall: 0xb8a888, light: 0xffc070, braziers: [[166.5, 47.5], [166.5, 54.5]] },
+    { id: 'fog-door', rect: [157, 163, 56, 60], y: 10, height: 6, floor: 0x5a4a40, wall: 0xa89878, dim: true },
     // The Regent's court (pass 44): a gilded floor between two colonnades, braziers before the empty throne wall, and the
     // city's gold leaf falling through it, the same leaf that hangs where his blade has been.
-    { id: 'throne-court', rect: [140, 180, 60, 100], y: 10, open: true, dim: true, height: 16, floor: 0x7a6448, wall: 0xd4c6a2, light: 0xffe0a0,
+    { id: 'throne-court', rect: [140, 180, 60, 100], y: 10, open: true, dim: true, height: 16, floor: 0x5a2622, wall: 0xc8b48a, light: 0xffc070,
       lamps: [[142, 62], [178, 62], [142, 98], [178, 98]], braziers: [[152, 97], [168, 97]],
       pillars: [[146.5, 68, 1.4], [146.5, 78, 1.4], [146.5, 88, 1.4], [173.5, 68, 1.4], [173.5, 78, 1.4], [173.5, 88, 1.4]] },
-    { id: 'throne-exit', rect: [157, 163, 100, 104], y: 10, height: 5, floor: 0x9a8e74, wall: 0xc0b494, light: 0xffe8c0, dim: true },
+    { id: 'throne-exit', rect: [157, 163, 100, 104], y: 10, height: 5, floor: 0x5a4a40, wall: 0xa89878, light: 0xffe8c0, dim: true },
   ],
   ramps: [
-    { id: 'great-stair', rect: [122, 142, -4, 4], axis: 'x', from: 0, to: 10, stairs: true, height: 10, floor: 0xa89c80, wall: 0xc8bc9c },
+    { id: 'great-stair', rect: [122, 142, -4, 4], axis: 'x', from: 0, to: 10, stairs: true, height: 10, floor: 0x9a948a, wall: 0xc8bc9c },
   ],
   // Masonry under the raised floors: the court's gallery, the upper terrace, the throne gate and the throne court.
   blocks: [{ rect: [76, 104, 20, 24], y0: 0, y1: 5.5, wall: 0xc8bc9c }, { rect: [142, 180, -16, 16], y0: -2, y1: 9.5, wall: 0xc0b494 },
@@ -74,7 +92,7 @@ const LEVEL_10 = {
     { kind: 'tower', rect: [180, 188, -16, -4], eaves: 18, y: 10 }, { kind: 'tower', rect: [180, 188, 4, 16], eaves: 18, y: 10 },
   ],
   props: [
-    { kind: 'fountain', x: 90, z: 0 }, { kind: 'crates', x: 74, z: -15 }, { kind: 'cart', x: 104, z: 14, yaw: Math.PI / 2 },
+    { kind: 'gildedFountain', x: 90, z: 0 }, { kind: 'crates', x: 74, z: -15 }, { kind: 'cart', x: 104, z: 14, yaw: Math.PI / 2 },
     { kind: 'stall', x: 32, z: -4.8 }, { kind: 'stall', x: 52, z: 4.8, yaw: Math.PI }, { kind: 'well', x: 170, y: 10, z: -10 },
   ],
   bonfires: [{ id: 'aurel-gate', x: 13.5, z: -4.5, spawn: { x: 11.5, z: -3, yaw: Math.PI / 2 } },

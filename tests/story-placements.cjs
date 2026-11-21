@@ -49,4 +49,15 @@ for (const [level, id] of [['night-gaol', 'zone-cell1'], ['ember-root', 'zone-em
   assert.equal(walled(level, id), false, `${level} ${id} stands open: no lintel`);
 for (const [level, id] of [['sunken-keep', 'zone-cistern'], ['saltgrave', 'zone-yard'], ['aurel', 'zone-avenue'], ['torn-abbey', 'zone-undercroft']])
   assert.equal(walled(level, id), true, `${level} ${id} stands in a wall: its lintel joins it`);
+// (pass 167) A walled portcullis that would stand over the walls beside it once lifted lifts out of sight too
+// (gateLiftsAway): the Sunken Keep's doors, the Tower's postern and Saltgrave's rampart showed their bars over the walls.
+const gateLiftsAway = g('gateLiftsAway');
+const away = (level, id) => {
+  const L = ALL_LEVELS.find(l => l.id === level), T = terrainFor(L), G = gatedEntries(L).find(z => z.id === id).gate;
+  return gateLiftsAway(T, G, T.floorY(G.x, G.z, G.y === undefined ? Infinity : G.y + 0.5), L.gateHeight);
+};
+for (const [level, id] of [['sunken-keep', 'zone-cistern'], ['the-tower', 'postern'], ['saltgrave', 'zone-rampart'], ['night-gaol', 'zone-cell1']])
+  assert.equal(away(level, id), true, `${level} ${id} lifts out of sight`);
+for (const [level, id] of [['aurel', 'zone-avenue'], ['torn-abbey', 'zone-undercroft'], ['saltgrave', 'zone-yard']])
+  assert.equal(away(level, id), false, `${level} ${id} stays lifted in its doorway, under its wall's top`);
 console.log(`story placements: ${STORY.chapters.length} chapters ok`);

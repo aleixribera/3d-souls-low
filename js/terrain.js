@@ -38,6 +38,22 @@ function gateWalled(T, g, gy, gh) {
     s.y1 >= top && s.y0 <= gy + 1);
   return g.along === 'x' ? wall(g.x - half, g.z) && wall(g.x + half, g.z) : wall(g.x, g.z - half) && wall(g.x, g.z + half);
 }
+// (pass 167) The top of the lower of the two walls beside a gate (Infinity with none): a lifted portcullis taller than
+// it showed its bars over a low wall (docs/story/audit.md), so it lifts out of sight instead (js/scene.js placeGate).
+function gateWallTop(T, g, gy) {
+  const half = g.width / 2 + 0.35, e = 0.05;
+  const top = (x, z) => T.solids.reduce((m, s) => !s.low && s.kind !== 'prop' && x >= s.x0 - e && x <= s.x1 + e && z >= s.z0 - e && z <= s.z1 + e &&
+    s.y0 <= gy + 1 && s.y1 > gy + 1 ? Math.max(m, s.y1) : m, -Infinity);
+  const a = g.along === 'x' ? top(g.x - half, g.z) : top(g.x, g.z - half), b = g.along === 'x' ? top(g.x + half, g.z) : top(g.x, g.z + half);
+  const t = Math.min(a, b);
+  return t > -Infinity ? t : Infinity;
+}
+// Whether an open portcullis lifts right out of sight: with no wall at an end (pass 163), or when lifted it would stand
+// over the walls beside it (pass 167). Otherwise it stays lifted in its doorway.
+function gateLiftsAway(T, g, gy, gh) {
+  if (!gateWalled(T, g, gy, gh)) return true;
+  return gy + gh * 2 - CONFIG.level.gateLiftGap > gateWallTop(T, g, gy) + 0.02;
+}
 
 // A room or ramp as a region: floorAt(x, z), its floor range lo..hi, and `top` (lo..hi plus headroom).
 function makeRegion(src, kind, L) {

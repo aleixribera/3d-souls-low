@@ -328,8 +328,10 @@ function buildRooms(L) {
       const r = Array.isArray(z.trigger[0]) ? z.trigger[0] : z.trigger, cx = (r[0] + r[1]) / 2, cz = (r[2] + r[3]) / 2;
       fall = alongX ? -Math.sign(g.z - cz) || 1 : Math.sign(g.x - cx) || 1;
     }
+    // A portcullis that would stand over the walls beside it once lifted goes out of sight too (`clear`'s lift, pass 167).
+    const away = clear || (!barricade && gateLiftsAway(TR, g, gy, gh));
     gates.push({ id: z.id, x: g.x, z: g.z, y: gy, box, mesh, liftHeight: gh - CONFIG.level.gateLiftGap, opensFrom: z.opensFrom || null,
-                 style: barricade ? 'barricade' : 'portcullis', fall, clear });
+                 style: barricade ? 'barricade' : 'portcullis', fall, clear: away });
   }
   const bonfireFires = [];   // bonfires lit later (`litBy`): their flames, hidden until then (Game.render)
   for (const b of L.bonfires) {
