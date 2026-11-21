@@ -1426,6 +1426,24 @@ const visuals = (() => {
   // Static level boxes (walls, floor seams, pillars, logs...) merged into one mesh per material: hundreds
   // of draw calls become a handful. Collision never used these meshes (it reads the level data), and
   // moving parts (gates, flames, bonfire cores) are left alone.
+  // three.js r160's Object3D.updateMatrixWorld, but a hidden child's subtree is skipped; one a moved parent passed
+  // over is marked, so it recomputes (and passes that on) the frame it shows. No allocation.
+  function updateVisible(o, force) {
+    if (o.matrixAutoUpdate) o.updateMatrix();
+    if (o.matrixWorldNeedsUpdate || force) {
+      if (o.parent === null) o.matrixWorld.copy(o.matrix);
+      else o.matrixWorld.multiplyMatrices(o.parent.matrixWorld, o.matrix);
+      o.matrixWorldNeedsUpdate = false;
+      force = true;
+    }
+    const kids = o.children;
+    for (let i = 0, n = kids.length; i < n; i++) {
+      const c = kids[i];
+      if (!c.visible) { if (force) c.matrixWorldNeedsUpdate = true; continue; }
+      if (c.matrixWorldAutoUpdate === true || force === true) updateVisible(c, force);
+    }
+  }
+
   function mergeStatic(G, keep) {
     G.updateMatrixWorld(true);
     const byMat = new Map(), merged = [];
@@ -1645,11 +1663,18 @@ const visuals = (() => {
     },
     draw() {
       for (const h of hooks.beforeDraw) h(quality);
-      if (!quality.post) renderer.render(scene, camera);
-      else {
-        grade.uniforms.uTime.value = vTime.value; grade.uniforms.uLow.value = quality.vignette ? lowHp : 0;
-        (warming ? warmComposer : composer).render();
-      }
+      // Matrices once per frame, and only where something can be drawn: three.js would walk all ~8000 objects (rigs,
+      // pooled effects, hidden phases) in every scene render, twice with Ultra's light pass. What is hidden is not
+      // drawn and catches up the frame it shows. Code reading a hidden object's matrixWorld updates it first.
+      updateVisible(scene, false);
+      scene.matrixWorldAutoUpdate = false;
+      try {
+        if (!quality.post) renderer.render(scene, camera);
+        else {
+          grade.uniforms.uTime.value = vTime.value; grade.uniforms.uLow.value = quality.vignette ? lowHp : 0;
+          (warming ? warmComposer : composer).render();
+        }
+      } finally { scene.matrixWorldAutoUpdate = true; }
       for (const h of hooks.afterDraw) h(quality);
     },
     // Event reactions (registerVisualListeners).
