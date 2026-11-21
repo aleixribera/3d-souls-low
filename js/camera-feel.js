@@ -80,6 +80,9 @@ const cameraFeel = (() => {
       if (k > 0) { kick('fov', C[0] * k); kick('y', -C[1] * k); }
       return;
     }
+    // Batch 14: Fourfold never kicks (the Ultimate is the moment); a lightning line kicks only when it cut a boss; a shade
+    // host kicks at its first clone only, and its clones' blows never (three would shake the view).
+    if (d.then === 'refillKeys' || (d.then === 'lightningDash' && (d.strike || !d.boss)) || (d.then === 'shadeClone' && (d.strike || !d.first))) return;
     const P = F.powers[late !== undefined ? d.then : d.draw || d.parry ? 'draw' : d.then === 'hawk' && d.land ? 'stoop' : d.then === 'bear' && d.land ? 'maul' : d.strike ? (d.then === 'twin' || d.then === 'ghostBlade' ? 'echo' : SUMMON_STRIKERS.has(d.then) ? 'bite' : 'strike') : d.then], p = Game.player;
     if (!P || !p) return;
     const k = isPlayer(d.body) ? 1 : clamp(1 - Math.hypot(p.x - d.x, p.z - d.z) / F.powerNear, 0, 1);

@@ -259,9 +259,13 @@ class Player {
     if (k >= 1) { this.y = B.y; this.vy = 0; this.grounded = true; this.blink = null; this.setState(PS.IDLE); }
   }
   // A dash that went past an enemy (Spark Step's `dashPast`, js/abilities.js dashPastOf): told once, as it ends.
+  // Every dash, with its path (Thunder God Step's `dash`): the enemies it crossed are found where they are owned.
   dashEnded(enemies) {
-    if (!this.kit.whens.has('dashPast') || this.dashFromX === undefined) return;
-    const from = { x: this.dashFromX, z: this.dashFromZ }, to = { x: this.x, z: this.z }, e = dashPastOf(from, to, enemies || []);
+    if (this.dashFromX === undefined) return;
+    const from = { x: this.dashFromX, z: this.dashFromZ }, to = { x: this.x, z: this.z };
+    if (this.kit.whens.has('dash')) abilityReport(this, 'dash', { from, to, x: this.x, y: this.y, z: this.z });
+    if (!this.kit.whens.has('dashPast')) return;
+    const e = dashPastOf(from, to, enemies || []);
     if (e) abilityReport(this, 'dashPast', { enemy: e, from, to, x: this.x, y: this.y, z: this.z });
   }
   // A jump off the ground with an enemy close by (Dust Devil's `jump`).

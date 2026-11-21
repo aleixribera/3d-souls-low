@@ -398,7 +398,8 @@ const AUDIO_CUES = ['hitFlesh', 'hitHurt', 'hitBlock', 'riposteBoom', 'parry', '
   'abilityFox', 'abilityFoxSlash', 'abilityYip', 'abilityLantern', 'abilityLanternShot', 'abilityLanternHeal',
   'abilityCrows', 'abilityPeck', 'abilityArcher', 'abilityArrow', 'abilityArrowHit', 'abilityHawk', 'abilityStoop', 'abilityStoopHit',
   'abilityOwl', 'abilityMark', 'abilityMarkBurst', 'abilityRonin', 'abilityRoninCut', 'abilitySerpent', 'abilityCoil', 'abilityHiss',
-  'abilityPuppet', 'abilityPuppetBlow', 'abilityBear', 'abilityRear', 'abilityMaul', 'abilityRoar', 'abilityMantis', 'abilityScissor', 'abilityCrown', 'abilityCage', 'abilityCageCut'];
+  'abilityPuppet', 'abilityPuppetBlow', 'abilityBear', 'abilityRear', 'abilityMaul', 'abilityRoar', 'abilityMantis', 'abilityScissor', 'abilityCrown', 'abilityCage', 'abilityCageCut',
+  'abilitySuns', 'abilityThunderStep', 'abilityFourfold', 'abilityShade'];
 // A power's sound by its `then`, its later blows' (`strike`: a lightning bolt, a twin's echo, a hound's bite) by
 // STRIKE_SOUNDS, a summon drawing the boss's eye (`draw`) by DRAW_SOUNDS; a rare's perk its own (ABILITY_PERK_SOUNDS,
 // at a pitch), a pick's pitch by its rarity.
@@ -408,7 +409,8 @@ const ABILITY_SOUNDS = { blast: 'abilityBlast', lightning: 'abilityDragon', free
   ronin: 'abilityRonin', serpent: 'abilitySerpent', puppet: 'abilityPuppet', bear: 'abilityBear', mantis: 'abilityMantis', wave: 'abilityWave', crescent: 'abilityMoonfall', cyclone: 'abilityCyclone', petals: 'abilityPetals',
   ghostBlade: 'abilityChime', spikes: 'abilitySpikes', fist: 'abilityFist', risingFire: 'abilityFang', clap: 'abilityClap',
   flurry: 'abilityFlurry', drill: 'abilityDrill', stitch: 'abilityStitch', boomerang: 'abilityBoomerang', clones: 'abilityClones', iai: 'abilitySheathe',
-  ward: 'abilityWardBounce', answer: 'abilityAnswer', husk: 'abilityHusk', seal: 'abilitySeal' };   // Echoing Blade armed: a soft chime (each echo: ABILITY_STRIKE_SOUNDS)
+  ward: 'abilityWardBounce', answer: 'abilityAnswer', husk: 'abilityHusk', seal: 'abilitySeal',
+  sunLines: 'abilitySuns', lightningDash: 'abilityThunderStep', shadeClone: 'abilityShade' };   // Echoing Blade armed: a soft chime (each echo: ABILITY_STRIKE_SOUNDS)
 const ABILITY_STRIKE_SOUNDS = { lightning: 'abilityThunder', bladeCage: 'abilityCageCut', twin: 'abilityEcho', hound: 'abilityBite', guardian: 'abilityBash', lancer: 'abilityThrust', fox: 'abilityFoxSlash', lantern: 'abilityLanternShot',
   crows: 'abilityPeck', archer: 'abilityArrow', hawk: 'abilityStoop', owl: 'abilityMark',
   ronin: 'abilityRoninCut', serpent: 'abilityCoil', puppet: 'abilityPuppetBlow', bear: 'abilityRear', mantis: 'abilityScissor',
@@ -550,6 +552,11 @@ function registerAudioListeners() {
       if (d.v && d.strike >= d.v.strikes) audio.play('abilityCrown', { pos, vel: 1, delay: VIS.abilityFx.crown.converge });
       return;
     }
+    // Legendaries II: Fourfold heard as its keys refill; each lightning cut a ring of steel pitched up; a shade clone's
+    // blow the twin's echo, softer and a little apart in pitch, so three clones never sound as one.
+    if (d.then === 'refillKeys') { if (d.strike) audio.play('abilityFourfold', { pos: d.body === Game.player ? null : spot(d), vel: 1 }); return; }
+    if (d.then === 'lightningDash' && d.strike) { audio.play('abilityBlade', { pos: d.enemy ? chest(d.enemy) : spot(d), pitch: 1.3, vel: 0.7 }); return; }
+    if (d.then === 'shadeClone' && d.strike) { audio.play('abilityEcho', { pos: d.enemy ? chest(d.enemy) : spot(d), pitch: 1 + 0.07 * ((d.clone || 0) - 1), vel: 0.6 }); return; }
     const id = d.draw ? ABILITY_DRAW_SOUNDS[d.then] : d.then === 'iai' && d.strike ? (d.strike === 1 ? 'abilityIaiDraw' : 'abilityIai')
       : d.heal ? (d.body === Game.player ? 'abilityLanternHeal' : null)   // a lantern's shot healed you: a soft chime, only to you
       : d.land ? ABILITY_LAND_SOUNDS[d.then]

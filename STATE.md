@@ -3,10 +3,10 @@
 The iterate loop's working note (`.claude/iterate.md`). Cap: 8,000 characters.
 
 ## Now
-- Track 2, pass 151 (PLAN item 8, batch 13, Legendaries I, pass 1 of 1), done in v7.201.0: Storm King's bolt
-  crown, Gale Crescent's blade cage, the impact frame (`js/impact-frame.js`), the Ember Twin's Blender model.
-  Acceptance: `tests/legendaries-one.cjs`, in-page `legendaries one`; clip `docs/scorecard/now/legendaries-one.mp4`.
-  Next on track 2: batch 14, Legendaries II. Browser lock: `node tools/browser-lock.cjs run <pass> -- <cmd>`.
+- Track 2, pass 154 (PLAN item 8, batch 14, Legendaries II, pass 1 of 1): Hundred Suns, Thunder God Step,
+  Fourfold, Shade Host (`js/legend-fx-2.js`, Blender `shade_clone.py`), each through the server. Acceptance:
+  `tests/legendaries-two.cjs`, in-page `legendaries two`; clip `docs/scorecard/now/legendaries-two.mp4`.
+  Next on track 2: batch 15, Ultimates I. Browser lock: `node tools/browser-lock.cjs run <pass> -- <cmd>`.
 - Track 1, pass 153 (PLAN item 6, Gemini, pass 1 of 1), v7.202.0: audit: restyle (`docs/bosses/vesper.md`): the Lunar
   Tempest its own opening, edgeTell, body check 0/20; one `bars-1` round for her and the King's Blade (Ember Leaps
   lands in a shatter, not a blaze). Acceptance: strips `docs/scorecard/now/gemini-*.jpg`, clip `gemini.mp4`. She was
@@ -54,7 +54,7 @@ The iterate loop's working note (`.claude/iterate.md`). Cap: 8,000 characters.
   `tests/crates.cjs`. Plain commons' touches (pass 109): `js/ability-touch.js`; in-page `plain commons`. Blade commons (pass 112): `js/common-fx.js`; `tests/blade-commons.cjs`, in-page `blade commons`. Guard commons (114, 117): `tests/guard-commons.cjs`, `mirror-shard.cjs`.
 - The Finishing Blow (pass 100-103, `js/finisher.js`, `js/finisher-fx.js`): the 3rd counter; its look is "Later".
 - Summons (pass 141-147): `js/summon-beasts.js` (hound, fox), `summon-lantern.js`, `summon-figures.js` (archer, ronin, puppet), `summon-birds.js`, `summon-crows.js`, `summon-brutes.js` (bear, mantis), `summon-coil.js`; `tests/summons-{one,two,three}.cjs`, in-page `summons`; clips `tools/ability-clips.cjs summons|summons2|summons3`, side views `tools/summon-closeups.cjs`.
-- Legendaries I (pass 151): `tests/legendaries-one.cjs`, in-page `legendaries one`, clip `legends1`.
+- Legendaries I, II (151, 154): `tests/legendaries-{one,two}.cjs`, in-page `legendaries one|two`, clips `legends1|2`.
 - Art styles (pass 108): `?style=cel|dark|paint`, `js/data/styles.js`, `js/style-lab.js`; `tests/style-browser.cjs`;
   retake `node tools/style-frames.cjs [styles] [still,fight,clip,time]`.
 - Body check (retro 130): `tools/body-check.cjs [bossId]`; `tests/body-check.cjs` holds every boss with a page.

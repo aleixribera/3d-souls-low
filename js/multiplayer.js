@@ -1263,7 +1263,7 @@ const multiplayer = (() => {
     publishPose();
     command('ability', { when, ...(ctx.enemy ? { enemy: ctx.enemy.netId, serial: ctx.enemy.netSerial } : {}), ...(ctx.action ? { action: ctx.action } : {}),
       ...(ctx.key ? { key: ctx.key } : {}),   // a number key's press: the server checks its charge and aims it
-      ...(when === 'dashPast' ? { from: ctx.from, to: ctx.to } : {}), ...(when === 'jump' ? { x: ctx.x, y: ctx.y, z: ctx.z } : {}),   // checked against the poses
+      ...(when === 'dashPast' || when === 'dash' ? { from: ctx.from, to: ctx.to } : {}), ...(when === 'jump' ? { x: ctx.x, y: ctx.y, z: ctx.z } : {}),   // checked against the poses
       ...(when === 'ward' && Number.isFinite(ctx.damage) ? { damage: ctx.damage } : {}) });   // Mirror Ward: the blow it took (held to that enemy's heaviest)
   }
   // The server granted this player's Finishing Blow on enemy `id` (Simulation.hit): run it here (js/finisher.js).

@@ -452,6 +452,7 @@ function registerHudListeners() {
   events.on('rest', () => { hud.healTimer = H.healFlash; hud.dismissHealingTip(); });
   events.on('abilityPress', d => { if (d.body === Game.player) hud.keyPressed(d.key, true); });
   events.on('abilityNotReady', d => { if (d.body === Game.player) hud.keyPressed(d.key, false); });
+  events.on('abilityPower', d => { if (d.then === 'refillKeys' && d.strike && d.body === Game.player && Array.isArray(d.keys)) for (const k of d.keys) hud.keyPressed(k, true); });   // Fourfold: the caps flare full
   // Kindling's and Tithe's points: every held key's cap flares.
   events.on('abilityPerk', d => { if (d.body === Game.player && (d.perk === 'parry/keys' || d.perk === 'finisher/keys')) for (const k in d.body.kit.pressed) hud.keyPressed(k, true); });
   events.on('gateOpened', d => hud.toast(H.toasts[d.shortcut ? 'shortcut' : d.gate.style || 'portcullis']));   // by the gate's own look

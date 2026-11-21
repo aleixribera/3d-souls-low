@@ -10,6 +10,7 @@
 //   common:    `mods`: every key of a level is a Player number it raises (ABILITY_MODS); or a small `power` (below);
 //              or a `perk` on its holder's own body (batch 3: the guard and the run, COMMON_PERKS).
 // `party: true`: offered only to a person in a run of two people or more (it helps a friend).
+// `needs: '<key>'`: offered only to one who holds an ability on that number key (Fourfold, `ultimate`).
 //   rare:      `perk: { when, then }`: when something happens to its holder, something useful follows (ABILITY_PERKS);
 //              or a small `power` (below).
 //   legendary: `power: { when, then }`: when it happens, a drawn power strikes the boss (ABILITY_POWERS). The server
@@ -19,7 +20,7 @@
 // number keys 1-4) and a perk or power `when: 'press'`. Each level's `charge` is the points its key fills before it
 // fires (js/abilities.js pressGain). Strike, Guard and Summon are rares, Ultimate legendaries; validate.js holds every
 // pressed ability to exactly one key. Its text is the effect only: the card and the HUD show its key.
-const ABILITY_UNITS = { window: 's', after: 's', time: 's', every: 's', lead: 's', cooldown: 's', draw: 's', radius: 'm', reach: 'm', width: 'm', hits: 'n', strikes: 'n', charge: 'n' };
+const ABILITY_UNITS = { window: 's', after: 's', time: 's', every: 's', lead: 's', cooldown: 's', draw: 's', radius: 'm', reach: 'm', width: 'm', hits: 'n', strikes: 'n', charge: 'n', most: 'n' };
 // The numbers that are a share of something whole (of the health bar, of the damage dealt): never above 1.
 const ABILITY_SHARES = ['below', 'heal', 'drain', 'share', 'cut', 'mark'];
 const ABILITIES = [
@@ -281,6 +282,20 @@ const ABILITIES = [
   { id: 'ember-twin', name: 'Ember Twin', rarity: 'legendary', text: 'Flask: a twin fights with you for {time}.',
     power: { when: 'flask', then: 'twin' },
     levels: [{ time: 12, share: 0.55, draw: 3, cooldown: 20 }] },
+  // Legendaries II (pass 154, design/abilities batch 14): new triggers. Fourfold `needs` a key-4 ability: offered only to
+  // a player who holds one.
+  { id: 'hundred-suns', name: 'Hundred Suns', rarity: 'legendary', text: 'Finishing Blow: every cut erupts in sunfire.',
+    power: { when: 'finisher', then: 'sunLines' },
+    levels: [{ strikes: 6, damage: 45 }] },
+  { id: 'thunder-god-step', name: 'Thunder God Step', rarity: 'legendary', text: 'Dashes become lightning that cuts all you pass.',
+    power: { when: 'dash', then: 'lightningDash' },
+    levels: [{ damage: 30, cooldown: 0.6 }] },
+  { id: 'fourfold', name: 'Fourfold', rarity: 'legendary', text: 'Your Ultimate refills your other keys.', needs: 'ultimate',
+    power: { when: 'castUltimate', then: 'refillKeys' },
+    levels: [{ share: 1 }] },
+  { id: 'shade-host', name: 'Shade Host', rarity: 'legendary', text: 'Perfect dodge: a shadow clone joins for {time}.',
+    power: { when: 'dodge', then: 'shadeClone' },
+    levels: [{ time: 6, share: 0.35, most: 3, cooldown: 2 }] },
   // Key 4, Ultimate: the longest charge and the biggest moment.
   { id: 'thunder-call', name: 'Thunder Call', rarity: 'legendary', key: 'ultimate', text: '{strikes} lightning strikes on the boss.',
     power: { when: 'press', then: 'lightning' },

@@ -466,6 +466,64 @@
       expect.ok(abilityFx.info().cages === 1, 'and its cage');
     } finally { audio.play = play; Game.lock = null; reducedMotion.force(null); wipe(); p.grantAbilities([]); }
   });
+  test('legendaries two: the sun star, the lightning dash with the body gone, Fourfold\'s ring and threads, the shade clone in its own ink; others\' from the server\'s word', () => {
+    Game.startLevel('test-abilities'); sim.begin(); sim.step(2);
+    const p = Game.player, e = Game.enemies.find(o => o.def.id === 'greatDummy'), played = [];
+    const play = audio.play; audio.play = (id, o) => { played.push(id); return play.call(audio, id, o); };
+    const heard = ids => expect.ok(ids.every(id => played.includes(id)), `heard ${ids.join(', ')} (${[...new Set(played)].join(', ')})`);
+    const wipe = () => { abilityPowers.reset(); legendFx2.clear(); impactFrame.clear(); };
+    const fx = () => legendFx2.state, count = () => impactFrame.info().count, frames = n => { for (let i = 0; i < n; i++) sim.step(1, 1); };
+    try {
+      p.x = e.x - 6; p.z = e.z; Game.lock = e;
+      // Hundred Suns: six blades out of the finished one on one impact frame, gone after their time.
+      p.grantAbilities(['hundred-suns']); wipe();
+      let n0 = count();
+      abilityPowers.trigger('self', p, p.kit, 'finisher', { enemy: e, x: e.x, y: e.y, z: e.z });
+      frames(12);
+      expect.ok(fx().suns === 1 && fx().blades === 6 && count() === n0 + 1, `the star of six blades, one frame (${JSON.stringify(fx())}, ${count() - n0})`);
+      frames(90); expect.ok(fx().suns === 0 && fx().blades === 0, 'burnt out');
+      heard(['abilitySuns']);
+      // Thunder God Step: the body gone as the dash starts, the line growing; the word finishes it, cuts what it crossed.
+      played.length = 0; p.grantAbilities(['thunder-god-step']); wipe();
+      events.emit('dash', { player: p }); Game.render(1, STEP);
+      expect.ok(fx().live === 1 && fx().hidden === 1 && !p.rig.root.visible, `your body gone, the line live (${JSON.stringify(fx())})`);
+      abilityPowers.trigger('self', p, p.kit, 'dash', { from: { x: e.x - 5, z: e.z }, to: { x: e.x + 5, z: e.z } });
+      Game.render(1, STEP);
+      expect.ok(fx().lines === 1 && fx().live === 0 && fx().hidden === 0 && p.rig.root.visible && fx().cuts === 1 && fx().scorches === 1, `the line, its cut, its scorch, the body back (${JSON.stringify(fx())})`);
+      frames(60); expect.ok(fx().lines === 0, 'the line burns out');
+      heard(['abilityThunderStep', 'abilityBlade']);
+      // Fourfold: the ring at the press, the threads as the keys refill.
+      played.length = 0; p.grantAbilities(['fourfold', 'thunder-call', 'fire-burst']); wipe();
+      p.perk.charge.strike = 0;
+      abilityPowers.trigger('self', p, p.kit, 'press', { key: 'ultimate', enemy: e });
+      Game.render(1, STEP); expect.ok(fx().rings === 1, 'the waist ring');
+      frames(24);
+      expect.ok(fx().threads === 1 && p.perk.charge.strike >= p.kit.pressed.strike.v.charge, `the threads, the key full (${JSON.stringify(fx())})`);
+      heard(['abilityFourfold']);
+      // Shade Host: the clone in its own ink model, its eyes on one frame; its echo an ink slash; it sinks into a blot.
+      played.length = 0; p.grantAbilities(['shade-host']); wipe();
+      n0 = count();
+      abilityPowers.trigger('self', p, p.kit, 'dodge', { enemy: e });
+      frames(30);
+      let inked = 0;
+      scene.traverse(o => { if (o.isSkinnedMesh && o.visible && o.material && o.material.uniforms && o.material.uniforms.uRim) inked++; });
+      expect.ok(fx().clones === 1 && inked > 10 && count() === n0 + 1, `the clone stands in ink on one frame (${inked} meshes, ${count() - n0})`);
+      abilityPowers.trigger('self', p, p.kit, 'hits', { enemy: e, strike: { damage: 10, poise: 0 } });
+      frames(10); expect.ok(fx().slashes === 1, `its echo cuts (${JSON.stringify(fx())})`);
+      heard(['abilityShade', 'abilityEcho']);
+      frames(6.2 * 60); expect.ok(fx().clones === 0, `gone when its time is up (${JSON.stringify(fx())})`);
+      // Online: another's line and suns from the server's word, with no enemy to name; your own keys refilled by it.
+      wipe(); p.grantAbilities(['fourfold', 'thunder-call', 'fire-burst']); p.perk.charge.strike = 0;
+      const other = { x: p.x + 1, y: p.y, z: p.z, yaw: 0, alive: () => true }, net = { self: 'me', bodyOf: id => (id === 'them' ? other : null) };
+      netView.events({ events: [{ type: 'abilityPower', power: 'thunder-god-step', then: 'lightningDash', holder: 'them', enemy: null, x: e.x, y: e.y, z: e.z,
+        v: ABILITY_BY_ID['thunder-god-step'].levels[0], path: { from: { x: e.x - 5, z: e.z + 3 }, to: { x: e.x + 5, z: e.z + 3 } }, crossed: 0 }], shots: [], value: {} }, net);
+      netView.events({ events: [{ type: 'abilityPower', power: 'hundred-suns', then: 'sunLines', holder: 'them', enemy: 'gone', x: e.x, y: e.y, z: e.z, v: ABILITY_BY_ID['hundred-suns'].levels[0] }], shots: [], value: {} }, net);
+      Game.render(1, STEP);
+      expect.ok(fx().lines === 1 && fx().suns === 1, `another's line and star from the word (${JSON.stringify(fx())})`);
+      netView.ability({ power: 'fourfold', then: 'refillKeys', holder: 'me', enemy: null, x: p.x, y: p.y, z: p.z, v: { share: 1 }, strike: 1, keys: ['strike', 'ultimate', 'bogus'] }, null, net);
+      expect.ok(p.perk.charge.strike >= p.kit.pressed.strike.v.charge && !(p.perk.charge.ultimate > 0), `your keys refilled by the word, never the Ultimate (${JSON.stringify(p.perk.charge)})`);
+    } finally { audio.play = play; Game.lock = null; wipe(); p.grantAbilities([]); }
+  });
   test('regression: every duel runs 20 s and the enemy engages', () => {
     for (const d of [...A.ENEMY_DEFS, ...A.TEST_DEFS]) {
       Game.startFight(d.id); sim.begin();

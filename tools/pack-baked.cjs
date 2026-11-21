@@ -48,6 +48,7 @@ const FILES = {
   'ronin-shade': { sources: ['ronin_shade'] },
   'mire-serpent': { sources: ['mire_serpent'] },
   'ember-twin': { sources: ['ember_twin'] },
+  'shade-clone': { sources: ['shade_clone'] },
   'puppet-knight': { sources: ['puppet_knight'] },
   'ash-bear': { sources: ['ash_bear'] },
   'glass-mantis': { sources: ['glass_mantis'] },

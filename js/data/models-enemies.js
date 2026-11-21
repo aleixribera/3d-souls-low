@@ -876,6 +876,26 @@ MODEL_DEFS.emberTwin = {
   }),
   eyes: null,
 };
+// The shade clone (pass 154, design/abilities/shade-host.md): the wanderer's silhouette in flat planes of black ink
+// with dry-brush splits and ember eyes (tools/blender/shade_clone.py), on the wanderer's bones and cloth, so the
+// player's own key poses drive it. Drawn in cel ink by js/legend-fx-2.js (`ink` black under an ember rim, `eye` ember).
+MODEL_DEFS.shadeClone = {
+  extends: 'wanderer', budget: 'player',
+  materials: {
+    ink: { tex: 'ashSoot', tint: 0x0b0b0f, decay: 0.9 },
+    split: { tex: 'ashSoot', tint: 0x4a4850, decay: 0.8 },
+    eye: { glow: 0xe59a5c },
+    blade: { tex: 'ashSoot', tint: 0x16151a, decay: 0.6 }, strap: { tex: 'ashSoot', tint: 0x0b0b0f, decay: 0.9 },   // its sword (the wanderer's)
+    iron: { tex: 'ashSoot', tint: 0x0b0b0f, decay: 0.9 },
+  },
+  parts: bakedParts('shade', {
+    head: ['ink', 'split', 'eye'], neck: ['ink'], chest: ['ink', 'split'], spin: ['ink', 'split'],
+    armL: ['ink', 'split'], armR: ['ink', 'split'], elbowL: ['ink'], elbowR: ['ink'],
+    legL: ['ink', 'split'], legR: ['ink', 'split'], kneeL: ['ink'], kneeR: ['ink'],
+    capeA: ['ink', 'split'], capeB: ['ink', 'split'], capeC: ['ink', 'split'], scarfTail: ['ink'],
+  }),
+  eyes: null,
+};
 // The Puppet Knight: a life-size marionette of a knight in dark wood, ball joints, a cracked great helm, a wooden sword
 // and buckler. Slack at rest: the limbs hang a little loose from their strings.
 MODEL_DEFS.puppetKnight = {

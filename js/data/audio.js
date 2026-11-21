@@ -574,6 +574,38 @@ const AUDIO = {
       { noise: 'brown', filter: { type: 'lowpass', freq: 500, to: 80 }, at: 0.16, a: 0.01, h: 0.15, d: 1.4, gain: 1.1 },
       { wave: 'sine', freq: 42, to: 26, at: 0.15, a: 0.005, d: 0.6, gain: 0.9, drive: 2 },
     ] },
+    // Hundred Suns (batch 14): a bright rising shimmer into a wide roar of fire and a sub bloom, a high tone fading.
+    abilitySuns: { bus: 'sfx', priority: 3, cooldown: 0.5, max: 1, verb: 0.7, heat: 0.9, jitter: 0, layers: [
+      { wave: 'sine', freq: 880, a: 0.1, d: 0.5, gain: 0.08 },
+      { wave: 'sine', freq: 1320, a: 0.1, d: 0.5, gain: 0.06 },
+      { wave: 'sine', freq: 1760, a: 0.1, d: 0.5, gain: 0.04 },
+      { noise: 'pink', filter: { type: 'bandpass', freq: 600, to: 2000, q: 0.8 }, at: 0.08, a: 0.02, h: 0.2, d: 0.6, gain: 1, drive: 2 },
+      { wave: 'sine', freq: 48, to: 30, at: 0.08, a: 0.01, d: 0.8, gain: 0.9 },
+      { wave: 'sine', freq: 1760, at: 0.3, a: 0.05, d: 1, gain: 0.03 },
+    ] },
+    // Thunder God Step (batch 14): a tight electric snap over a short rising zap, then a thunderclap and a dull sub hit.
+    // No tail: three dashes in a row must not pile into a roar.
+    abilityThunderStep: { bus: 'sfx', priority: 2, cooldown: 0.12, max: 2, verb: 0.15, heat: 0.4, jitter: 60, layers: [
+      { noise: 'white', filter: { type: 'highpass', freq: 3000, q: 0.7 }, a: 0.0005, d: 0.02, gain: 0.8, drive: 3 },
+      { wave: 'sawtooth', freq: 400, to: 1600, glide: 0.08, filter: { type: 'bandpass', freq: 1200, q: 2 }, a: 0.003, d: 0.08, gain: 0.18 },
+      { noise: 'pink', filter: { type: 'lowpass', freq: 4000, to: 400 }, at: 0.05, a: 0.002, d: 0.3, gain: 0.9 },
+      { wave: 'sine', freq: 55, at: 0.05, a: 0.004, d: 0.2, gain: 0.7 },
+    ] },
+    // Fourfold (batch 14): three short rising tones landing one after another, ringing together as a chord.
+    abilityFourfold: { bus: 'sfx', priority: 2, cooldown: 0.5, max: 1, verb: 0.4, heat: 0.2, jitter: 0, layers: [
+      { noise: 'white', filter: { type: 'highpass', freq: 5000 }, a: 0.0005, d: 0.008, gain: 0.25 },
+      { wave: 'sine', freq: 392, a: 0.004, d: 0.6, gain: 0.08 },
+      { noise: 'white', filter: { type: 'highpass', freq: 5000 }, at: 0.05, a: 0.0005, d: 0.008, gain: 0.25 },
+      { wave: 'sine', freq: 494, at: 0.05, a: 0.004, d: 0.55, gain: 0.07 },
+      { noise: 'white', filter: { type: 'highpass', freq: 5000 }, at: 0.1, a: 0.0005, d: 0.008, gain: 0.25 },
+      { wave: 'sine', freq: 587, at: 0.1, a: 0.004, d: 0.5, gain: 0.06 },
+    ] },
+    // Shade Host (batch 14): a wet ink drop and a low breath as the clone's eyes open, then a brush whip as it steps.
+    abilityShade: { bus: 'sfx', priority: 3, cooldown: 0.3, max: 1, verb: 0.4, heat: 0.4, jitter: 40, layers: [
+      { wave: 'sine', freq: 900, to: 300, glide: 0.06, a: 0.002, d: 0.06, gain: 0.25 },
+      { noise: 'pink', filter: { type: 'bandpass', freq: 300, q: 1.5 }, a: 0.05, d: 0.3, gain: 0.5 },
+      { noise: 'white', filter: { type: 'bandpass', freq: 1500, to: 4000, q: 2 }, at: 0.15, a: 0.01, d: 0.1, gain: 0.45 },
+    ] },
     // Gale Crescent's cage (batch 13): a quick rising whoosh as it closes, then a whistling vortex for its two seconds.
     abilityCage: { bus: 'sfx', priority: 3, cooldown: 0.3, max: 1, verb: 0.5, heat: 0.5, jitter: 30, layers: [
       { noise: 'white', filter: { type: 'bandpass', freq: 500, to: 2500, q: 2 }, a: 0.08, d: 0.15, gain: 0.7 },

@@ -138,6 +138,20 @@ function abilityHeal(p, share, perk, target = null) {
 //   press/bear:          a summon (batch 12). Pressed, an ash bear rises beside the enemy and swipes every `every` s: each
 //                        swipe lands its kind's `dive` s after it rears (the hawk's rule), for `damage`.
 //   press/mantis:        a summon (batch 12). Pressed, a glass mantis rises beside the enemy and slices every `every` s.
+// Legendaries II (design/abilities batch 14), drawn by js/legend-fx-2.js:
+//   finisher/sunLines:   a Finishing Blow ends (its cuts open): `strikes` sheets of sun fire burst out of the finished enemy,
+//                        two a cut (CONFIG.finisher.steps cuts, the first along the line to the holder, the rest turned
+//                        evenly round), each CONFIG.abilities.suns.length m long and `suns.width` m either side: `damage`
+//                        to the finished one for every sheet, and to every other enemy a sheet crosses.
+//   dash/lightningDash:  every dash, as it ends: `damage` to every enemy whose body's edge came within
+//                        CONFIG.abilities.commons.pastGap m of its path (through or beside). The line is told every dash;
+//                        only a dash that cut something spends the `cooldown`.
+//   castUltimate/refillKeys: the holder's Ultimate key fires: CONFIG.abilities.refill.delay s later each of its Strike,
+//                        Guard and Summon keys stands at least `share` full (never lowered).
+//   dodge/shadeClone:    a summon (kind `shadeClone`, a host of clones): a perfect dodge adds a shadow clone for `time` s, up to
+//                        `most` at once (one more renews the oldest); each stands at its own `flanks` place round the enemy
+//                        and lands `share` of every blow its holder lands, CONFIG.abilities.summons.shadeClone.delay s later.
+//                        It draws no eye.
 //   press/flare, press/gale, press/blades, press/lightning, press/blast: pressed (key 1 or 4), the power of that name
 //                        on the enemy (the blast round its holder).
 // The effect commons (design/abilities, batch 2: the blade), each a small blow of `damage` (CONFIG.abilities.commons):
@@ -227,6 +241,8 @@ const ABILITY_POWERS = {
   'press/risingFire': ['charge', 'damage'], 'press/clap': ['charge', 'damage', 'reach'],
   'press/flurry': ['charge', 'hits', 'damage'], 'press/drill': ['charge', 'time', 'every', 'damage'], 'press/stitch': ['charge', 'hits', 'damage'],
   'press/boomerang': ['charge', 'damage', 'hits'], 'press/clones': ['charge', 'hits', 'damage'], 'press/iai': ['charge', 'damage', 'reach'],
+  'finisher/sunLines': ['strikes', 'damage'], 'dash/lightningDash': ['damage', 'cooldown'], 'castUltimate/refillKeys': ['share'],
+  'dodge/shadeClone': ['time', 'share', 'most', 'cooldown'],
 };
 // The heavies that end a light string: every attack some attack's `next.heavy` leads to (Iron Cyclone's `comboHeavy`).
 let comboHeavies = null;
@@ -234,7 +250,7 @@ function isComboHeavy(a) {
   if (!comboHeavies) comboHeavies = new Set(Object.values(PLAYER_DEF.moveset.attacks).map(x => x.next && x.next.heavy).filter(Boolean));
   return !!a && comboHeavies.has(a.id);
 }
-const SUMMONS = new Set(['twin', 'hound', 'guardian', 'lancer', 'fox', 'lantern', 'crows', 'archer', 'hawk', 'owl', 'ronin', 'serpent', 'puppet', 'bear', 'mantis']);
+const SUMMONS = new Set(['twin', 'shadeClone', 'hound', 'guardian', 'lancer', 'fox', 'lantern', 'crows', 'archer', 'hawk', 'owl', 'ronin', 'serpent', 'puppet', 'bear', 'mantis']);
 // The summons that strike on their own, every `every` s from `reach` m off their enemy's body (the twin echoes its holder).
 const SUMMON_STRIKERS = new Set(['hound', 'guardian', 'lancer', 'fox', 'lantern', 'crows', 'archer', 'hawk', 'ronin', 'serpent', 'puppet', 'bear', 'mantis']);
 // The summons whose blow flies before it lands (a fireball, an arrow, a hawk's dive), or is wound up first (a bear's rear):
@@ -253,7 +269,7 @@ function summonStep(s, e, body, dt) {
   if (S.perch && body) { const yaw = body.yaw || 0, side = S.side ?? K.side; x = body.x - Math.cos(yaw) * side; z = body.z + Math.sin(yaw) * side; }   // at its holder's shoulder
   else if (e) {
     const dx = body ? e.x - body.x : Math.sin(e.yaw), dz = body ? e.z - body.z : Math.cos(e.yaw), l = Math.hypot(dx, dz) || 1;
-    const turn = S.flank + (S.orbit || 0) * (s.age || 0);
+    const turn = (s.flank ?? S.flank) + (S.orbit || 0) * (s.age || 0);   // a shade clone stands at its own place (`flanks`)
     const c = Math.cos(turn), sn = Math.sin(turn), fx = dx / l, fz = dz / l, r = (e.radius || 1) + S.gap;
     x = e.x + (fx * c - fz * sn) * r; z = e.z + (fx * sn + fz * c) * r;
   } else if (body) { x = body.x + Math.cos(body.yaw || 0) * K.side; z = body.z - Math.sin(body.yaw || 0) * K.side; }
@@ -282,7 +298,8 @@ function summonStart(s, e, body) {
 // `comboHeavy` (Iron Cyclone): a string's heavy reached its blow, landed or not (a whiff the server can't see).
 // `ward` (Mirror Ward): a blow bounced off the pane; `answer` (Waiting Blade): a blow met in the stance. Each names the
 // enemy and its attack, checked as a dodge's is (struckNear), against the server's own clock of that press.
-const ABILITY_CLAIMS = ['land', 'dodge', 'low', 'flask', 'press', 'dashPast', 'jump', 'block', 'parryShot', 'comboHeavy', 'ward', 'answer'];
+// `dash` (Thunder God Step): every dash, with its path, checked as Spark Step's is; the server finds what it crossed.
+const ABILITY_CLAIMS = ['land', 'dodge', 'low', 'flask', 'press', 'dashPast', 'jump', 'block', 'parryShot', 'comboHeavy', 'ward', 'answer', 'dash'];
 // The enemy a dash from `from` to `to` (each { x, z }) went past (Spark Step's `dashPast`): the nearest live one whose
 // body's edge came within `gap` m of the path at a point strictly between its ends (past it, not into it), else null.
 function dashPastOf(from, to, enemies, gap = CONFIG.abilities.commons.pastGap) {
@@ -297,6 +314,17 @@ function dashPastOf(from, to, enemies, gap = CONFIG.abilities.commons.pastGap) {
     if (d <= gap && d < near) { near = d; best = e; }
   }
   return best;
+}
+// Every live enemy a dash from `from` to `to` crossed (Thunder God Step): its body's edge within `gap` m of the path,
+// anywhere along it, through or beside.
+function dashCrossed(from, to, enemies, gap = CONFIG.abilities.commons.pastGap) {
+  const dx = to.x - from.x, dz = to.z - from.z, len2 = dx * dx + dz * dz, out = [];
+  for (const e of enemies) {
+    if (!e.alive() || e.invulnerable() || e.netExec || e.state === ES.EXECUTED) continue;
+    const t = len2 > 1e-6 ? clamp(((e.x - from.x) * dx + (e.z - from.z) * dz) / len2, 0, 1) : 0;
+    if (Math.hypot(from.x + dx * t - e.x, from.z + dz * t - e.z) - (e.radius || 0) <= gap) out.push(e);
+  }
+  return out;
 }
 // The nearest live enemy whose body is within `r` m of (x, y, z) (Dust Devil's take-off), else null.
 function enemyNear(enemies, x, y, z, r) {
@@ -491,8 +519,9 @@ function abilityKit(held) {
     if (b.power) {
       powers.push({ id: b.id, when: b.power.when, then: b.power.then, once: !!b.power.once, action: b.power.action || null, key: b.key || null, v });
       whens.add(b.power.when);
-      if (b.power.then === 'twin' || b.power.then === 'burnHits') whens.add('hits');   // the twin strikes, the burn burns, as its holder lands a blow
+      if (b.power.then === 'twin' || b.power.then === 'burnHits' || b.power.then === 'shadeClone') whens.add('hits');   // the twin and the clones strike, the burn burns, as its holder lands a blow
       if (b.power.when === 'cast') { whens.add('press'); whens.add('hits'); }   // Echoing Blade: armed by any press, spent by landed blows
+      if (b.power.when === 'castUltimate') whens.add('press');   // Fourfold: heard as the Ultimate's press
     }
   }
   for (const key of Object.keys(mods)) if (ABILITY_MODS[key] === 'less') mods[key] = Math.min(mods[key], 1);
@@ -675,14 +704,18 @@ const abilityPowers = (() => {
   // { yaw } (the holder's facing, where its body carries none: the server's), { over } (a press: Overcharge's share past full).
   function trigger(holder, body, kit, when, ctx = {}) {
     if (when === 'ward' || when === 'answer') { guardAnswer(holder, body, kit, when, ctx); return; }
-    if (when === 'hits') { echo(holder, body, ctx.enemy, ctx.strike); burn(holder, body, kit, ctx.enemy); ghost(holder, body, kit, ctx.enemy); }
+    if (when === 'hits') { echo(holder, body, ctx.enemy, ctx.strike); shadeEcho(holder, body, ctx.enemy, ctx.strike); burn(holder, body, kit, ctx.enemy); ghost(holder, body, kit, ctx.enemy); }
+    if (when === 'press' && ctx.key === 'ultimate' && kit.pressed && kit.pressed.ultimate) trigger(holder, body, kit, 'castUltimate', {});   // Fourfold
     // A press arms Echoing Blade at once; Quick Draw's only at its draw (a stance cut short gives its charge back, so
     // arming at the press would re-arm the echoes for free).
     if (when === 'press') { const s = kit.pressed && kit.pressed[ctx.key]; if (!(s && s.power && s.then === 'iai')) cast(holder, body, kit, ctx); }
     for (let pw of kit.powers) {
       if (pw.when !== when || (pw.action && pw.action !== ctx.action) || (pw.key && pw.key !== ctx.key)) continue;
       const key = holder + '/' + pw.id;
-      if ((ready.get(key) ?? -Infinity) > clock) continue;
+      if ((ready.get(key) ?? -Infinity) > clock) {
+        if (pw.then === 'lightningDash') fire(pw, holder, body, { ...ctx, idle: true }, kit);   // the line all the same, cutting nothing
+        continue;
+      }
       const hits = pw.when === 'hits';
       if (hits) {   // every `hits`th blow; one that finds nothing to strike leaves the next blow due
         const n = Math.min(pw.v.hits, (counts.get(key) || 0) + 1);
@@ -721,7 +754,11 @@ const abilityPowers = (() => {
     const path = ctx.from && ctx.to ? { from: { x: ctx.from.x, z: ctx.from.z }, to: { x: ctx.to.x, z: ctx.to.z } } : undefined;
     // A reflected bolt flies back for `flight` s (its way back at its own speed) before it strikes.
     const flight = pw.then === 'reflect' ? clamp(ctx.flight ?? 0.3, 0.05, CONFIG.abilities.commons.reflectMax) : undefined;
-    events.emit('abilityPower', { power: pw.id, then: pw.then, holder, body, enemy: e, x, y, z, v, path, flight, yaw: ctx.yaw, over: ctx.over > 0 ? ctx.over : undefined });
+    // Thunder God Step's line says how many it cut (`crossed`), or that it is cooling (`idle`): drawn the same either way.
+    const cut = pw.then === 'lightningDash' && path && !ctx.idle ? dashCrossed(path.from, path.to, enemies) : null;
+    events.emit('abilityPower', { power: pw.id, then: pw.then, holder, body, enemy: e, x, y, z, v, path, flight, yaw: ctx.yaw, over: ctx.over > 0 ? ctx.over : undefined,
+      idle: ctx.idle || undefined, crossed: cut ? cut.length : undefined, boss: cut ? cut.some(o => o.isBoss()) || undefined : undefined,
+      first: pw.then === 'shadeClone' && !hostOut(holder) || undefined });   // a shade host's first clone (its camera kick, its impact frame)
     switch (pw.then) {
       case 'blast': for (const o of enemies) if (near(o, x, y, z, v.radius)) wound(o, v.damage, holder, pw.id); break;
       case 'flare': case 'spark': case 'lick': case 'molten': case 'thorns': wound(e, v.damage, holder, pw.id); break;
@@ -789,6 +826,16 @@ const abilityPowers = (() => {
       case 'pyre':   // one pillar an enemy: a second break lights it afresh
         for (let i = running.length - 1; i >= 0; i--) if (running[i].pw === pw && running[i].holder === holder && running[i].enemy === e) running.splice(i, 1);
         running.push({ pw, holder, enemy: e, left: Math.round(v.time / v.every), next: v.every, n: 0 }); break;
+      case 'shadeClone': return shade(pw, holder, body, e, x, y, z);
+      case 'sunLines': suns(pw, holder, body, e, x, y, z); break;
+      case 'lightningDash':   // what the path crossed, each cut as its holder lands (`strike`); crossing nothing spends no cooldown
+        if (!cut) return false;
+        cut.forEach((o, i) => {
+          events.emit('abilityPower', { power: pw.id, then: pw.then, holder, body, enemy: o, x: o.x, y: o.y, z: o.z, v, strike: i + 1 });
+          wound(o, v.damage, holder, pw.id);
+        });
+        return cut.length > 0;
+      case 'refillKeys': running.push({ pw, holder, body, kit, enemy: null, left: 1, next: CONFIG.abilities.refill.delay, n: 0, refill: true }); break;
       case 'twin': case 'hound': case 'guardian': case 'lancer': case 'fox': case 'lantern': case 'crows': case 'archer': case 'hawk': case 'owl':
       case 'ronin': case 'serpent': case 'puppet': case 'bear': case 'mantis': {
         const out = summonOf(holder), from = out || at, K = CONFIG.abilities.summons;
@@ -873,6 +920,52 @@ const abilityPowers = (() => {
       }
     }
   }
+  // Hundred Suns: the sheets round finished enemy `e` (or the place it fell), the first cut along the line to the holder.
+  function suns(pw, holder, body, e, x, y, z) {
+    const S = CONFIG.abilities.suns, cuts = CONFIG.finisher.steps, v = pw.v, at = e || { x, y, z, radius: 1 };
+    const a0 = body ? Math.atan2(body.z - at.z, body.x - at.x) : 0, r0 = at.radius || 1;
+    for (let k = 0; k < v.strikes; k++) {
+      const a = a0 + Math.floor(k / 2) % cuts * Math.PI / cuts + (k % 2 ? Math.PI : 0), ux = Math.cos(a), uz = Math.sin(a);
+      if (e) wound(e, v.damage, holder, pw.id);   // every sheet lands on the finished one
+      for (const o of Game.enemies) {
+        if (o === e || !o.alive() || Math.abs(o.y - at.y) > CONFIG.height.reach) continue;
+        const along = (o.x - at.x) * ux + (o.z - at.z) * uz, off = Math.abs((o.x - at.x) * uz - (o.z - at.z) * ux), r = o.radius || 0;
+        if (along >= r0 - r && along <= r0 + S.length + r && off <= S.width + r) wound(o, v.damage, holder, pw.id);
+      }
+    }
+  }
+  // Shade Host: a perfect dodge adds a clone to its holder's host (a summon slot of kind `shadeClone`) where the holder stood,
+  // at the first free place of `flanks`; with `most` out, the oldest is renewed instead. A host is one summon.
+  function shade(pw, holder, body, e, x, y, z) {
+    const v = pw.v, K = CONFIG.abilities.summons;
+    let s = summonOf(holder);
+    if (!s || s.kind !== 'shadeClone') {
+      s = { kind: 'shadeClone', pw, body, until: 0, n: 0, x, y, z, yaw: (body && body.yaw) || 0, enemy: e, wait: 0, bite: 0, drew: true, parried: false,
+        lure: null, lureUntil: 0, decoy: null, age: 0, shots: [], clones: [] };
+      s.decoy = { decoy: true, holder, x, y, z, radius: K.radius, height: K.shadeClone.height, state: null, alive: () => true, isAttacking: () => false };
+      summons.set(holder, s);
+    }
+    s.pw = pw; s.body = body || s.body; if (e) s.enemy = e;
+    let c;
+    if (s.clones.length >= v.most) c = s.clones.reduce((a, b) => (a.until <= b.until ? a : b));
+    else {
+      const used = new Set(s.clones.map(q => q.slot));
+      let slot = 0; while (used.has(slot)) slot++;
+      c = { kind: 'shadeClone', slot, flank: K.shadeClone.flanks[slot % K.shadeClone.flanks.length], x, z, yaw: (body && body.yaw) || 0 };
+      s.clones.push(c);
+    }
+    c.until = clock + v.time;
+    s.until = Math.max(...s.clones.map(q => q.until));
+    return true;
+  }
+  function hostOut(holder) { const s = summonOf(holder); return !!s && s.kind === 'shadeClone' && s.clones.some(c => c.until > clock); }
+  // Every clone of a host out for `holder` strikes `e` as they did, a beat later: `share` of the blow each (`clone`: its place).
+  function shadeEcho(holder, body, e, strike) {
+    const s = summonOf(holder);
+    if (!s || s.kind !== 'shadeClone' || !e || !strike || !e.alive()) return;
+    for (const c of s.clones) if (c.until > clock)
+      running.push({ pw: s.pw, holder, body, enemy: e, left: 1, next: CONFIG.abilities.summons.shadeClone.delay, n: 0, damage: strike.damage * s.pw.v.share, twin: s, clone: c.slot });
+  }
   // Bitter Draught: a landed blow of a holder whose blade burns burns `e` too, one flame spent (`strike`: its number).
   function burn(holder, body, kit, e) {
     const st = body && body.perk;
@@ -932,8 +1025,17 @@ const abilityPowers = (() => {
     // Its time up, it goes, but not out of an attack begun on it: that one ends on it, where it stood.
     const held = s.lure && s.lure.alive() && Game.enemies.includes(s.lure);
     if (s.lure && (clock >= s.lureUntil || s.until <= clock || !held) && !(held && s.lure.in('attacking'))) s.lure = null;
+    if (s.clones) {   // a host: its clones go one by one, the host with the last
+      for (let i = s.clones.length - 1; i >= 0; i--) if (s.clones[i].until <= clock) s.clones.splice(i, 1);
+      s.until = s.clones.length ? Math.min(s.until, Math.max(...s.clones.map(q => q.until))) : Math.min(s.until, clock);
+    }
     if (s.until <= clock) { if (!s.lure && !s.shots.length) summons.delete(holder); return; }   // a lantern's last fireballs still land
     const e = foeOf(s);
+    if (s.clones) {   // each clone to its own place round the enemy; it strikes only as its holder does (shadeEcho)
+      for (const c of s.clones) summonStep(c, e, body, dt);
+      s.x = s.clones[0].x; s.z = s.clones[0].z; if (e) s.y = e.y;
+      return;
+    }
     s.age += dt;
     if (s.age > (K[s.kind].hold || 0)) summonStep(s, e, body, dt);   // a lancer forms where it starts before it charges
     if (e) s.y = e.y;
@@ -1034,6 +1136,7 @@ const abilityPowers = (() => {
         running.splice(i, 1); continue;
       }
       if ((r.next -= dt) > 0) continue;
+      if (r.refill) { refill(r); running.splice(i, 1); continue; }
       if (!e.alive()) { running.splice(i, 1); continue; }
       r.next += r.every ?? r.pw.v.every ?? 0; r.left--; r.n++;
       if (r.reach !== undefined) {   // a thrust lands only while its enemy is in reach (the server's pose of the holder lags)
@@ -1051,10 +1154,22 @@ const abilityPowers = (() => {
       }
       // A bolt, and a twin's blow, each tell every browser (`strike`: its number): drawn and heard as it lands.
       if (DELAYED.has(r.pw.then) || r.twin) events.emit('abilityPower', { power: r.pw.id, then: r.pw.then, holder: r.holder, body: r.body, enemy: e,
-        x: r.x ?? e.x, y: r.y ?? e.y, z: r.z ?? e.z, v: r.pw.v, strike: r.twin ? ++r.twin.n : r.n });
+        x: r.x ?? e.x, y: r.y ?? e.y, z: r.z ?? e.z, v: r.pw.v, strike: r.twin ? ++r.twin.n : r.n, clone: r.clone });
       for (let k = r.times || 1; k > 0; k--) wound(e, r.damage ?? r.pw.v.damage, r.holder, r.pw.id);
       if (r.left <= 0) running.splice(i, 1);
     }
+  }
+  // Fourfold's threads arrive: the holder's other keys stand at least `share` full (the server's count, or the body's own).
+  function refill(r) {
+    const st = (api.perkOf && api.perkOf(r.holder)) || (r.body && r.body.perk), b = (api.bodyOf && api.bodyOf(r.holder)) || r.body;
+    if (!st || !st.charge || !r.kit || (b && b.alive && !b.alive())) return;
+    const keys = [];
+    for (const key of ['strike', 'guard', 'summon']) {
+      const slot = r.kit.pressed[key];
+      if (!slot) continue;
+      st.charge[key] = Math.max(st.charge[key] || 0, slot.v.charge * r.pw.v.share); keys.push(key);
+    }
+    events.emit('abilityPower', { power: r.pw.id, then: 'refillKeys', holder: r.holder, body: b, enemy: null, x: b ? b.x : 0, y: b ? b.y : 0, z: b ? b.z : 0, v: r.pw.v, strike: 1, keys });
   }
   // Spinning Blade's flight: its point `s` m along the way (out on even passes, back on odd); each enemy it goes by in a
   // pass is wounded once. True once it is back.

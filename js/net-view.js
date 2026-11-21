@@ -7,6 +7,9 @@
 // `ctx`: { self (this browser's player id, or null), bodyOf(id) (a player's body, or null) }.
 // Boss Rush's fight as the HUD and the kill moment see it: the replay's while one plays, else the online run's.
 const rushNow = () => (typeof replayView !== 'undefined' && replayView.rush) || (typeof multiplayer !== 'undefined' && multiplayer.rush) || null;
+// The powers whose word reaches browsers with no live enemy to name: a stance's draw, a husk, a dash's line, a finished
+// enemy's suns, Fourfold's keys, a shade clone called on no one.
+const NET_FREE_POWERS = new Set(['iai', 'husk', 'lightningDash', 'sunLines', 'refillKeys', 'shadeClone']);
 const netView = {
   // One enemy at `alpha` between snapshot values `s` and `q`; `since` s after `s` was taken (its clock runs on).
   enemy(e, s, q, alpha, since, ctx) {
@@ -83,6 +86,13 @@ const netView = {
   },
   // A legendary, anyone's (js/ability-fx.js draws it).
   ability(d, e, ctx) {
+    if (d.then === 'refillKeys' && d.strike && Array.isArray(d.keys) && d.holder === ctx.self && Game.player && Game.player.perk && Game.player.kit) {
+      const st = Game.player.perk, share = Math.min(1, Math.max(0, +d.v.share || 0));   // Fourfold: the server refilled this browser's keys
+      for (const key of d.keys) {
+        const slot = ABILITY_KEYS.includes(key) && key !== 'ultimate' ? Game.player.kit.pressed[key] : null;
+        if (slot && st.charge) st.charge[key] = Math.max(st.charge[key] || 0, slot.v.charge * share);
+      }
+    }
     if (!ArenaNet.own(ABILITY_BY_ID, d.power) || !d.v || typeof d.v !== 'object') return;
     const body = d.holder === ctx.self ? Game.player : ctx.bodyOf(d.holder);
     if (d.then === 'bloodMoon' && body === Game.player && ctx.self) { body.perk.moon = d.v.time; body.perk.moonV = d.v; }
@@ -109,7 +119,7 @@ const netView = {
         if (attacker) events.emit('strike', { ...d, attacker, player: attacker, target: e });
       // A teammate's parry names its body (or id), so camera feedback for the local player's own parries stays theirs.
       } else if (d.type === 'parry' && d.player !== ctx.self && e) events.emit('parry', { target: e, player: ctx.bodyOf(d.player) || d.player });
-      else if (d.type === 'abilityPower' && (e || d.end || d.then === 'iai' || d.then === 'husk')) netView.ability(d, e || null, ctx);   // a stance's or a cut's word, even past its enemy
+      else if (d.type === 'abilityPower' && (e || d.end || NET_FREE_POWERS.has(d.then))) netView.ability(d, e || null, ctx);   // a stance's or a cut's word, even past its enemy
       if (['attackStart', 'attackPhase', 'bossPhase', 'bossRetreat', 'bossGone', 'enemyBlink'].includes(d.type) && e) {
         const attack = sample.value.attack ? e.baseDef.attacks.find(a => a.id === sample.value.attack) : e.attack;
         events.emit(d.type, { enemy: e, actor: e, attack, phase: PHASE.ACTIVE, hitIndex: d.hitIndex, seamless: d.seamless, out: d.out });

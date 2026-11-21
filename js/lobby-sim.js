@@ -33,7 +33,7 @@ globalThis.host = (() => {
   // Boss Rush's abilities (CONFIG.abilities, js/abilities.js), kept across a run's fights: ids held (one per pick,
   // repeated by upgrades) and the open offer, by player id; each one's kit (kitOf); and, for people (a bot's body keeps
   // its own), the perk clocks and their last health (abilityHurt) and their last accepted perfect dodge (Counterstep).
-  const owned = new Map(), offers = new Map(), gear = new Map(), kits = new Map(), perks = new Map(), lastDodge = new Map(), stepDodge = new Map(), cycloneAt = new Map(), pendingClaims = [];
+  const owned = new Map(), offers = new Map(), gear = new Map(), kits = new Map(), perks = new Map(), lastDodge = new Map(), stepDodge = new Map(), cycloneAt = new Map(), dashAt = new Map(), pendingClaims = [];
   const trails = new Map();   // person id -> their recent poses' places and states: [{ t, x, y, z, state }]
   const DASH_ATTACKS = new Set(Object.values(PLAYER_DEF.moveset.dash));   // Petal Cut's dash attacks
   const AIRBORNE = new Set([PS.JUMP, PS.JUMP_ATTACK]);   // a jump's, not a fall off a ledge
@@ -80,7 +80,8 @@ globalThis.host = (() => {
     // A legendary fired or striking, for every browser to draw (js/ability-fx.js).
     if (type === 'abilityPower') eventList.push({ type, power: d.power, then: d.then, holder: d.holder, enemy: d.enemy?.netId || null,
       x: d.x, y: d.y, z: d.z, v: d.v, strike: d.strike, draw: d.draw || undefined, parry: d.parry || undefined, path: d.path, flight: d.flight, mark: d.mark || undefined, yaw: d.yaw, over: d.over, end: d.end,
-      burst: d.burst || undefined, sputter: d.sputter || undefined, heal: d.heal || undefined, land: d.land || undefined });   // an Ash Husk bursting, a Binding Seal burning out, a lantern's heal
+      burst: d.burst || undefined, sputter: d.sputter || undefined, heal: d.heal || undefined, land: d.land || undefined,
+      idle: d.idle || undefined, crossed: d.crossed, boss: d.boss || undefined, keys: d.keys, clone: d.clone, first: d.first || undefined });   // Thunder God Step's line, Fourfold's keys, a shade clone's place   // an Ash Husk bursting, a Binding Seal burning out, a lantern's heal
     const e = d.enemy || d.actor;
     if (type === 'attackStart' && e) e.netAttack = ++attackSerial;
     if (['attackStart', 'attackPhase', 'bossPhase', 'bossRetreat', 'bossGone', 'enemyBlink', 'impact'].includes(type))
@@ -251,7 +252,7 @@ globalThis.host = (() => {
     hitBudget.clear(); lastParry.clear(); spentOpening.clear(); defended.clear(); sleeping = false; settleCheck = 0;
     wipeOnly = isBossDef(d);
     if (!keepAbilities) { owned.clear(); offers.clear(); }
-    kits.clear(); perks.clear(); lastDodge.clear(); stepDodge.clear(); cycloneAt.clear(); pendingClaims.length = 0;
+    kits.clear(); perks.clear(); lastDodge.clear(); stepDodge.clear(); cycloneAt.clear(); dashAt.clear(); pendingClaims.length = 0;
     let index = 0;
     for (const b of bots.values()) { registerPlayer(b.id, b.name); spawnBot(b, index++); }
     return { epoch, kind, id, ...(partners.length ? { partners: [...partners] } : {}), spawn: checkpoint, teamWipeOnly: isBossDef(d) };
@@ -324,7 +325,8 @@ globalThis.host = (() => {
       const open = ABILITIES.filter(b => abilityLevel(b, held) < b.levels.length
         && !(b.key && keyOf.has(b.key) && keyOf.get(b.key) !== b.id)
         && (!pool || pool.has(b.id)) && (!rarities || rarities.includes(b.rarity))
-        && !(b.party && (people < 2 || bots.has(id))));
+        && !(b.party && (people < 2 || bots.has(id)))
+        && !(b.needs && !keyOf.has(b.needs)));   // Fourfold: only to one holding a key-4 ability
       const offer = [], legend = crowned && pick(open.filter(b => b.rarity === 'legendary'));
       if (legend) offer.push(legend.id);
       for (let i = offer.length; i < cards; i++) {
@@ -458,6 +460,25 @@ globalThis.host = (() => {
       if (!trail.slice(Math.max(0, began - 2), began + 1).some(f => near(f, from)) || !trail.slice(began).some(f => near(f, to))) return false;
       if (dashPastOf(from, to, [e], K.pastGap + C.claimPast) !== e) return false;
       abilityPowers.trigger(id, body, kit, 'dashPast', { enemy: e, from, to, x: to.x, y: p.y, z: to.z });
+    } else if (msg.when === 'dash') {   // Thunder God Step: a dash their poses showed lately, along the path claimed; what it crossed is found here
+      const from = point(msg.from), to = point(msg.to), P = CONFIG.player;
+      if (!from || !to || Math.hypot(to.x - from.x, to.z - from.z) > P.rollSpeed * P.rollTime + C.claimNear * 2) return false;
+      // Rolling lately, by their poses: `from` near a frame at a roll (or just before one) and `to` near a later frame at
+      // that roll (or just after it), with a roll frame in the last C.claimDash s. Dashes come back to back, and their
+      // poses may show two as one long roll, so each claim takes the poses up to its `to` and the next must start there or
+      // later: one line a dash, never one roll's path claimed again re-aimed.
+      const trail = trailOf(id), near = (f, q) => Math.hypot(f.x - q.x, f.z - q.z) <= C.claimNear, used = dashAt.get(id) ?? -Infinity;
+      const rolling = i => trail[i] && trail[i].state === PS.ROLL;
+      if (!trail.some(f => f.state === PS.ROLL && time - f.t <= C.claimDash)) return wait();
+      let start = -1, end = -1;
+      for (let i = 0; i < trail.length && end < 0; i++) {
+        if (trail[i].t < used || !(rolling(i) || rolling(i + 1) || rolling(i + 2)) || !near(trail[i], from)) continue;
+        for (let j = trail.length - 1; j >= i; j--) if ((rolling(j) || rolling(j - 1)) && near(trail[j], to)) { start = i; end = j; break; }
+      }
+      if (end < 0) return rolling(trail.length - 1) ? wait() : false;   // still rolling: its end not shown yet
+      if (!trail.slice(start, end + 1).some(f => f.state === PS.ROLL && time - f.t <= C.claimDash)) return false;
+      dashAt.set(id, trail[end].t);
+      abilityPowers.trigger(id, body, kit, 'dash', { from, to, x: to.x, y: p.y, z: to.z });
     } else if (msg.when === 'jump') {   // Dust Devil: their pose leaving the ground lately, from the place claimed
       const at = point(msg), K = CONFIG.abilities.commons;
       if (!at || !Number.isFinite(msg.y)) return false;

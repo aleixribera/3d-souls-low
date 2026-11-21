@@ -44,7 +44,7 @@ const CONFIG = {
             parryFov: -3, parryPush: 0.06, breakFov: -1.8, executeFov: -2.2, phaseFov: 2.5, landDip: 0.1,
             strafeRoll: 0.012, moveFov: 1.2, moveRef: 5, maxRoll: 0.05, maxFov: 6, powerNear: 26, perkFov: -0.9,
             powers: { blast: [4, 0.24], lightning: [1.6, 0], strike: [-1.8, 0.06], freeze: [-3.2, 0.05], blades: [-1.4, 0.04], bloodMoon: [3, 0.12],
-              twin: [2.6, 0.1], echo: [-0.6, 0.02], gale: [-2.4, 0.05], boltCrown: [-2.4, 0.08], bladeCage: [-1.6, 0.03], pyre: [3.2, 0.16], flare: [-1.1, 0.03], spark: [-0.8, 0.02],
+              twin: [2.6, 0.1], echo: [-0.6, 0.02], sunLines: [3.4, 0.1], lightningDash: [-1.2, 0.03], shadeClone: [1.4, 0.03], gale: [-2.4, 0.05], boltCrown: [-2.4, 0.08], bladeCage: [-1.6, 0.03], pyre: [3.2, 0.16], flare: [-1.1, 0.03], spark: [-0.8, 0.02],
               hound: [1.4, 0.05], bite: [-0.5, 0.02], draw: [1.2, 0.03], guardian: [2.2, 0.1], lancer: [1.2, 0.04], fox: [1, 0.03], lantern: [0.6, 0],
               crows: [0.8, 0.02], archer: [0.8, 0.02], hawk: [1.2, 0.04], stoop: [-0.6, 0.02], owl: [0.6, 0], owlBurst: [-0.4, 0.02],
               ronin: [1.4, 0.04], serpent: [1.6, 0.06], puppet: [1.4, 0.05], bear: [2, 0.08], maul: [-0.8, 0.03], mantis: [1, 0.03],
@@ -332,6 +332,9 @@ const CONFIG = {
     // within `reach` m of its point; Gale Crescent's cage cuts first `lead` s after its blow, everything within `reach` m
     // of the caged body's edge. An enemy a hold has just let go (Time Rift) rests `holdRest` s before another can stop it.
     crown: { gap: 1.5, reach: 2 }, cage: { lead: 0.2, reach: 1.2 }, holdRest: 3,
+    // Legendaries II (pass 154): Hundred Suns' sheets run `length` m out of the finished body's edge, `width` m either side
+    // of their cut; Fourfold's threads reach the other keys `delay` s after the Ultimate's press.
+    suns: { length: 8, width: 0.75 }, refill: { delay: 0.3 },
     // Batch 5's rares: Moonfall Cut's crescent cuts `reach` m ahead of its holder, `width` m either side of their facing;
     // the server takes Iron Cyclone's string heavy no sooner than `gap` s after the last (the shortest string); Hunting
     // Call's mark waits `keep` s for its holder's blow.
@@ -390,6 +393,9 @@ const CONFIG = {
       serpent: { gap: 0.8, flank: 1.2, speed: 40, height: 1.6, reach: 3, rises: true, coil: true },
       puppet: { gap: 1.2, flank: 1, speed: 7, height: 2, reach: 1.8, rises: true, drop: 6 },
       bear: { gap: 1.4, flank: 1.3, speed: 6, height: 2.4, reach: 2.2, rises: true, dive: 0.6 },
+      // Batch 14 (pass 154): Shade Host's clones, clone n at `flanks[n]` rad round from the holder's side (two pincer, the
+      // third from behind), flash-stepping there at `speed` m/s; each lands its echo `delay` s after its holder's blow.
+      shadeClone: { gap: 1.0, flank: 1.3, flanks: [1.3, -1.3, 3.14], speed: 18, height: 1.8, delay: 0.08 },
       mantis: { gap: 1.3, flank: 1.1, speed: 9, height: 2.4, reach: 2, rises: true } } },
   // A boss fights the group (v7.35.0, the server's targeting): anyone drinking a flask within `healReach` m of its
   // body draws it at once (the closest drinker); otherwise it turns on whoever hurt it most lately, else on the closest.
@@ -846,6 +852,14 @@ const CONFIG = {
       // Guard II (js/guard-fx-2.js, batch 9), in m: Mirror Ward's pane `pane` across, `paneOff` before the body; a burst's
       // star `star`; Ash Husk's ring `huskRing` and scorch `scorch`; Waiting Blade's dial `dial` and answering arc `answer` at
       // `waist` up; Hourglass's ring `rewindRing`; Binding Seal's strip `seal` tall, hung at `sealUp` of the boss's height.
+      // Legendaries II (js/legend-fx-2.js, batch 14), in m and s: Hundred Suns' sheets `sunHeight` tall at their root,
+      // erupting in `sunOpen`, burning `sunBurn` then shrinking into the boss over `sunFade`; Thunder God Step's line
+      // `line` wide (its ink `lineInk`), held `lineHold` then burning from both ends over `lineBurn`, `lineUp` above the
+      // feet, its scorch fading over `scorch`, the impact frame at most one per `lineFrame`; Fourfold's waist ring
+      // `waist` up and `waistRing` across, its threads `threads` s; a shade clone's eyes open at `eyes`, sinks over `sink`,
+      // its ink slash `slash` across for `slashLife`.
+      legends2: { sunHeight: 2.2, sunOpen: 0.08, sunBurn: 0.6, sunFade: 0.7, line: 0.26, lineInk: 0.44, lineHold: 0.14, lineBurn: 0.5, lineUp: 0.9,
+        scorch: 1.6, lineFrame: 3, waist: 1.0, waistRing: 1.4, threads: 0.3, eyes: 0.15, sink: 0.4, slash: 2.2, slashLife: 0.28 },
       guard2: { pane: 1.3, paneOff: 0.75, star: 1, huskRing: 1.3, scorch: 2.6, dial: 1.8, answer: 4, waist: 1.1, rewindRing: 1.6, seal: 1.2, sealUp: 0.85 },
       guard: { faint: 0.2, mend: 1.1, mendRise: 1.9, mendTime: 0.5, shell: 0.04, star: 0.9, roots: 2.4, flame: 1.2, flare: 2.2, flareRing: 3, plate: 0.55 },
       strike2: { fan: 2.6, drill: 1.4, drillTurn: 0.9, drillPitch: 0.35, spike: 2.5, disc: 1.4, waist: 1.1, clone: 2.2 },

@@ -292,6 +292,14 @@ function validateData({ visual = true } = {}) {
     need(kinds.length === 1 && (b.mods ? b.rarity === 'common' : b.perk ? b.rarity !== 'legendary' : true),
       `${where}: one of mods (a common), perk (a common or a rare) or power (any rarity).`);
     need(b.party === undefined || b.party === true, `${where}: party is only true.`);
+    need(b.needs === undefined || ABILITY_KEYS.includes(b.needs), `${where}: needs names a key (${ABILITY_KEYS.join(', ')}).`);
+    // Legendaries II (pass 154): each new power's numbers in their range.
+    const pv = b.power && Array.isArray(b.levels) ? b.levels : [];
+    if (b.power && b.power.then === 'sunLines') need(pv.every(v => v.strikes === 2 * CONFIG.finisher.steps && v.damage > 0),
+      `${where}: sunLines' strikes are two a cut, 2 × CONFIG.finisher.steps (${2 * CONFIG.finisher.steps}), with a damage.`);
+    if (b.power && b.power.then === 'shadeClone') need(pv.every(v => Number.isInteger(v.most) && v.most >= 1 && v.most <= CONFIG.abilities.summons.shadeClone.flanks.length),
+      `${where}: shadeClone's most is a whole number from 1 to its flanks (${CONFIG.abilities.summons.shadeClone.flanks.length}).`);
+    if (b.power && b.power.then === 'refillKeys') need(b.needs === 'ultimate', `${where}: refillKeys needs the ultimate key held (needs: 'ultimate').`);
     // A common's perk (pass 114) is one js/common-fx.js draws: its cue in COMMON_PERKS (never a camera kick).
     if (b.perk && b.rarity === 'common') need(COMMON_PERKS.has(b.perk.when + '/' + b.perk.then) || b.perk.when + '/' + b.perk.then === 'revive/reviveHeal',
       `${where}: a common's perk is one of COMMON_PERKS (js/abilities.js) or revive/reviveHeal.`);
