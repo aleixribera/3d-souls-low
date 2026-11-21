@@ -6,6 +6,7 @@
 //   title    a few words
 //   text     one to three sentences, shown under the list when the entry is selected
 const CHANGELOG = [
+  { version: 'v7.182.0', title: 'Bosses follow through', text: 'The Pillager Captain, the Bell Warden, the Giant Skeleton and the Antlered Hunger now carry their weight on past every blow instead of stopping dead on it.' },
   { version: 'v7.181.0', title: 'Aldric follows through', text: 'Aldric\'s blows carry his whole body on past the strike: he turns on round, bends further over and sinks his weight, instead of stopping dead.' },
   { version: 'v7.180.0', title: 'Strikes on the ground', text: 'Five new rare strikes for key 1: Tidal Arc sends a wave through the line, Frost Spike runs a line of ice, Stone Fist and Rising Fang burst up under the boss a beat later, and Thunderclap claps a cone at a close enemy. Fire Burst now blooms into a lotus and Wind Blade cuts a crescent.' },
   { version: 'v7.179.0', title: 'Aldric\'s own sweep', text: 'Aldric sweeps from his left shoulder now, and a new string opens the same way: the Turning Key, two cuts and his pommel. He looks the part in the new style too.' },
