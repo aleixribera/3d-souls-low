@@ -1,8 +1,7 @@
 # Plan
 
 The order of work under `VISION.md`, written by the director from the grilling with Aleix on 2026-11-20. The loop
-reads it every pass and doesn't edit it: cuts and finds go to `BACKLOG.md`, asks to "Needs Aleix" in `STATE.md`. The
-plan before this one (to commit 9eed9bf) is in git history; what it held that still matters is folded in below.
+reads it every pass and doesn't edit it: cuts and finds go to `BACKLOG.md`, asks to "Needs Aleix" in `STATE.md`. Older plans: git history.
 
 ## How the work runs
 
@@ -134,6 +133,13 @@ Check per boss: item 5's judge and Aleix's fight.
 Check: a fresh profile owns exactly the starter set; a crate unlocks a new ability and never a duplicate (tested over
 the whole pool); the panel enforces the minimum and locks during a run, on desktop and phone width; an online run
 offers only active abilities; screenshots of the panel and a crate opening.
+
+### 7b. Legendaries are OP and noticeable (Aleix, 2026-11-21)
+
+Pass 73's nerf is overturned (Thunder Call is ~13% of a 2,600-health boss per 40 s charge). A legendary changes the
+fight the moment it fires: a big chunk of the bar, a freeze, a summon that matters; the curve allows for stacking.
+Check: `tools/rush-curve.cjs SKILLED=1`: each legendary takes a kit clearly further (beyond noise); its clip reads as
+the fight's biggest moment.
 
 ### 8. The ability pool
 
