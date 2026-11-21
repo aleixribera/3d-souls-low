@@ -9,12 +9,13 @@ The iterate loop's working note (`.claude/iterate.md`). Cap: 8,000 characters.
   (`js/guard-fx.js`). Acceptance: `tests/guard-self.cjs`, in-page `guard self`; clip `docs/scorecard/now/guard-self.mp4`
   (`node tools/ability-clips.cjs self`). Next on track 2: batch 9, Guard II. Browser lock:
   `node tools/browser-lock.cjs run <pass> -- <cmd>` (docs/two-tracks.md).
-- Track 1, pass 136 (PLAN item 6, Old Ostrey, pass 2: parry, cel look, in-between keys, judge): the Burning Drop's
-  landing parried (noParry 3 of 14), the tell on the bar's head (`barHead` slot, `edgeTell`) and the lantern (`tells`),
-  `via` keys on every move (`docs/bosses/ostrey.md`). Acceptance: body-check 0/27, `tests/pose-via.cjs`, in-page `Moor`
-  7/7, `Combat clarity`, `Boss edge tells`; strips `docs/scorecard/now/ostrey-gate.jpg`, `ostrey-drop.jpg`,
-  `ostrey-lantern.jpg`, `ostrey-sweep.jpg`; clip `ostrey-cel.mp4`. `bars-1`: its red-to-blue halo was the strip filming
-  an `abort` (fixed in `tools/anim-strip.cjs`). Awaiting Aleix. Next on track 1: Hale and Harrow (PLAN item 6), audit first.
+- Track 1, pass 138 (PLAN item 6, Hale and Harrow, pass 1 of 2: the audit and the rework), done in v7.188.0: a rework
+  (`docs/bosses/castellans.md`): 8 moves each (the Hewing; Elbow and Knee, the Heel from Heaven), parries on the
+  landings and the Wall Turns' first turn (3 of 16 and 4 of 17 unparriable), the alone phase a fight of its own (calls
+  answered by one body, Vault the Haft, the Gauntlet's Hold). Acceptance: body-check 0/35, in-page `Saltgrave` 11/11;
+  strips `docs/scorecard/now/castellans-hewing.jpg`, `-vault.jpg`, `-heel.jpg`; clip `castellans-rework.mp4`. Next on
+  track 1 (pass 2): their cel tells (`edgeTell` on the axe, `tells` on the gauntlets and greaves: the heavy body wash
+  still shows), `via` keys, the Heel from Heaven's leg higher, one `bars-1` round, then Aleix. Old Ostrey awaits Aleix.
 
 ## Works
 
