@@ -112,7 +112,8 @@ const BOSS_FX = {
     fallingBough: { impact: 'shatter' }, kindlingMark: { element: 'fire', impact: 'blaze' }, thornVolley: { element: 'fire' },
     rootsRise: { impact: 'quake', windup: 'gather' }, intoTheRoots: { impact: 'quake' }, risingPunish: { impact: 'quake' }, deepRoots: { impact: 'quake' },
     uprooted: { element: 'fire', impact: 'blaze', windup: 'gather' }, greatKindling: { element: 'fire', impact: 'blaze', windup: 'gather' },
-    rootCharge: { impact: 'quake' } } },
+    rootCharge: { impact: 'quake' }, wrack: { impact: 'shatter' }, brambleSweep: { impact: 'quake' }, reachingBough: { impact: 'shatter' },
+    fallingTree: { element: 'fire', impact: 'blaze' } } },
   // The Rootbound (Level 13): wood, and the mark that burns.
   rootbound: { element: 'earth', aura: 0xff9a50, attacks: { rootMark: { element: 'fire', impact: 'blaze', windup: 'gather' }, rootThorn: { element: 'fire' } } },
   // The King's Blade (Level 14): the champion's steel, until the Ember shows through it (the second phase)

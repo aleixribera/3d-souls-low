@@ -602,6 +602,9 @@ class Enemy {
           const sp = this.stateTime < hit.startup * B.lock && dist > this.radius + player.radius + CONFIG.burrow.near ? B.speed : 0;
           if (sp) this.burrowYaw = turnToward(this.burrowYaw, toPlayer, B.turn * dt);
           tx = this.vx = Math.sin(this.burrowYaw) * sp; tz = this.vz = Math.cos(this.burrowYaw) * sp;
+          // (pass 149) under the floor nothing shows its facing: it rises facing the player, so a blow after the rise
+          // (the Kindling Tree's boughs) is aimed at them and not where it faced as it went under.
+          this.yaw = toPlayer;
         }
         if (this.stateTime >= hit.startup) this.strike(player);
         break;

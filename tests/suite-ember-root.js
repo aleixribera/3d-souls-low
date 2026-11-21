@@ -78,12 +78,58 @@
     expect.ok(p.hp === p.maxHp, `stepped off, untouched (${p.hp})`);
     // Again: stand still. It stops beside you, not under you, and the swelling still takes you.
     sim.until(() => e.state === ES.CHASE || e.state === ES.IDLE, 6);
+    p.hp = p.maxHp;   // (pass 149) its boughs come down after the rise: whatever they did, start whole
     e.beginAttack(a);
     sim.until(() => e.stateTime >= h.startup * B.lock + 0.05, 4);
     const gap = Math.hypot(e.x - p.x, e.z - p.z);
     expect.ok(gap >= e.radius + p.radius && gap < e.radius + p.radius + CONFIG.burrow.near + 0.6, `it rises beside you (${gap.toFixed(2)} m)`);
-    sim.until(() => p.hp < p.maxHp || e.state === ES.RECOVER, 3);
-    expect.ok(p.hp < p.maxHp, `stood on the swelling: struck (${p.hp})`);
+    sim.until(() => p.hp < p.maxHp || e.hitIndex !== 0, 3);
+    expect.ok(p.hp < p.maxHp && e.hitIndex === 0, `stood on the swelling: struck by the rise itself (${p.hp})`);
+    // (pass 149) it rises facing you, so its boughs after the rise come down on you: step aside while it is under and they
+    // still follow.
+    const fall = e.attackById('intoTheRoots'), drop = fall.hits[0];
+    sim.until(() => e.state === ES.CHASE || e.state === ES.IDLE, 6);
+    e.beginAttack(fall);
+    sim.until(() => e.stateTime >= drop.startup * drop.burrow.lock + 0.05, 4);
+    sim.place(p.x + 3, p.z + 1, p.y);
+    sim.until(() => e.hitIndex === 1, 3);
+    const toP = Math.atan2(p.x - e.x, p.z - e.z), off = Math.abs(Math.atan2(Math.sin(e.yaw - toP), Math.cos(e.yaw - toP)));
+    expect.ok(off < 0.08, `it rises facing you (${off.toFixed(2)} rad off)`);
+  });
+  // Pass 149 (docs/bosses/kindling-tree.md, the moveset audit): a rework. Every blow of a bough or its claw is parried; only
+  // what comes up from the roots, burns on the floor, flies from its crown or is the whole tree falling is rolled, jumped or
+  // stepped off, and a phase keeps roll-only moves to a quarter. Its strings branch on where you stand. The tell sits on
+  // what strikes: a bough's thorned splay, or its crown.
+  test('Ember Root: the tree\'s boughs are parried, its roots and fire rolled, a quarter roll-only at most; its strings branch (pass 149)', () => {
+    const d = A.ENEMY_BY_ID.kindlingTree, by = id => d.attacks.find(a => a.id === id);
+    for (const a of d.attacks.filter(a => !a.projectile && a.id !== 'fallingTree')) a.hits.forEach((h, i) => {
+      const floor = !!(h.box || a.box).ring || !!h.burrow || !!h.sigil;
+      expect.ok(floor ? !canParryHit(a, i) : canParryHit(a, i), `${a.id} hit ${i + 1}: ${floor ? 'from the roots or the floor, rolled' : 'a blow, parried'}`);
+    });
+    for (const [id, Ph] of Object.entries(d.phases)) {
+      const rolled = Ph.attacks.filter(x => !by(x).hits.some((h, i) => canParryHit(by(x), i)));
+      expect.ok(rolled.length <= Ph.attacks.length / 4, `${id}: ${rolled.length} of ${Ph.attacks.length} roll-only (${rolled.join(', ')})`);
+      expect.ok(Ph.attacks.length >= 9, `${id}: ${Ph.attacks.length} moves`);
+    }
+    for (const id of ['intoTheRoots', 'risingPunish', 'deepRoots']) { const a = by(id), n = a.hits.length;
+      expect.ok(canParryHit(a, n - 1) && !canParryHit(a, 0), `${id}: the rise rolled, the boughs after it parried`); }
+    const ifs = a => new Set((a.followUps || []).map(f => f.if));
+    expect.ok(ifs(by('wrack')).has('near') && ifs(by('wrack')).has('far') && ifs(by('lash')).has('far') && ifs(by('lash')).has('behind'), 'the Wrack and the Lash branch on where you stand');
+    const F = by('fallingTree');
+    expect.ok(d.phases.kindled.attacks.includes('fallingTree') && !d.phases.rooted.attacks.includes('fallingTree') && F.hits[0].fire.at.length >= 3, 'ablaze, it throws itself down and the floor burns where it fell');
+    const M = KIT.resolve(d.model);
+    expect.ok(M.tellsGrow && ['boughR', 'boughL', 'crown'].every(t => M.tells[t]) && d.attacks.every(a => a.hits.every(h => h.tell)), 'every wind-up tells on what strikes');
+    expect.ok(A.ENEMY_BY_ID.rootbound.attacks.every(a => !d.attacks.some(b => b.name === a.name)), 'the Rootbound\'s moves keep names of their own');
+  });
+  test('Ember Root: the Bramble Sweep runs along the floor: jumped, it misses (pass 149)', () => {
+    const { e, p } = duel(3), a = e.attackById('brambleSweep'), b = a.box;
+    expect.ok(b.ground && b.y + b.h / 2 <= 0.95, `the sweep is low, along the floor (top ${(b.y + b.h / 2).toFixed(2)} m)`);
+    const hb = new Hitbox(e, b, makeStrike(a));
+    p.grounded = true;
+    expect.ok(hb.overlaps(p), 'standing: swept');
+    sim.press('jump'); p.update(CONFIG.step, { x: 0, z: 0, has: false }, [], null);
+    expect.ok(!p.grounded && !hb.overlaps(p), 'an actual jump clears it');
+    p.setState(PS.IDLE); p.vy = 0;
   });
   test('Ember Root: Rootbound hold the hollows, and nothing of the old road is left in them', () => {
     const L = A.LEVEL_13, ids = new Set([...L.gated.flatMap(z => z.enemies.map(m => m.enemy)), ...L.dispersed.map(s => s.enemy)]);
