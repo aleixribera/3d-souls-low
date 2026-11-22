@@ -12,6 +12,7 @@ const Game = {
   duelPartners: [],           // further arena opponents fought at once (online boss groups, Practice's group)
   practiceGroup: [],          // Practice: the enemy and boss ids of the group being built, in order
   practiceAdding: false,      // Practice: an opponent list is open to add to the group, not to start a fight
+  graphicsLost: false, graphicsInGame: false,   // the WebGL context is gone (js/boot.js), and whether it went during play
   practiceFromGroup: false,   // Practice: the fight under way was started from the group (its pause menu goes back there)
   selected: 0,
   companion: null,       // optional local campaign ally (js/companions.js)

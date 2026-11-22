@@ -455,6 +455,8 @@ void main() {
     }
     compMat.uniforms.uAspect.value = visMat.uniforms.uAspect.value = w / h;
   });
+  // A restored WebGL context brings render targets back empty: the reflections are built again on the next draw.
+  events.on('graphicsRestored', () => { if (envTarget) envTarget.dispose(); envTarget = envTex = null; });
   visuals.hooks.stage.push(def => {
     moonBase = moonLight.intensity; open = !!(def.atmosphere && def.atmosphere.sky);
     if (lastDef !== def) { if (envTarget) envTarget.dispose(); envTarget = envTex = null; }

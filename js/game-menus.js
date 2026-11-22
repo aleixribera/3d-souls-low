@@ -133,6 +133,9 @@ Object.assign(Game, {
       // Pause (the mockups' "Pause"): its rows on the left, what the run or the fight stands at on the right
       // (pauseFacts). Online the world goes on, so the screen is named for the run instead of "Paused".
       pause: { title: online ? 'Boss Rush' : 'Paused', layout: 'pause', overlay: true, items: pauseItems },
+      // The browser took the GPU away (a driver reset, a crashed GPU process): nothing can be drawn until it gives it
+      // back (js/boot.js returns to Pause then). Reload is the way out when it never does.
+      graphicsLost: { title: 'Graphics stopped', layout: 'pause', overlay: true, items: [{ name: 'Reload', desc: '', go: () => location.reload() }] },
       // Options (the mockups' "Options"): categories on the left, the chosen one's settings beside them (optionsItems).
       options: { title: 'Options', layout: 'options', overlay: this.optionsFrom !== 'main' && this.optionsFrom !== 'lobby',
         back: this.optionsFrom === 'lobby' ? 'lobby' : this.optionsFrom === 'main' ? 'main' : 'pause', items: options,
@@ -241,7 +244,7 @@ Object.assign(Game, {
     if (screen === 'practice' || screen === 'practiceGroup') this.practiceAdding = false;   // Esc from a list being added from
     if (screen === 'main') { this.story = false; story.load(); }   // the title ends any story session (saved on the way out)
     const s = this.screens()[screen], list = $('menuList');
-    const inGame = screen === 'pause' || (screen === 'options' && this.optionsFrom !== 'main' && (this.optionsFrom !== 'lobby' || multiplayer.active()))
+    const inGame = screen === 'pause' || (screen === 'graphicsLost' && this.graphicsInGame) || (screen === 'options' && this.optionsFrom !== 'main' && (this.optionsFrom !== 'lobby' || multiplayer.active()))
       || (screen === 'controls' && this.controlsFrom === 'pause');
     if (!inGame) {
       this.mode = 'menu';
@@ -565,6 +568,7 @@ Object.assign(Game, {
     events.emit('pause');
   },
   resume() {
+    if (this.graphicsLost) { this.showMenu('graphicsLost'); return; }   // nothing to play on until the GPU is back
     this.mode = 'play'; this.clearControls();
     $('menu').classList.add('hidden'); hud.root.classList.remove('hidden');
     if (document.activeElement && document.activeElement.blur) document.activeElement.blur();
@@ -578,6 +582,7 @@ Object.assign(Game, {
     this.mode = 'play';
     $('menu').classList.add('hidden'); hud.root.classList.remove('hidden');
     if (document.activeElement && document.activeElement.blur) document.activeElement.blur();
+    if (this.graphicsLost) { this.graphicsInGame = true; this.showMenu('graphicsLost'); }   // a load that ends with no GPU holds there
   },
   // A duel. Most are fought in the arena; a test enemy can name a room level (`arena`) and starts for both sides there.
   // `won`: Practice's Speed, its bosses at Boss Rush's pace after that many fights won (0: their own pace).
