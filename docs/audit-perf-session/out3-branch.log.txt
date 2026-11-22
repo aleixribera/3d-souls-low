@@ -1,0 +1,11 @@
+lobby {"mode":"menu","loading":0,"loadingShown":false,"tex":0,"ready":false,"frames":0,"php":null,"boss":null,"draws":880,"pictureMoves":true}
+online rush ~1s {"mode":"play","loading":0,"loadingShown":false,"tex":0,"ready":true,"frames":35,"php":120,"boss":"antlered:1430","draws":5214,"pictureMoves":true}
+online rush ~3s {"mode":"play","loading":0,"loadingShown":false,"tex":0,"ready":true,"frames":154,"php":120,"boss":"antlered:1430","draws":4928,"pictureMoves":true}
+online rush ~6s {"mode":"play","loading":0,"loadingShown":false,"tex":0,"ready":true,"frames":268,"php":120,"boss":"antlered:1430","draws":4884,"pictureMoves":true}
+online rush ~10s {"mode":"play","loading":0,"loadingShown":false,"tex":0,"ready":true,"frames":383,"php":120,"boss":"antlered:1430","draws":4884,"pictureMoves":true}
+online rush ~15s {"mode":"play","loading":0,"loadingShown":false,"tex":0,"ready":true,"frames":497,"php":120,"boss":"antlered:1430","draws":4906,"pictureMoves":true}
+online rush ~20s {"mode":"play","loading":0,"loadingShown":false,"tex":0,"ready":true,"frames":612,"php":120,"boss":"antlered:1430","draws":4928,"pictureMoves":true}
+after moving + attacks {"mode":"play","loading":0,"loadingShown":false,"tex":0,"ready":true,"frames":730,"php":70,"boss":"antlered:1430","draws":4950,"pictureMoves":true}
+dead {"mode":"play","loading":0,"loadingShown":false,"tex":0,"ready":true,"frames":877,"php":0,"boss":"antlered:1430","draws":4928,"pictureMoves":true}
+after death {"mode":"menu","loading":0,"loadingShown":false,"tex":0,"ready":false,"frames":0,"php":null,"boss":null,"draws":660,"pictureMoves":false}
+errors 0
