@@ -39,6 +39,7 @@ const stormRend = (() => {
   function hookPoint(e, k, out) {
     const h = HANG[Math.min(k, HANG.length - 1)];
     if (!e.rig || !e.rig.weapon) return out.set(e.x, e.y + 2.5, e.z);
+    e.rig.weapon.updateWorldMatrix(true, false);   // current even while the rig is hidden (the draw skips hidden things)
     return e.rig.weapon.localToWorld(out.set(h[0], h[1], h[2]));
   }
 

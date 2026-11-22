@@ -46,6 +46,17 @@
     let mine = 0; Game.player.rig.root.traverse(o => { if (o.isSkinnedMesh && skinned.includes(o)) mine++; });
     expect.ok(mine > 0, 'the player is drawn with a skinned body');
     expect.ok(off(M.multiplyMatrices(camera.matrixWorldInverse, camera.matrixWorld), I) < 1e-3, 'the camera view matrix matches its place');
+    // A hidden bone still poses its skin (the finale hides a boss's weapon bone; the blade is skinned to it, not under it).
+    const e = Game.enemies.find(q => q.rig && q.rig.weapon && q.rig.weapon.isBone && q.rig.root.visible);
+    expect.ok(!!e, 'an enemy with a weapon bone on screen');
+    e.rig.weapon.visible = false;
+    const x0 = e.x;
+    try {
+      e.x += 3; frames(1);
+      expect.ok(Math.abs(e.rig.root.position.x - x0) > 2, 'the rig moved');
+      const got = e.rig.weapon.matrixWorld.clone(); e.rig.weapon.updateWorldMatrix(true, false);
+      expect.ok(off(got, e.rig.weapon.matrixWorld) < 1e-4, 'a hidden weapon bone follows its rig');
+    } finally { e.rig.weapon.visible = true; e.x = x0; }
   });
 
   test('Render audit: models of another detail leave the cache once no body uses them; live bodies keep theirs', () => {

@@ -168,8 +168,9 @@ uniform float bkMoonOn, bkGain;
     const R = Math.min(B.maxCells, Math.ceil(range / cell)), O = offsetTable(R), side = 2 * R + 1, side2 = side * side;
     if (local.length < side2 * side) local = new Float32Array(side2 * side);
     const cx = Math.round((p.x - V.ox) / cell - 0.5), cy = Math.round((p.y - V.oy) / cell - 0.5), cz = Math.round((p.z - V.oz) / cell - 0.5);
-    const cr = light.color.r * intensity * sign, cg = light.color.g * intensity * sign, cb = light.color.b * intensity * sign;
-    const L = lum(light.color) * intensity * sign, decay = light.decay, cut = light.distance > 0 ? light.distance : range;
+    const C = (flameOf(light) || {}).color || light.color;   // a flame's steady colour (see level())
+    const cr = C.r * intensity * sign, cg = C.g * intensity * sign, cb = C.b * intensity * sign;
+    const L = lum(C) * intensity * sign, decay = light.decay, cut = light.distance > 0 ? light.distance : range;
     const at = (x, y, z) => local[(z + R) * side2 + (y + R) * side + x + R];
     for (let i = 0; i < O.n && O.d[i] <= R + 0.5; i++) {
       const ox = O.x[i], oy = O.y[i], oz = O.z[i], gx = cx + ox, gy = cy + oy, gz = cz + oz;
@@ -271,9 +272,13 @@ uniform float bkMoonOn, bkGain;
   // Only the volume in use keeps its float arrays (37 bytes a cell); one set aside keeps its two encoded textures'
   // data (8 bytes a cell), and is baked in full again only if a bonfire changes it after it comes back (whole()).
   const cache = [];
+  // A flame's light at its steady level and colour, not this frame's flicker (Game.render), so a bake in play matches
+  // one at the stage build and the cache key does not change with the flicker. Other lights as they stand.
+  const flameOf = l => flames.find(f => f.light === l);
+  const level = l => { const f = flameOf(l); return f ? f.base : l.intensity; };
   const lightKey = l => {
-    const p = l.getWorldPosition(new THREE.Vector3());
-    return [p.x, p.y, p.z, l.color.r, l.color.g, l.color.b, l.intensity, l.distance, l.decay].map(v => +v.toFixed(4)).join(',');
+    const p = l.getWorldPosition(new THREE.Vector3()), c = (flameOf(l) || {}).color || l.color;
+    return [p.x, p.y, p.z, c.r, c.g, c.b, level(l), l.distance, l.decay].map(v => +v.toFixed(4)).join(',');
   };
   function bake(def, built, fresh = false) {
     const t0 = performance.now();
@@ -284,7 +289,7 @@ uniform float bkMoonOn, bkGain;
     if (hit >= 0) {
       const V = cache[hit].V; cache.splice(hit, 1); cache.unshift({ key, V });
       V.pos = new Map(); V.baked = new Map();
-      for (const l of lights) { V.pos.set(l, l.getWorldPosition(new THREE.Vector3())); V.baked.set(l, l.intensity); }
+      for (const l of lights) { V.pos.set(l, l.getWorldPosition(new THREE.Vector3())); V.baked.set(l, level(l)); }
       const fires = built.bonfireFires || [];
       for (const [i, had] of V.fires) if (fires[i] && fires[i].flame.light) V.baked.set(fires[i].flame.light, had);
       V.texA = tex(V, V.dataA); V.texB = tex(V, V.dataB); V.texA.needsUpdate = V.texB.needsUpdate = true;
@@ -312,8 +317,11 @@ uniform float bkMoonOn, bkGain;
       for (let k = k0; k <= k1; k++) for (let j = j0; j <= j1; j++) for (let i = i0; i <= i1; i++) { const g = (k * ny + j) * nx + i; if (V.solid[g] !== 1) V.solid[g] = f; }
     }
     V.fires = new Map();
+    // A stage whose bonfires light later keeps its float arrays in the cache: the bonfire is then added to them as it
+    // lights, never a whole bake in the middle of play (the Final Castle, after a death in the field).
+    V.keep = !!(built.bonfireFires && built.bonfireFires.length);
     sweepMoon(V, moonDir);
-    for (const l of lights) { V.pos.set(l, l.getWorldPosition(new THREE.Vector3())); V.baked.set(l, l.intensity); addLight(V, l, l.intensity, 1); }
+    for (const l of lights) { const k = level(l); V.pos.set(l, l.getWorldPosition(new THREE.Vector3())); V.baked.set(l, k); addLight(V, l, k, 1); }
     V.dataA = new Uint8Array(N * 4); V.dataB = new Uint8Array(N * 4);
     V.texA = tex(V, V.dataA); V.texB = tex(V, V.dataB);
     upload(V);
@@ -339,7 +347,7 @@ uniform float bkMoonOn, bkGain;
   function drop() {
     if (!vol) return;
     vol.texA.dispose(); vol.texB.dispose();
-    if (cache.some(c => c.V === vol)) { vol.solid = vol.rgb = vol.dir = vol.moon = null; vol.compact = true; }
+    if (!vol.keep && cache.some(c => c.V === vol)) { vol.solid = vol.rgb = vol.dir = vol.moon = null; vol.compact = true; }
     vol = null;
     U.bkA.value = U.bkB.value = null;
   }
@@ -398,7 +406,7 @@ uniform float bkMoonOn, bkGain;
   return {
     active, prepare,
     // Tests and tools: what was baked, and the decoded light and moon at a world point (nearest cell).
-    info: () => vol ? { cells: [vol.nx, vol.ny, vol.nz], cell: vol.cell, lights: vol.lights, ms: vol.ms, active: active() } : null,
+    info: () => vol ? { cells: [vol.nx, vol.ny, vol.nz], cell: vol.cell, lights: vol.lights, ms: vol.ms, active: active(), compact: !!vol.compact } : null,
     at(x, y, z) {
       if (!whole()) return null;
       const V = vol, i = Math.floor((x - V.ox) / V.cell), j = Math.floor((y - V.oy) / V.cell), k = Math.floor((z - V.oz) / V.cell);

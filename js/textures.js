@@ -316,6 +316,8 @@ const TEXLIB = (() => {
       const canvas = blank(size);
       if (P) paint(canvas, surfacePixels(P));
       packed = texOf(canvas, false, !!P); packed.userData.filled = !!P; surfaceMaps.set(surfaceKey, packed);
+    } else if (P && !packed.userData.filled) {   // shared with a tint still waiting on a worker: these pixels fill it now
+      paint(packed.image, surfacePixels(P)); packed.userData.filled = true; refresh(packed);
     }
     const map = blank(size);
     if (P) paint(map, P.map);

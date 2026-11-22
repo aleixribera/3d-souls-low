@@ -130,6 +130,29 @@
     start('sunken-keep'); Game.render(1, CONFIG.step);
     expect.ok(effectLighting.info().storm === 0, 'no storm light in the next level');
   });
+  test('Baked light: a bonfire lit later joins a cached volume in place, never a whole bake in play, and flicker never bakes in', () => {
+    const saved = settings.graphics;
+    try {
+      visuals.setQuality('normal');
+      start('final-castle'); Game.render(1, CONFIG.step);
+      const first = bakedLight.info();
+      start('burning-town'); Game.render(1, CONFIG.step);
+      for (let i = 0; i < 3; i++) { start('final-castle'); for (let k = 0; k < 5; k++) Game.render(1, CONFIG.step); }   // back from the cache, flames flickering
+      const back = bakedLight.info();
+      expect.ok(!back.compact && back.cells.join() === first.cells.join(), `the castle's volume comes back whole (compact ${back.compact})`);
+      const b = world.bonfires.find(q => q.litBy), z = Game.zones.find(q => q.id === b.litBy);
+      expect.ok(b && z && !Game.bonfireLit(b), 'the castle gate bonfire starts cold');
+      const fire = stage.bonfireFires.find(f => f.bonfire === b), at = fire.flame.light.getWorldPosition(new THREE.Vector3());
+      const cold = bakedLight.at(at.x, at.y, at.z).light;
+      z.gate.open = true;
+      for (let k = 0; k < 3; k++) Game.render(1, CONFIG.step);
+      const lit = bakedLight.info();
+      expect.ok(lit.ms === back.ms && !lit.compact, `added in place (bake ${back.ms} -> ${lit.ms} ms)`);
+      expect.above(bakedLight.at(at.x, at.y, at.z).light, cold * 1.5 + 0.01, 'its light joins the volume');
+      z.gate.open = false;
+    } finally { settings.graphics = saved; applySettings(); }
+  });
+
   test('Baked light: Normal lights a level from its baked volume, walls stop the light and cast the moon\'s shadow', () => {
     const saved = settings.graphics, v = new THREE.Vector3(), lum = c => 0.2126 * c.r + 0.7152 * c.g + 0.0722 * c.b;
     try {

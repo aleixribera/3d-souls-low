@@ -1443,7 +1443,8 @@ const visuals = (() => {
     const kids = o.children;
     for (let i = 0, n = kids.length; i < n; i++) {
       const c = kids[i];
-      if (!c.visible) { if (force) c.matrixWorldNeedsUpdate = true; continue; }
+      // A hidden bone still poses the skinned meshes bound to it (a rig hides its weapon bone): only other things wait.
+      if (!c.visible && !c.isBone) { if (force) c.matrixWorldNeedsUpdate = true; continue; }
       if (c.matrixWorldAutoUpdate === true || force === true) updateVisible(c, force);
     }
   }
