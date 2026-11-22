@@ -1435,6 +1435,10 @@ const visuals = (() => {
       else o.matrixWorld.multiplyMatrices(o.parent.matrixWorld, o.matrix);
       o.matrixWorldNeedsUpdate = false;
       force = true;
+      // What three.js's own updateMatrixWorld overrides add: a skinned mesh's bind inverse (without it, a body built
+      // since the last full update is skinned from its old place, off screen) and a camera's view matrix.
+      if (o.isSkinnedMesh) o.bindMatrixInverse.copy(o.bindMode === THREE.AttachedBindMode ? o.matrixWorld : o.bindMatrix).invert();
+      else if (o.isCamera) o.matrixWorldInverse.copy(o.matrixWorld).invert();
     }
     const kids = o.children;
     for (let i = 0, n = kids.length; i < n; i++) {

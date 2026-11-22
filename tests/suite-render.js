@@ -32,6 +32,21 @@
     expect.ok(again === cloth, 'every level reuses one banner texture');
   });
 
+  test('Render audit: the per-frame matrix walk keeps skinned bodies on their bones and the camera view current', () => {
+    start('final-castle');
+    frames(2);
+    const I = new THREE.Matrix4(), M = new THREE.Matrix4(), off = (a, b) => a.elements.reduce((s, v, i) => Math.max(s, Math.abs(v - b.elements[i])), 0);
+    const visible = o => { for (let a = o; a; a = a.parent) if (!a.visible) return false; return true; };
+    const skinned = [];
+    scene.traverse(o => { if (o.isSkinnedMesh && o.bindMode === THREE.AttachedBindMode && visible(o)) skinned.push(o); });
+    expect.ok(skinned.length > 0, `skinned bodies on screen (${skinned.length})`);
+    const stale = skinned.filter(o => off(M.multiplyMatrices(o.bindMatrixInverse, o.matrixWorld), I) > 1e-3);
+    expect.ok(stale.length === 0, `every skinned body's bind inverse follows its place (${stale.length} stale: ${stale.slice(0, 3).map(o => o.name || o.parent?.name).join(', ')})`);
+    let mine = 0; Game.player.rig.root.traverse(o => { if (o.isSkinnedMesh && skinned.includes(o)) mine++; });
+    expect.ok(mine > 0, 'the player is drawn with a skinned body');
+    expect.ok(off(M.multiplyMatrices(camera.matrixWorldInverse, camera.matrixWorld), I) < 1e-3, 'the camera view matrix matches its place');
+  });
+
   test('Render audit: models of another detail leave the cache once no body uses them; live bodies keep theirs', () => {
     const was = KIT.detail(), Q = CONFIG.VISUALS.quality;
     try {
