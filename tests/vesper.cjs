@@ -20,7 +20,6 @@ assert.ok(vesper, 'vesper exists in ENEMY_BY_ID');
 assert.equal(vesper.name, 'Gemini, Neon High', 'boss display name is Gemini, Neon High');
 assert.ok(isBossDef(vesper), 'vesper is a boss (has phases)');
 assert.ok(sim.catalog().bosses.some(b => b.id === 'vesper'), 'vesper appears in sim.catalog().bosses');
-assert.ok(!RUSH.opening.includes('vesper'), 'vesper is a full-strength Boss Rush boss, not a warm-up opener');
 
 // Must appear naturally in Boss Rush draws (sim.calling) across seeds.
 let seenInRush = false;

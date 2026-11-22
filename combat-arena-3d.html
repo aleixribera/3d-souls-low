@@ -830,7 +830,7 @@ const GAME_FILES = [
   'replay.js',     // the replay viewer: the replay door's /watch only (server/replays.cjs)
   'boot.js',
 ];
-const LOAD_STAMP = '7.225.0';   // bump for each release; stable within a release so browsers can cache scripts
+const LOAD_STAMP = '7.226.0';   // bump for each release; stable within a release so browsers can cache scripts
 const scriptUrl = (file, dir = 'js/') => dir + file + '?v=' + LOAD_STAMP;
 if (location.pathname.endsWith('/') || /\.[^/]+$/.test(location.pathname))   // else the loader first adds the trailing slash
   for (const file of GAME_FILES) if (file !== 'replay.js') {

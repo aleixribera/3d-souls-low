@@ -3,7 +3,7 @@
 // 1. CONFIG
 // ============================================================================
 // Shared tuning. Per-character data (player, enemies, items) and level layouts live in section 2.
-const VERSION = 'v7.225.0';   // shown in the footer of the title and the pause menu; each release is tagged with the same name
+const VERSION = 'v7.226.0';   // shown in the footer of the title and the pause menu; each release is tagged with the same name
 const CONFIG = {
   step: 1 / 60,          // fixed simulation timestep (s)
   maxSteps: 5,           // max simulation steps per rendered frame
@@ -285,15 +285,17 @@ const CONFIG = {
   // Swift kill (v7.69.0): each Boss Rush fight has a par, the fight-length target: `par` s at the base pace, growing with
   // the curve's pace and by `pair` for each boss past the first, at most `max` s. The HUD shows it beside the fight's
   // clock. A fight won under par adds `extra` choices to that fight's ability offer.
-  // The run's shape (pass 73, PLAN.md item 11): `par` is the warm-up's (CONFIG.pace.warm fights, its bosses lighter);
+  // The run's shape (pass 73, PLAN.md item 11): `par` is the warm-up's (CONFIG.pace.warm fights, a little slower);
   // after it, `late` s, for every boss at its whole health. And par follows the kit: it is divided by 1 + the party's
   // might, each ability held adding `might[rarity]` for each of its levels (the mean over the party), so every kit has
   // to fight for a swift kill (the test bot alone: about one fight in three, tools/rush-curve.cjs runs). Pass 76: a
   // legendary weighs 0.18 (was 0.12): the kits that kill fastest hold two. Pass 174: `late` 80 (was 100), as blows
   // and counters that pay (passes 173-174) made the skilled bot swift in 9 fights of 10 after the warm-up.
   swift: { par: 45, late: 80, pair: 0.5, max: 120, extra: 1, might: { common: 0.03, rare: 0.06, legendary: 0.18 } },
-  // Endless (pass 65, PLAN.md track B item 5): a Boss Rush run goes on until everyone falls. The first `opening` fights
-  // draw from RUSH.opening (js/data/rush.js), then every boss. No boss comes back until every boss of its pool has come,
+  // Endless (pass 65, PLAN.md track B item 5): a Boss Rush run goes on until everyone falls. Every fight draws from every
+  // boss (since 2026-11-21, Aleix). `warmHealth`: any boss's share of its health in the warm-up's fights (CONFIG.pace.warm),
+  // one entry a fight, climbing to whole (Aleix: "making the very first few bosses have lesser stats"; it was 0.45 to 0.7
+  // for five easier bosses only). No boss comes back until every boss has come,
   // and never twice in a row. Every `crowned`th fight is Crowned (its win offers `crownedOffer` abilities, one of them a
   // legendary); from fight `pairFrom`, every `pairEvery`th fight brings two bosses at once (never a Crowned one). From fight
   // `mods[0]` a fight carries one modifier (RUSH.modifiers), one more from each later entry; a Crowned fight one more still.
@@ -312,7 +314,7 @@ const CONFIG = {
   // `mightBlows` (pass 174, PLAN "Last": the curve rises to meet a strong kit): a boss's blows grow by this much for each
   // point of the party's might (kitMight, CONFIG.swift.might): a skilled bot with two legendaries reached the 40-fight
   // cap in 38 runs of 60 without it. No kit, no change.
-  endless: { opening: 4, crowned: 5, crownedOffer: 4, pairFrom: 9, pairEvery: 5, pairRest: 0.5, pairTurns: true, pairHealth: 0.5, settle: [], mods: [8, 16, 26], longest: 999,
+  endless: { warmHealth: [0.55, 0.65, 0.75, 0.85], crowned: 5, crownedOffer: 4, pairFrom: 9, pairEvery: 5, pairRest: 0.5, pairTurns: true, pairHealth: 0.5, settle: [], mods: [8, 16, 26], longest: 999,
              mightBlows: 0.25 },
   // The kill moment (v7.69.0), drawn only: when a Boss Rush fight's last boss falls, its death and the effects play at
   // `slow` of their speed for `time` s (the simulation and the other players run on), `embers` embers burst from it

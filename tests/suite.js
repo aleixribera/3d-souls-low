@@ -158,15 +158,14 @@
 
   // ---- regression: every level, duel and test room loads and runs ----------------------------------
   const allLevels = () => [...A.LEVELS, ...A.TEST_LEVELS];
-  test('regression: every level loads and runs 10 s with rendering', () => {
-    for (const L of allLevels()) {
-      Game.startLevel(L.id); sim.begin();
-      const p = Game.player, y0 = p.y;
-      sim.seconds(10, 6);
-      expect.ok(p.alive() || L.id !== 'test-training', `${L.id}: player died standing still`);
-      expect.near(p.y, y0, 0.01, `${L.id}: player height at rest`);
-      expect.ok(Number.isFinite(Game.cam.pos.y), `${L.id}: camera position is finite`);
-    }
+  // One test per level (and per duel below), so CI's shards can split these long walks between them.
+  for (const L of allLevels()) test(`regression: every level loads and runs 10 s with rendering: ${L.id}`, () => {
+    Game.startLevel(L.id); sim.begin();
+    const p = Game.player, y0 = p.y;
+    sim.seconds(10, 6);
+    expect.ok(p.alive() || L.id !== 'test-training', `${L.id}: player died standing still`);
+    expect.near(p.y, y0, 0.01, `${L.id}: player height at rest`);
+    expect.ok(Number.isFinite(Game.cam.pos.y), `${L.id}: camera position is finite`);
   });
   test('ability grounds: the duel arena and a mannequin; B opens the list, a click wears an ability, Fire sets one off', () => {
     Game.startLevel('test-abilities'); sim.begin();
@@ -763,15 +762,13 @@
         `another's cut, answer, Seven and toll from the word (${JSON.stringify(fx())})`);
     } finally { audio.play = play; Game.lock = null; e.netId = netId0; wipe(); p.grantAbilities([]); }
   });
-  test('regression: every duel runs 20 s and the enemy engages', () => {
-    for (const d of [...A.ENEMY_DEFS, ...A.TEST_DEFS]) {
-      Game.startFight(d.id); sim.begin();
-      let engaged = false;   // the duel can kill the idle player and respawn, so watch it the whole time
-      for (let s = 0; s < 20 * 6; s++) { sim.step(10, 10); if (!Game.duel.in('unaware')) engaged = true; }
-      const e = Game.duel;
-      expect.ok(engaged, `${d.id}: never noticed the player`);
-      expect.ok(Number.isFinite(e.x) && Number.isFinite(e.y) && Number.isFinite(e.z), `${d.id}: position is finite`);
-    }
+  for (const d of [...A.ENEMY_DEFS, ...A.TEST_DEFS]) test(`regression: every duel runs 20 s and the enemy engages: ${d.id}`, () => {
+    Game.startFight(d.id); sim.begin();
+    let engaged = false;   // the duel can kill the idle player and respawn, so watch it the whole time
+    for (let s = 0; s < 20 * 6; s++) { sim.step(10, 10); if (!Game.duel.in('unaware')) engaged = true; }
+    const e = Game.duel;
+    expect.ok(engaged, `${d.id}: never noticed the player`);
+    expect.ok(Number.isFinite(e.x) && Number.isFinite(e.y) && Number.isFinite(e.z), `${d.id}: position is finite`);
   });
   test('regression: walking, jumping and rolling on flat ground', () => {
     Game.startLevel('test-training'); sim.begin();
@@ -4049,7 +4046,7 @@
     try {
       input.suspended = false; gamepad.release(); gamepad.neutralRequired = false; gamepad.read = () => idle;
       press('PadDown'); Game.showMenu('main');   // the pad is the device
-      const bosses = [...RUSH.opening, ...Object.keys(RUSH.health)];
+      const bosses = ENEMY_DEFS.filter(isBossDef).map(d => d.id);
       multiplayer.showRunSummary({ outcome: 'wiped', key: null, id: 'calling', reached: 31, crowned: 2, time: 2400,
         times: Array.from({ length: 30 }, (_, i) => ({ bosses: [bosses[i % bosses.length]], time: 60 + i, par: 90, swift: i % 2 === 0, crowned: i % 9 === 8 })),
         players: ['Ash', 'Ember', 'Cinder', 'Soot'].map((name, i) => ({ id: 'p' + i, name, damage: 9000 - i * 1000, deaths: i })) });
@@ -4909,16 +4906,14 @@
       }
     }
   });
-  test('Ultra: Hale and the Kindling Tree fight 15 s with every effect on, no effect failing', () => {
-    try {
+  for (const id of ['hale', 'kindlingTree']) test(`Ultra: Hale and the Kindling Tree fight 15 s with every effect on, no effect failing: ${id}`, () => {
+    try {   // one test per boss, so CI's shards can split them
       A.visuals.setQuality('ultra');
-      for (const id of ['hale', 'kindlingTree']) {
-        Game.startFight(id); Game.loading = 0; sim.begin();
-        const warn0 = ultraWarnings().length;
-        sim.seconds(15, 3);
-        expect.ok(ultraWarnings().length === warn0, `${id}: no effect failed (${ultraWarnings().join('; ')})`);
-        expect.ok(Number.isFinite(Game.enemies[0].x), `${id}: the fight runs`);
-      }
+      Game.startFight(id); Game.loading = 0; sim.begin();
+      const warn0 = ultraWarnings().length;
+      sim.seconds(15, 3);
+      expect.ok(ultraWarnings().length === warn0, `${id}: no effect failed (${ultraWarnings().join('; ')})`);
+      expect.ok(Number.isFinite(Game.enemies[0].x), `${id}: the fight runs`);
     } finally { restoreQuality(); }
   });
   test('Ultra models: every model builds at Ultra detail, with more triangles', () => {
@@ -5515,13 +5510,16 @@
   // jobs. Consecutive, because neighbours share their levels, models and textures, which each job builds once. With
   // `weights` (test name -> seconds, tests/shard-weights.json) the runs are equal in time, else equal in count; a test
   // goes to the shard its midpoint falls in, and one with no weight counts as the median.
+  const syncPx = new Uint8Array(4);   // run() reads one pixel after each test
   async function run(filter = '', { shard = null, weights = null } = {}) {
     const out = [], t0 = performance.now();
     const names = filter.split('|'), wanted = t => !filter || names.some(f => t.name.includes(f));   // 'a|b': either
     const picked = tests.filter(wanted);
     let shardOf = null;
     if (shard) {
-      const own = t => (weights && Object.hasOwn(weights, t.name) && typeof weights[t.name] === 'number') ? weights[t.name] : null;
+      // A name of its own, else a family's ("<name>: *" stands for every test named "<name>: <item>", one per level or duel).
+      const weightOf = name => (weights && Object.hasOwn(weights, name) && typeof weights[name] === 'number') ? weights[name] : null;
+      const own = t => weightOf(t.name) ?? weightOf(t.name.replace(/: [^:]+$/, ': *'));
       const known = picked.map(own).filter(w => w !== null).sort((a, b) => a - b);
       const median = known.length ? known[known.length >> 1] : 1;
       const w = picked.map(t => Math.max(0.05, own(t) ?? median)), total = w.reduce((a, b) => a + b, 0);
@@ -5542,6 +5540,10 @@
       Math.random = seededRandom(12345);   // seeded from the start, so enemies built before sim.begin() repeat too
       try { await t.fn(); } catch (e) { ok = false; msg = e instanceof Fail ? e.message : `${e.name}: ${e.message}\n${(e.stack || '').split('\n').slice(1, 4).join('\n')}`; }
       finally { sim.end(); }
+      // Wait for the GPU to finish what this test drew: under software WebGL it runs far behind, and its backlog would
+      // otherwise land on the next test's first blocking call (the walking regression took 300-500 s on CI, paying for
+      // the duels before it), making per-test times, and the CI shards balanced on them, wrong.
+      try { const gl = A.renderer.getContext(); gl.readPixels(0, 0, 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, syncPx); } catch (e) { /* no context */ }
       const ms = performance.now() - started;
       out.push({ name: t.name, ok, msg, ms });
       if (window.__testProgress) await window.__testProgress({ name: t.name, ok, ms: Math.round(ms) });   // the headless runner logs each test as it ends

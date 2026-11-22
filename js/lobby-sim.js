@@ -175,7 +175,7 @@ globalThis.host = (() => {
     for (let n = 0; n <= fight; n++) {
       const number = n + 1, crowned = number % E.crowned === 0;
       const size = !crowned && number >= E.pairFrom && (number - E.pairFrom) % E.pairEvery === 0 ? 2 : 1;
-      const pool = number <= E.opening ? RUSH.opening : all, bosses = [];
+      const pool = all, bosses = [];
       for (let i = 0; i < size; i++) {
         let id = i === 0 ? opening[n] : null;
         if (!id) {   // one not yet met in this round of the pool, not in the last fight, not already in this one
@@ -215,7 +215,7 @@ globalThis.host = (() => {
   const weeklyRun = (ms = Date.now()) => { const week = weekOf(ms); return { seed: weekSeed(week), opening: [], week }; };
   // Boss Rush's curve (CONFIG.pace): this fight's bosses at the pace for `won` fights won, and its modifiers' changes
   // (RUSH.modifiers); two or more bosses at once rest longer (CONFIG.endless.pairRest), take turns (pairTurns, js/crowd.js) and each has a share of its
-  // health (rushHealth: CONFIG.endless.pairHealth, a warm-up boss's RUSH.warmHealth). Nothing raises health; blows
+  // health (rushHealth: CONFIG.endless.pairHealth). Nothing raises health; blows
   // grow only with the party's `might` (partyMight: CONFIG.endless.mightBlows, pass 174). Returns the pace.
   const rushBlows = might => CONFIG.enemy.bossDamage * (1 + CONFIG.endless.mightBlows * Math.max(0, Number(might) || 0));
   function setRushFight(won, modifiers = [], might = 0) {

@@ -6,6 +6,7 @@
 //   title    a few words
 //   text     one to three sentences, shown under the list when the entry is selected
 const CHANGELOG = [
+  { version: 'v7.226.0', title: 'Every boss, every run', text: 'Boss Rush now draws every fight from every boss, so no two runs open alike. The first four fights\' bosses come lighter, whoever they are.' },
   { version: 'v7.225.0', title: 'The balance, live', text: 'The new balance reaches you: blows that count, bosses that keep up with your build.' },
   { version: 'v7.224.0', title: 'Bosses that rise to meet you', text: 'In Boss Rush, bosses hit harder the stronger your abilities are, so a strong build still meets a real fight. Ember Twin, Thunder God Step and Shade Host hit harder, Story\'s chapter bosses are tougher, and your own light blows no longer shake the camera. Bots in your party now take their counters.' },
   { version: 'v7.223.0', title: 'Blows that count', text: 'Your blows hit almost twice as hard and a counter is worth nearly three light hits; the Finishing Blow takes less off a boss. Bosses hit a quarter harder. Your first legendary comes within three crates, and never more than ten apart after that.' },

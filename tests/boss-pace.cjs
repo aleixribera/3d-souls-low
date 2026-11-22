@@ -2,7 +2,7 @@
 // Pace, not team size (v7.65.0, CONFIG.pace), in the headless server simulation:
 // - every boss is the same for one player and for four: health and damage;
 // - Boss Rush's curve at fights 1, 5, 10, 15, 20 and 25 raises only the pace, never health or damage (item 10); a boss's
-//   Boss Rush health share (RUSH.health, RUSH.warmHealth, pass 73) is checked by tests/calling.cjs;
+//   Boss Rush health share (RUSH.health, pass 73) is checked by tests/calling.cjs;
 // - a faster pace means more attacks a minute; wind-ups barely change by fight 10 and stay above
 //   CONFIG.pace.tellFloor of their length at fight 40 (every tell stays readable).
 const assert = require('node:assert/strict');
@@ -31,15 +31,14 @@ console.log(`${bosses.length} bosses: the same health and damage for 1 and 4 pla
 
 // The curve (PLAN.md track B item 10, pass 54; item 11, pass 73): fight n runs at the pace for n - 1 won. The warm-up
 // (CONFIG.pace.warm fights) climbs from a little under 1x to 1x, then the pace climbs exponentially, speed only: health
-// and damage stay the boss's own at every fight, for every boss (a warm-up boss's health is its RUSH.warmHealth share,
-// tests/calling.cjs).
+// and damage stay the boss's own at every fight, for every boss (but its RUSH.health share, tests/calling.cjs).
 const PC = createSimulation().inspect().CONFIG.pace, rushPace = won => fight('pillagerCaptain', 1).sim.setRushFight(won);
 const P = { fight: [1, 5, 10, 15, 20, 21, 25], pace: [] };
 for (const boss of bosses) {
   const plain = bars(fight(boss, 1).e), still = bars(fight(boss, 1).e, false);
   for (const n of P.fight) {
     const { e, sim } = fight(boss, 1, n - 1);
-    // Health: the boss's own, or its Boss Rush share (rushHealth: RUSH.health, a warm-up boss's RUSH.warmHealth).
+    // Health: the boss's own, or its Boss Rush share (rushHealth: RUSH.health).
     if (n > PC.warm && sim.rushHealth(1, n - 1, boss) === 1) assert.equal(bars(e), plain, `${boss}, fight ${n}: health and damage are the boss's own`);
     else assert.equal(bars(e, false), still, `${boss}, fight ${n}: damage is the boss's own`);
     assert.equal(e.pace, sim.setRushFight(n - 1), `${boss}, fight ${n}: the boss runs at the curve's pace`);

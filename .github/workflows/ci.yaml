@@ -23,7 +23,7 @@ jobs:
   node:
     name: Node tests
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 8   # about 1 min of tests, files run in parallel (tests/run-all.cjs); AGENTS.md, Test time budget
     steps:
       - name: Check out
         uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
@@ -55,16 +55,17 @@ jobs:
           retention-days: 7
 
   browser:
-    # The in-page suite takes over 35 minutes in one job under software WebGL, so it runs as parallel shards of
+    # The in-page suite takes about an hour of runner time under software WebGL, so it runs as parallel shards of
     # consecutive tests, equal in time (ARENA_SHARD, tests/shard-weights.json, tests/solo-browser.cjs). Each test's line
-    # streams to the log as it ends. The shards start beside the Node job, not after it.
-    name: In-page browser suite ${{ matrix.shard }}/4 (Edge, SwiftShader)
+    # streams to the log as it ends. The shards start beside the Node job, not after it. Ten shards: about 5-7 minutes
+    # each (four took 10-22 minutes, the long pole one job holding all 44 duels). AGENTS.md, Test time budget.
+    name: In-page browser suite ${{ matrix.shard }}/10 (Edge, SwiftShader)
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 16
     strategy:
       fail-fast: false
       matrix:
-        shard: [1, 2, 3, 4]
+        shard: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
     steps:
       - name: Check out
         uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
@@ -88,11 +89,11 @@ jobs:
         # --force: the runner image may already ship Edge, which Playwright otherwise refuses to reinstall.
         run: npx playwright install --with-deps --force msedge
       - name: Run the solo in-page suite
-        timeout-minutes: 25
+        timeout-minutes: 12   # ~1.5x a shard's time: a slower suite fails here instead of creeping up
         env:
           ARENA_SOFTWARE_GL: '1'
           ARENA_TEST_PROGRESS: '1'
-          ARENA_SHARD: ${{ matrix.shard }}/4
+          ARENA_SHARD: ${{ matrix.shard }}/10
         run: node tests/solo-browser.cjs
       - name: Upload suite results
         if: failure()
@@ -100,7 +101,7 @@ jobs:
         with:
           name: solo-browser-results-${{ matrix.shard }}
           path: |
-            .scratch/multiplayer-solo/results.json
+            .scratch/multiplayer-solo/results*.json
           include-hidden-files: true
           if-no-files-found: ignore
           retention-days: 7
