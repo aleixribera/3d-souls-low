@@ -119,9 +119,10 @@ canvas.addEventListener('contextmenu', ev => ev.preventDefault());
 // world must not go on unseen. Solo play holds behind "Graphics stopped" (online, the run goes on, as in Pause). When
 // the browser restores it, three.js rebuilds its GPU state on the next draw and the game returns to Pause (or the title).
 canvas.addEventListener('webglcontextlost', () => {
-  if (Game.graphicsLost) return;
-  Game.graphicsLost = true; Game.graphicsInGame = ['play', 'pause', 'loading', 'ending'].includes(Game.mode);
+  if (Game.graphicsLost || bootReplay?.enabled) return;   // a replay just goes on, and draws again once restored
+  Game.graphicsLost = true; Game.graphicsInGame = ['play', 'pause', 'loading', 'lab'].includes(Game.mode);
   Game.clearControls(); gamepad.release(); gamepad.holdSteps();
+  if (abilityLab.isOpen()) abilityLab.close();   // its Game.resume() holds behind the screen below
   Game.showMenu('graphicsLost');
   events.emit('graphicsLost');
 });

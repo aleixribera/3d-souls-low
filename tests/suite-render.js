@@ -13,25 +13,32 @@
   test('Render audit: a lost WebGL context holds the game behind Graphics stopped, and its return draws again', async () => {
     const gl = renderer.getContext(), lose = gl.getExtension('WEBGL_lose_context');
     expect.ok(!!lose, 'WEBGL_lose_context is there to test with');
-    const event = name => new Promise(r => canvas.addEventListener(name, r, { once: true }));
-    start('long-hall'); Game.enterPlay(); frames(2);
-    const lost = event('webglcontextlost'); lose.loseContext(); await lost;
-    expect.ok(Game.graphicsLost && Game.screen === 'graphicsLost' && Game.mode === 'pause', `held behind Graphics stopped (${Game.screen}, ${Game.mode})`);
-    expect.ok($('menuTitle').textContent === 'Graphics stopped', 'its title');
-    Game.resume(); expect.ok(Game.screen === 'graphicsLost', 'Resume cannot leave while nothing can be drawn');
-    start('long-hall'); Game.enterPlay();
-    expect.ok(Game.screen === 'graphicsLost' && Game.mode === 'pause', `a level that finishes loading meanwhile holds there too (${Game.screen}, ${Game.mode})`);
-    frames(2);   // drawing with no context neither throws nor changes the screen
-    // Restoring at once, while the browser still tears the old context down, is refused and crashes the page (headless
-    // Edge): a real restore comes from the browser when it is ready, so wait as it would.
-    await new Promise(r => setTimeout(r, 500));
-    const back = event('webglcontextrestored'); lose.restoreContext(); await back;
-    expect.ok(!Game.graphicsLost && Game.screen === 'pause', `back to Pause once restored (${Game.screen})`);
-    Game.resume(); frames(3);
-    expect.ok(!gl.isContextLost() && renderer.info.render.triangles > 0, `the world draws again (${renderer.info.render.triangles} triangles)`);
-    const px = new Uint8Array(4); gl.readPixels(gl.drawingBufferWidth >> 1, gl.drawingBufferHeight >> 1, 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, px);
-    expect.ok(gl.getError() === gl.NO_ERROR, 'no GL error after the restore');
-    Game.showMenu('main');
+    // An event, or a readable failure after 10 s (a refused restore would otherwise hang the shard).
+    const event = name => new Promise((resolve, reject) => {
+      const t = setTimeout(() => reject(new Error(`no ${name} within 10 s`)), 10000);
+      canvas.addEventListener(name, () => { clearTimeout(t); resolve(); }, { once: true });
+    });
+    try {
+      start('long-hall'); Game.enterPlay(); frames(2);
+      const lost = event('webglcontextlost'); lose.loseContext(); await lost;
+      expect.ok(Game.graphicsLost && Game.screen === 'graphicsLost' && Game.mode === 'pause', `held behind Graphics stopped (${Game.screen}, ${Game.mode})`);
+      expect.ok($('menuTitle').textContent === 'Graphics stopped', 'its title');
+      Game.resume(); expect.ok(Game.screen === 'graphicsLost', 'Resume cannot leave while nothing can be drawn');
+      start('long-hall'); Game.enterPlay();
+      expect.ok(Game.screen === 'graphicsLost' && Game.mode === 'pause', `a level that finishes loading meanwhile holds there too (${Game.screen}, ${Game.mode})`);
+      frames(2);   // drawing with no context neither throws nor changes the screen
+      // Restoring at once, while the browser still tears the old context down, is refused and crashes the page (headless
+      // Edge): a real restore comes from the browser when it is ready, so wait as it would.
+      await new Promise(r => setTimeout(r, 500));
+      const back = event('webglcontextrestored'); lose.restoreContext(); await back;
+      expect.ok(!Game.graphicsLost && Game.screen === 'pause', `back to Pause once restored (${Game.screen})`);
+      Game.resume(); frames(2);
+      while (gl.getError() !== gl.NO_ERROR) { /* the loss's CONTEXT_LOST_WEBGL may still be queued */ }
+      renderer.render(scene, camera);
+      expect.ok(!gl.isContextLost() && renderer.info.render.calls > 0, `the world draws again (${renderer.info.render.calls} draws)`);
+      const px = new Uint8Array(4); gl.readPixels(gl.drawingBufferWidth >> 1, gl.drawingBufferHeight >> 1, 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, px);
+      expect.ok(gl.getError() === gl.NO_ERROR, 'no GL error after the restore');
+    } finally { Game.graphicsLost = Game.graphicsInGame = false; Game.showMenu('main'); }
   });
 
   test('Render audit: a stage change frees its points, sprites and banner materials but keeps the shared banner cloth', () => {

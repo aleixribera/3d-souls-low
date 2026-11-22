@@ -203,5 +203,5 @@ const abilityLab = (() => {
   }
   events.on('pause', () => { if (worn && !open) worn.hidden = true; });
   events.on('device', draw);   // the key that opens the list, for the device used last
-  return { key, pad, update, isOpen: () => open, held };
+  return { key, pad, update, isOpen: () => open, held, close };
 })();
