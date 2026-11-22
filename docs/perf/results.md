@@ -11,6 +11,7 @@ AO buffer at 32x32), so they were thrown out on 22 November 2026.
 |---|---|---|---|---|---|---|---|---|
 | 2026-11-22 | main 92d6558 | pass | 59.2 | 25.2 | 4.8 | 733 ms | 21 | 5.39 |
 | 2026-11-22 | branch 25bc84c (main merged) | pass | 59.8 | 46.9 | 21.8 | 67 ms | 15 | 2.00 |
+| 2026-11-22 | branch 2470bc6 (review fixes) | pass | 59.8 | 45.5 | 21.8 | 67 ms | 18 | 0.58 |
 
 ## By part (1% low / 0.1% low / worst frame)
 
