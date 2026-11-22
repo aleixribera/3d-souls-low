@@ -115,6 +115,22 @@ window.addEventListener('blur', suspendInput);
 window.addEventListener('focus', () => { input.suspended = document.hidden; });
 document.addEventListener('visibilitychange', () => { if (document.hidden) suspendInput(); else input.suspended = !document.hasFocus(); });
 canvas.addEventListener('contextmenu', ev => ev.preventDefault());
+// A lost WebGL context (a GPU driver reset, a crashed GPU process): three.js stops drawing and asks for it back; the
+// world must not go on unseen. Solo play holds behind "Graphics stopped" (online, the run goes on, as in Pause). When
+// the browser restores it, three.js rebuilds its GPU state on the next draw and the game returns to Pause (or the title).
+canvas.addEventListener('webglcontextlost', () => {
+  if (Game.graphicsLost) return;
+  Game.graphicsLost = true; Game.graphicsInGame = ['play', 'pause', 'loading', 'ending'].includes(Game.mode);
+  Game.clearControls(); gamepad.release(); gamepad.holdSteps();
+  Game.showMenu('graphicsLost');
+  events.emit('graphicsLost');
+});
+canvas.addEventListener('webglcontextrestored', () => {
+  if (!Game.graphicsLost) return;
+  Game.graphicsLost = false;
+  if (Game.screen === 'graphicsLost') Game.showMenu(Game.graphicsInGame ? 'pause' : 'main');
+  events.emit('graphicsRestored');
+});
 let pointerCaptureFailed = false;
 document.addEventListener('pointerlockerror', () => { pointerCaptureFailed = true; });
 canvas.addEventListener('mousedown', ev => {
