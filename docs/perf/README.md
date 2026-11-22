@@ -34,6 +34,62 @@ Every run checks the WebGL renderer string: it must name the laptop's Intel GPU,
 - **profile** (on request): a sampled CPU profile of a warm load and of two builds, the top functions by self and
   total time. This is what decided the order of the fixes.
 
+## The gauntlet: is it a locked 60?
+
+Aleix's bar (22 November 2026): a locked 60 fps on the Fedora laptop's integrated graphics (Intel RPL-P) through a
+demanding benchmark, at 1080p, with no visual cut. **Locked 60 = the 1% low at or above 60 fps over the whole
+gauntlet (99% of frames within 16.7 ms), the 0.1% low close to it, and no frame over 33 ms after loading.** The
+gauntlet is that benchmark. Do not shorten it, lighten it or drop a part to pass it.
+
+    remote-test --pull .scratch/perf -- bash tools/perf-headed.sh --label <name> --only gauntlet --quality normal --spikes
+
+It runs headed, fullscreen on the laptop's own display (eDP, 1920x1080 at 60 Hz, device scale 1, Chrome's ANGLE on
+OpenGL ES; Vulkan does not start a headed window on Wayland), so every frame is a real presented frame with vsync on.
+`perf-headed.sh` wakes the screen, keeps it awake for the run and prints the load average. The preset is Normal:
+what Auto picks for this GPU, and the preset meant to hold 60 on integrated graphics. In order, without a pause:
+
+1. **The busiest area**: the Final Castle (47 placements, the most enemies of any level), entered through the
+   game's loading screen, then 40 s fought through: W held, a light attack every 0.45 s, a heavy every 2.1 s, the
+   camera swept left and right, the player unkillable until the death at 24 s, then the death sequence, the respawn
+   at the bonfire (the whole cast rebuilt) and on.
+2. **Fire everywhere**: the burning town, entered the same way, fought through for 20 s.
+3. **Boss Rush, four players**: the lobby, the run started, three of the lobby's own bot players added (real
+   co-op bodies, frames from the server), 40 s locked on the boss and attacking.
+4. **The showcase**: three late-run bosses with abilities, ultimates and two cuts between grounds, started as the
+   title's Tutorial starts it (its setup under the loading screen), to the end (at most 120 s).
+
+Frames while the game's loading screen is up are not counted (the screen is the wait); everything after it lifts
+is, including the first sight of every effect and boss. `--spikes` writes a CPU profile of each part
+(`<name>-<part>.cpuprofile`, opens in DevTools) and, per frame over 25 ms, what ran.
+
+## The visual check: numbers count only from a build that draws right
+
+A perf change that draws less is not a perf win. On 22 November 2026, two of my changes broke the picture while the
+numbers improved: the player's body was not drawn (a matrix walk skipped skinned meshes' bind matrices), and the
+ambient-occlusion buffer was shrunk to 32x32 (a render target clone shares its texture image), drawing dark slabs over
+everything. Every number from those builds was thrown out, and the gauntlet now checks the picture first.
+
+`--only gauntlet` (or `shots`) takes six fixed shots: three levels, a fight, two showcase moments. Each one is
+hand-stepped, with the game clock, the wall clock (`performance.now`, which sway, flicker and shader time read) and
+`Math.random` all seeded. three.js object uuids draw from a separate stream, so a build that makes one object more or
+fewer doesn't shift the fight's randomness. Each shot is compared with `docs/perf/baseline/<quality>/<name>.jpg` at
+960x540: the mean difference over the frame, and the worst 32x32 block's. A shot over either limit fails the run
+(exit 4, "VISUAL CHECK FAILED") and writes `compare-<name>.jpg` next to the shots: baseline, this build, and a heat map
+with the blocks over the limit in red. Look at it.
+
+Calibration (Normal, headed on the laptop, mean / worst block):
+
+| build | worst shot | verdict |
+|---|---|---|
+| main against its own baseline | 2.69 / 7.0 | pass |
+| the fixed build | 2.69 / 8.2 | pass |
+| player body not drawn (e4b4ded) | castle 2.66 / 26.5, church 4.99 / 162.9 | all six fail |
+| AO buffer at 32x32 | mean 15-23 on every shot | all fail |
+
+The limits are a mean of 4 and a worst block of 15: about twice the noise, about half the smallest real fault.
+A deliberate visual change makes a new baseline: `--only shots --save-baseline` on the new build, after looking at
+every shot. Commit the baseline in the same change.
+
 ## The numbers
 
 - **1% low / 0.1% low**: the average frame rate of the slowest 1% / 0.1% of frames.

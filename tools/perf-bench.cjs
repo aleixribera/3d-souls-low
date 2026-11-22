@@ -26,6 +26,10 @@ const root = path.resolve(__dirname, '..');
 const label = opt('label', 'run');
 const outDir = path.resolve(root, opt('out', '.scratch/perf'));
 const only = new Set((opt('only', 'load,transitions,play,shots')).split(','));
+if (only.has('gauntlet')) only.add('shots');   // numbers count only from a build that draws right: see the visual check
+// The visual check (docs/perf/README.md): every shot against the known-good build's, the run fails when one differs.
+const baselineDir = path.resolve(root, opt('baseline', 'docs/perf/baseline'));
+const saveBaseline = flag('save-baseline');
 const quality = opt('quality', 'ultra');
 const [W, H] = opt('size', '1920x1080').split('x').map(Number);
 const software = flag('software');
@@ -45,7 +49,7 @@ const LAUNCH_ARGS = [...GPU_ARGS, ...(headed ? ['--force-device-scale-factor=1',
 const THROTTLE = { offline: false, latency: 40, downloadThroughput: 50e6 / 8, uploadThroughput: 10e6 / 8 };
 
 // ---- in-page instruments (added before any of the game's scripts run) ---------------------------------------------
-function instruments({ quality }) {
+function instruments({ quality, who }) {
   try {
     localStorage.setItem('combat-arena-3d.settings', JSON.stringify({ graphics: quality, volume: 0, music: 0 }));
     if (!location.search.includes('firstvisit')) {
@@ -77,15 +81,33 @@ function instruments({ quality }) {
   const tick = now => {
     requestAnimationFrame(tick);
     const R = B.rec;
+    // --programs: the material and object each shader program compiled while recording was first built for.
+    if (who && !B.patched && window.__arena && window.__arena.renderer) {
+      const r = window.__arena.renderer, rbd = r.renderBufferDirect, progs = r.info.programs, push = progs.push;
+      let lastM = null, lastO = null; B.patched = true;
+      r.renderBufferDirect = function (c, s, g, m, o) { lastM = m; lastO = o; return rbd.apply(this, arguments); };
+      progs.push = function () {
+        if (B.rec && lastM) {
+          const chain = []; for (let q = lastO, n = 0; q && n < 5; q = q.parent, n++) chain.push((q.name || q.type) + (Object.keys(q.userData).length ? '{' + Object.keys(q.userData).join(',') + '}' : '') + (q === lastO && q.geometry ? '[' + q.geometry.type + ' ' + (q.geometry.attributes.position ? q.geometry.attributes.position.count : 0) + 'v ' + Object.keys(lastM.uniforms || {}).slice(0, 4).join(',') + ']' : ''));
+          (B.rec.who = B.rec.who || []).push([+(performance.now() - B.rec.t).toFixed(0), lastM.type + ':' + (lastM.name || '') + (lastM.map ? ' map' : '') + ' | ' + chain.join(' < ')]);
+        }
+        return push.apply(this, arguments);
+      };
+    }
     const shown = document.getElementById('loading');   // the game's loading screen, counted or not
-    const loadingNow = window.Game && (window.Game.loading > 0 || !!(shown && shown.classList.contains('show')));
+    const G = typeof Game !== 'undefined' ? Game : null;   // a top-level const of the game's scripts: not on window
+    const loadingNow = !!G && (G.loading > 0 || !!(shown && shown.classList.contains('show')));
     if (R && loadingNow) { R.skipped = (R.skipped || 0) + 1; last = 0; hold = 2; return; }
     if (R && hold > 0) { hold--; R.skipped = (R.skipped || 0) + 1; last = hold ? 0 : now; return; }
     if (R) {
       const info = window.__arena && window.__arena.renderer && window.__arena.renderer.info;
       const programs = info ? info.programs.length : 0, tex = info ? info.memory.textures : 0, geo = info ? info.memory.geometries : 0;
       if (last) R.dt.push(+(now - last).toFixed(2));
-      R.prog.push(programs - R.p0); R.tex.push(tex - R.t0); R.geo.push(geo - R.g0);
+      R.prog.push(programs - R.p0);
+      if (programs > R.p0 && info) {   // which shader programs a frame compiled: what warm-up missed
+        if (!R.programs) R.programs = [];
+        R.programs.push([+(now - R.t).toFixed(0), info.programs.slice(R.p0).map(p => p.name + ' ' + String(p.cacheKey).slice(0, 160))]);
+      } R.tex.push(tex - R.t0); R.geo.push(geo - R.g0);
       R.p0 = programs; R.t0 = tex; R.g0 = geo;
       R.calls.push(info ? info.render.calls : 0);
       R.at.push(+now.toFixed(1));
@@ -200,7 +222,7 @@ async function startServer() {
 
 async function newPage(browser, { throttle = false } = {}) {
   const context = await browser.newContext(headed ? { viewport: null } : { viewport: { width: W, height: H }, deviceScaleFactor: 1 });
-  await context.addInitScript(instruments, { quality });
+  await context.addInitScript(instruments, { quality, who: flag('programs') });
   const page = await context.newPage();
   const errors = [];
   page.on('pageerror', e => errors.push(e.message));
@@ -223,7 +245,7 @@ async function measureLoad(page, cdp, url) {
   cdp.on('Network.loadingFinished', onData);
   await page.goto(url, { waitUntil: 'commit' });
   await page.waitForFunction(() => window.__bench && window.__bench.marks.firstFrame != null, null, { timeout: 120000, polling: 50 }).catch(async e => {
-    const state = await page.evaluate(() => JSON.stringify({ marks: window.__bench && window.__bench.marks, ready: document.readyState, arena: !!window.__arenaReady, mode: window.Game && Game.mode, screen: window.Game && Game.screen })).catch(x => String(x));
+    const state = await page.evaluate(() => JSON.stringify({ marks: window.__bench && window.__bench.marks, ready: document.readyState, arena: !!window.__arenaReady, mode: typeof Game !== 'undefined' && Game.mode, screen: typeof Game !== 'undefined' && Game.screen })).catch(x => String(x));
     await page.screenshot({ path: path.join(outDir, label + '-stuck.png') }).catch(() => {});
     throw new Error('the page never drew its first frame: ' + state + ' ' + e.message.split(String.fromCharCode(10))[0]);
   });
@@ -450,6 +472,8 @@ async function main() {
           Object.assign(G[name], { profileStart: rec.profile.pageStart, frameAt: rec.at, frameDt: rec.dt, t0page: rec.t0page });
         }
         G[name].slow = rec.dt.map((v, i) => [Math.round(rec.at[i] - rec.t0page), v]).filter(([, v]) => v > 17.5);
+        if (rec.programs) G[name].programs = rec.programs;
+        if (rec.who) G[name].who = rec.who;
         for (const k of ['dt', 'prog', 'tex', 'geo', 'calls']) all[k].push(...rec[k].slice(drop));
         all.longtasks.push(...rec.longtasks); all.ms += rec.ms;
         save();
@@ -559,18 +583,31 @@ async function main() {
       for (const [kind, id, steps] of scenes) {
         await P.page.evaluate(async ({ kind, id, steps }) => {
           if (typeof showcase !== 'undefined') showcase.stop();
-          let seed = 12345; Math.random = () => { seed = (seed * 1664525 + 1013904223) >>> 0; return seed / 4294967296; };
+          // Two seeded streams: three.js draws on Math.random for every object's uuid, so with one stream a build that
+          // makes one object more or fewer (a reused material) would shift every draw the fight makes after it.
+          const lcg = s => () => { s = (s * 1664525 + 1013904223) >>> 0; return s / 4294967296; };
+          const game = lcg(12345), ids = lcg(777), probe = {}, limit = Error.stackTraceLimit;
+          Math.random = () => {
+            Error.stackTraceLimit = 2; Error.captureStackTrace(probe); Error.stackTraceLimit = limit;
+            return probe.stack.includes('generateUUID') ? ids() : game();
+          };
+          // The wall clock too: sway, banners and shader time read performance.now(), so a shot would otherwise depend on
+          // how long this build took to get here. A fake clock starts at the same time and moves one step per update.
+          const realNow = performance.now; let now = 1e6; performance.now = () => now;
+          const tick = () => { now += CONFIG.step * 1000; };
           Game.manualClock = true;
-          if (kind === 'showcase') {
-            Game.showMenu('main');
-            showcase.play({ manual: true, skippable: true });
-            for (let i = 0; i < steps; i++) showcase.frame(CONFIG.step, { render: i === steps - 1 });
-          } else {
-            if (kind === 'fight') Game.startFight(id); else Game.startLevel(id);
-            Game.loading = 0; document.getElementById('loading').classList.remove('show');
-            for (let i = 0; i < steps; i++) { Game.update(CONFIG.step); }
-            Game.render(1, CONFIG.step);
-          }
+          try {
+            if (kind === 'showcase') {
+              Game.showMenu('main');
+              showcase.play({ manual: true, skippable: true });
+              for (let i = 0; i < steps; i++) { showcase.frame(CONFIG.step, { render: i === steps - 1 }); tick(); }
+            } else {
+              if (kind === 'fight') Game.startFight(id); else Game.startLevel(id);
+              Game.loading = 0; document.getElementById('loading').classList.remove('show');
+              for (let i = 0; i < steps; i++) { Game.update(CONFIG.step); tick(); }
+              Game.render(1, CONFIG.step);
+            }
+          } finally { performance.now = realNow; }
         }, { kind, id, steps });
         await P.page.evaluate(frames(3));
         await P.page.screenshot({ path: path.join(shotDir, `${kind}-${id || 'showcase'}-${steps}.png`) });
@@ -578,6 +615,7 @@ async function main() {
       }
       result.errors.push(...P.errors);
       await P.context.close();
+      result.visual = await visualCheck(browser, quality);
     }
   } finally {
     save();
@@ -585,7 +623,68 @@ async function main() {
     app.server.close(); if (app.close) app.close();
   }
   console.log(JSON.stringify(summary(result), null, 1));
+  if (result.visual && !result.visual.pass) {
+    console.error('VISUAL CHECK FAILED: this build draws differently from the baseline; its numbers do not count.');
+    for (const v of result.visual.shots.filter(v => !v.pass)) console.error('  ' + v.shot + ': ' + v.why);
+    process.exitCode = 4;
+  }
   if (/swiftshader|llvmpipe/i.test(result.gpu || '') && !software) { console.error('WARNING: software rendering: ' + result.gpu); process.exitCode = 3; }
+}
+
+// ---- the visual check ------------------------------------------------------------------------------------------------
+// Each shot (the same scenes, hand-stepped game and wall clocks, seeded random) is compared with the baseline's, both
+// scaled to 960x540 in the browser: the mean difference per channel over the whole frame, and the worst 32x32 block's.
+// The block catches a fault in one place (a body not drawn moves a block 30+ of 255, while the frame's mean barely
+// moves); the mean catches one spread thin over everything. Calibration in docs/perf/README.md. A side-by-side with a
+// difference heat map (red: the blocks over the limit) is written next to the shots for each one, to look at.
+const VISUAL = { w: 960, h: 540, block: 32, maxBlock: 15, maxMean: 4 };
+async function visualCheck(browser, q) {
+  const base = path.join(baselineDir, q), shots = fs.readdirSync(shotDir).filter(f => f.endsWith('.png'));
+  const page = await (await browser.newContext()).newPage();
+  const out = { baseline: path.relative(root, base), pass: true, shots: [] };
+  try {
+    if (saveBaseline) fs.mkdirSync(base, { recursive: true });
+    for (const f of shots) {
+      const name = f.replace(/.png$/, '.jpg'), mine = fs.readFileSync(path.join(shotDir, f)).toString('base64');
+      const theirs = fs.existsSync(path.join(base, name)) ? fs.readFileSync(path.join(base, name)).toString('base64') : null;
+      const r = await page.evaluate(async ({ mine, theirs, V }) => {
+        const load = async b64 => createImageBitmap(await (await fetch('data:image/' + (b64.startsWith('iVBOR') ? 'png' : 'jpeg') + ';base64,' + b64)).blob());
+        const draw = bmp => { const c = new OffscreenCanvas(V.w, V.h), g = c.getContext('2d'); g.drawImage(bmp, 0, 0, V.w, V.h); return { c, d: g.getImageData(0, 0, V.w, V.h).data }; };
+        const toB64 = async c => { const b = await c.convertToBlob({ type: 'image/jpeg', quality: 0.85 }); const a = new Uint8Array(await b.arrayBuffer()); let s = ''; for (let i = 0; i < a.length; i += 0x8000) s += String.fromCharCode(...a.subarray(i, i + 0x8000)); return btoa(s); };
+        const A = draw(await load(mine));
+        if (!theirs) return { scaled: await toB64(A.c) };
+        const B = draw(await load(theirs));
+        const side = new OffscreenCanvas(V.w * 3, V.h), g = side.getContext('2d'), heat = g.createImageData(V.w, V.h);
+        const bw = Math.floor(V.w / V.block), bh = Math.floor(V.h / V.block), blocks = new Float64Array(bw * bh);
+        let sum = 0;
+        for (let i = 0, p = 0; i < A.d.length; i += 4, p++) {
+          const d = (Math.abs(A.d[i] - B.d[i]) + Math.abs(A.d[i + 1] - B.d[i + 1]) + Math.abs(A.d[i + 2] - B.d[i + 2])) / 3;
+          sum += d;
+          const bx = Math.floor((p % V.w) / V.block), by = Math.floor(p / V.w / V.block);
+          if (bx < bw && by < bh) blocks[by * bw + bx] += d;
+          heat.data[i] = heat.data[i + 1] = Math.min(255, d * 3); heat.data[i + 2] = 0; heat.data[i + 3] = 255;
+        }
+        let worst = 0, over = 0;
+        for (let k = 0; k < blocks.length; k++) {
+          const m = blocks[k] / (V.block * V.block); worst = Math.max(worst, m);
+          if (m <= V.maxBlock) continue;
+          over++;
+          const x0 = (k % bw) * V.block, y0 = Math.floor(k / bw) * V.block;
+          for (let y = y0; y < y0 + V.block; y++) for (let x = x0; x < x0 + V.block; x++) { const i = (y * V.w + x) * 4; heat.data[i] = 255; heat.data[i + 1] >>= 2; }
+        }
+        g.drawImage(B.c, 0, 0); g.drawImage(A.c, V.w, 0); g.putImageData(heat, V.w * 2, 0);
+        return { mean: sum / (A.d.length / 4), worst, over, scaled: await toB64(A.c), side: await toB64(side) };
+      }, { mine, theirs, V: VISUAL });
+      if (saveBaseline) fs.writeFileSync(path.join(base, name), Buffer.from(r.scaled, 'base64'));
+      if (r.side) fs.writeFileSync(path.join(shotDir, 'compare-' + name), Buffer.from(r.side, 'base64'));
+      const v = { shot: name, mean: r.mean === undefined ? null : +r.mean.toFixed(2), worst: r.worst === undefined ? null : +r.worst.toFixed(1), over: r.over };
+      v.pass = saveBaseline || (r.mean !== undefined && r.mean <= VISUAL.maxMean && r.worst <= VISUAL.maxBlock);
+      if (!v.pass) v.why = r.mean === undefined ? 'no baseline shot (' + path.relative(root, path.join(base, name)) + ')'
+        : `mean difference ${v.mean} (max ${VISUAL.maxMean}), worst block ${v.worst} (max ${VISUAL.maxBlock}, ${v.over} over): see compare-${name}`;
+      out.shots.push(v); if (!v.pass) out.pass = false;
+    }
+  } finally { await page.context().close(); }
+  return out;
 }
 
 // The headline numbers, the ones the table in docs/perf/results.md keeps.
@@ -600,6 +699,7 @@ function summary(r) {
     play: Object.fromEntries(Object.entries(r.play).map(([k, v]) => [k, pick(v)])),
     gauntlet: r.gauntlet && Object.fromEntries(Object.entries(r.gauntlet).map(([k, v]) => [k, v && v.frames ? { ...pick(v), frames: v.frames, p99: v.p99, over33: v.over33, over17: v.over17 } : v])),
     display: r.display,
+    visual: r.visual && { pass: r.visual.pass, shots: r.visual.shots.map(v => v.shot + ' ' + v.mean + '/' + v.worst + (v.pass ? '' : ' FAIL')) },
     errors: r.errors.length ? r.errors.slice(0, 5) : undefined,
   };
 }
