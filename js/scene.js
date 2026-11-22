@@ -445,14 +445,31 @@ function disposeStageObject(o, keep) {
   if (o.geometry && !o.geometry.userData.shared) o.geometry.dispose();
   if (!o.material || !(o.isMesh || o.isPoints || o.isSprite || o.isLine)) return;
   for (const m of Array.isArray(o.material) ? o.material : [o.material])
-    if (!keep.has(m) && !m.userData.shared && !m.userData.realmShared) m.dispose();
+    if (!keep.has(m) && !m.userData.shared && !m.userData.realmShared) retireMaterial(m);
+}
+// Shader programs outlive the materials that compiled them: each program a retired material used keeps one extra use
+// (three.js r160 deletes a program when its use count reaches 0), so the next stage or body made of the same kinds of
+// material, or a stage seen again, compiles nothing. Bounded by the number of distinct programs, not by rebuilds.
+const keptPrograms = new Set();
+function retireMaterial(m) {
+  const p = renderer.properties.get(m).currentProgram;
+  if (p && !keptPrograms.has(p)) { keptPrograms.add(p); p.usedTimes++; }
+  m.dispose();
+}
+const retiredStages = [];
+function flushRetiredStages() {
+  const keep = new Set(Object.values(MAT));
+  for (const g of retiredStages) g.traverse(o => disposeStageObject(o, keep));
+  retiredStages.length = 0;
 }
 function loadStage(def) {
   if (stage && stage.id === def.id) return stage;
   if (stage) {
     scene.remove(stage.group);
-    const keep = new Set(Object.values(MAT));
-    stage.group.traverse(o => disposeStageObject(o, keep));
+    // Disposed after the next stage's first draw: its materials would otherwise take their shader programs with them,
+    // and the new stage (the same kinds of material) would compile them all again in its first frame.
+    if (retiredStages.length) flushRetiredStages();   // never drawn in between (a host without drawing): no pile-up
+    retiredStages.push(stage.group);
     for (let i = flames.length - 1; i >= 0; i--) if (flames[i].group === stage.group) flames.splice(i, 1);
     for (let i = dust.length - 1; i >= 0; i--) if (dust[i].group === stage.group || dust[i].group.parent === stage.group) dust.splice(i, 1);
   }

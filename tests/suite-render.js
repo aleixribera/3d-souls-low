@@ -22,6 +22,7 @@
     const cloth = banners[0].map;
     let clothGone = false; cloth.addEventListener('dispose', () => { clothGone = true; });
     start('sunken-keep');
+    visuals.draw();   // the old stage goes after the new one's first draw: its shader programs serve the new stage first
     expect.ok(points.every(m => disposed.has(m)), 'stage points materials freed');
     expect.ok(sprites.every(m => disposed.has(m)), 'stage sprite materials freed');
     expect.ok(banners.every(m => disposed.has(m)), 'banner materials freed');

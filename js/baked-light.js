@@ -383,7 +383,10 @@ uniform float bkMoonOn, bkGain;
     if (!vol || !stage) return;
     let changed = false;   // a bonfire lit later (`litBy`): its light joins the volume when it lights, leaves if it goes out
     if (stage.bonfireFires) for (let i = 0; i < stage.bonfireFires.length; i++) {
-      const f = stage.bonfireFires[i], l = f.flame.light, want = f.flame.base > 0 ? f.base : 0, had = vol.baked.get(l) || 0;
+      // Lit or not as the game has it (Game.bonfireLit), not as its flame was last set: a warm-up draws before the
+      // first Game.render sets the flames, and a volume cached then would remember the wrong one.
+      const f = stage.bonfireFires[i], l = f.flame.light, had = vol.baked.get(l) || 0;
+      const want = (typeof Game !== 'undefined' && Game.bonfireLit ? Game.bonfireLit(f.bonfire) : f.flame.base > 0) ? f.base : 0;
       if (!l || want === had) continue;
       if (vol.compact) { whole(); return; }   // baked in full now, this bonfire as it stands
       if (!vol.pos.has(l)) vol.pos.set(l, l.getWorldPosition(new THREE.Vector3()));
