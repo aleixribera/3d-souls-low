@@ -1,5 +1,6 @@
 # Audit: the perf session's changes (PR #15, `claude/affectionate-sanderson-86ac0c`)
-nLine references are to the branch head `08b0f7f`.
+
+Line references are to the branch head `08b0f7f`.
 
 Independent review, 22 Nov 2026. I read every diff and played the branch, `main` and v7.225.0 in a real browser. I
 did not use the perf session's tests, screenshots or reports as evidence.
