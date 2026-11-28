@@ -1093,7 +1093,7 @@ const visuals = (() => {
   // and on a resize (with the drawn size in pixels).
   // clear: an effect module's "hide everything I drew", run on each stage build and when the lobby's scene opens on a
   // stage a fight just left (clearMarks); stage: builders that dress a new stage, called with (def, built).
-  const hooks = { quality: [], clear: [], stage: [], beforeDraw: [], afterDraw: [], resize: [] };
+  const hooks = { quality: [], clear: [], stage: [], beforeDraw: [], afterDraw: [], resize: [], warm: [] };
   let look = null, interiorK = 0;   // the interior blend's two ends and where it stands (setInterior)
   let areas = null, areaMoon = 1;     // a level's `atmosphere.areas` (pass 167): the base look, each area's, and its weight
 
@@ -1426,6 +1426,29 @@ const visuals = (() => {
   // Static level boxes (walls, floor seams, pillars, logs...) merged into one mesh per material: hundreds
   // of draw calls become a handful. Collision never used these meshes (it reads the level data), and
   // moving parts (gates, flames, bonfire cores) are left alone.
+  // three.js r160's Object3D.updateMatrixWorld, but a hidden child's subtree is skipped; one a moved parent passed
+  // over is marked, so it recomputes (and passes that on) the frame it shows. No allocation.
+  function updateVisible(o, force) {
+    if (o.matrixAutoUpdate) o.updateMatrix();
+    if (o.matrixWorldNeedsUpdate || force) {
+      if (o.parent === null) o.matrixWorld.copy(o.matrix);
+      else o.matrixWorld.multiplyMatrices(o.parent.matrixWorld, o.matrix);
+      o.matrixWorldNeedsUpdate = false;
+      force = true;
+      // What three.js's own updateMatrixWorld overrides add: a skinned mesh's bind inverse (without it, a body built
+      // since the last full update is skinned from its old place, off screen) and a camera's view matrix.
+      if (o.isSkinnedMesh) o.bindMatrixInverse.copy(o.bindMode === THREE.AttachedBindMode ? o.matrixWorld : o.bindMatrix).invert();
+      else if (o.isCamera) o.matrixWorldInverse.copy(o.matrixWorld).invert();
+    }
+    const kids = o.children;
+    for (let i = 0, n = kids.length; i < n; i++) {
+      const c = kids[i];
+      // A hidden bone still poses the skinned meshes bound to it (a rig hides its weapon bone): only other things wait.
+      if (!c.visible && !c.isBone) { if (force) c.matrixWorldNeedsUpdate = true; continue; }
+      if (c.matrixWorldAutoUpdate === true || force === true) updateVisible(c, force);
+    }
+  }
+
   function mergeStatic(G, keep) {
     G.updateMatrixWorld(true);
     const byMat = new Map(), merged = [];
@@ -1505,9 +1528,19 @@ const visuals = (() => {
     // Draw every pooled effect once, fully transparent and in front of the camera (cam: { pos, look }), so that its
     // shader is ready before play starts rather than compiled the moment a first hit, block or landing shows it.
     warmUp(cam) {
+      // Compiled for the target play draws into (post: the composer's, linear and without tone mapping; both are part
+      // of a program's key), not the screen: a material compiled for the wrong one compiles again at its first draw.
+      const compileScene = () => {
+        const target = renderer.getRenderTarget();
+        if (quality.post) renderer.setRenderTarget(composer.renderTarget1);
+        try { renderer.compile(scene, camera); } finally { if (quality.post) renderer.setRenderTarget(target); }
+      };
       spectral.prepare(Game.enemies); flame.prepare(Game.enemies); holy.prepare(Game.enemies); blackBlade.prepare(Game.enemies);
       projectiles.prepare(Game.enemies);
       camera.position.copy(cam.pos); camera.lookAt(cam.look); camera.updateMatrixWorld();
+      // Play's light count, not the stage build's (applyCounts shows every light until the first update): the count is
+      // part of every shader program's key, so a warm-up with more lights compiles nothing that play can use.
+      limitLights();
       const at = new THREE.Vector3(0, 0, -3).applyMatrix4(camera.matrixWorld);
       const saved = pooledFx.map(m => [m, m.visible, m.position.clone(), m.material.opacity, m.count]);
       const bodies = [], parents = new Map();
@@ -1531,10 +1564,14 @@ const visuals = (() => {
         const size = quality.warmupSize;
         if (quality.post && size) { prepareWarmPipeline(); warming = true; }
         if (size) { renderer.setViewport(0, 0, size, size); renderer.setScissor(0, 0, size, size); renderer.setScissorTest(true); }
+        // Every program of the new stage is requested before the first draw waits on any, so the driver compiles them
+        // side by side (KHR_parallel_shader_compile, js/scene.js) instead of one draw's wait at a time.
+        if (warmedStage !== stage || warmedQuality !== quality) compileScene();
         this.draw();
+        for (const h of hooks.warm) h();   // passes the warm pipeline leaves out (js/ultra-post.js)
         // The same stage's hidden static materials are already compiled. New actors / phases were all drawn above;
         // walking the full scene through compile again on every retry adds work without preparing anything new.
-        if (warmedStage !== stage || warmedQuality !== quality) renderer.compile(scene, camera);
+        if (warmedStage !== stage || warmedQuality !== quality) compileScene();
         warmedStage = stage; warmedQuality = quality;
       } finally {
         warming = false;
@@ -1545,7 +1582,7 @@ const visuals = (() => {
         // Hidden legacy attack lights have a different light count from the warm-up frame. Compile the normal
         // idle scene too, before the first playable frame, without another full-size draw.
         try {
-          if (!quality.combatFx) renderer.compile(scene, camera);
+          if (!quality.combatFx) compileScene();
           // r160 initializes compiled variants lazily when their uniforms are first read. Finish hidden variants
           // during loading, before old rigs/NPCs can release their pending programs on the next reset.
           for (const program of renderer.info.programs) program.getUniforms();
@@ -1642,11 +1679,19 @@ const visuals = (() => {
     },
     draw() {
       for (const h of hooks.beforeDraw) h(quality);
-      if (!quality.post) renderer.render(scene, camera);
-      else {
-        grade.uniforms.uTime.value = vTime.value; grade.uniforms.uLow.value = quality.vignette ? lowHp : 0;
-        (warming ? warmComposer : composer).render();
-      }
+      // Matrices once per frame, and only where something can be drawn: three.js would walk all ~8000 objects (rigs,
+      // pooled effects, hidden phases) in every scene render, twice with Ultra's light pass. What is hidden is not
+      // drawn and catches up the frame it shows. Code reading a hidden object's matrixWorld updates it first.
+      updateVisible(scene, false);
+      scene.matrixWorldAutoUpdate = false;
+      try {
+        if (!quality.post) renderer.render(scene, camera);
+        else {
+          grade.uniforms.uTime.value = vTime.value; grade.uniforms.uLow.value = quality.vignette ? lowHp : 0;
+          (warming ? warmComposer : composer).render();
+        }
+      } finally { scene.matrixWorldAutoUpdate = true; }
+      if (retiredStages.length) flushRetiredStages();   // js/scene.js: the old stage's programs served the new one
       for (const h of hooks.afterDraw) h(quality);
     },
     // Event reactions (registerVisualListeners).

@@ -724,7 +724,7 @@ const CONFIG = {
     // stopped by walls, floors and houses grown by `pad` m. A surface reads the grid `offset` m out along its normal;
     // the share of the light with no main direction lights it as fill at `fill`. Colours are stored as
     // sqrt(c / (c + encode)), so dim light keeps its precision.
-    baked: { cell: 1, maxVolume: 1500000, range: 30, openRange: 24, maxCells: 30, pad: 0.3, offset: 0.5, fill: 0.4, encode: 4 },
+    baked: { cell: 1, maxVolume: 1500000, cacheCells: 3000000, range: 30, openRange: 24, maxCells: 30, pad: 0.3, offset: 0.5, fill: 0.4, encode: 4 },
     // Fixed pockets of guiding embers; all travel stays local to each pocket.
     guidance: { spacing: 7, particles: 9, lowParticles: 5, height: 0.55, travel: 1.7, spread: 0.22,
                 rise: 0.28, size: 0.10, maxPx: 13, opacity: 0.38, color: 0xffdba0,

@@ -46,7 +46,8 @@ function validateData({ visual = true } = {}) {
     }
   }
   if (visual) {
-    const A = ANIM_SETTINGS, num = v => typeof v === 'number' && v > 0 && v < 1, rot = P => P && typeof P === 'object' && Object.values(P).every(v => Array.isArray(v) && v.length === 3 && v.every(Number.isFinite));
+    need(Number.isInteger(TEXTURE_SETTINGS.workers) && TEXTURE_SETTINGS.workers >= 1 && TEXTURE_SETTINGS.workers <= 16, 'TEXTURE_SETTINGS.workers: a whole number of background texture bakers, 1 to 16.');
+    const A = ANIM_SETTINGS, num =v => typeof v === 'number' && v > 0 && v < 1, rot = P => P && typeof P === 'object' && Object.values(P).every(v => Array.isArray(v) && v.length === 3 && v.every(Number.isFinite));
     need(A.settle && num(A.settle.time) && Object.entries(A.settle.into || {}).every(([s, t]) => Object.values(PS).includes(s) && num(t)), 'ANIM_SETTINGS.settle: time and every `into` time must be 0 to 1 s (states from PS).');
     const D = A.deflect;
     need(D && [D, D.clang].every(d => d && num(d.rise) && num(d.hold) && num(d.fall) && num(d.drop) && rot(d.pose)), 'ANIM_SETTINGS.deflect: rise, hold and fall (s), drop (m) and a pose of [x, y, z] per bone, for the press and its clang.');
@@ -1011,10 +1012,10 @@ function validateData({ visual = true } = {}) {
   need(Number.isInteger(Cu.maxLights) && Cu.maxLights >= 1 && Cu.lightRange > 0 && Cu.fadeBand > 0 && Cu.enemyRange > Math.max(...Object.values(CONFIG.notice)),
     'CONFIG.cull: maxLights must be a whole number of at least 1, ranges above 0, and enemyRange beyond every notice range.');
   const Bk = CONFIG.VISUALS.baked;
-  need(Bk.cell > 0 && Number.isInteger(Bk.maxCells) && Bk.maxCells >= 3 && Bk.maxCells <= 120 && Number.isInteger(Bk.maxVolume) && Bk.maxVolume >= 1000
+  need(Bk.cell > 0 && Number.isInteger(Bk.maxCells) && Bk.maxCells >= 3 && Bk.maxCells <= 120 && Number.isInteger(Bk.maxVolume) && Bk.maxVolume >= 1000 && Number.isInteger(Bk.cacheCells) && Bk.cacheCells >= 0
     && Bk.range > 0 && Bk.openRange > 0 && Bk.pad >= 0 && Bk.offset >= 0 && Bk.fill >= 0 && Bk.encode > 0
     && Object.values(CONFIG.VISUALS.quality).every(q => typeof q.baked === 'boolean'),
-    'CONFIG.VISUALS.baked: cell, ranges and encode above 0, maxCells a whole number from 3 to 120, maxVolume a whole number of at least 1000, pad, offset and fill not negative; every preset says whether it is `baked`.');
+    'CONFIG.VISUALS.baked: cell, ranges and encode above 0, maxCells a whole number from 3 to 120, maxVolume a whole number of at least 1000, cacheCells a whole number, pad, offset and fill not negative; every preset says whether it is `baked`.');
   const AI = CONFIG.ai, nonNeg = v => num(v) && v >= 0;
   need(['basic', 'dash', 'rollOnly', 'shove', 'projectile'].every(k => nonNeg(AI.chance[k])) && nonNeg(AI.approach) && AI.busyMul >= 0 && AI.busyMul <= 1 && nonNeg(AI.gap)
     && nonNeg(AI.holdInset) && AI.holdMax > 0 && nonNeg(AI.holdBand) && AI.holdSpeedMul > 0 && nonNeg(AI.stepOut) && nonNeg(AI.commitReach) && nonNeg(AI.busyCooldown),

@@ -586,107 +586,21 @@
   "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
 } }
 </script>
-</head>
-<body>
-<canvas id="view"></canvas>
-
-<div id="hud" class="hidden">
-  <div id="vignette"></div>
-  <div id="counterDim"></div>
-  <div id="eTags"></div>
-  <div id="dmgNums"></div>
-  <div id="sparCard" aria-live="polite"><div class="spar-name"></div><div class="spar-keys"></div><div class="spar-steps" aria-hidden="true"></div></div>
-  <div id="worldHint" aria-hidden="true"><kbd class="lesson-cap key" id="worldHintKey"></kbd><span id="worldHintWord"></span></div>
-  <div id="stage">
-    <div class="anchor" id="aTL">
-      <div id="pBars">
-        <div class="bar" id="pHp"><div class="trail" id="pHpTrail"></div><div class="hp" id="pHpFill"></div><div id="pHpCut"></div></div>
-        <div id="pMove">
-          <div id="pDash" aria-hidden="true"></div>
-        </div>
-        <div id="pFlasks"></div>
-      </div>
-      <aside id="controlsTips" class="hud-tip" aria-label="Basic controls" hidden>
-        <div class="title">CONTROLS</div><div id="controlsTipsRows"></div>
-      </aside>
-      <aside id="healingTip" class="hud-tip" aria-label="Healing reminder" hidden>
-        <div class="title">HEALING</div><div id="healingTipText"></div>
-      </aside>
-      <aside id="groupTip" class="hud-tip" aria-label="Boss group reminder" hidden>
-        <div class="title">BOSSES</div><div id="groupTipCount"></div><div id="groupTipText"></div>
-      </aside>
-    </div>
-    <div class="anchor" id="aTC">
-      <div id="eBars" class="hidden">
-        <div id="eName"></div>
-        <div id="eDmg"></div>
-        <div class="bar" id="eHp"><div class="trail" id="eHpTrail"></div><div class="hp" id="eHpFill"></div><div class="mend" id="eHpMend"></div></div>
-      </div>
-      <div id="rushClock" hidden><span id="rushFight"></span><span id="rushCrown" hidden>Crowned</span><span id="rushTime"></span></div>
-      <div id="rushMods" hidden></div>
-      <div id="lesson" role="status" aria-live="polite" aria-hidden="true"><div class="lesson-title"><span id="lessonTitle"></span></div>
-        <div id="lessonKeys"></div><div id="lessonText"></div><div id="lessonHint"></div><div class="lesson-seal" aria-hidden="true">✓</div></div>
-    </div>
-    <div class="anchor" id="aBC">
-      <div id="toasts"></div>
-      <div id="prompt"><span class="key" id="promptKey"></span><span id="promptText"></span></div>
-      <div id="talk"><span class="key" id="talkKey"></span><span id="talkText"></span></div>
-      <div id="confirm"></div>
-      <div id="subtitle"><div id="subName"></div><div id="subText"></div></div>
-    </div>
-    <div class="anchor" id="aBL">
-      <div id="help" class="hidden">
-        <table id="helpTable"></table>
-        <div class="level" id="helpLevel"></div>
-      </div>
-      <div id="helpHint"></div>
-    </div>
-    <div id="rested">RESTED</div>
-    <div id="died"><div class="big">YOU DIED</div><div class="small" id="diedStatus">Returning to the last bonfire&hellip;</div><div class="small tip" id="diedTip"></div></div>
-    <div id="won"><div class="big" id="wonTitle">ENEMY FELLED</div><div class="small" id="wonHint"></div></div>
-    <div id="complete"><div class="big">LEVEL COMPLETE</div><div class="small" id="completeHint"></div></div>
-  </div>
-</div>
-
-<div id="menu" role="dialog" aria-modal="true" aria-labelledby="menuTitle" aria-describedby="menuSub">
-  <div id="menuBox">
-    <h1 id="menuTitle">COMBAT ARENA 3D</h1>
-    <div class="sub" id="menuSub"></div>
-    <div class="notice" id="menuNotice"></div>
-    <div class="menuArrow up" id="menuUp"></div>
-    <div id="menuList" aria-label="Game menu"></div>
-    <div class="menuArrow down" id="menuDown"></div>
-    <div id="menuDesc"></div>
-    <div id="menuSide"></div>
-    <div id="menuAct"></div>
-    <div id="menuFoot"><div id="menuFootActions"></div><div class="hint" id="menuHint"></div></div>
-  </div>
-  <div id="version"></div>
-</div>
-
-<div id="fade"></div>
-<div id="loading" role="status" aria-live="polite"><div id="loadName"></div><div id="loadTip"></div>
-  <div id="loadPad"><svg viewBox="0 0 30 20" fill="none" stroke="currentColor" stroke-width="1.4" aria-hidden="true">
-    <path d="M8 3h14c4 0 6 3 7 8s0 8-3 8c-2 0-3-2-5-4H9c-2 2-3 4-5 4-3 0-4-3-3-8s3-8 7-8z"/>
-    <path d="M8 7v5M5.5 9.5h5"/><circle cx="21" cy="8" r="1"/><circle cx="23.5" cy="11" r="1"/></svg><span id="loadPadText"></span></div></div>
-<div id="bootError" class="hidden" role="status" aria-live="polite"><div class="box"><h2>COMBAT ARENA 3D</h2><div class="msg"></div></div></div>
-
-<script type="module" onerror="window.__bootError('The game did not load.
-It needs an internet connection once to download Three.js from cdn.jsdelivr.net. Check your connection, then reload the page.')">
-// Loader: Three.js and its addons come in as modules, then the game files load in order as classic
-// scripts. Classic scripts share one global scope (their top-level const, let and class see each other)
-// and load from the file system too, so double-clicking this page keeps working.
-import * as THREE from 'three';
-import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
-import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
-import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
-import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
-import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
-import { Pass, FullScreenQuad } from 'three/addons/postprocessing/Pass.js';
-import { mergeGeometries, mergeVertices } from 'three/addons/utils/BufferGeometryUtils.js';
-window.THREE = THREE;
-window.THREE_ADDONS = { EffectComposer, RenderPass, UnrealBloomPass, ShaderPass, OutputPass, Pass, FullScreenQuad, mergeGeometries, mergeVertices };
-
+<!-- Everything the page loads starts downloading at once (perf pass 1): Three.js and every addon module it imports, and
+     every game script, rather than the game's scripts only after Three.js has arrived. The loader below runs them in order. -->
+<link rel="modulepreload" href="https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js">
+<link rel="modulepreload" href="https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/postprocessing/EffectComposer.js">
+<link rel="modulepreload" href="https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/postprocessing/RenderPass.js">
+<link rel="modulepreload" href="https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/postprocessing/UnrealBloomPass.js">
+<link rel="modulepreload" href="https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/postprocessing/ShaderPass.js">
+<link rel="modulepreload" href="https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/postprocessing/OutputPass.js">
+<link rel="modulepreload" href="https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/postprocessing/Pass.js">
+<link rel="modulepreload" href="https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/postprocessing/MaskPass.js">
+<link rel="modulepreload" href="https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/utils/BufferGeometryUtils.js">
+<link rel="modulepreload" href="https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/shaders/CopyShader.js">
+<link rel="modulepreload" href="https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/shaders/LuminosityHighPassShader.js">
+<link rel="modulepreload" href="https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/shaders/OutputShader.js">
+<script>
 // Game files in load order (paths under js/). A file may only use, at load time, what earlier files define.
 const GAME_FILES = [
   'helpers.js',
@@ -917,9 +831,117 @@ const GAME_FILES = [
   'boot.js',
 ];
 const LOAD_STAMP = '7.227.0';   // bump for each release; stable within a release so browsers can cache scripts
+const scriptUrl = (file, dir = 'js/') => dir + file + '?v=' + LOAD_STAMP;
+if (location.pathname.endsWith('/') || /\.[^/]+$/.test(location.pathname))   // else the loader first adds the trailing slash
+  for (const file of GAME_FILES) if (file !== 'replay.js') {
+    const link = document.createElement('link'); link.rel = 'preload'; link.as = 'script'; link.href = scriptUrl(file);
+    document.head.appendChild(link);
+  }
+</script>
+</head>
+<body>
+<canvas id="view"></canvas>
+
+<div id="hud" class="hidden">
+  <div id="vignette"></div>
+  <div id="counterDim"></div>
+  <div id="eTags"></div>
+  <div id="dmgNums"></div>
+  <div id="sparCard" aria-live="polite"><div class="spar-name"></div><div class="spar-keys"></div><div class="spar-steps" aria-hidden="true"></div></div>
+  <div id="worldHint" aria-hidden="true"><kbd class="lesson-cap key" id="worldHintKey"></kbd><span id="worldHintWord"></span></div>
+  <div id="stage">
+    <div class="anchor" id="aTL">
+      <div id="pBars">
+        <div class="bar" id="pHp"><div class="trail" id="pHpTrail"></div><div class="hp" id="pHpFill"></div><div id="pHpCut"></div></div>
+        <div id="pMove">
+          <div id="pDash" aria-hidden="true"></div>
+        </div>
+        <div id="pFlasks"></div>
+      </div>
+      <aside id="controlsTips" class="hud-tip" aria-label="Basic controls" hidden>
+        <div class="title">CONTROLS</div><div id="controlsTipsRows"></div>
+      </aside>
+      <aside id="healingTip" class="hud-tip" aria-label="Healing reminder" hidden>
+        <div class="title">HEALING</div><div id="healingTipText"></div>
+      </aside>
+      <aside id="groupTip" class="hud-tip" aria-label="Boss group reminder" hidden>
+        <div class="title">BOSSES</div><div id="groupTipCount"></div><div id="groupTipText"></div>
+      </aside>
+    </div>
+    <div class="anchor" id="aTC">
+      <div id="eBars" class="hidden">
+        <div id="eName"></div>
+        <div id="eDmg"></div>
+        <div class="bar" id="eHp"><div class="trail" id="eHpTrail"></div><div class="hp" id="eHpFill"></div><div class="mend" id="eHpMend"></div></div>
+      </div>
+      <div id="rushClock" hidden><span id="rushFight"></span><span id="rushCrown" hidden>Crowned</span><span id="rushTime"></span></div>
+      <div id="rushMods" hidden></div>
+      <div id="lesson" role="status" aria-live="polite" aria-hidden="true"><div class="lesson-title"><span id="lessonTitle"></span></div>
+        <div id="lessonKeys"></div><div id="lessonText"></div><div id="lessonHint"></div><div class="lesson-seal" aria-hidden="true">✓</div></div>
+    </div>
+    <div class="anchor" id="aBC">
+      <div id="toasts"></div>
+      <div id="prompt"><span class="key" id="promptKey"></span><span id="promptText"></span></div>
+      <div id="talk"><span class="key" id="talkKey"></span><span id="talkText"></span></div>
+      <div id="confirm"></div>
+      <div id="subtitle"><div id="subName"></div><div id="subText"></div></div>
+    </div>
+    <div class="anchor" id="aBL">
+      <div id="help" class="hidden">
+        <table id="helpTable"></table>
+        <div class="level" id="helpLevel"></div>
+      </div>
+      <div id="helpHint"></div>
+    </div>
+    <div id="rested">RESTED</div>
+    <div id="died"><div class="big">YOU DIED</div><div class="small" id="diedStatus">Returning to the last bonfire&hellip;</div><div class="small tip" id="diedTip"></div></div>
+    <div id="won"><div class="big" id="wonTitle">ENEMY FELLED</div><div class="small" id="wonHint"></div></div>
+    <div id="complete"><div class="big">LEVEL COMPLETE</div><div class="small" id="completeHint"></div></div>
+  </div>
+</div>
+
+<div id="menu" role="dialog" aria-modal="true" aria-labelledby="menuTitle" aria-describedby="menuSub">
+  <div id="menuBox">
+    <h1 id="menuTitle">COMBAT ARENA 3D</h1>
+    <div class="sub" id="menuSub"></div>
+    <div class="notice" id="menuNotice"></div>
+    <div class="menuArrow up" id="menuUp"></div>
+    <div id="menuList" aria-label="Game menu"></div>
+    <div class="menuArrow down" id="menuDown"></div>
+    <div id="menuDesc"></div>
+    <div id="menuSide"></div>
+    <div id="menuAct"></div>
+    <div id="menuFoot"><div id="menuFootActions"></div><div class="hint" id="menuHint"></div></div>
+  </div>
+  <div id="version"></div>
+</div>
+
+<div id="fade"></div>
+<div id="loading" role="status" aria-live="polite"><div id="loadName"></div><div id="loadTip"></div>
+  <div id="loadPad"><svg viewBox="0 0 30 20" fill="none" stroke="currentColor" stroke-width="1.4" aria-hidden="true">
+    <path d="M8 3h14c4 0 6 3 7 8s0 8-3 8c-2 0-3-2-5-4H9c-2 2-3 4-5 4-3 0-4-3-3-8s3-8 7-8z"/>
+    <path d="M8 7v5M5.5 9.5h5"/><circle cx="21" cy="8" r="1"/><circle cx="23.5" cy="11" r="1"/></svg><span id="loadPadText"></span></div></div>
+<div id="bootError" class="hidden" role="status" aria-live="polite"><div class="box"><h2>COMBAT ARENA 3D</h2><div class="msg"></div></div></div>
+
+<script type="module" onerror="window.__bootError('The game did not load.
+It needs an internet connection once to download Three.js from cdn.jsdelivr.net. Check your connection, then reload the page.')">
+// Loader: Three.js and its addons come in as modules, then the game files load in order as classic
+// scripts. Classic scripts share one global scope (their top-level const, let and class see each other)
+// and load from the file system too, so double-clicking this page keeps working.
+import * as THREE from 'three';
+import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
+import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
+import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
+import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
+import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
+import { Pass, FullScreenQuad } from 'three/addons/postprocessing/Pass.js';
+import { mergeGeometries, mergeVertices } from 'three/addons/utils/BufferGeometryUtils.js';
+window.THREE = THREE;
+window.THREE_ADDONS = { EffectComposer, RenderPass, UnrealBloomPass, ShaderPass, OutputPass, Pass, FullScreenQuad, mergeGeometries, mergeVertices };
+
 const loadScript = (file, dir = 'js/') => new Promise(resolve => {
   const s = document.createElement('script');
-  s.src = dir + file + '?v=' + LOAD_STAMP;
+  s.src = scriptUrl(file, dir);
   s.async = false;   // all download at once, but run in the order they were added
   s.onload = () => resolve(true);
   s.onerror = () => resolve(false);

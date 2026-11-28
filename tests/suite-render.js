@@ -53,6 +53,7 @@
     const cloth = banners[0].map;
     let clothGone = false; cloth.addEventListener('dispose', () => { clothGone = true; });
     start('sunken-keep');
+    visuals.draw();   // the old stage goes after the new one's first draw: its shader programs serve the new stage first
     expect.ok(points.every(m => disposed.has(m)), 'stage points materials freed');
     expect.ok(sprites.every(m => disposed.has(m)), 'stage sprite materials freed');
     expect.ok(banners.every(m => disposed.has(m)), 'banner materials freed');
@@ -61,6 +62,32 @@
     let again = null;
     stage.group.traverse(o => { if (o.isInstancedMesh && o.material.customProgramCacheKey && o.material.customProgramCacheKey() === 'banner') again = o.material.map; });
     expect.ok(again === cloth, 'every level reuses one banner texture');
+  });
+
+  test('Render audit: the per-frame matrix walk keeps skinned bodies on their bones and the camera view current', () => {
+    start('final-castle');
+    frames(2);
+    const I = new THREE.Matrix4(), M = new THREE.Matrix4(), off = (a, b) => a.elements.reduce((s, v, i) => Math.max(s, Math.abs(v - b.elements[i])), 0);
+    const visible = o => { for (let a = o; a; a = a.parent) if (!a.visible) return false; return true; };
+    const skinned = [];
+    scene.traverse(o => { if (o.isSkinnedMesh && o.bindMode === THREE.AttachedBindMode && visible(o)) skinned.push(o); });
+    expect.ok(skinned.length > 0, `skinned bodies on screen (${skinned.length})`);
+    const stale = skinned.filter(o => off(M.multiplyMatrices(o.bindMatrixInverse, o.matrixWorld), I) > 1e-3);
+    expect.ok(stale.length === 0, `every skinned body's bind inverse follows its place (${stale.length} stale: ${stale.slice(0, 3).map(o => o.name || o.parent?.name).join(', ')})`);
+    let mine = 0; Game.player.rig.root.traverse(o => { if (o.isSkinnedMesh && skinned.includes(o)) mine++; });
+    expect.ok(mine > 0, 'the player is drawn with a skinned body');
+    expect.ok(off(M.multiplyMatrices(camera.matrixWorldInverse, camera.matrixWorld), I) < 1e-3, 'the camera view matrix matches its place');
+    // A hidden bone still poses its skin (the finale hides a boss's weapon bone; the blade is skinned to it, not under it).
+    const e = Game.enemies.find(q => q.rig && q.rig.weapon && q.rig.weapon.isBone && q.rig.root.visible);
+    expect.ok(!!e, 'an enemy with a weapon bone on screen');
+    e.rig.weapon.visible = false;
+    const x0 = e.x;
+    try {
+      e.x += 3; frames(1);
+      expect.ok(Math.abs(e.rig.root.position.x - x0) > 2, 'the rig moved');
+      const got = e.rig.weapon.matrixWorld.clone(); e.rig.weapon.updateWorldMatrix(true, false);
+      expect.ok(off(got, e.rig.weapon.matrixWorld) < 1e-4, 'a hidden weapon bone follows its rig');
+    } finally { e.rig.weapon.visible = true; e.x = x0; }
   });
 
   test('Render audit: models of another detail leave the cache once no body uses them; live bodies keep theirs', () => {

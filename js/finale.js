@@ -225,6 +225,7 @@ const finale = (() => {
       if (n) c.divideScalar(n); else { if (!m.geometry.boundingSphere) m.geometry.computeBoundingSphere(); c.copy(m.geometry.boundingSphere.center); }
       c = m.userData.markAt = c.applyMatrix4(S.boneInverses[S.bones.indexOf(rig.head)]);
     }
+    rig.head.updateWorldMatrix(true, false);   // current even while the rig is hidden (the draw skips hidden things)
     return rig.head.localToWorld(out.copy(c));
   };
   function render(game, placed) {

@@ -284,53 +284,76 @@ const TEXLIB = (() => {
   const DEFS = Object.fromEntries(TEXTURE_DEFS.map(d => [d.id, d]));
   const cache = new Map(), matCache = new Map(), surfaceMaps = new Map();
   const stats = { textures: 0, ms: 0, last: [] };
+  // Entries made while deferring (TEXLIB.deferred), their pixels still baking in a worker: key -> entry. Their textures
+  // exist (a material can take them, a shader compiles with them) but are not uploaded until their pixels arrive.
+  const waiting = new Map();
+  let deferring = 0;
+  // As a texture's pixels arrive: upload it now (behind a loading screen or in the menus), not at its first draw.
+  const hooks = { filled: t => { if (typeof renderer !== 'undefined') renderer.initTexture(t); } };
 
-  const canvasOf = (size, px) => {
-    const c = document.createElement('canvas'); c.width = c.height = size;
-    c.getContext('2d').putImageData(new ImageData(px, size, size), 0, 0); return c;
-  };
-  const texOf = (canvas, srgb) => {
-    const t = new THREE.CanvasTexture(canvas);
+  const blank = size => { const c = document.createElement('canvas'); c.width = c.height = size; return c; };
+  const paint = (canvas, px) => canvas.getContext('2d').putImageData(new ImageData(px, canvas.width, canvas.height), 0, 0);
+  // `ready`: its pixels are in. An unfilled texture has no version yet, so the renderer leaves it alone until filled.
+  const texOf = (canvas, srgb, ready) => {
+    const t = ready ? new THREE.CanvasTexture(canvas) : new THREE.Texture(canvas);
     t.wrapS = t.wrapT = THREE.RepeatWrapping; t.anisotropy = S.anisotropy;
     if (srgb) t.colorSpace = THREE.SRGBColorSpace;
     return t;
   };
+  const copies = new WeakMap();   // texture -> its tiled clones (material's `repeat`), sharing its canvas, refreshed with it
+  const refresh = t => { for (const x of [t, ...(copies.get(t) || [])]) { x.needsUpdate = true; if (hooks.filled) hooks.filled(x); } };
+  // Roughness (green) and bump height (red) have identical UVs and never depend on tint. One shared map retains
+  // the original bytes in the channels Three reads, replacing two RGBA textures for EVERY colour variant.
+  const surfacePixels = P => { for (let i = 0; i < P.rough.length; i += 4) P.rough[i] = P.bump[i]; return P.rough; };
   const decayKey = d => Math.round(clamp(d, 0, 1) / S.decayStep) * S.decayStep;
   const keyOf = (name, tint, d, size) => `${name}|${tint.toString(16)}|${d.toFixed(2)}|${size}`;
-  // A finished entry from packed pixels (made here or in the worker).
-  const store = (key, name, tint, d, size, P, ms) => {
-    // Roughness (green) and bump height (red) have identical UVs and never depend on tint. One shared map retains
-    // the original bytes in the channels Three reads, replacing two RGBA textures for EVERY colour variant.
+  const note = (key, ms) => { stats.textures++; stats.ms += ms; stats.last.push(`${key} ${ms.toFixed(0)}ms`); };
+  // An entry, from packed pixels P (made here or in a worker), or unfilled (P null) to be filled when they arrive.
+  const make = (key, name, tint, d, size, P) => {
     const surfaceKey = `${name}|${d.toFixed(2)}|${size}`;
     let packed = surfaceMaps.get(surfaceKey);
     if (!packed) {
-      for (let i = 0; i < P.rough.length; i += 4) P.rough[i] = P.bump[i];
-      packed = texOf(canvasOf(size, P.rough), false); surfaceMaps.set(surfaceKey, packed);
+      const canvas = blank(size);
+      if (P) paint(canvas, surfacePixels(P));
+      packed = texOf(canvas, false, !!P); packed.userData.filled = !!P; surfaceMaps.set(surfaceKey, packed);
+    } else if (P && !packed.userData.filled) {   // shared with a tint still waiting on a worker: these pixels fill it now
+      paint(packed.image, surfacePixels(P)); packed.userData.filled = true; refresh(packed);
     }
-    const entry = { name, tint, decay: d, size, map: texOf(canvasOf(size, P.map), true), rough: packed,
-                    bump: packed, def: DEFS[name] };
-    cache.set(key, entry); stats.textures++; stats.ms += ms; stats.last.push(`${key} ${ms.toFixed(0)}ms`);
+    const map = blank(size);
+    if (P) paint(map, P.map);
+    const entry = { name, tint, decay: d, size, map: texOf(map, true, !!P), rough: packed, bump: packed, def: DEFS[name] };
+    cache.set(key, entry);
     return entry;
   };
+  function fill(key, P, ms) {
+    const e = waiting.get(key);
+    if (!e) return;
+    waiting.delete(key);
+    paint(e.map.image, P.map); refresh(e.map);
+    if (!e.rough.userData.filled) { paint(e.rough.image, surfacePixels(P)); e.rough.userData.filled = true; refresh(e.rough); }
+    note(key, ms);
+  }
+  const bakeOf = e => CORE.pack(CORE.bake(DEFS[e.name], e.size, e.tint, e.decay, strSeed(e.name)));
+  function bakeNow(key) { const t0 = performance.now(); fill(key, bakeOf(waiting.get(key)), performance.now() - t0); }
   const check = (name, size) => {
     if (!DEFS[name]) throw new Error(`Unknown texture "${name}". Known: ${Object.keys(DEFS).join(', ')}.`);
     const max = Math.max(S.maxSize, S.ultraMax || 0);
     if (size > max) throw new Error(`Texture "${name}" asked for size ${size}; the limit is ${max}.`);
   };
 
-  function get(name, { tint = 0xffffff, decay = 0.5, size = S.size } = {}) {
-    check(name, size);
-    const d = decayKey(decay), key = keyOf(name, tint, d, size);
-    const entry = cache.get(key);
-    if (entry) return entry;
-    const t0 = performance.now();   // not baked yet (or still in the worker): baked here and now
-    return store(key, name, tint, d, size, CORE.pack(CORE.bake(DEFS[name], size, tint, d, strSeed(name))), performance.now() - t0);
+  // Background baking: Web Workers built from the core's own source (so they also work from a file:// page) bake
+  // textures off the main thread, several at once; the menus and the loading screen stay smooth while they work.
+  // Without workers, prefetch does nothing, deferred() bakes as it goes, and get() bakes on demand.
+  const workers = [], queue = [], busy = new Set();
+  const job = w => { const m = queue.shift(); if (!m) return; w.job = m; w.postMessage(m); };
+  const pump = () => { for (const w of workers) if (!w.job) job(w); };
+  function lost(w) {   // a worker failed: its job goes back to the queue; with no worker left, every waiting entry bakes here
+    workers.splice(workers.indexOf(w), 1);
+    if (w.job) queue.unshift(w.job);
+    if (workers.length) { pump(); return; }
+    queue.length = 0; busy.clear();
+    for (const key of [...waiting.keys()]) bakeNow(key);
   }
-
-  // Background baking: a Web Worker built from the core's own source (so it also works from a file:// page) bakes
-  // textures off the main thread; the menus stay smooth while every model's textures get ready. Without workers,
-  // prefetch does nothing and get() bakes on demand.
-  let worker = null, busy = new Set();
   try {
     const src = `const TEXTURE_SETTINGS = ${JSON.stringify(S)}; const TEXTURE_DEFS = ${JSON.stringify(TEXTURE_DEFS)};
 const seeded = ${seeded.toString()}; const strSeed = ${strSeed.toString()};
@@ -338,18 +361,60 @@ const CORE = (${TEXCORE_FACTORY.toString()})(TEXTURE_SETTINGS, seeded), DEFS = O
 onmessage = e => { const { key, name, tint, d, size } = e.data, t0 = performance.now();
   const P = CORE.pack(CORE.bake(DEFS[name], size, tint, d, strSeed(name)));
   postMessage({ key, name, tint, d, size, P, ms: performance.now() - t0 }, [P.map.buffer, P.rough.buffer, P.bump.buffer]); };`;
-    worker = new Worker(URL.createObjectURL(new Blob([src], { type: 'text/javascript' })));
-    worker.onmessage = e => { const m = e.data; busy.delete(m.key); if (!cache.has(m.key)) store(m.key, m.name, m.tint, m.d, m.size, m.P, m.ms); };
-    worker.onerror = () => { worker = null; };
-  } catch (e) { worker = null; }
-  function prefetch(name, { tint = 0xffffff, decay = 0.5, size = S.size } = {}) {
-    if (!worker) return false;
+    const url = URL.createObjectURL(new Blob([src], { type: 'text/javascript' }));
+    const count = Math.max(1, Math.min(S.workers || 1, (navigator.hardwareConcurrency || 2) - 2));
+    for (let i = 0; i < count; i++) {
+      const w = new Worker(url);
+      w.job = null;
+      w.onmessage = e => {
+        const m = e.data;
+        w.job = null; busy.delete(m.key);
+        if (waiting.has(m.key)) fill(m.key, m.P, m.ms);
+        else if (!cache.has(m.key)) { make(m.key, m.name, m.tint, m.d, m.size, m.P); note(m.key, m.ms); }
+        job(w);
+      };
+      w.onerror = () => lost(w);
+      workers.push(w);
+    }
+  } catch (e) { workers.length = 0; }
+  function send(key, name, tint, d, size) {
+    if (busy.has(key)) return;
+    busy.add(key); queue.push({ key, name, tint, d, size }); pump();
+  }
+
+  function get(name, { tint = 0xffffff, decay = 0.5, size = S.size } = {}) {
     check(name, size);
     const d = decayKey(decay), key = keyOf(name, tint, d, size);
-    if (cache.has(key) || busy.has(key)) return true;
-    busy.add(key); worker.postMessage({ key, name, tint, d, size });
+    const entry = cache.get(key);
+    if (entry) {
+      if (!deferring && waiting.has(key)) bakeNow(key);   // needed now, outside a deferred build: finished here
+      return entry;
+    }
+    if (deferring && workers.length) {   // a deferred build: the entry now, its pixels from a worker
+      const e = make(key, name, tint, d, size, null);
+      waiting.set(key, e); send(key, name, tint, d, size);
+      return e;
+    }
+    const t0 = performance.now();   // not baked yet (or still in a worker): baked here and now
+    const e = make(key, name, tint, d, size, CORE.pack(CORE.bake(DEFS[name], size, tint, d, strSeed(name))));
+    note(key, performance.now() - t0);
+    return e;
+  }
+  function prefetch(name, { tint = 0xffffff, decay = 0.5, size = S.size } = {}) {
+    if (!workers.length) return false;
+    check(name, size);
+    const d = decayKey(decay), key = keyOf(name, tint, d, size);
+    if (!cache.has(key)) send(key, name, tint, d, size);
     return true;
   }
+  // fn() with every texture it asks for baked in the workers instead of here: the textures exist at once and fill as
+  // their pixels arrive. A loading screen holds until waiting() is 0 (Game.tickLoading), so nothing shows unfilled.
+  function deferred(fn) {
+    deferring++;
+    try { return fn(); } finally { deferring--; }
+  }
+  // Every waiting texture finished here and now (a build that cannot wait for the workers).
+  function settle() { for (const key of [...waiting.keys()]) bakeNow(key); }
 
   // A shared material for a recipe. `repeat` tiles the texture over the surface (e.g. [2, 1] around a sphere).
   function material(name, opts = {}) {
@@ -357,7 +422,13 @@ onmessage = e => { const { key, name, tint, d, size } = e.data, t0 = performance
     let m = matCache.get(key);
     if (m) return m;
     const t = get(name, opts), rep = opts.repeat || [1, 1];
-    const tile = tex => { if (rep[0] === 1 && rep[1] === 1) return tex; const c = tex.clone(); c.repeat.set(rep[0], rep[1]); c.needsUpdate = true; return c; };
+    const tile = tex => {
+      if (rep[0] === 1 && rep[1] === 1) return tex;
+      const c = tex.clone(); c.repeat.set(rep[0], rep[1]);
+      if (tex.version > 0) c.needsUpdate = true; else c.version = 0;   // an unfilled one waits for its source's pixels
+      if (!copies.has(tex)) copies.set(tex, []); copies.get(tex).push(c);
+      return c;
+    };
     m = new THREE.MeshStandardMaterial({
       map: tile(t.map), roughnessMap: tile(t.rough), roughness: 1, metalness: t.def.metal,
       bumpMap: tile(t.bump), bumpScale: t.def.bump * 0.02,
@@ -367,5 +438,6 @@ onmessage = e => { const { key, name, tint, d, size } = e.data, t0 = performance
     return m;
   }
 
-  return { names: TEXTURE_DEFS.map(d => d.id), defs: DEFS, get, prefetch, material, stats, count: () => cache.size, pending: () => busy.size };
+  return { names: TEXTURE_DEFS.map(d => d.id), defs: DEFS, get, prefetch, material, deferred, settle, hooks, stats,
+    deferring: () => deferring > 0, count: () => cache.size, pending: () => busy.size, waiting: () => waiting.size, workers: () => workers.length };
 })();

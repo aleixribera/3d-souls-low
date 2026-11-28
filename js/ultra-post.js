@@ -230,7 +230,12 @@ void main() {
       if (o.isPointLight) { if (!o.userData.ultra && !stageLights.has(o)) extraLights.push(o); return; }
       if (!(o.isMesh || o.isPoints || o.isSprite || o.isLine)) return;
       const m = Array.isArray(o.material) ? o.material[0] : o.material;
-      if (o.isMesh) for (const mm of Array.isArray(o.material) ? o.material : [o.material]) bakedLight.prepare(mm);   // baked light (js/baked-light.js), blood decals too
+      if (o.isMesh) for (const mm of Array.isArray(o.material) ? o.material : [o.material]) {
+        bakedLight.prepare(mm);   // baked light (js/baked-light.js), blood decals too
+        // three.js draws a two-sided transparent material twice, back faces then front, switching its program both
+        // times every frame. Added light without depth writes sums the same in any order: one pass, the same picture.
+        if (mm.transparent && mm.side === THREE.DoubleSide && mm.blending === THREE.AdditiveBlending && !mm.depthWrite) mm.forceSinglePass = true;
+      }
       if (o.isSprite || o.isPoints || o.isLine || o.userData.noDepth || !m || (m.transparent && !m.depthWrite) || m.blending === THREE.AdditiveBlending) {
         noDepth.push(o); return;
       }
@@ -257,15 +262,12 @@ void main() {
   // The environment: a dim sphere of the level's fog and moonlight, with warm fire low round the horizon (and the sun).
   const pmrem = new THREE.PMREMGenerator(renderer);
   let envTarget = null;
-  function buildEnv(def) {
-    const A = { ...DEFAULT_ATMOSPHERE, ...(def.atmosphere || {}) }, fog = new THREE.Color(A.fog), moon = new THREE.Color(A.moon.color).multiplyScalar(A.moon.intensity * 0.35);
-    const sky = A.sky || null, sunDir = new THREE.Vector3(...(sky ? sky.sunDir : [0.4, 0.15, -0.6])).normalize();
-    const mat = new THREE.ShaderMaterial({ side: THREE.BackSide,
-      uniforms: { uTop: { value: fog.clone().multiplyScalar(1.4).add(moon) }, uHor: { value: fog.clone().multiplyScalar(2.2).addScalar(0.04) },
-                  uBot: { value: fog.clone().multiplyScalar(0.35) }, uFire: { value: new THREE.Color(U.env.fire).multiplyScalar(1.6) },
-                  uSun: { value: new THREE.Color(sky ? sky.sun : U.env.fire).multiplyScalar(sky ? 6 : 1.5) }, uSunDir: { value: sunDir } },
-      vertexShader: 'varying vec3 vD; void main() { vD = position; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }',
-      fragmentShader: `uniform vec3 uTop, uHor, uBot, uFire, uSun, uSunDir; varying vec3 vD;
+  // One sky ball for every level, its colours set per level: a new material each time would compile again at each cut.
+  const envMat = new THREE.ShaderMaterial({ side: THREE.BackSide,
+    uniforms: { uTop: { value: new THREE.Color() }, uHor: { value: new THREE.Color() }, uBot: { value: new THREE.Color() },
+                uFire: { value: new THREE.Color() }, uSun: { value: new THREE.Color() }, uSunDir: { value: new THREE.Vector3() } },
+    vertexShader: 'varying vec3 vD; void main() { vD = position; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }',
+    fragmentShader: `uniform vec3 uTop, uHor, uBot, uFire, uSun, uSunDir; varying vec3 vD;
 void main() {
   vec3 d = normalize(vD);
   vec3 c = d.y > 0.0 ? mix(uHor, uTop, smoothstep(0.0, 0.7, d.y)) : mix(uHor, uBot, smoothstep(0.0, 0.4, -d.y));
@@ -274,10 +276,20 @@ void main() {
   c += uSun * (pow(max(dot(d, uSunDir), 0.0), 40.0) + 0.15 * pow(max(dot(d, uSunDir), 0.0), 4.0));
   gl_FragColor = vec4(c, 1.0);
 }` });
-    const envScene = new THREE.Scene(), ball = new THREE.Mesh(new THREE.SphereGeometry(10, 48, 24), mat);
-    envScene.add(ball);
+  const envScene = new THREE.Scene();
+  envScene.add(new THREE.Mesh(new THREE.SphereGeometry(10, 48, 24), envMat));
+  // three.js draws its own background box in fromScene with a fresh MeshBasicMaterial it disposes after, which would
+  // drop that program each time. This twin (same settings, too small to reach the near plane) keeps it alive.
+  const keeper = new THREE.Mesh(new THREE.BoxGeometry(1e-4, 1e-4, 1e-4), new THREE.MeshBasicMaterial({ side: THREE.BackSide, depthWrite: false, depthTest: false }));
+  keeper.frustumCulled = false; envScene.add(keeper);
+  function buildEnv(def) {
+    const A = { ...DEFAULT_ATMOSPHERE, ...(def.atmosphere || {}) }, fog = new THREE.Color(A.fog), moon = new THREE.Color(A.moon.color).multiplyScalar(A.moon.intensity * 0.35);
+    const sky = A.sky || null, u = envMat.uniforms;
+    u.uSunDir.value.set(...(sky ? sky.sunDir : [0.4, 0.15, -0.6])).normalize();
+    u.uTop.value.copy(fog).multiplyScalar(1.4).add(moon); u.uHor.value.copy(fog).multiplyScalar(2.2).addScalar(0.04);
+    u.uBot.value.copy(fog).multiplyScalar(0.35); u.uFire.value.set(U.env.fire).multiplyScalar(1.6);
+    u.uSun.value.set(sky ? sky.sun : U.env.fire).multiplyScalar(sky ? 6 : 1.5);
     const next = pmrem.fromScene(envScene, 0, 0.1, 50);
-    ball.geometry.dispose(); mat.dispose();
     if (envTarget) envTarget.dispose();
     envTarget = next; envTex = next.texture;
     for (const m of reflected) m.envMap = envTex;
@@ -288,21 +300,37 @@ void main() {
   const pulse = { flash: 0, hurt: 0, flashColor: new THREE.Color(1, 1, 1) };
 
   // ---- the light pass, after the scene render ------------------------------------------------------------------------
+  // 1. depth + normals, without what glows or sways; a dissolving body leaves no occlusion behind
+  function depthPass(r, target = gbuf) {
+    hidden.length = 0;
+    for (const o of noDepth) if (o.visible) { o.visible = false; hidden.push(o); }
+    for (const e of Game.enemies) if (e.rig.root.visible && e.rig.alphaK < 0.99) { e.rig.root.visible = false; hidden.push(e.rig.root); }
+    const bg = scene.background, override = scene.overrideMaterial, clearA = r.getClearAlpha();
+    r.getClearColor(clearColor);
+    scene.background = null; scene.overrideMaterial = normalMat;
+    try { r.setRenderTarget(target); r.setClearColor(0x8080ff, 1); r.clear(); r.render(scene, camera); }
+    finally {
+      scene.overrideMaterial = override; scene.background = bg; r.setClearColor(clearColor, clearA);
+      for (const o of hidden) o.visible = true;
+    }
+  }
+  // Warm-up (visuals.warmUp) draws through a small pipeline without this pass: its normal-material variants (skinned,
+  // instanced, coloured instances) are compiled here, while everything is shown, instead of at their first play frame.
+  // Into a small copy of the depth target (a program does not depend on the size), as the rest of the warm-up draws.
+  let warmBuf = null;
+  visuals.hooks.warm.push(() => {
+    if (!on || !gbuf) return;
+    const size = visuals.quality().warmupSize || 32;
+    // Its own target, never gbuf.clone(): a clone shares the texture's image, so resizing it would shrink the live one.
+    if (warmBuf && warmBuf.width !== size) { warmBuf.dispose(); warmBuf.depthTexture.dispose(); warmBuf = null; }
+    if (!warmBuf) warmBuf = rt(size, size, { depthBuffer: true, depthTexture: new THREE.DepthTexture(size, size) });
+    const target = renderer.getRenderTarget();
+    try { depthPass(renderer, warmBuf); } finally { renderer.setRenderTarget(target); }
+  });
   class UltraLightPass extends Pass {
     constructor() { super(); this.needsSwap = true; }
     render(r, writeBuffer, readBuffer) {
-      // 1. depth + normals, without what glows or sways; a dissolving body leaves no occlusion behind
-      hidden.length = 0;
-      for (const o of noDepth) if (o.visible) { o.visible = false; hidden.push(o); }
-      for (const e of Game.enemies) if (e.rig.root.visible && e.rig.alphaK < 0.99) { e.rig.root.visible = false; hidden.push(e.rig.root); }
-      const bg = scene.background, override = scene.overrideMaterial, clearA = r.getClearAlpha();
-      r.getClearColor(clearColor);
-      scene.background = null; scene.overrideMaterial = normalMat;
-      try { r.setRenderTarget(gbuf); r.setClearColor(0x8080ff, 1); r.clear(); r.render(scene, camera); }
-      finally {
-        scene.overrideMaterial = override; scene.background = bg; r.setClearColor(clearColor, clearA);
-        for (const o of hidden) o.visible = true;
-      }
+      depthPass(r);
       // 2. light visibility, 3. occlusion + scattered light, 4. blur, 5. composite
       if (quality().volumetrics) pass(visMat, visRT);
       pass(lightMat, lightA);

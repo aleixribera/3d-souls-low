@@ -208,8 +208,18 @@ Object.assign(Game, {
   // The title's Tutorial: the showcase, then the sparring scene, then the title again (js/showcase.js, js/sparring.js).
   playTutorial() {
     let started = false;   // a show that fails half-way calls onEnd and returns false: the scene still starts once
-    const spar = () => { if (!started) { started = true; sparring.start({ back: 'main' }); } };
-    if (typeof showcase === 'undefined' || !showcase.play({ toMenu: false, onEnd: spar })) spar();
+    const spar = () => { if (!started) { started = true; $('loading').classList.remove('show'); sparring.start({ back: 'main' }); } };
+    if (typeof showcase === 'undefined') { spar(); return; }
+    // The show's setup builds its three grounds (seconds on a laptop): the loading screen covers it, painted first,
+    // as at the first launch (showcase.firstLaunch), instead of a title frozen under the pointer. play() lifts it.
+    // On the stepped clock (tests) at once, as loadingFirst.
+    const go = () => { this.pendingLoad = false; if (!showcase.play({ toMenu: false, onEnd: spar })) spar(); };
+    if (this.manualClock) { go(); return; }
+    if (this.pendingLoad) return;
+    this.pendingLoad = true;   // a second click while the screen paints starts nothing more
+    $('loadName').textContent = ''; $('loadTip').textContent = '';
+    $('loading').classList.add('show');
+    requestAnimationFrame(() => requestAnimationFrame(go));
   },
   refreshTitleCollection() {
     if (this.screen !== 'main' || this.mode !== 'menu') return;
@@ -618,7 +628,8 @@ Object.assign(Game, {
     $('loading').classList.add('show'); $('menu').classList.add('hidden');
     requestAnimationFrame(() => requestAnimationFrame(() => {
       this.pendingLoad = false;
-      try { fn(); } finally { this.loadStarted = null; }
+      // The build's textures bake in the background (js/textures.js); tickLoading holds the screen until they are in.
+      try { if (typeof TEXLIB !== 'undefined') TEXLIB.deferred(fn); else fn(); } finally { this.loadStarted = null; }
     }));
   },
   // What a level's loading screen says: its chapter title and line in Story mode, else its name and description.
@@ -629,6 +640,7 @@ Object.assign(Game, {
   tickLoading(dt) {
     if (this.loading <= 0) return;
     this.loading = Math.max(0, this.loading - dt);
+    if (this.loading <= 0 && typeof TEXLIB !== 'undefined' && TEXLIB.waiting()) this.loading = 1e-3;   // textures still baking: hold
     if (this.loading <= 0) $('loading').classList.remove('show');
   },
   // R: instant on the death, win or level-complete screens; otherwise press twice.

@@ -40,7 +40,10 @@ const Game = {
     const at = entry.alcove ?? (entry.path ? `${entry.path.join('-')}/${entry.z}` : `${entry.x},${entry.y ?? 0},${entry.z}`);
     return `${prefix}${entry.behavior || ''}:${entry.enemy}@${at}`;
   },
+  retiredRigs: [],
+  flushRetired() { for (const r of this.retiredRigs) r.dispose(); this.retiredRigs.length = 0; },
   clearActors(retainPrograms = false) {
+    this.flushRetired();
     const retired = [...this.allies(), ...this.enemies];
     for (const b of retired) {
       if (retainPrograms) scene.remove(b.rig.root, b.rig.shadow);
@@ -96,6 +99,9 @@ const Game = {
     // Keep the old materials alive only until the replacement rigs are prepared: disposing them first evicts
     // their shared WebGL programs and makes retries compile the same shaders again. Nothing survives this load.
     const retired = this.clearActors(true);
+    // A build outside a loading screen's deferred one (js/game-menus.js loadingFirst) cannot wait for the texture
+    // workers: anything still baking for an earlier one (the boot's effect pools) is finished here first.
+    if (typeof TEXLIB !== 'undefined' && !TEXLIB.deferring()) TEXLIB.settle();
     try {
       input.pressed.clear();
       this.hitstop = 0; this.shake = 0; this.complete = false; this.deathTimer = 0; this.restartArm = 0; this.nextTimer = 0;
@@ -202,7 +208,9 @@ const Game = {
   respawnEnemies() {
     const beatenBoss = a => !a.alive() && a.isBoss();
     const keep = new Set(this.zones.filter(z => z.gate.open).flatMap(z => z.actors.filter(beatenBoss)));
-    for (const e of this.enemies) if (!keep.has(e)) e.rig.dispose();
+    // The old bodies leave the scene now but are disposed after the next draw (flushRetired), once the new ones hold
+    // their shared shader programs: disposed first, those programs would be deleted and compiled again (a hitch).
+    for (const e of this.enemies) if (!keep.has(e)) { scene.remove(e.rig.root, e.rig.shadow); this.retiredRigs.push(e.rig); }
     this.enemies = [...keep, ...this.makeEnemies()];
     for (const z of this.zones) { const kept = z.actors.filter(a => keep.has(a)); z.actors = []; this.spawnZone(z, kept); }
   },
@@ -373,5 +381,6 @@ const Game = {
     hud.update(this, frameDt);
     companions.draw(this);
     visuals.render(this, t, frameDt);
+    if (this.retiredRigs.length) this.flushRetired();
   },
 };

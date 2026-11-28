@@ -287,7 +287,7 @@ class Rig {
   dispose() {
     scene.remove(this.root, this.shadow);
     this.root.traverse(o => { if (o.isMesh && !o.geometry.userData.shared) o.geometry.dispose(); });
-    for (const m of this.mats) m.dispose();
+    for (const m of this.mats) retireMaterial(m);   // js/scene.js: its shader program stays for the next body
     this.shadow.material.dispose(); this.warnGlow.material.dispose(); if (this.tellGlows) for (const n in this.tellGlows) this.tellGlows[n].material.dispose();
     if (this.glows) for (const g of this.glows) g.mat.dispose();
     if (this.skeleton) this.skeleton.dispose();
