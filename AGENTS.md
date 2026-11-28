@@ -45,8 +45,8 @@ agents: a draft, changed whenever the code changes.
   - `node tests/solo-browser.cjs "<filter>"`: in-page tests by name, in headless Edge.
   - `node tests/run-all.cjs <filter>`: any subset of everything.
   - In the page (`#dev`): `await __arena.tests.run('<filter>')`.
-- Run the tests that cover your change. CI (`.github/workflows/ci.yaml`) runs everything on every push; don't run the
-  full suite locally.
+- Run the tests that cover your change. CI (`.github/workflows/ci.yaml`) runs the Node group, the in-page suite and the browser
+  smoke files on every code push to main (a push of only `.md` or `.claude/` files is skipped); don't run the full suite locally.
 - Browser tests get Playwright from `tests/browser.cjs`. Never set `ARENA_SOFTWARE_GL=1` locally.
 
 ### Test time budget
@@ -66,6 +66,6 @@ agents: a draft, changed whenever the code changes.
    `LOAD_STAMP` (`combat-arena-3d.html`), both `package.json` and lock files, and the players' entry at the top of
    `js/data/changelog.js`, read back, committed alone and tagged; a refused commit puts the files back untagged.
 2. `git push --atomic origin HEAD:main v<version>` (it prints the line). CI tests that commit; the container workflow
-   re-runs the Node tests and smoke-tests the built image. `.github/workflows/container.yaml` publishes
+   waits for that run to be green (`tools/ci-gate.sh`), then smoke-tests the built image. `.github/workflows/container.yaml` publishes
    `ghcr.io/aleixribera/3d-souls-low:<version>` and `:latest`; check that it started. The homelab's `hl` pulls it
    when the lobby is empty (`docs/container-updates.md`).
